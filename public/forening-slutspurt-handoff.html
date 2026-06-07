@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Föreningssidan slutspurt — kopiera handoff</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f4f7f5;
+        color: #1a2e22;
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3rem;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0 0 0.5rem;
+      }
+      .lead {
+        color: #4a5f52;
+        font-size: 0.95rem;
+        margin: 0 0 1.5rem;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.65rem 1.1rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      #copyBtn {
+        background: #2d6a4f;
+        color: #fff;
+      }
+      #copyBtn:hover { background: #1b4332; }
+      #copyBtn.ok { background: #40916c; }
+      #selectBtn {
+        background: #fff;
+        color: #1a2e22;
+        border: 1px solid #c8d9ce;
+      }
+      .hint {
+        font-size: 0.85rem;
+        color: #4a5f52;
+        margin: 0 0 1rem;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #fff;
+        border: 1px solid #d4e8da;
+        border-radius: 0.75rem;
+        padding: 1rem 1.1rem;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        max-height: 50vh;
+        overflow: auto;
+      }
+      code { font-family: ui-monospace, monospace; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Föreningssidan slutspurt</h1>
+      <p class="lead">
+        Kopiera texten nedan och klistra in som <strong>första meddelande</strong> i en ny Cursor-tråd
+        (döp tråden till <em>Föreningssidan slutspurt</em>).
+      </p>
+      <div class="actions">
+        <button type="button" id="copyBtn">Kopiera handoff</button>
+        <button type="button" id="selectBtn">Markera allt</button>
+      </div>
+      <p class="hint" id="status" aria-live="polite"></p>
+      <pre id="handoff"><code id="text"></code></pre>
+    </div>
+    <script>
+      const HANDOFF = `# Föreningssidan slutspurt — handoff
+
+Projekt: brf-plattform (/Users/johancarlsen/projects/brf-plattform)
+Fokus: Inloggad föreningssida (/forening/*)
+
+## Redan implementerat (på disk, ej nödvändigtvis committat)
+
+### /forening
+- Dela föreningslänk — components/forening/DelaForeningslankRuta.tsx, app/forening/page.tsx
+
+### Upphandling
+- Brandskydd → Konsulter & specialisttjänster (components/upphandling/kategorier.ts)
+- Flöde: komplett underlag → publicera → sista anbudsdag; intern portal + utvärdering till styrelsen
+- Två styrelsemedlemmar godkänner före publicering; protokoll/mejl efter utvärdering; audit trail (localStorage)
+- Nyckelfiler: upphandling-lager.ts, UpphandlingDokument.tsx, InternUpphandlingModul.tsx, StyrelseUpphandlingPanel.tsx
+
+### Föreningsinformation
+- Nyckel kvittenser (BankID) under Styrelse och stadgar — nyckel-kvittenser.ts, NyckelKvittenserPanel.tsx, mappar.ts
+- SBA-namn: "Systematiskt brandskyddsarbete (SBA)"
+- Städschema i rondering (mappar.ts, signering.ts)
+
+### Underhållsplan (/forening/underhallsplan)
+- Spara uppdateringar — localStorage brf-underhallsplan-state, auto-laddning (underhallsplan-lager.ts)
+- Steg 2: Öppna/Stäng på stegpanelen; pill-knappar för komponenter + besiktningar
+- Steg 4: Pill-knappar för besiktningar
+- Lägenhetssynk VVS stambyte vid spara grund (parse-grundtal.ts, vvs-stambyte.ts)
+- kr/m²/år: boarea + lokalyta som avsättningsyta
+
+### Public BRF Företag
+- Säljande sida, trial, priser — BrfForetagHome.tsx, FilmDemo.tsx
+
+## Data & sparning
+- Underhållsplan: knappen "Spara uppdateringar" i guiden (localStorage)
+- Upphandling/nycklar: localStorage
+- Inga git commits gjorda i föregående tråd
+
+## Kvar / verifiera
+- Manuell test: Brf Nordan — lägenheter, kostnader, spara/ladda om
+- Ev. standard kr/m² för äldre hus
+- Committa/PR när användaren ber om det
+- Övriga routes: /forening/medlemmar, rondering, projekt, juridik, entreprenorer, guider
+
+## Nyckel-filer (@ i Cursor)
+- components/underhallsplan/UnderhallsplanWizard.tsx
+- components/underhallsplan/underhallsplan-lager.ts
+- components/forening/DelaForeningslankRuta.tsx
+- components/upphandling/
+- components/dokumentbank/ + ForeningsinformationBibliotek.tsx
+
+## Nästa uppgift
+[Beskriv här vad som ska göras först]`;
+
+      const textEl = document.getElementById("text");
+      const copyBtn = document.getElementById("copyBtn");
+      const selectBtn = document.getElementById("selectBtn");
+      const status = document.getElementById("status");
+
+      textEl.textContent = HANDOFF;
+
+      async function copyHandoff() {
+        try {
+          await navigator.clipboard.writeText(HANDOFF);
+          copyBtn.textContent = "Kopierat!";
+          copyBtn.classList.add("ok");
+          status.textContent = "Klistra in i ny Cursor-tråd med Cmd+V / Ctrl+V.";
+          setTimeout(() => {
+            copyBtn.textContent = "Kopiera handoff";
+            copyBtn.classList.remove("ok");
+          }, 2500);
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(textEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          status.textContent = "Kunde inte kopiera automatiskt — texten är markerad, tryck Cmd+C / Ctrl+C.";
+        }
+      }
+
+      copyBtn.addEventListener("click", copyHandoff);
+      selectBtn.addEventListener("click", () => {
+        const range = document.createRange();
+        range.selectNodeContents(textEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        status.textContent = "All text markerad.";
+      });
+    </script>
+  </body>
+</html>

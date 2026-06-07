@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4faf6;
+  --foreground: #1a2e22;
+  --primary: #5a9a6e;
+  --primary-dark: #3d7354;
+  --surface: #ffffff;
+  --muted: #4a6356;
+  --border: #b8d4c4;
+  --panel-gron: #eef6f0;
+  --panel-gron-hover: #e2f0e6;
+  --ikon-bakgrund: #e8f3ec;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background:
+    radial-gradient(circle at top right, rgba(90, 154, 110, 0.18), transparent 34rem),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* BRF Företag — grön design som alltid syns (även om Tailwind-klasser strular) */
+.brf-panel-gron {
+  background-color: var(--panel-gron);
+  border: 2px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  border-radius: 1rem;
+}
+
+.brf-knapp-gron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: var(--primary);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.brf-knapp-gron:hover:not(:disabled) {
+  background-color: var(--primary-dark);
+}
+
+.brf-knapp-gron:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.brf-knapp-gron-kontur {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary);
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  color: var(--primary-dark);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.brf-knapp-gron-kontur:hover:not(:disabled) {
+  background-color: var(--panel-gron-hover);
+}
+
+.brf-lank-gron {
+  color: var(--primary-dark);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.brf-lank-gron:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* Rondering — utskrift av anpassad checklista */
+@media print {
+  body.rondering-print-lage * {
+    visibility: hidden;
+  }
+  body.rondering-print-lage #rondering-checklista-utskrift,
+  body.rondering-print-lage #rondering-checklista-utskrift * {
+    visibility: visible;
+  }
+  body.rondering-print-lage #rondering-checklista-utskrift {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    display: block !important;
+  }
+  body.rondering-print-lage {
+    background: white;
+  }
+}

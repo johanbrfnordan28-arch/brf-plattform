@@ -1,0 +1,60 @@
+import {
+  sparaUnderhallsplanState,
+  type UnderhallsplanLagratState,
+} from "@/components/underhallsplan/underhallsplan-lager";
+import {
+  hamtaTestplan,
+  type TestplanId,
+} from "@/components/underhallsplan/testplaner";
+import {
+  hamtaAntalLagenheterFranGrund,
+  normaliseraGrund,
+  uppdateraPlanTitelMedLagenheter,
+} from "@/components/underhallsplan/grund-synk";
+import { normaliseraPlaninstallningar } from "@/components/underhallsplan/planinstallningar";
+import { synkaUnderhallsplanState } from "@/components/underhallsplan/komponentregister";
+import { skapaStandardSamfallighetsavgift } from "@/components/underhallsplan/samfallighetsavgift";
+
+export function byggLagratStateFranTestplan(
+  id: TestplanId,
+): UnderhallsplanLagratState {
+  const plan = hamtaTestplan(id);
+  const grund = normaliseraGrund(plan.grund);
+  const synced = synkaUnderhallsplanState(
+    plan.activeComponents,
+    synkaUnderhallsplanState(
+      plan.activeComponents,
+      plan.komponentDetaljer ?? {},
+    ).register,
+  );
+  const antalLgh = hamtaAntalLagenheterFranGrund(grund);
+
+  return {
+    version: 1,
+    sparad: new Date().toISOString(),
+    aktivTestplan: id,
+    planNamn: uppdateraPlanTitelMedLagenheter(plan.namn, antalLgh),
+    planNotering: plan.planNotering ?? null,
+    grund,
+    planinstallningar: normaliseraPlaninstallningar(plan.planinstallningar),
+    grundSaved: true,
+    renoveringarSaved: false,
+    komponenterSaved: false,
+    besiktningarSaved: false,
+    activeComponents: synced.activeComponents,
+    komponentDetaljer: synced.register,
+    besiktningar: plan.besiktningar,
+    samfallighetsavgift: skapaStandardSamfallighetsavgift(),
+    renoveringarLista: [],
+    renoveringSammanfattning: null,
+    krPerKvmAr: plan.krPerKvmAr,
+  };
+}
+
+/** Skriver demo-underhållsplan till localStorage (endast webbläsare). */
+export function forberedInvesterarDemo(
+  id: TestplanId = "test-sailor",
+): void {
+  if (typeof window === "undefined") return;
+  sparaUnderhallsplanState(byggLagratStateFranTestplan(id));
+}

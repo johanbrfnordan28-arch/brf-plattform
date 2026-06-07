@@ -1,0 +1,15 @@
+Klistra in EN av dessa i Edge (adressfältet):
+
+http://127.0.0.1:3010/prova-gratis
+
+Om det inte funkar, prova:
+
+http://localhost:3010/prova-gratis
+
+---
+
+Servern måste köra först. I Terminal:
+  cd /Users/johancarlsen/projects/brf-plattform
+  npm run dev
+
+Eller dubbelklicka: OPPNA-I-EDGE.command (öppnar Edge åt dig)
