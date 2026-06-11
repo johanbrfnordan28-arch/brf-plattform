@@ -78,7 +78,7 @@ export function ForeningProfilFormular() {
   }
 
   function uppdatera(falt: keyof ForeningProfil, varde: string | boolean) {
-    setRedigerad({ ...visningsProfil, [falt]: varde });
+    setRedigerad({ ...visningsProfil!, [falt]: varde });
     setSparad(false);
     setSparFel(null);
   }
