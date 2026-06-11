@@ -465,7 +465,7 @@ export function bootstrapForeningFranUrl(): ForeningProfil | null {
     return befintlig;
   }
 
-  let profil =
+  const profil =
     befintlig && befintlig.id !== GRUNDMALL_FORENING_ID
       ? { ...befintlig, namn: trimmatNamn }
       : tomProfil(id, trimmatNamn);
