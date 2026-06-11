@@ -1,0 +1,26 @@
+BRF FÖRETAG / STYRELSEFLOW — START HÄR
+========================================
+
+TESTA NU (på din dator)
+------------------------
+Dubbelklicka:  OPPNA-BRF-START.command
+
+Eller klistra in i Safari:
+  http://127.0.0.1:3010/
+
+(Börja på BRF Företag-startsidan, klicka dig vidare därifrån.)
+
+
+LADDA UPP TILL GITHUB (en gång)
+-------------------------------
+1. Skapa tomt repo på github.com med namnet: brf-plattform
+2. Dubbelklicka:  PUBLICERA-GITHUB.command
+3. Logga in om det frågas
+
+
+PUBLIK LÄNK TILL KOLLEGOR (efter GitHub)
+----------------------------------------
+1. Öppna: https://vercel.com/new
+2. Logga in med GitHub
+3. Välj brf-plattform → Deploy
+4. Kopiera länken som Vercel visar (t.ex. https://brf-plattform.vercel.app)

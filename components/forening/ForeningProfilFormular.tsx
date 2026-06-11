@@ -78,14 +78,15 @@ export function ForeningProfilFormular() {
   }
 
   function uppdatera(falt: keyof ForeningProfil, varde: string | boolean) {
-    setRedigerad({ ...visningsProfil!, [falt]: varde });
+    if (!visningsProfil) return;
+    setRedigerad({ ...visningsProfil, [falt]: varde } as ForeningProfil);
     setSparad(false);
     setSparFel(null);
   }
 
   function spara() {
     setSparFel(null);
-    const uppdaterad = { ...visningsProfil, grundinfoPaborjad: true };
+    const uppdaterad = { ...visningsProfil, grundinfoPaborjad: true } as ForeningProfil;
     try {
       sparaForeningProfil(uppdaterad);
       const kontakt = styrelseKontaktFranProfil(uppdaterad);

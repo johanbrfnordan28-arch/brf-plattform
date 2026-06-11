@@ -9,6 +9,7 @@ import {
   arInramadUpphandlingsGrupp,
   kategoriId,
   skapaDokumentId,
+  standardDokumentPlatser,
   upphandlingsGrupper,
   type UpphandlingsGrupp,
   type UpphandlingsKategori,
