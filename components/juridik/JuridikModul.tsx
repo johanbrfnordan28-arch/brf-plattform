@@ -24,6 +24,15 @@ import {
   type JuridikTipsRad,
   type JuridikUppladdatDokument,
 } from "@/components/juridik/juridik-lager";
+import {
+  EGNA_MAPPAR_EVENT,
+  lasEgnaJuridikMappar,
+  skapaEgetDokumentId,
+  skapaEgenMappId,
+  sparaEgnaJuridikMappar,
+  type EgenJuridikMapp,
+  type EgnaJuridikMapparState,
+} from "@/components/juridik/juridik-egna-mappar-lager";
 
 export function JuridikModul() {
   const [bibliotek, setBibliotek] = useState<JuridikBibliotekState>(
@@ -41,10 +50,32 @@ export function JuridikModul() {
   const [tipsKategori, setTipsKategori] =
     useState<JuridikTipsKategori>("allmant");
 
+  // ── Egna mappar (per-förening) ──────────────────────────────────────────
+  const [egnaMappar, setEgnaMappar] = useState<EgnaJuridikMapparState>({
+    version: 1,
+    mappar: [],
+  });
+  const [egenMappUi, setEgenMappUi] = useState<
+    Record<string, { öppen: boolean }>
+  >({});
+  const [egenMappUppladdning, setEgenMappUppladdning] = useState<string | null>(null);
+  const [visaSkapaMappForm, setVisaSkapaMappForm] = useState(false);
+  const [skaparMappTitel, setSkaparMappTitel] = useState("");
+  const [skaparMappBeskrivning, setSkaparMappBeskrivning] = useState("");
+  const [byttNamnMappId, setByttNamnMappId] = useState<string | null>(null);
+  const [byttNamnVarde, setByttNamnVarde] = useState("");
+  const [byttBeskrivningVarde, setByttBeskrivningVarde] = useState("");
+  const [bekraftaTaBortMappId, setBekraftaTaBortMappId] = useState<string | null>(null);
+
   useEffect(() => {
     setBibliotek(lasJuridikBibliotek());
     setMappUi(
       Object.fromEntries(domMappar.map((m) => [m.id, { öppen: false }])),
+    );
+    const laddade = lasEgnaJuridikMappar();
+    setEgnaMappar(laddade);
+    setEgenMappUi(
+      Object.fromEntries(laddade.mappar.map((m) => [m.id, { öppen: false }])),
     );
     skipFirstSave.current = true;
     setHydrated(true);
@@ -53,8 +84,23 @@ export function JuridikModul() {
       setBibliotek(lasJuridikBibliotek());
       skipFirstSave.current = true;
     }
+    function synkaEgna() {
+      const ny = lasEgnaJuridikMappar();
+      setEgnaMappar(ny);
+      setEgenMappUi((prev) => {
+        const next = { ...prev };
+        for (const m of ny.mappar) {
+          if (!(m.id in next)) next[m.id] = { öppen: false };
+        }
+        return next;
+      });
+    }
     window.addEventListener(JURIDIK_BIBLIOTEK_EVENT, synka);
-    return () => window.removeEventListener(JURIDIK_BIBLIOTEK_EVENT, synka);
+    window.addEventListener(EGNA_MAPPAR_EVENT, synkaEgna);
+    return () => {
+      window.removeEventListener(JURIDIK_BIBLIOTEK_EVENT, synka);
+      window.removeEventListener(EGNA_MAPPAR_EVENT, synkaEgna);
+    };
   }, []);
 
   useEffect(() => {
@@ -65,6 +111,96 @@ export function JuridikModul() {
     }
     sparaJuridikBibliotek(bibliotek);
   }, [bibliotek, hydrated]);
+
+  // ── Egna mappar — hanterare ───────────────────────────────────────────────
+
+  function sparaEgna(ny: EgnaJuridikMapparState) {
+    setEgnaMappar(ny);
+    sparaEgnaJuridikMappar(ny);
+  }
+
+  function toggleEgenMapp(id: string) {
+    setEgenMappUi((prev) => ({
+      ...prev,
+      [id]: { öppen: !prev[id]?.öppen },
+    }));
+  }
+
+  function skapaNyMapp() {
+    const titel = skaparMappTitel.trim();
+    if (!titel) return;
+    const ny: EgenJuridikMapp = {
+      id: skapaEgenMappId(),
+      titel,
+      beskrivning: skaparMappBeskrivning.trim(),
+      skapadTidpunkt: new Date().toISOString(),
+      dokument: [],
+    };
+    const nyState: EgnaJuridikMapparState = {
+      ...egnaMappar,
+      mappar: [...egnaMappar.mappar, ny],
+    };
+    sparaEgna(nyState);
+    setEgenMappUi((prev) => ({ ...prev, [ny.id]: { öppen: true } }));
+    setSkaparMappTitel("");
+    setSkaparMappBeskrivning("");
+    setVisaSkapaMappForm(false);
+  }
+
+  function startaByttNamn(mapp: EgenJuridikMapp) {
+    setByttNamnMappId(mapp.id);
+    setByttNamnVarde(mapp.titel);
+    setByttBeskrivningVarde(mapp.beskrivning);
+  }
+
+  function sparaByttNamn(id: string) {
+    const titel = byttNamnVarde.trim();
+    if (!titel) return;
+    sparaEgna({
+      ...egnaMappar,
+      mappar: egnaMappar.mappar.map((m) =>
+        m.id === id
+          ? { ...m, titel, beskrivning: byttBeskrivningVarde.trim() }
+          : m,
+      ),
+    });
+    setByttNamnMappId(null);
+  }
+
+  function taBortEgenMapp(id: string) {
+    sparaEgna({
+      ...egnaMappar,
+      mappar: egnaMappar.mappar.filter((m) => m.id !== id),
+    });
+    setBekraftaTaBortMappId(null);
+  }
+
+  function laggTillEgetDokument(mappId: string, fil: File | null) {
+    if (!fil) return;
+    const dok = {
+      id: skapaEgetDokumentId(),
+      filnamn: fil.name,
+      uppladdad: new Date().toLocaleDateString("sv-SE"),
+    };
+    sparaEgna({
+      ...egnaMappar,
+      mappar: egnaMappar.mappar.map((m) =>
+        m.id === mappId ? { ...m, dokument: [...m.dokument, dok] } : m,
+      ),
+    });
+    setEgenMappUppladdning(null);
+  }
+
+  function taBortEgetDokument(mappId: string, dokId: string) {
+    sparaEgna({
+      ...egnaMappar,
+      mappar: egnaMappar.mappar.map((m) =>
+        m.id === mappId
+          ? { ...m, dokument: m.dokument.filter((d) => d.id !== dokId) }
+          : m,
+      ),
+    });
+  }
 
   function toggleMapp(id: string) {
     setMappUi((current) => ({
@@ -212,6 +348,340 @@ export function JuridikModul() {
             />
           ))}
         </ul>
+      </section>
+
+      {/* Egna mappar */}
+      <section className="border-t border-border pt-8">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Egna mappar</h2>
+            <p className="mt-1 text-sm text-muted">
+              Skapa egna mappar för föreningens dokument, beslut och korrespondens.
+              Mapparna namnger ni själva och är enbart synliga för er förening.
+            </p>
+          </div>
+        </div>
+
+        {egnaMappar.mappar.length === 0 && !visaSkapaMappForm && (
+          <p className="mb-4 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
+            Inga egna mappar skapade ännu.
+          </p>
+        )}
+
+        <ul className="space-y-3">
+          {egnaMappar.mappar.map((mapp) =>
+            byttNamnMappId === mapp.id ? (
+              /* Redigeringsläge */
+              <li
+                key={mapp.id}
+                className="rounded-xl border-2 border-primary/30 bg-[#f7fbf8] p-4"
+              >
+                <p className="mb-2 text-sm font-semibold text-foreground">
+                  Byt namn på mappen
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted">
+                      Mappnamn
+                    </label>
+                    <input
+                      type="text"
+                      value={byttNamnVarde}
+                      onChange={(e) => setByttNamnVarde(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") sparaByttNamn(mapp.id);
+                        if (e.key === "Escape") setByttNamnMappId(null);
+                      }}
+                      autoFocus
+                      className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted">
+                      Beskrivning (valfri)
+                    </label>
+                    <input
+                      type="text"
+                      value={byttBeskrivningVarde}
+                      onChange={(e) => setByttBeskrivningVarde(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") sparaByttNamn(mapp.id);
+                        if (e.key === "Escape") setByttNamnMappId(null);
+                      }}
+                      placeholder="Kort beskrivning av vad mappen innehåller…"
+                      className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => sparaByttNamn(mapp.id)}
+                    disabled={!byttNamnVarde.trim()}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-40"
+                  >
+                    Spara namn
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setByttNamnMappId(null)}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </li>
+            ) : (
+              /* Visningsläge */
+              <li
+                key={mapp.id}
+                className="rounded-xl border border-border bg-surface shadow-sm"
+              >
+                <div className="flex w-full items-start gap-3 px-4 py-4 sm:px-5">
+                  <button
+                    type="button"
+                    onClick={() => toggleEgenMapp(mapp.id)}
+                    className="flex flex-1 items-start gap-3 text-left"
+                    aria-expanded={egenMappUi[mapp.id]?.öppen ?? false}
+                  >
+                    <span
+                      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e2f0e6] text-sm text-primary-dark"
+                      aria-hidden
+                    >
+                      {egenMappUi[mapp.id]?.öppen ? "−" : "+"}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-semibold text-foreground">
+                        {mapp.titel}
+                      </span>
+                      {mapp.beskrivning && (
+                        <span className="mt-1 block text-sm text-muted">
+                          {mapp.beskrivning}
+                        </span>
+                      )}
+                      {mapp.dokument.length > 0 && (
+                        <span className="mt-2 inline-block rounded-full bg-[#eef6f0] px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                          {mapp.dokument.length}{" "}
+                          {mapp.dokument.length === 1
+                            ? "dokument"
+                            : "dokument"}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                  {/* Åtgärder */}
+                  <div className="flex shrink-0 gap-1 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => startaByttNamn(mapp)}
+                      className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:text-foreground"
+                      title="Byt namn"
+                    >
+                      Byt namn
+                    </button>
+                    {bekraftaTaBortMappId === mapp.id ? (
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={() => taBortEgenMapp(mapp.id)}
+                          className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                        >
+                          Ta bort
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBekraftaTaBortMappId(null)}
+                          className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted"
+                        >
+                          Avbryt
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setBekraftaTaBortMappId(mapp.id)}
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:border-red-300 hover:text-red-600"
+                        title="Ta bort mapp"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {(egenMappUi[mapp.id]?.öppen ?? false) && (
+                  <div className="border-t border-border px-4 pb-5 pt-4 sm:px-5">
+                    {mapp.dokument.length > 0 ? (
+                      <ul className="space-y-2">
+                        {mapp.dokument.map((dok) => (
+                          <li
+                            key={dok.id}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2.5"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {dok.filnamn}
+                              </p>
+                              <p className="text-xs text-muted">
+                                Uppladdad {dok.uppladdad}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
+                                title="Demo: öppna dokument"
+                              >
+                                Öppna
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  taBortEgetDokument(mapp.id, dok.id)
+                                }
+                                className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-red-300 hover:text-red-700"
+                              >
+                                Ta bort
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted">
+                        Inga dokument uppladdade i denna mapp ännu.
+                      </p>
+                    )}
+
+                    <div className="mt-4">
+                      {egenMappUppladdning === mapp.id ? (
+                        <div className="rounded-lg border border-dashed border-primary/40 bg-[#eef6f0]/50 p-4">
+                          <p className="text-sm font-medium text-foreground">
+                            Ladda upp dokument till {mapp.titel}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            PDF, Word eller annat dokument.
+                          </p>
+                          <label className="mt-3 inline-flex cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
+                            Välj fil
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,.txt"
+                              className="sr-only"
+                              onChange={(e) =>
+                                laggTillEgetDokument(
+                                  mapp.id,
+                                  e.target.files?.[0] ?? null,
+                                )
+                              }
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setEgenMappUppladdning(null)}
+                            className="ml-2 text-sm text-muted hover:text-foreground"
+                          >
+                            Avbryt
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEgenMappUppladdning(mapp.id)}
+                          className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                        >
+                          Ladda upp dokument
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </li>
+            ),
+          )}
+        </ul>
+
+        {/* Skapa ny mapp */}
+        {visaSkapaMappForm ? (
+          <div className="mt-3 rounded-xl border-2 border-dashed border-primary/30 bg-[#f7fbf8] p-4">
+            <p className="mb-3 text-sm font-semibold text-foreground">
+              Ny mapp
+            </p>
+            <div className="space-y-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">
+                  Mappnamn
+                </label>
+                <input
+                  type="text"
+                  value={skaparMappTitel}
+                  onChange={(e) => setSkaparMappTitel(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") skapaNyMapp();
+                    if (e.key === "Escape") setVisaSkapaMappForm(false);
+                  }}
+                  autoFocus
+                  placeholder="t.ex. Avtal, Protokoll, Korrespondens…"
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">
+                  Beskrivning (valfri)
+                </label>
+                <input
+                  type="text"
+                  value={skaparMappBeskrivning}
+                  onChange={(e) => setSkaparMappBeskrivning(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") skapaNyMapp();
+                    if (e.key === "Escape") setVisaSkapaMappForm(false);
+                  }}
+                  placeholder="Kort beskrivning av vad mappen innehåller…"
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={skapaNyMapp}
+                disabled={!skaparMappTitel.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-40"
+              >
+                Skapa mapp
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setVisaSkapaMappForm(false);
+                  setSkaparMappTitel("");
+                  setSkaparMappBeskrivning("");
+                }}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+              >
+                Avbryt
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setVisaSkapaMappForm(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-4 text-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-primary-dark"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="h-4 w-4"
+              aria-hidden
+            >
+              <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
+            </svg>
+            Skapa ny mapp
+          </button>
+        )}
       </section>
 
       <section className="border-t border-border pt-8">
