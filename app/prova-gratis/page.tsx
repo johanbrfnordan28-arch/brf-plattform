@@ -1,24 +1,29 @@
 import type { Metadata } from "next";
 import { ModulePage } from "@/components/ModulePage";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { TestForeningLista } from "@/components/forening/TestForeningLista";
 
 export const metadata: Metadata = {
   title: "Skapa vår förening — BRF Företag",
   description:
-    "Styrelsen skapar er förenings sida och kan prova plattformen gratis i 30 dagar.",
+    "Styrelsen skapar er föreningssida och loggar in direkt — gratis testperiod.",
 };
 
-/** Bokmärkesadress i Safari — endast sidan för att skapa föreningen. */
+/** Bokmärkesadress i Safari — skapa förening och logga in. */
 export default function ProvaGratisPage() {
   return (
     <ModulePage
       title="Skapa vår förening"
       icon="🏠"
-      intro="Här skapar styrelsen er egen föreningssida (kopia av grundmallen). Fyll i namn, bocka i bekräftelsen och tryck på den gröna knappen nedan."
+      intro="Styrelsen skapar er föreningssida och loggar in direkt. Befintliga testföreningar visas nedan — klicka på en knapp för att logga in."
     >
+      {/* Befintliga testföreningar */}
+      <TestForeningLista />
+
+      {/* Skapa ny förening */}
       <div>
         <h2 className="mb-4 text-xl font-semibold text-foreground">
-          Steg 1 — Skapa föreningens sida
+          Skapa ny testförening
         </h2>
         <SkapaForeningPanel visaSnabbstart />
       </div>
