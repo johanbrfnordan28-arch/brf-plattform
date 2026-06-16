@@ -24,19 +24,21 @@ export type EgnaJuridikMapparState = {
 
 // ── Konstanter ───────────────────────────────────────────────────────────────
 
-const STORAGE_KEY_BASE = "brf-juridik-egna-mappar";
+export const EGNA_MAPPAR_KEY_BASE = "brf-juridik-egna-mappar";
 export const EGNA_MAPPAR_EVENT = "juridik-egna-mappar-uppdaterad";
 
-function storageKey(): string {
-  return foreningStorageKey(STORAGE_KEY_BASE);
-}
+/** Separat nyckel för egna mappar i "Domar och avgöranden"-sektionen. */
+export const DOMAR_EGNA_MAPPAR_KEY_BASE = "brf-juridik-domar-egna-mappar";
+export const DOMAR_EGNA_MAPPAR_EVENT = "juridik-domar-egna-mappar-uppdaterad";
 
 // ── Läsa ─────────────────────────────────────────────────────────────────────
 
-export function lasEgnaJuridikMappar(): EgnaJuridikMapparState {
+export function lasEgnaJuridikMappar(
+  keyBase = EGNA_MAPPAR_KEY_BASE,
+): EgnaJuridikMapparState {
   if (typeof window === "undefined") return { version: 1, mappar: [] };
   try {
-    const raw = localStorage.getItem(storageKey());
+    const raw = localStorage.getItem(foreningStorageKey(keyBase));
     if (!raw) return { version: 1, mappar: [] };
     const parsed = JSON.parse(raw) as Partial<EgnaJuridikMapparState>;
     const mappar = Array.isArray(parsed.mappar)
@@ -58,10 +60,14 @@ export function lasEgnaJuridikMappar(): EgnaJuridikMapparState {
 
 // ── Spara ─────────────────────────────────────────────────────────────────────
 
-export function sparaEgnaJuridikMappar(state: EgnaJuridikMapparState): void {
-  safeSetLocalStorage(storageKey(), JSON.stringify(state));
+export function sparaEgnaJuridikMappar(
+  state: EgnaJuridikMapparState,
+  keyBase = EGNA_MAPPAR_KEY_BASE,
+  eventName = EGNA_MAPPAR_EVENT,
+): void {
+  safeSetLocalStorage(foreningStorageKey(keyBase), JSON.stringify(state));
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(EGNA_MAPPAR_EVENT));
+    window.dispatchEvent(new CustomEvent(eventName));
   }
 }
 
