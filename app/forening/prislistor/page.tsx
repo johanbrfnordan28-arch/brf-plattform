@@ -16,7 +16,7 @@ export default function ForeningPrislistorPage() {
     <ModulePage
       title="Leverantörsprislistor"
       icon="💰"
-      intro="Lägg in och uppdatera prislistor från era leverantörer. Prisposter kan kopplas till underhållsåtgärder i era planer för bättre kostnadsuppskattningar."
+      intro="Lägg in priser från era leverantörer och koppla dem direkt till underhållsåtgärder i planen — kostnadsuppskattningar uppdateras automatiskt utan manuell uträkning."
     >
       <PrislistorModul />
     </ModulePage>

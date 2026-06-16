@@ -17,25 +17,25 @@ const featuredPublic = [
   {
     title: "Underhållsplan",
     description:
-      "Bygg komponentregister, renoveringshistorik, besiktningar och budget i samma plan — från stambyte till fasad. Styrelsen får beslutsstöd som håller över tid, inte bara ett kalkylark.",
+      "Bygg en 50-årsplan med komponentregister, renoveringshistorik och avsättningsbudget — allt samlat i portalen. Styrelsen har alltid ett aktuellt beslutsunderlag inför stämma och bankkontakter.",
     href: "/styrelse-login",
     icon: "🔧",
     bullets: [
-      "50-årsplan med avsättning och besiktningar i rätt år",
-      "Komponenter, bildstöd och kostnadsuppskattning",
-      "Underlag inför stämma och långsiktiga investeringar",
+      "50-årsbudget med avsättning genereras automatiskt",
+      "Välj byggnadsperiod — typiska komponenter fylls i",
+      "OVK, stambyte och takbyte planerat i rätt ordning",
     ],
   },
   {
     title: "Upphandling",
     description:
-      "Från mindre servicejobb till större entreprenader — mallar, dokument och publicering med Upphandla-knappen. Anbud samlas strukturerat och jämförs på ett ställe.",
+      "Från obligatorisk OVK till stambyte värt miljoner — samma strukturerade flöde för alla storlekar. Anbud låses tills deadline och styrelsebeslutet dokumenteras spårbart.",
     href: "/upphandling",
     icon: "📋",
     bullets: [
-      "Entreprenad, konsulter och fastighetsförvaltning",
-      "Enkel upphandling eller fullständigt underlag",
-      "Låsta anbud till efter sista anbudsdag",
+      "Förenklad upphandling för OVK, radon och energideklaration",
+      "Fullständigt förfrågningsunderlag med mallar från dokumentbanken",
+      "Låsta anbud och spårbart styrelsebeslut med två godkännanden",
     ],
   },
 ] as const;
@@ -172,12 +172,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             {isForening
               ? STYRELSEFLOW_NAMN
-              : "Underhållsplan och upphandling — utan kaos i mejl och mappar"}
+              : "Allt styrelsen behöver — underhåll, upphandling och dokumentation på ett ställe"}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "BRF Företag samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som håller."}
+              : "BRF Företag ger styrelsen ett strukturerat verktyg för 50-årsplan, upphandlingar och löpande dokumentation — slipp kalkylark, mejlkedjor och papper som försvinner."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -185,22 +185,20 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           {!isForening && (
             <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground">
               <li className="flex items-center gap-2">
-                <span className="text-primary" aria-hidden>
-                  ✓
-                </span>
-                Testa gratis i 30 dagar
+                <span className="text-primary" aria-hidden>✓</span>
+                Testa gratis — ingen bindning
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-primary" aria-hidden>
-                  ✓
-                </span>
-                Spara upp till 60&nbsp;% på tvåårsavtal
+                <span className="text-primary" aria-hidden>✓</span>
+                Kom igång på under 5 minuter
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-primary" aria-hidden>
-                  ✓
-                </span>
-                Ingen bindning under provperioden
+                <span className="text-primary" aria-hidden>✓</span>
+                OVK, stambyte och takbyte — planerat i rätt ordning
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-primary" aria-hidden>✓</span>
+                Upphandla med låsta anbud och spårbart beslut
               </li>
             </ul>
           )}
