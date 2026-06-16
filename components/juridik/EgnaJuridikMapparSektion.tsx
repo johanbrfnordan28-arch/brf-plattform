@@ -17,12 +17,14 @@ interface Props {
   storageKeyBase: string;
   eventName: string;
   tomMeddelande?: string;
+  className?: string;
 }
 
 export function EgnaJuridikMapparSektion({
   storageKeyBase,
   eventName,
   tomMeddelande = "Inga egna mappar skapade ännu.",
+  className = "mt-4 space-y-3",
 }: Props) {
   const [state, setState] = useState<EgnaJuridikMapparState>({
     version: 1,
@@ -150,8 +152,8 @@ export function EgnaJuridikMapparSektion({
   if (!hydrated) return null;
 
   return (
-    <div className="mt-4 space-y-3">
-      {state.mappar.length === 0 && !visaSkapaForm && (
+    <div className={className}>
+      {state.mappar.length === 0 && !visaSkapaForm && tomMeddelande && (
         <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
           {tomMeddelande}
         </p>
