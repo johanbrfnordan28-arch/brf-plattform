@@ -222,19 +222,12 @@ export function JuridikModul() {
           ))}
         </ul>
 
-        <div className="mt-6 border-t border-border/60 pt-5">
-          <p className="text-sm font-medium text-foreground">
-            Egna mappar i domar och avgöranden
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Skapa egna mappar för avgöranden som inte passar i kategorierna ovan — namnge dem fritt.
-          </p>
-          <EgnaJuridikMapparSektion
-            storageKeyBase={DOMAR_EGNA_MAPPAR_KEY_BASE}
-            eventName={DOMAR_EGNA_MAPPAR_EVENT}
-            tomMeddelande="Inga egna dommappar skapade ännu."
-          />
-        </div>
+        <EgnaJuridikMapparSektion
+          storageKeyBase={DOMAR_EGNA_MAPPAR_KEY_BASE}
+          eventName={DOMAR_EGNA_MAPPAR_EVENT}
+          tomMeddelande=""
+          className="mt-3 space-y-3"
+        />
       </section>
 
       {/* Egna mappar */}
