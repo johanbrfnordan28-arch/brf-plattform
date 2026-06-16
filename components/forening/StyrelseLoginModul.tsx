@@ -12,7 +12,9 @@ import {
 } from "@/lib/forening-registry";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 
-function föreningInitial(namn: string): string {
+// ── Hjälp ─────────────────────────────────────────────────────────────────────
+
+function initial(namn: string): string {
   return namn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
 }
 
@@ -20,14 +22,166 @@ function formatDatum(iso: string): string {
   if (!iso) return "";
   try {
     return new Date(iso).toLocaleDateString("sv-SE", {
-      year: "numeric",
-      month: "short",
       day: "numeric",
+      month: "short",
+      year: "numeric",
     });
   } catch {
     return "";
   }
 }
+
+// ── Uppgradera-panel ──────────────────────────────────────────────────────────
+
+const paket = [
+  {
+    namn: "Bas",
+    innehall: "Underhållsplan, Rondering, Årshjul, Juridik",
+    passarFor: "Mindre föreningar med grundläggande behov",
+  },
+  {
+    namn: "Standard",
+    innehall: "Bas + Upphandling, Dokumentbank, Prislistor, Entreprenörer",
+    passarFor: "Föreningar med löpande upphandlingar",
+  },
+  {
+    namn: "Plus",
+    innehall: "Standard + Projekthantering, Energimodul, Prioriterat stöd",
+    passarFor: "Aktiva styrelser med stora underhållsprojekt",
+  },
+  {
+    namn: "Premium",
+    innehall: "Plus + Dedikerad rådgivare, Projektledning, SLA",
+    passarFor: "Föreningar med höga krav och komplexa behov",
+  },
+];
+
+function UppgraderaPanel({ forenNamn }: { forenNamn: string }) {
+  return (
+    <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-amber-50 p-5">
+      <div className="flex items-start gap-3">
+        <span className="text-2xl" aria-hidden>⭐</span>
+        <div>
+          <p className="font-bold text-amber-900">
+            Aktivera {forenNamn}
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            Testperioden är gratis. Välj ett paket och aktivera er
+            föreningssida för fortsatt åtkomst med alla funktioner.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {paket.map((p) => (
+          <div
+            key={p.namn}
+            className="rounded-xl border border-amber-200 bg-white p-3"
+          >
+            <p className="text-sm font-bold text-foreground">{p.namn}</p>
+            <p className="mt-0.5 text-xs text-muted">{p.innehall}</p>
+            <p className="mt-1 text-xs italic text-amber-700">{p.passarFor}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <a
+          href="mailto:info@brfforetag.se?subject=Offertförfrågan&body=Hej, vi är intresserade av att aktivera vår föreningssida."
+          className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
+        >
+          Kontakta oss för offert →
+        </a>
+        <a
+          href="/offert"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-medium text-amber-800 hover:bg-amber-50"
+        >
+          Läs mer om paketen
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Föreningskort ─────────────────────────────────────────────────────────────
+
+interface ForeningKortProps {
+  forening: ForeningProfil;
+  onLoggaIn: () => void;
+  onBekraftaTaBort: () => void;
+}
+
+function ForeningKort({ forening, onLoggaIn, onBekraftaTaBort }: ForeningKortProps) {
+  const [visaUppgradera, setVisaUppgradera] = useState(false);
+  const ini = initial(forening.namn);
+
+  return (
+    <div className="overflow-hidden rounded-2xl border-2 border-border bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-4 p-5">
+        {/* Initial */}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white shadow-sm">
+          {ini}
+        </div>
+
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-lg font-bold text-foreground">{forening.namn}</p>
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+              Testperiod
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
+            {forening.skapadTidpunkt && (
+              <span>Skapad {formatDatum(forening.skapadTidpunkt)}</span>
+            )}
+            {forening.grundinfoPaborjad && (
+              <span className="font-medium text-primary-dark">
+                ✓ Grunduppgifter ifyllda
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Logga in */}
+        <button
+          type="button"
+          onClick={onLoggaIn}
+          className="shrink-0 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary-dark"
+        >
+          Logga in →
+        </button>
+      </div>
+
+      {/* Uppgradera + ta bort rad */}
+      <div className="flex items-center justify-between border-t border-border/60 bg-surface/40 px-5 py-2.5">
+        <button
+          type="button"
+          onClick={() => setVisaUppgradera((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-800"
+        >
+          <span>⭐</span>
+          {visaUppgradera ? "Dölj uppgradering" : "Köp föreningssida"}
+        </button>
+        <button
+          type="button"
+          onClick={onBekraftaTaBort}
+          className="text-xs text-muted hover:text-red-600"
+        >
+          Ta bort
+        </button>
+      </div>
+
+      {visaUppgradera && (
+        <div className="px-5 pb-5">
+          <UppgraderaPanel forenNamn={forening.namn} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Huvud-komponent ───────────────────────────────────────────────────────────
 
 export function StyrelseLoginModul() {
   const router = useRouter();
@@ -62,9 +216,9 @@ export function StyrelseLoginModul() {
 
   if (!hydrated) {
     return (
-      <div className="mx-auto max-w-xl animate-pulse space-y-3 px-4">
-        <div className="h-20 rounded-2xl bg-border/40" />
-        <div className="h-20 rounded-2xl bg-border/40" />
+      <div className="mx-auto max-w-lg animate-pulse space-y-3 px-4">
+        <div className="h-24 rounded-2xl bg-border/40" />
+        <div className="h-24 rounded-2xl bg-border/40" />
       </div>
     );
   }
@@ -72,114 +226,56 @@ export function StyrelseLoginModul() {
   const harForeningar = foreningar.length > 0;
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 px-4 py-4">
-      {/* ── Välj förening (om de finns) ──────────────────────────────── */}
+    <div className="mx-auto max-w-lg space-y-5 px-4">
+      {/* Föreningar */}
       {harForeningar && (
         <section>
-          <div className="mb-4 text-center">
-            <h2 className="text-2xl font-bold text-foreground">
-              Välj förening
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Klicka för att logga in på föreningen
-            </p>
-          </div>
+          <p className="mb-3 text-center text-sm text-muted">
+            Välj förening för att logga in
+          </p>
 
-          <ul className="space-y-3">
-            {foreningar.map((f) => {
-              const initial = föreningInitial(f.namn);
-              const isBekrafta = bekraftaId === f.id;
-
-              return (
+          <ul className="space-y-4">
+            {foreningar.map((f) =>
+              bekraftaId === f.id ? (
                 <li key={f.id}>
-                  {isBekrafta ? (
-                    /* Bekräfta borttagning */
-                    <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-4">
-                      <p className="font-semibold text-red-900">
-                        Ta bort {f.namn}?
-                      </p>
-                      <p className="mt-1 text-sm text-red-700">
-                        All data för föreningen raderas permanent. Åtgärden
-                        kan inte ångras.
-                      </p>
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => bekraftaTaBort(f.id)}
-                          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                        >
-                          Ja, ta bort permanent
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setBekraftaId(null)}
-                          className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
-                        >
-                          Avbryt
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Föreningskort */
-                    <div className="group relative rounded-2xl border-2 border-border bg-white shadow-sm transition-all hover:border-primary hover:shadow-md">
-                      {/* Klickbar login-yta */}
+                  <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-5">
+                    <p className="font-bold text-red-900">Ta bort {f.namn}?</p>
+                    <p className="mt-1 text-sm text-red-700">
+                      All föreningens data raderas permanent och kan inte
+                      återställas.
+                    </p>
+                    <div className="mt-4 flex gap-2">
                       <button
                         type="button"
-                        onClick={() => loggaIn(f.id)}
-                        className="flex w-full items-center gap-4 p-5 text-left"
-                        aria-label={`Logga in på ${f.namn}`}
+                        onClick={() => bekraftaTaBort(f.id)}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
                       >
-                        {/* Initial-cirkel */}
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white shadow-sm">
-                          {initial}
-                        </div>
-
-                        {/* Namn + info */}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-lg font-bold leading-tight text-foreground">
-                            {f.namn}
-                          </p>
-                          <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
-                            {f.skapadTidpunkt && (
-                              <span>
-                                Skapad {formatDatum(f.skapadTidpunkt)}
-                              </span>
-                            )}
-                            {f.grundinfoPaborjad && (
-                              <span className="font-medium text-primary-dark">
-                                Uppgifter ifyllda
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Logga in-pil */}
-                        <div className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors group-hover:bg-primary-dark">
-                          Logga in →
-                        </div>
+                        Ja, ta bort permanent
                       </button>
-
-                      {/* Ta bort-knapp (diskret, höger hörn) */}
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setBekraftaId(f.id);
-                        }}
-                        className="absolute right-3 top-3 rounded-lg px-2 py-1 text-xs text-muted/60 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-600"
-                        title={`Ta bort ${f.namn}`}
+                        onClick={() => setBekraftaId(null)}
+                        className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-medium text-foreground"
                       >
-                        Ta bort
+                        Avbryt
                       </button>
                     </div>
-                  )}
+                  </div>
                 </li>
-              );
-            })}
+              ) : (
+                <li key={f.id}>
+                  <ForeningKort
+                    forening={f}
+                    onLoggaIn={() => loggaIn(f.id)}
+                    onBekraftaTaBort={() => setBekraftaId(f.id)}
+                  />
+                </li>
+              ),
+            )}
           </ul>
 
-          {/* Skapa ny / separator */}
-          <div className="mt-6 border-t border-border pt-5">
+          {/* Skapa ny */}
+          <div className="mt-5 border-t border-border pt-5">
             {visaSkapaForm ? (
               <div>
                 <div className="mb-3 flex items-center justify-between">
@@ -200,7 +296,7 @@ export function StyrelseLoginModul() {
               <button
                 type="button"
                 onClick={() => setVisaSkapaForm(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3.5 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3.5 text-sm font-medium text-muted transition-colors hover:border-primary/40 hover:text-primary-dark"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -218,24 +314,64 @@ export function StyrelseLoginModul() {
         </section>
       )}
 
-      {/* ── Inga föreningar ännu — visa skapandeformuläret ───────────── */}
+      {/* Inga föreningar */}
       {!harForeningar && (
         <section>
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#e2f0e6] text-3xl">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#e2f0e6] text-4xl shadow-sm">
               🏠
             </div>
             <h2 className="text-2xl font-bold text-foreground">
-              Skapa er testförening
+              Kom igång gratis
             </h2>
             <p className="mt-2 text-sm text-muted">
-              Fyll i föreningens namn och tryck på den gröna knappen.
-              Testperioden är gratis.
+              Skapa er föreningssida och prova alla funktioner utan kostnad
+              under testperioden.
             </p>
           </div>
           <SkapaForeningPanel visaSnabbstart />
         </section>
       )}
+
+      {/* Nästa gång — hur loggar man in */}
+      <div className="rounded-2xl border border-border bg-white p-4">
+        <div className="flex gap-3">
+          <span className="text-xl" aria-hidden>💡</span>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Hur loggar du in nästa gång?
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Bokmärk den här sidan i din webbläsare — det är er inloggningssida
+              till Styrelseportalen.
+            </p>
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+              <code className="flex-1 text-xs font-mono text-foreground">
+                {typeof window !== "undefined"
+                  ? `${window.location.origin}/styrelse-login`
+                  : "/styrelse-login"}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof navigator !== "undefined") {
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/styrelse-login`,
+                    );
+                  }
+                }}
+                className="shrink-0 rounded border border-border px-2 py-0.5 text-xs text-muted hover:text-foreground"
+              >
+                Kopiera
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-muted">
+              Alla dina testföreningar sparas automatiskt i den här webbläsaren
+              och finns kvar nästa gång du besöker sidan.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
