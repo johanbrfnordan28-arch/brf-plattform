@@ -9,9 +9,15 @@ import {
   lasGrundmall,
   lasPlan,
   skapaNyPlan,
+  sparaGrundmall,
+  skapaUnikAtgardId,
   taBortPlan,
   type PlanPost,
 } from "@/components/plan/plan-lager";
+import {
+  byggnadsmallar,
+  type ByggnadsMall,
+} from "@/components/plan/byggnads-mallar";
 
 function formatDatum(iso: string): string {
   try {
@@ -25,6 +31,121 @@ function formatDatum(iso: string): string {
   }
 }
 
+// ── Välj byggnadsperiod ───────────────────────────────────────────────────────
+
+interface ValjByggnadsPeriodProps {
+  grundmall: PlanPost;
+  onKlar: () => void;
+}
+
+function ValjByggnadsPeriod({ grundmall, onKlar }: ValjByggnadsPeriodProps) {
+  const [valdMall, setValdMall] = useState<ByggnadsMall | null>(null);
+  const [bekrafta, setBekrafta] = useState(false);
+
+  function tillampa(mall: ByggnadsMall) {
+    // Slå ihop befintliga + nya unika komponenter
+    const nyaKomponenter = [
+      ...grundmall.komponenter,
+      ...mall.komponenter.filter((k) => !grundmall.komponenter.includes(k)),
+    ];
+
+    const nyaAtgarder = [
+      ...grundmall.atgarder,
+      ...mall.atgarder.map((a) => ({
+        ...a,
+        id: skapaUnikAtgardId(),
+        senastUtfortAr: "",
+        nastaAr: "",
+        uppskattadKostnadKr: "",
+        prislistaId: "",
+      })),
+    ];
+
+    sparaGrundmall({
+      ...grundmall,
+      notering: grundmall.notering || `Anpassad för byggnader från ${mall.period}.`,
+      komponenter: nyaKomponenter,
+      atgarder: nyaAtgarder,
+    });
+    onKlar();
+  }
+
+  if (bekrafta && valdMall) {
+    return (
+      <div className="mt-4 rounded-xl border border-primary/30 bg-white p-4">
+        <p className="text-sm font-semibold text-foreground">
+          Lägg till mallar för {valdMall.period}?
+        </p>
+        <p className="mt-1 text-sm text-muted">{valdMall.beskrivning}</p>
+        <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
+          <span>
+            <strong>{valdMall.komponenter.length}</strong> komponenter läggs till
+          </span>
+          <span>
+            <strong>{valdMall.atgarder.length}</strong> åtgärder läggs till
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          Befintligt innehåll i grundmallen bevaras — enbart nytt läggs till.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => tillampa(valdMall)}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+          >
+            Ja, lägg till
+          </button>
+          <button
+            type="button"
+            onClick={() => { setBekrafta(false); setValdMall(null); }}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+          >
+            Avbryt
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 border-t border-primary/20 pt-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+        Fyll i grundmall från byggnadsperiod
+      </p>
+      <p className="mb-3 text-xs text-muted">
+        Välj det decennium fastigheten byggdes — typiska komponenter och
+        underhållsåtgärder läggs automatiskt till i grundmallen.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {byggnadsmallar.map((mall) => (
+          <button
+            key={mall.id}
+            type="button"
+            onClick={() => { setValdMall(mall); setBekrafta(true); }}
+            className="group flex flex-col rounded-lg border border-border bg-white p-3 text-left transition-colors hover:border-primary/50 hover:bg-[#f7fbf8]"
+          >
+            <span className="text-xs font-semibold text-primary-dark">
+              {mall.period}
+            </span>
+            <span className="mt-0.5 text-xs font-medium text-foreground">
+              {mall.rubrik}
+            </span>
+            <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
+              {mall.beskrivning}
+            </span>
+            <span className="mt-2 text-xs text-muted">
+              {mall.komponenter.length} komponenter · {mall.atgarder.length} åtgärder
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Huvud-komponent ───────────────────────────────────────────────────────────
+
 export function PlanListaModul() {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
@@ -33,6 +154,7 @@ export function PlanListaModul() {
   const [nyttPlanNamn, setNyttPlanNamn] = useState("");
   const [skaparPlan, setSkaparPlan] = useState(false);
   const [bekraftaTaBort, setBekraftaTaBort] = useState<string | null>(null);
+  const [visaPeriodValjare, setVisaPeriodValjare] = useState(false);
   const namnInputRef = useRef<HTMLInputElement>(null);
 
   function laddaData() {
@@ -114,18 +236,44 @@ export function PlanListaModul() {
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => router.push(`/forening/plan/${GRUNDMALL_PLAN_ID}`)}
-                className="shrink-0 rounded-lg border border-primary/30 bg-white px-4 py-2 text-sm font-medium text-primary-dark transition-colors hover:bg-[#daeee1]"
-              >
-                Redigera grundmall
-              </button>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisaPeriodValjare((v) => !v)}
+                  className="rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm font-medium text-primary-dark transition-colors hover:bg-[#daeee1]"
+                  title="Välj byggnadsperiod för förifyllning"
+                >
+                  {visaPeriodValjare ? "Dölj ↑" : "Välj period ▾"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/forening/plan/${GRUNDMALL_PLAN_ID}`)}
+                  className="rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm font-medium text-primary-dark transition-colors hover:bg-[#daeee1]"
+                >
+                  Redigera
+                </button>
+              </div>
             </div>
-            <p className="mt-3 text-xs text-muted/80">
-              Grundmallen används som utgångspunkt när du skapar en ny
-              underhållsplan — komponenter och åtgärder kopieras automatiskt.
-            </p>
+
+            {/* Period-väljaren */}
+            {visaPeriodValjare && (
+              <ValjByggnadsPeriod
+                grundmall={grundmall}
+                onKlar={() => {
+                  setVisaPeriodValjare(false);
+                  laddaData();
+                }}
+              />
+            )}
+
+            {!visaPeriodValjare && (
+              <p className="mt-3 text-xs text-muted/80">
+                Grundmallen används som utgångspunkt när du skapar en ny
+                underhållsplan — komponenter och åtgärder kopieras automatiskt.
+                Klicka <strong>Välj period</strong> för att förifyllas med
+                typiska komponenter från fastighetens byggnadsperiod.
+              </p>
+            )}
           </div>
         )}
       </section>
