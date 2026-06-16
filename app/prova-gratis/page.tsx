@@ -1,32 +1,31 @@
 import type { Metadata } from "next";
-import { ModulePage } from "@/components/ModulePage";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
-import { TestForeningLista } from "@/components/forening/TestForeningLista";
+import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 
 export const metadata: Metadata = {
-  title: "Skapa vår förening — BRF Företag",
+  title: "Prova gratis — BRF Företag",
   description:
-    "Styrelsen skapar er föreningssida och loggar in direkt — gratis testperiod.",
+    "Skapa er testförening och logga in direkt — gratis testperiod.",
 };
 
-/** Bokmärkesadress i Safari — skapa förening och logga in. */
 export default function ProvaGratisPage() {
   return (
-    <ModulePage
-      title="Skapa vår förening"
-      icon="🏠"
-      intro="Styrelsen skapar er föreningssida och loggar in direkt. Befintliga testföreningar visas nedan — klicka på en knapp för att logga in."
-    >
-      {/* Befintliga testföreningar */}
-      <TestForeningLista />
-
-      {/* Skapa ny förening */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold text-foreground">
-          Skapa ny testförening
-        </h2>
-        <SkapaForeningPanel visaSnabbstart />
+    <main className="flex min-h-[calc(100vh-4rem)] flex-col justify-center bg-surface/40 py-12">
+      {/* Header */}
+      <div className="mb-8 text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary-dark">
+          BRF Företag · Gratis testperiod
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Er föreningssida
+        </h1>
       </div>
-    </ModulePage>
+
+      {/* Login / skapa */}
+      <StyrelseLoginModul />
+
+      <p className="mt-10 text-center text-xs text-muted">
+        All data sparas lokalt i din webbläsare. Testperioden är gratis.
+      </p>
+    </main>
   );
 }
