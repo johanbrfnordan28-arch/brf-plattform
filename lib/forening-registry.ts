@@ -702,6 +702,35 @@ export function listaForeningar(): ForeningProfil[] {
   return lasForeningRegistry().poster;
 }
 
+/**
+ * Tar permanent bort en förening — raderar all dess data och uppdaterar
+ * registret. Om föreningen var aktiv byts till grundmall.
+ */
+export function taBortForening(foreningId: string): void {
+  if (!foreningId || foreningId === GRUNDMALL_FORENING_ID) return;
+  if (typeof window === "undefined") return;
+
+  taBortForeningFranLagring(foreningId);
+
+  const registry = lasForeningRegistryInternt();
+  registry.poster = registry.poster.filter((p) => p.id !== foreningId);
+  try {
+    sparaRegistry(registry);
+  } catch {
+    /* borttagning lyckades ändå om registret saknar posten */
+  }
+
+  if (hamtaAktivForeningId() === foreningId) {
+    try {
+      sattAktivForeningId(GRUNDMALL_FORENING_ID, { tyst: true });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+}
+
 /** Grundmall + alla skapade föreningar (för migrering och växlare). */
 export function listaAllaForeningIds(): string[] {
   return [
