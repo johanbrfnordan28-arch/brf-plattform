@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { ModulePage } from "@/components/ModulePage";
-import { MinPlanModul } from "@/components/plan/MinPlanModul";
+import { PlanListaModul } from "@/components/plan/PlanListaModul";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Vår plan")),
     description:
-      "Skapa och redigera föreningens underhållsplan — lägg till eller ta bort komponenter.",
+      "Skapa och hantera föreningens underhållsplaner — grundmall, komponenter och åtgärder.",
   };
 }
 
@@ -16,9 +16,9 @@ export default function ForeningPlanPage() {
     <ModulePage
       title="Vår plan"
       icon="📋"
-      intro="Här skapar ni föreningens underhållsplan. Lägg till de komponenter fastigheten har — t.ex. Fasad, Tak, VVS och Balkonger — och ta bort de som inte är relevanta."
+      intro="Här hanterar ni föreningens underhållsplaner. Redigera grundmallen, skapa nya planer och lägg till komponenter och underhållsåtgärder."
     >
-      <MinPlanModul />
+      <PlanListaModul />
     </ModulePage>
   );
 }
