@@ -20,7 +20,7 @@ export default function ForeningEntreprenorerPage() {
       intro="Sök entreprenör för ert projekt bland godkända företag. Vi tar referenser på företagen i registret — vi rekommenderar även att ni tar egna referenser innan ni väljer."
     >
       <ContentSection title="Sök entreprenör för ert projekt" plain>
-        <EntreprenorerRegister />
+        <EntreprenorerRegister kanRedigera />
       </ContentSection>
     </ModulePage>
   );
