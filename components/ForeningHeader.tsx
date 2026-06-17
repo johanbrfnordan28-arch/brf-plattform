@@ -9,6 +9,11 @@ import { GRUNDMALL_NAMN } from "@/lib/forening-registry";
 const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
   {
+    href: "/forening/plan",
+    label: "Vår plan",
+    aktivPa: (p: string) => p.startsWith("/forening/plan"),
+  },
+  {
     href: "/forening/rondering#manadssignering-schema",
     label: "Rondering",
     aktivPa: (p: string) => p.startsWith("/forening/rondering"),
@@ -22,6 +27,21 @@ const nav = [
     href: "/forening/medlemmar",
     label: "Medlemmar",
     aktivPa: (p: string) => p.startsWith("/forening/medlemmar"),
+  },
+  {
+    href: "/forening/dokumentbank",
+    label: "Dokument",
+    aktivPa: (p: string) => p.startsWith("/forening/dokumentbank"),
+  },
+  {
+    href: "/forening/prislistor",
+    label: "Prislistor",
+    aktivPa: (p: string) => p.startsWith("/forening/prislistor"),
+  },
+  {
+    href: "/forening/kommunikation",
+    label: "Kommunikation",
+    aktivPa: (p: string) => p.startsWith("/forening/kommunikation"),
   },
   {
     href: "/forening/uppgifter",
@@ -70,20 +90,12 @@ export function ForeningHeader() {
             </Link>
           ))}
         </nav>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
           <ForeningVaxlare />
-          <span className="hidden rounded-full border border-primary/30 bg-[#e2f0e6] px-3 py-1 text-xs font-medium text-primary-dark lg:inline-flex">
-            Inloggad styrelse
-          </span>
           <Link
-            href="/"
+            href="/styrelse-login"
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
-          >
-            BRF Företag
-          </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark"
+            title="Logga ut och byt förening"
           >
             Logga ut
           </Link>
