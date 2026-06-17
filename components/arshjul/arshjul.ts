@@ -11,11 +11,25 @@ export type ArshjulKategori =
 
 export type ArshjulHandelseTyp = "engang" | "arlig" | "intervall";
 
+/** Föreslagna underkategorier som visas som snabbval i formuläret. */
+export const foreslagnUnderkategorier: string[] = [
+  "Styrelsemöte",
+  "Byggmöte",
+  "Projekteringsmöte",
+  "OVK Besiktning",
+  "Slutbesiktning",
+  "Garantibesiktning",
+  "Energideklaration",
+  "Radonmätning",
+];
+
 export type ArshjulHandelse = {
   id: string;
   titel: string;
   beskrivning: string;
   kategori: ArshjulKategori;
+  /** Valfri underkategori — t.ex. "OVK Besiktning", "Styrelsemöte". */
+  underkategori?: string;
   typ: ArshjulHandelseTyp;
   /** Engång — YYYY-MM-DD. */
   datum?: string;
@@ -116,6 +130,7 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
     titel: raw.titel?.trim() ?? "Utan titel",
     beskrivning: raw.beskrivning?.trim() ?? "",
     kategori: raw.kategori ?? "ovrigt",
+    underkategori: raw.underkategori?.trim() || undefined,
     typ: raw.typ ?? "engang",
     paminnelseDagar,
     klar: Boolean(raw.klar),
