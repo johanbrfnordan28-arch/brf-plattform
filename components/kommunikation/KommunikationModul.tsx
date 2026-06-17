@@ -11,6 +11,105 @@ import { UtskickModul } from "@/components/kommunikation/UtskickModul";
 import { ArendeModul } from "@/components/kommunikation/ArendeModul";
 import { MedlemsRegisterModul } from "@/components/kommunikation/MedlemsRegisterModul";
 
+// ── GDPR-notis ────────────────────────────────────────────────────────────────
+
+function GdprNotis() {
+  return (
+    <details className="rounded-xl border border-amber-200 bg-amber-50">
+      <summary className="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <div className="flex items-center gap-2">
+          <span className="text-base" aria-hidden>🔒</span>
+          <span className="text-sm font-semibold text-amber-900">
+            GDPR — Dataskyddsförordningen gäller för detta register
+          </span>
+          <span className="ml-auto text-xs text-amber-700">Visa mer ▾</span>
+        </div>
+      </summary>
+
+      <div className="border-t border-amber-200 px-4 pb-4 pt-3 text-sm text-amber-900 space-y-3">
+        <p>
+          Ni registrerar personuppgifter om föreningens medlemmar (namn, e-post,
+          telefon, adress och lägenhetsnummer). Som personuppgiftsansvarig är
+          bostadsrättsföreningen skyldig att följa{" "}
+          <strong>EU:s dataskyddsförordning (GDPR)</strong> och den svenska
+          kompletteringslagen.
+        </p>
+
+        <div>
+          <p className="font-semibold mb-1">Rättslig grund</p>
+          <p>
+            Behandlingen av medlemmarnas personuppgifter för föreningsändamål
+            — kommunikation, ärendehantering och utskick — grundar sig på{" "}
+            <strong>avtal</strong> (medlemskapet i föreningen) och i vissa fall{" "}
+            <strong>berättigat intresse</strong>.
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold mb-1">Lagringstid</p>
+          <p>
+            Personuppgifter ska inte sparas längre än nödvändigt. Gå igenom
+            registret regelbundet och ta bort uppgifter om tidigare medlemmar.
+            Stängda ärenden med protokollreferens kan behöva bevaras för
+            styrelsedokumentationens skull — bedöm enskilt.
+          </p>
+        </div>
+
+        <div>
+          <p className="font-semibold mb-1">Medlemmarnas rättigheter</p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              <strong>Rätt till information</strong> — informera nya medlemmar om att
+              föreningen behandlar deras personuppgifter och för vilka ändamål.
+            </li>
+            <li>
+              <strong>Rätt till tillgång</strong> — en medlem kan begära ut en kopia
+              av de uppgifter ni har om dem.
+            </li>
+            <li>
+              <strong>Rätt till rättelse</strong> — felaktiga uppgifter ska rättas
+              skyndsamt.
+            </li>
+            <li>
+              <strong>Rätt till radering</strong> — vid utträde ur föreningen ska
+              personuppgifter raderas om det inte finns laglig skyldighet att bevara dem.
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <p className="font-semibold mb-1">Teknisk lagring</p>
+          <p>
+            I nuvarande version lagras uppgifterna lokalt i webbläsarens
+            localStorage — de lämnar inte er enhet och skickas inte till
+            någon server. I en produktionssatt version ska uppgifterna hanteras
+            i en säker, krypterad databas med tillgångskontroll.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2">
+          <p className="font-semibold">Rekommendation</p>
+          <p className="mt-0.5">
+            Upprätta en <strong>registerförteckning</strong> och en{" "}
+            <strong>integritetspolicy</strong> som beskriver hur föreningen
+            hanterar personuppgifter. Integritetsmyndigheten (IMY) har mallar och
+            vägledning på{" "}
+            <a
+              href="https://www.imy.se"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:no-underline"
+            >
+              imy.se
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 type Flik = "utskick" | "arenden" | "medlemmar";
 
 export function KommunikationModul() {
@@ -58,6 +157,9 @@ export function KommunikationModul() {
 
   return (
     <div className="space-y-6">
+      {/* GDPR-information */}
+      <GdprNotis />
+
       {/* Flikar */}
       <div className="flex flex-wrap gap-1 rounded-xl border border-border bg-surface p-1">
         {tabs.map(({ id, label, badge }) => (
