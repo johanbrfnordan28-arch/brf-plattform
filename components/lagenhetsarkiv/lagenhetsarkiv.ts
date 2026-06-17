@@ -39,12 +39,62 @@ export type RenoveringsMapp = {
 /** @deprecated Använd RenoveringsMapp */
 export type RenovationFolder = RenoveringsMapp;
 
+/** Värmesystem i lägenheten — flera alternativ möjliga. */
+export type LagenhetVarme =
+  | "golvvarme-vatten"
+  | "golvvarme-el"
+  | "radiatorer"
+  | "elradiatorer"
+  | "varmepump-luft"
+  | "fjarvarmepanel";
+
+export const LAGENHET_VARME_ETIKETTER: Record<LagenhetVarme, string> = {
+  "golvvarme-vatten": "Golvvärme (vattenburen)",
+  "golvvarme-el": "Golvvärme (elektrisk)",
+  radiatorer: "Radiatorer (vattenburen)",
+  elradiatorer: "Elradiatorer",
+  "varmepump-luft": "Luftvärmepump",
+  fjarvarmepanel: "Fjärrvärme (direktpanel)",
+};
+
 export type ApartmentFolder = {
   /** Stabil nyckel — ändras aldrig vid nummerbyte. */
   id: number;
   lagenhetsnummer: string;
   basePages: string[];
   folders: RenoveringsMapp[];
+
+  // ── Ny lägenhetsinfo ───────────────────────────────────────────────────────
+  /** Gatuadress för lägenheten (kan skilja sig från byggnadens). */
+  adress?: string;
+  /** Våningsplan, t.ex. "3" eller "BV" (bottenvåning). */
+  vaning?: string;
+  /** Antal rum, t.ex. "3 rum och kök". */
+  antalRum?: string;
+  /** Registrerad bostadsyta (BOA) i m². */
+  boyta?: string;
+  /** Biarea (BIA) i m², t.ex. förråd, garage. */
+  biyta?: string;
+  /** Uppmätt yta — kan avvika från registrerad. */
+  uppmattYta?: string;
+  /** Andelstal/insats, t.ex. "0,7842 %" eller "550 000 kr". */
+  andelstal?: string;
+  /** Referens till ritning — filnamn eller länk. */
+  ritning?: string;
+  /** Värmesystem i lägenheten. */
+  varme?: LagenhetVarme[];
+  /** Ventilationssystem, t.ex. "FTX", "F", "Självdrag". */
+  ventilation?: string;
+  /** Balkong/terrass, t.ex. "Ja, 7 m² mot söder". */
+  balkong?: string;
+  /** Källarförråd — nummer eller beskrivning. */
+  kallareForrad?: string;
+  /** P-plats — nummer eller info. */
+  pPlats?: string;
+  /** År för senast utfört stambyte. */
+  senastStambyte?: string;
+  /** Övrig notering om lägenheten. */
+  lagenhetNotering?: string;
 };
 
 export const lagenhetsBasSidor = ["Anmälningar", "Beslut", "Slutdokument"] as const;

@@ -25,6 +25,7 @@ import {
   RenoveringsMappPanel,
   skapaSigneratEgenkontrollDokument,
 } from "@/components/lagenhetsarkiv/RenoveringsMappPanel";
+import { LagenhetInfoPanel } from "@/components/lagenhetsarkiv/LagenhetInfoPanel";
 import {
   renoveringsMallar,
   arStartbesiktningPunkt,
@@ -368,6 +369,11 @@ export function ApartmentArchiveDemo() {
               och övrigt — så styrelsen ser vilka dokument som ska in.
             </p>
           </div>
+
+          <LagenhetInfoPanel
+            apartment={activeApartment}
+            onUppdatera={(patch) => uppdateraAktivLägenhet((a) => ({ ...a, ...patch }))}
+          />
 
           <div className="mt-5 rounded-2xl border border-border p-4">
             <h4 className="font-semibold text-foreground">Byt lägenhetsnummer</h4>
