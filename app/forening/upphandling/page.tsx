@@ -3,6 +3,7 @@ import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
 import { TipsPanel } from "@/components/TipsPanel";
 import { ForenadUpphandlingModul } from "@/components/upphandling/ForenadUpphandlingModul";
+import { MindreByggarbeteModul } from "@/components/upphandling/MindreByggarbeteModul";
 import { UpphandlingSidaInnehall } from "@/components/upphandling/UpphandlingDokument";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 import { tips } from "@/lib/tips-data";
@@ -31,6 +32,15 @@ export default function ForeningUpphandlingPage() {
           underhållsplanen.
         </p>
         <ForenadUpphandlingModul />
+      </ContentSection>
+
+      <ContentSection title="Mindre byggarbeten">
+        <p className="mb-5 text-sm text-muted">
+          Snabb hantering av mindre arbeten som inte kräver ett fullständigt
+          förfrågningsunderlag. Välj arbetstyp via snabbval, lägg till beskrivning och
+          skicka offertförfrågan direkt.
+        </p>
+        <MindreByggarbeteModul />
       </ContentSection>
 
       <ContentSection title="Fullständig upphandling">
