@@ -6,6 +6,7 @@ import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
   arshjulStorageKey,
   expanderaTillfallen,
+  foreslagnUnderkategorier,
   formatDatumKort,
   hamtaPaminnelser,
   kategoriEtiketter,
@@ -222,6 +223,9 @@ export function ArshjulModul() {
         className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]}`}
       >
         <p className="font-medium">{t.titel}</p>
+        {h?.underkategori && (
+          <p className="opacity-75">{h.underkategori}</p>
+        )}
         {t.dag > 1 && (
           <p className="opacity-80">
             {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
@@ -347,6 +351,26 @@ export function ArshjulModul() {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">Underkategori</span>
+              <input
+                list="underkategori-lista"
+                value={form.underkategori ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, underkategori: e.target.value || undefined })
+                }
+                placeholder="t.ex. OVK Besiktning, Styrelsemöte…"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+              <datalist id="underkategori-lista">
+                {foreslagnUnderkategorier.map((u) => (
+                  <option key={u} value={u} />
+                ))}
+              </datalist>
+              <span className="mt-1 block text-xs text-muted">
+                Välj från listan eller skriv ett eget namn
+              </span>
             </label>
             <label className="block">
               <span className="text-sm font-medium">Typ</span>
@@ -556,6 +580,11 @@ export function ArshjulModul() {
                 <span className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}>
                   {kategoriEtiketter[h.kategori]}
                 </span>
+                {h.underkategori && (
+                  <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-muted">
+                    {h.underkategori}
+                  </span>
+                )}
                 <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
                 <span className="text-xs text-muted">
                   {h.typ === "engang" && h.datum
