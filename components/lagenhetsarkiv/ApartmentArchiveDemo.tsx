@@ -30,6 +30,10 @@ import {
   MEDLEMMAR_RENOVERING_EVENT,
 } from "@/components/medlemmar/medlemmar-lager";
 import {
+  RENOVERING_MEDLEM_SIGNERING_EVENT,
+} from "@/components/medlemmar/renovering-medlems-signering-lager";
+import type { MedlemsKravState } from "@/components/lagenhetsarkiv/medlems-krav";
+import {
   RenoveringsMappPanel,
   skapaSigneratEgenkontrollDokument,
 } from "@/components/lagenhetsarkiv/RenoveringsMappPanel";
@@ -41,6 +45,7 @@ import {
   arStartbesiktningPunkt,
   type RenoveringsMallId,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 
 function uppdateraRenoveringsMapp(
   mappar: RenoveringsMapp[],
@@ -109,6 +114,22 @@ export function ApartmentArchiveDemo() {
     window.addEventListener(MEDLEMMAR_RENOVERING_EVENT, syncRenoveringstyper);
     return () =>
       window.removeEventListener(MEDLEMMAR_RENOVERING_EVENT, syncRenoveringstyper);
+  }, []);
+
+  useEffect(() => {
+    function syncEfterMedlemSignering() {
+      const sparad = lasLagenhetsarkiv();
+      if (sparad) setApartments(sparad.apartments);
+    }
+    window.addEventListener(
+      RENOVERING_MEDLEM_SIGNERING_EVENT,
+      syncEfterMedlemSignering,
+    );
+    return () =>
+      window.removeEventListener(
+        RENOVERING_MEDLEM_SIGNERING_EVENT,
+        syncEfterMedlemSignering,
+      );
   }, []);
 
   const valdMallObj = useMemo(
@@ -331,6 +352,20 @@ export function ApartmentArchiveDemo() {
     }));
   }
 
+  function uppdateraMedlemsKrav(
+    apartmentId: number,
+    mappId: number,
+    medlemsKrav: MedlemsKravState,
+  ) {
+    uppdateraLägenhet(apartmentId, (a) => ({
+      ...a,
+      folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) => ({
+        ...m,
+        medlemsKrav,
+      })),
+    }));
+  }
+
   function läggTillDokumentIMapp(
     apartmentId: number,
     mappId: number,
@@ -510,18 +545,15 @@ export function ApartmentArchiveDemo() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <button
-                    type="button"
+                  <OppnaStangKnapp
+                    oppen={oppen}
                     onClick={() => vaxlaOppenLagenhet(apartment.id)}
-                    className={
+                    ariaLabel={
                       oppen
-                        ? "rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/5"
-                        : "rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+                        ? `Stäng lägenhet ${etikett}`
+                        : `Öppna lägenhet ${etikett}`
                     }
-                    aria-expanded={oppen}
-                  >
-                    {oppen ? "Stäng lägenhet" : "Öppna lägenhet"}
-                  </button>
+                  />
                 </div>
               </div>
 
@@ -792,6 +824,8 @@ export function ApartmentArchiveDemo() {
                 <RenoveringsMappPanel
                   key={mapp.id}
                   mapp={mapp}
+                  apartmentId={apartment.id}
+                  lagenhetsnummer={apartment.lagenhetsnummer}
                   onTaBort={() => taBortRenoveringsMapp(apartment.id, mapp.id)}
                   onBytTyp={(nyMallId) =>
                     bytMappTyp(apartment.id, mapp.id, nyMallId)
@@ -808,6 +842,9 @@ export function ApartmentArchiveDemo() {
                       mapp.id,
                       handlingar,
                     )
+                  }
+                  onUppdateraMedlemsKrav={(krav) =>
+                    uppdateraMedlemsKrav(apartment.id, mapp.id, krav)
                   }
                   onLäggTillDokument={(undermappId, filnamn) =>
                     läggTillDokumentIMapp(

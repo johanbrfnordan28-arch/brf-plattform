@@ -22,6 +22,9 @@ import {
   type RenoveringsMapp,
   type RenoveringsMappDel,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
+import { MedlemsKravPanel } from "@/components/lagenhetsarkiv/MedlemsKravPanel";
+import type { MedlemsKravState } from "@/components/lagenhetsarkiv/medlems-krav";
 
 type EgenkontrollListaProps = {
   mapp: RenoveringsMapp;
@@ -173,14 +176,12 @@ function MappDelSektion({
             <span className="block truncate text-xs text-muted">{sammanfattning}</span>
           )}
         </div>
-        <button
-          type="button"
+        <OppnaStangKnapp
+          oppen={oppen}
           onClick={() => setOppen((v) => !v)}
-          className="shrink-0 rounded-lg border border-primary bg-white px-3 py-1.5 text-xs font-semibold text-primary-dark hover:bg-[#eef6f0]"
-          aria-expanded={oppen}
-        >
-          {oppen ? "Stäng" : "Öppna"}
-        </button>
+          storlek="sm"
+          ariaLabel={oppen ? `Stäng ${etikett.toLowerCase()}` : `Öppna ${etikett.toLowerCase()}`}
+        />
         <button
           type="button"
           onClick={onTaBort}
@@ -475,11 +476,14 @@ function UndermappInnehall({
 
 type RenoveringsMappPanelProps = {
   mapp: RenoveringsMapp;
+  apartmentId: number;
+  lagenhetsnummer: string;
   onTaBort: () => void;
   onBytTyp: (mallId: RenoveringsMallId) => void;
   onLäggTillDel: (del: RenoveringsMappDel) => void;
   onTaBortDel: (del: RenoveringsMappDel) => void;
   onUppdateraForvantadeHandlingar: (handlingar: string[]) => void;
+  onUppdateraMedlemsKrav: (krav: MedlemsKravState) => void;
   onLäggTillDokument: (undermappId: string, filnamn: string) => void;
   onTaBortDokument: (undermappId: string, docId: string) => void;
   onSigneraEgenkontroll: (punktId: string) => void;
@@ -488,11 +492,14 @@ type RenoveringsMappPanelProps = {
 
 export function RenoveringsMappPanel({
   mapp,
+  apartmentId,
+  lagenhetsnummer,
   onTaBort,
   onBytTyp,
   onLäggTillDel,
   onTaBortDel,
   onUppdateraForvantadeHandlingar,
+  onUppdateraMedlemsKrav,
   onLäggTillDokument,
   onTaBortDokument,
   onSigneraEgenkontroll,
@@ -549,18 +556,13 @@ export function RenoveringsMappPanel({
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <button
-            type="button"
+          <OppnaStangKnapp
+            oppen={oppen}
             onClick={vaxlaOppen}
-            className={
-              oppen
-                ? "rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/5"
-                : "rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+            ariaLabel={
+              oppen ? `Stäng mappen ${mapp.name}` : `Öppna mappen ${mapp.name}`
             }
-            aria-expanded={oppen}
-          >
-            {oppen ? "Stäng mapp" : "Öppna mapp"}
-          </button>
+          />
         </div>
       </div>
 
@@ -580,6 +582,17 @@ export function RenoveringsMappPanel({
               ))}
             </select>
           </label>
+
+          <MedlemsKravPanel
+            medlemsKrav={mapp.medlemsKrav}
+            mallId={mapp.mallId ?? "ovrigt"}
+            mappNamn={mapp.name}
+            mappId={mapp.id}
+            apartmentId={apartmentId}
+            lagenhetsnummer={lagenhetsnummer}
+            mallEtikett={mall.etikett}
+            onUppdatera={onUppdateraMedlemsKrav}
+          />
 
       {saknade.length > 0 && (
         <div className="mt-4 rounded-lg border border-dashed border-primary/30 bg-[#fafcfa] p-3">
