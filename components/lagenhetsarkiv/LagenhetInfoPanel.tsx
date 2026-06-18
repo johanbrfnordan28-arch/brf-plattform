@@ -1,28 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  hamtaInstallationer,
-  LAGENHET_INSTALLATION_SNABBVAL,
-  type ApartmentFolder,
-} from "@/components/lagenhetsarkiv/lagenhetsarkiv";
+import type { ApartmentFolder } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import {
   BESIKTNING_STATUS_ETIKETTER,
   besiktningBehoverAtgard,
+  ELDSTAD_PROVTRYCKNING_INFO,
   flaktHarVarde,
+  formateraEldstadStatus,
   formateraRenovering,
   formateraUppvarmning,
   lagenhetHarIfylldInfo,
+  byggRumsStatusRader,
+  ENTRE_DORR_ETIKETTER,
+  foreslagetTillagtRumsnamn,
+  formateraEntreDorr,
   mergeBesiktning,
   normaliseraEldstader,
   normaliseraFlakt,
   normaliseraLagenhetsRum,
   räknaBesiktningAtgarder,
+  rumTypPaverkarGrannar,
   sammanfattaRumsstatus,
+  sammanfattaTillagtRum,
   skapaEldstadId,
-  skapaLagenhetRumId,
+  skapaTillagtRum,
+  TILLAGT_RUM_TYP_BESKRIVNINGAR,
+  TILLAGT_RUM_TYP_ETIKETTER,
   UPPVARMNING_ETIKETTER,
   type BesiktningStatus,
+  type EntreDorrTyp,
+  type KokLackagekydd,
   type LagenhetBadrum,
   type LagenhetEldstad,
   type LagenhetFlakt,
@@ -33,6 +41,7 @@ import {
   type LagenhetUppvarmning,
   type RumBesiktning,
   type SenasteRenovering,
+  type TillagtRumTyp,
   type UppvarmningTyp,
 } from "@/components/lagenhetsarkiv/lagenhet-info";
 
@@ -55,7 +64,6 @@ function byggSparPatch(
     pPlats: string;
     antalBadrum: string;
     antalWC: string;
-    installationer: string[];
     lagenhetsRum: LagenhetsRumsInfo;
     eldstader: LagenhetEldstad[];
     flakt: LagenhetFlakt;
@@ -75,8 +83,7 @@ function byggSparPatch(
     pPlats: data.pPlats.trim() || undefined,
     antalBadrum: data.antalBadrum.trim() || undefined,
     antalWC: data.antalWC.trim() || undefined,
-    installationer:
-      data.installationer.length > 0 ? data.installationer : undefined,
+    installationer: undefined,
     lagenhetsRum: data.lagenhetsRum,
     eldstader: data.eldstader.length > 0 ? data.eldstader : undefined,
     flakt: flaktHarVarde(data.flakt) ? data.flakt : undefined,
@@ -204,15 +211,132 @@ function Sektion({
   );
 }
 
-function UppvarmningFalt({
+function GrannPaverkanInfo() {
+  return (
+    <p className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+      Installationer och renoveringar här kan påverka grannar — dokumentera status
+      och eventuella åtgärder noggrant.
+    </p>
+  );
+}
+
+function LackagekyddFalt({
   varde,
   onChange,
 }: {
-  varde: LagenhetUppvarmning;
-  onChange: (next: LagenhetUppvarmning) => void;
+  varde: KokLackagekydd;
+  onChange: (patch: Partial<KokLackagekydd>) => void;
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div>
+      <p className={labelKlass}>Läckageskydd</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        {(
+          [
+            ["diskmaskin", "Under diskmaskin"],
+            ["kylFrys", "Under kyl och frys"],
+            ["diskbankslada", "I diskbänkslåda"],
+          ] as const
+        ).map(([nyckel, etikett]) => (
+          <label key={nyckel} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={varde[nyckel] ?? false}
+              onChange={(e) => onChange({ [nyckel]: e.target.checked })}
+              className="rounded border-border"
+            />
+            {etikett}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TillagtRumInnehall({
+  rum,
+  onChange,
+}: {
+  rum: LagenhetOvrigtRum;
+  onChange: (patch: Partial<LagenhetOvrigtRum>) => void;
+}) {
+  const typ = rum.typ ?? "ovrigt";
+
+  return (
+    <>
+      {rumTypPaverkarGrannar(typ) && (
+        <div className="mb-3">
+          <GrannPaverkanInfo />
+        </div>
+      )}
+      <BesiktningFalt
+        varde={rum.besiktning ?? {}}
+        onChange={(besiktning) => onChange({ besiktning })}
+      />
+      {(typ === "kok" || typ === "badrum" || typ === "wc") && (
+        <div className="mt-3">
+          <RenoveringFalt
+            varde={rum.senasteRenovering ?? {}}
+            onChange={(senasteRenovering) => onChange({ senasteRenovering })}
+          />
+        </div>
+      )}
+      {typ === "kok" && (
+        <div className="mt-3">
+          <LackagekyddFalt
+            varde={rum.lackagekydd ?? {}}
+            onChange={(patch) =>
+              onChange({ lackagekydd: { ...rum.lackagekydd, ...patch } })
+            }
+          />
+        </div>
+      )}
+      {typ === "entre" && (
+        <div className="mt-3">
+          <label className={labelKlass}>Entrédörr</label>
+          <select
+            value={rum.dorrTyp ?? ""}
+            onChange={(e) =>
+              onChange({ dorrTyp: e.target.value as EntreDorrTyp })
+            }
+            className={inputKlass}
+          >
+            {(Object.keys(ENTRE_DORR_ETIKETTER) as EntreDorrTyp[]).map((d) => (
+              <option key={d || "tom"} value={d}>
+                {ENTRE_DORR_ETIKETTER[d]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="mt-3">
+        <UppvarmningFalt
+          varde={rum.uppvarmning ?? {}}
+          onChange={(uppvarmning) => onChange({ uppvarmning })}
+          hint={
+            typ === "ovrigt"
+              ? "Välj uppvärmning i rummet, t.ex. radiator eller golvvärme."
+              : undefined
+          }
+        />
+      </div>
+    </>
+  );
+}
+
+function UppvarmningFalt({
+  varde,
+  onChange,
+  hint,
+}: {
+  varde: LagenhetUppvarmning;
+  onChange: (next: LagenhetUppvarmning) => void;
+  hint?: string;
+}) {
+  return (
+    <div>
+      {hint && <p className="mb-2 text-xs text-muted">{hint}</p>}
+      <div className="grid gap-2 sm:grid-cols-2">
       <div>
         <label className={labelKlass}>Uppvärmning</label>
         <select
@@ -240,6 +364,7 @@ function UppvarmningFalt({
           className={inputKlass}
           disabled={!varde.typ}
         />
+      </div>
       </div>
     </div>
   );
@@ -402,16 +527,12 @@ export function LagenhetInfoPanel({
     normaliseraEldstader(apartment),
   );
   const [flakt, setFlakt] = useState<LagenhetFlakt>(normaliseraFlakt(apartment));
-  const [installationer, setInstallationer] = useState<string[]>(
-    hamtaInstallationer(apartment),
-  );
   const [antalBadrum, setAntalBadrum] = useState(apartment.antalBadrum ?? "");
   const [antalWC, setAntalWC] = useState(apartment.antalWC ?? "");
   const [lagenhetNotering, setLagenhetNotering] = useState(
     apartment.lagenhetNotering ?? "",
   );
-  const [nyttRumsnamn, setNyttRumsnamn] = useState("");
-  const [nyInstallation, setNyInstallation] = useState("");
+  const [nyRumTyp, setNyRumTyp] = useState<TillagtRumTyp>("ovrigt");
 
   useEffect(() => {
     setAdress(apartment.adress ?? "");
@@ -427,7 +548,6 @@ export function LagenhetInfoPanel({
     setLagenhetsRum(normaliseraLagenhetsRum(apartment));
     setEldstader(normaliseraEldstader(apartment));
     setFlakt(normaliseraFlakt(apartment));
-    setInstallationer(hamtaInstallationer(apartment));
     setAntalBadrum(apartment.antalBadrum ?? "");
     setAntalWC(apartment.antalWC ?? "");
     setLagenhetNotering(apartment.lagenhetNotering ?? "");
@@ -446,7 +566,6 @@ export function LagenhetInfoPanel({
     pPlats: string;
     antalBadrum: string;
     antalWC: string;
-    installationer: string[];
     lagenhetsRum: LagenhetsRumsInfo;
     eldstader: LagenhetEldstad[];
     flakt: LagenhetFlakt;
@@ -465,7 +584,6 @@ export function LagenhetInfoPanel({
       pPlats,
       antalBadrum,
       antalWC,
-      installationer,
       lagenhetsRum,
       eldstader,
       flakt,
@@ -524,35 +642,35 @@ export function LagenhetInfoPanel({
   }
 
   function laggTillRum() {
-    const namn = nyttRumsnamn.trim();
-    if (!namn) return;
     setLagenhetsRum((prev) => {
+      const nytt = skapaTillagtRum(prev, nyRumTyp);
       const next = {
         ...prev,
-        ovrigaRum: [
-          ...prev.ovrigaRum,
-          { id: skapaLagenhetRumId(), namn, uppvarmning: {} },
-        ],
+        ovrigaRum: [...prev.ovrigaRum, nytt],
       };
       persist({ lagenhetsRum: next });
       return next;
     });
-    setNyttRumsnamn("");
   }
 
   function uppdateraRum(id: string, patch: Partial<LagenhetOvrigtRum>) {
     setLagenhetsRum((prev) => {
       const next = {
         ...prev,
-        ovrigaRum: prev.ovrigaRum.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                ...patch,
-                besiktning: mergeBesiktning(r.besiktning, patch.besiktning),
-              }
-            : r,
-        ),
+        ovrigaRum: prev.ovrigaRum.map((r) => {
+          if (r.id !== id) return r;
+          return {
+            ...r,
+            ...patch,
+            lackagekydd: patch.lackagekydd
+              ? { ...r.lackagekydd, ...patch.lackagekydd }
+              : r.lackagekydd,
+            senasteRenovering: patch.senasteRenovering
+              ? { ...r.senasteRenovering, ...patch.senasteRenovering }
+              : r.senasteRenovering,
+            besiktning: mergeBesiktning(r.besiktning, patch.besiktning),
+          };
+        }),
       };
       persist({ lagenhetsRum: next });
       return next;
@@ -572,7 +690,14 @@ export function LagenhetInfoPanel({
 
   function laggTillEldstad() {
     setEldstader((prev) => {
-      const next = [...prev, { id: skapaEldstadId() }];
+      const next = [
+        ...prev,
+        {
+          id: skapaEldstadId(),
+          eldningsforbud: true,
+          invantarProvtryckning: true,
+        },
+      ];
       persist({ eldstader: next });
       return next;
     });
@@ -598,30 +723,6 @@ export function LagenhetInfoPanel({
     setFlakt((prev) => {
       const next = { ...prev, ...patch };
       persist({ flakt: next });
-      return next;
-    });
-  }
-
-  function laggTillInstallation(namn: string) {
-    const text = namn.trim();
-    if (!text) return;
-    if (
-      installationer.some((i) => i.toLowerCase() === text.toLowerCase())
-    ) {
-      return;
-    }
-    setInstallationer((prev) => {
-      const next = [...prev, text];
-      persist({ installationer: next });
-      return next;
-    });
-    setNyInstallation("");
-  }
-
-  function taBortInstallation(namn: string) {
-    setInstallationer((prev) => {
-      const next = prev.filter((i) => i !== namn);
-      persist({ installationer: next });
       return next;
     });
   }
@@ -660,29 +761,7 @@ export function LagenhetInfoPanel({
   const harInfo = lagenhetHarIfylldInfo(apartment);
   const atgarder = räknaBesiktningAtgarder(lagenhetsRum);
 
-  const statusRader = [
-    {
-      titel: "Hall",
-      ...lagenhetsRum.hall,
-      renovering: undefined as SenasteRenovering | undefined,
-    },
-    {
-      titel: "Kök",
-      ...lagenhetsRum.kok,
-      renovering: lagenhetsRum.kok.senasteRenovering,
-    },
-    {
-      titel: "Badrum",
-      ...lagenhetsRum.badrum,
-      renovering: lagenhetsRum.badrum.senasteRenovering,
-    },
-    ...lagenhetsRum.ovrigaRum.map((r) => ({
-      titel: r.namn,
-      besiktning: r.besiktning,
-      uppvarmning: r.uppvarmning,
-      renovering: undefined as SenasteRenovering | undefined,
-    })),
-  ];
+  const statusRader = byggRumsStatusRader(lagenhetsRum);
 
   return (
     <div className="rounded-xl border-2 border-primary/20 bg-white shadow-sm">
@@ -726,9 +805,9 @@ export function LagenhetInfoPanel({
               </tr>
             </thead>
             <tbody>
-              {statusRader.map((rad) => (
+              {statusRader.map((rad, index) => (
                 <tr
-                  key={rad.titel}
+                  key={`${rad.titel}-${index}`}
                   className={`border-b border-border last:border-0 ${
                     besiktningBehoverAtgard(rad.besiktning) ? "bg-amber-50/50" : ""
                   }`}
@@ -740,7 +819,9 @@ export function LagenhetInfoPanel({
                     <StatusBadge besiktning={rad.besiktning} />
                   </td>
                   <td className="px-3 py-2 text-muted">
-                    {formateraRenovering(rad.renovering) ?? "—"}
+                    {formateraRenovering(rad.renovering) ??
+                      formateraEntreDorr(rad.dorrTyp) ??
+                      "—"}
                   </td>
                   <td className="px-3 py-2 text-muted">
                     {formateraUppvarmning(rad.uppvarmning) ?? "—"}
@@ -879,7 +960,7 @@ export function LagenhetInfoPanel({
 
         <Sektion
           titel="Rum & enkel besiktning"
-          beskrivning="Hall, kök, badrum och fler rum — status och uppvärmning"
+          beskrivning="Hall, kök och badrum ingår alltid. Uppvärmning väljs per rum. Lägg till fler kök, badrum, WC, entré eller övriga rum."
           defaultOppen
         >
           <div className="space-y-2">
@@ -907,6 +988,9 @@ export function LagenhetInfoPanel({
               sammanfattning={sammanfattaRumsstatus("Kök", lagenhetsRum.kok)}
               accent={besiktningBehoverAtgard(lagenhetsRum.kok.besiktning)}
             >
+              <div className="mb-3">
+                <GrannPaverkanInfo />
+              </div>
               <BesiktningFalt
                 varde={lagenhetsRum.kok.besiktning ?? {}}
                 onChange={(besiktning) => uppdateraKok({ besiktning })}
@@ -920,30 +1004,10 @@ export function LagenhetInfoPanel({
                 />
               </div>
               <div className="mt-3">
-                <p className={labelKlass}>Läckageskydd</p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  {(
-                    [
-                      ["diskmaskin", "Under diskmaskin"],
-                      ["kylFrys", "Under kyl och frys"],
-                      ["diskbankslada", "I diskbänkslåda"],
-                    ] as const
-                  ).map(([nyckel, etikett]) => (
-                    <label key={nyckel} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={lagenhetsRum.kok.lackagekydd?.[nyckel] ?? false}
-                        onChange={(e) =>
-                          uppdateraKok({
-                            lackagekydd: { [nyckel]: e.target.checked },
-                          })
-                        }
-                        className="rounded border-border"
-                      />
-                      {etikett}
-                    </label>
-                  ))}
-                </div>
+                <LackagekyddFalt
+                  varde={lagenhetsRum.kok.lackagekydd ?? {}}
+                  onChange={(patch) => uppdateraKok({ lackagekydd: patch })}
+                />
               </div>
               <div className="mt-3">
                 <UppvarmningFalt
@@ -959,6 +1023,9 @@ export function LagenhetInfoPanel({
               sammanfattning={sammanfattaRumsstatus("Badrum", lagenhetsRum.badrum)}
               accent={besiktningBehoverAtgard(lagenhetsRum.badrum.besiktning)}
             >
+              <div className="mb-3">
+                <GrannPaverkanInfo />
+              </div>
               <BesiktningFalt
                 varde={lagenhetsRum.badrum.besiktning ?? {}}
                 onChange={(besiktning) => uppdateraBadrum({ besiktning })}
@@ -984,7 +1051,7 @@ export function LagenhetInfoPanel({
                 key={rum.id}
                 titel={rum.namn}
                 status={rum.besiktning}
-                sammanfattning={sammanfattaRumsstatus(rum.namn, rum)}
+                sammanfattning={sammanfattaTillagtRum(rum)}
                 accent={besiktningBehoverAtgard(rum.besiktning)}
               >
                 <div className="mb-2 flex justify-end">
@@ -993,186 +1060,176 @@ export function LagenhetInfoPanel({
                     onClick={() => taBortRum(rum.id)}
                     className="text-xs text-muted hover:text-red-800"
                   >
-                    Ta bort rum
+                    Ta bort {rum.namn.toLowerCase()}
                   </button>
                 </div>
-                <BesiktningFalt
-                  varde={rum.besiktning ?? {}}
-                  onChange={(besiktning) => uppdateraRum(rum.id, { besiktning })}
+                <TillagtRumInnehall
+                  rum={rum}
+                  onChange={(patch) => uppdateraRum(rum.id, patch)}
                 />
-                <div className="mt-3">
-                  <label className={labelKlass}>Rumsnamn</label>
-                  <input
-                    value={rum.namn}
-                    onBlur={(e) =>
-                      uppdateraRum(rum.id, { namn: e.target.value })
-                    }
-                    onChange={(e) =>
-                      setLagenhetsRum((prev) => ({
-                        ...prev,
-                        ovrigaRum: prev.ovrigaRum.map((r) =>
-                          r.id === rum.id ? { ...r, namn: e.target.value } : r,
-                        ),
-                      }))
-                    }
-                    className={inputKlass}
-                  />
-                </div>
-                <div className="mt-3">
-                  <UppvarmningFalt
-                    varde={rum.uppvarmning ?? {}}
-                    onChange={(uppvarmning) =>
-                      uppdateraRum(rum.id, { uppvarmning })
-                    }
-                  />
-                </div>
               </Rullgardin>
             ))}
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={nyttRumsnamn}
-                onChange={(e) => setNyttRumsnamn(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    laggTillRum();
-                  }
-                }}
-                placeholder="Nytt rum, t.ex. Sovrum 2"
-                className={inputKlass}
-              />
-              <button
-                type="button"
-                onClick={laggTillRum}
-                className="shrink-0 rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
-              >
-                Lägg till rum
-              </button>
+            <div className="rounded-lg border border-dashed border-border bg-[#fafcfa] p-3">
+              <p className={labelKlass}>Lägg till rum</p>
+              <p className="mb-3 text-xs text-muted">
+                Välj typ — namn sätts automatiskt (t.ex. Kök 2, Badrum 2, Rum 1).
+                Kök, badrum och WC har extra fält eftersom de kan påverka grannar.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="min-w-0 flex-1">
+                  <label className={labelKlass}>Typ av rum</label>
+                  <select
+                    value={nyRumTyp}
+                    onChange={(e) =>
+                      setNyRumTyp(e.target.value as TillagtRumTyp)
+                    }
+                    className={inputKlass}
+                  >
+                    {(Object.keys(TILLAGT_RUM_TYP_ETIKETTER) as TillagtRumTyp[]).map(
+                      (typ) => (
+                        <option key={typ} value={typ}>
+                          {TILLAGT_RUM_TYP_ETIKETTER[typ]}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <p className="mt-1 text-xs text-muted">
+                    {TILLAGT_RUM_TYP_BESKRIVNINGAR[nyRumTyp]} — blir{" "}
+                    <span className="font-medium text-foreground">
+                      {foreslagetTillagtRumsnamn(lagenhetsRum, nyRumTyp)}
+                    </span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={laggTillRum}
+                  className="shrink-0 rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+                >
+                  Lägg till {TILLAGT_RUM_TYP_ETIKETTER[nyRumTyp].toLowerCase()}
+                </button>
+              </div>
             </div>
           </div>
         </Sektion>
 
         <Sektion
           titel="Tekniska installationer"
-          beskrivning="Värme, ventilation och eldstäder i lägenheten"
+          beskrivning="Eldstäder och lägenhetsfläkt. Uppvärmning väljs per rum ovan."
           defaultOppen
         >
           <div className="space-y-4">
-            <div>
-              <p className={labelKlass}>Installationer i lägenheten</p>
-              <p className="mb-2 text-xs text-muted">
-                Lägg till eller ta bort — t.ex. golvvärme, luftvärmepump eller
-                radiatorer. Fjärrvärme registreras inte här (ingår i fastighetens
-                system).
-              </p>
-              {installationer.length > 0 ? (
-                <ul className="mb-2 space-y-1.5">
-                  {installationer.map((inst) => (
-                    <li
-                      key={inst}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-[#fafcfa] px-3 py-2"
-                    >
-                      <span className="text-sm text-foreground">{inst}</span>
-                      <button
-                        type="button"
-                        onClick={() => taBortInstallation(inst)}
-                        className="text-xs text-muted hover:text-red-800"
-                      >
-                        Ta bort
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mb-2 text-xs text-muted">
-                  Inga installationer registrerade ännu.
-                </p>
-              )}
-              <div className="mb-2 flex flex-wrap gap-2">
-                {LAGENHET_INSTALLATION_SNABBVAL.map((snabbval) => (
-                  <button
-                    key={snabbval}
-                    type="button"
-                    onClick={() => laggTillInstallation(snabbval)}
-                    disabled={installationer.some(
-                      (i) => i.toLowerCase() === snabbval.toLowerCase(),
-                    )}
-                    className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    + {snabbval}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  value={nyInstallation}
-                  onChange={(e) => setNyInstallation(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      laggTillInstallation(nyInstallation);
-                    }
-                  }}
-                  placeholder="Egen installation, t.ex. Värmepump"
-                  className={inputKlass}
-                />
-                <button
-                  type="button"
-                  onClick={() => laggTillInstallation(nyInstallation)}
-                  className="shrink-0 rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
-                >
-                  Lägg till
-                </button>
-              </div>
-            </div>
+            <p className="rounded-lg border border-border bg-[#fafcfa] px-3 py-2 text-xs text-muted">
+              Golvvärme, radiatorer och liknande registreras under{" "}
+              <strong className="font-medium text-foreground">
+                Rum & enkel besiktning
+              </strong>{" "}
+              i respektive rum — inte här.
+            </p>
 
             <div>
               <p className={labelKlass}>Eldstäder</p>
+              <p className="mb-2 text-xs text-muted">
+                Varje eldstad kan vara godkänd, ha eldningsförbud eller invänta
+                provtryckningsprotokoll från sotare.
+              </p>
               {eldstader.length > 0 ? (
-                <ul className="mb-2 space-y-2">
-                  {eldstader.map((eldstad, index) => (
-                    <li
-                      key={eldstad.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-[#fafcfa] px-3 py-2"
-                    >
-                      <span className="text-sm font-medium text-foreground">
-                        Eldstad {index + 1}
-                        {eldstad.godkand === false && (
-                          <span className="ml-2 text-xs font-normal text-red-800">
-                            Ej godkänd
-                          </span>
+                <ul className="mb-2 space-y-3">
+                  {eldstader.map((eldstad, index) => {
+                    const status = formateraEldstadStatus(eldstad);
+                    return (
+                      <li
+                        key={eldstad.id}
+                        className="rounded-lg border border-border bg-[#fafcfa] px-3 py-3"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <span className="text-sm font-medium text-foreground">
+                              Eldstad {index + 1}
+                            </span>
+                            {status.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {status.map((s) => (
+                                  <span
+                                    key={s}
+                                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                      s === "Godkänd"
+                                        ? "bg-[#e2f0e6] text-primary-dark"
+                                        : s === "Eldningsförbud"
+                                          ? "bg-red-100 text-red-900"
+                                          : "bg-amber-100 text-amber-950"
+                                    }`}
+                                  >
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => taBortEldstad(eldstad.id)}
+                            className="text-xs text-muted hover:text-red-800"
+                          >
+                            Ta bort
+                          </button>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={eldstad.godkand ?? false}
+                              onChange={(e) =>
+                                uppdateraEldstad(eldstad.id, {
+                                  godkand: e.target.checked,
+                                  ...(e.target.checked
+                                    ? {
+                                        eldningsforbud: false,
+                                        invantarProvtryckning: false,
+                                      }
+                                    : {}),
+                                })
+                              }
+                              className="rounded border-border"
+                            />
+                            Godkänd av sotare
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={eldstad.eldningsforbud ?? false}
+                              onChange={(e) =>
+                                uppdateraEldstad(eldstad.id, {
+                                  eldningsforbud: e.target.checked,
+                                })
+                              }
+                              className="rounded border-border"
+                            />
+                            Eldningsförbud
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={eldstad.invantarProvtryckning ?? false}
+                              onChange={(e) =>
+                                uppdateraEldstad(eldstad.id, {
+                                  invantarProvtryckning: e.target.checked,
+                                })
+                              }
+                              className="rounded border-border"
+                            />
+                            Inväntar provtryckningsprotokoll från sotare
+                          </label>
+                        </div>
+                        {(eldstad.invantarProvtryckning ||
+                          (!eldstad.godkand && eldstad.eldningsforbud)) && (
+                          <p className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                            {ELDSTAD_PROVTRYCKNING_INFO}
+                          </p>
                         )}
-                        {eldstad.godkand && (
-                          <span className="ml-2 text-xs font-normal text-primary-dark">
-                            Godkänd
-                          </span>
-                        )}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={eldstad.godkand ?? false}
-                            onChange={(e) =>
-                              uppdateraEldstad(eldstad.id, {
-                                godkand: e.target.checked,
-                              })
-                            }
-                            className="rounded border-border"
-                          />
-                          Godkänd
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => taBortEldstad(eldstad.id)}
-                          className="text-xs text-muted hover:text-red-800"
-                        >
-                          Ta bort
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="mb-2 text-xs text-muted">Inga eldstäder registrerade.</p>
