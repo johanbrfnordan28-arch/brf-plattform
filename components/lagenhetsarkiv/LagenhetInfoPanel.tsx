@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import type { ApartmentFolder } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import {
+  BADRUM_KONTROLL_ETIKETTER,
   BESIKTNING_STATUS_ETIKETTER,
   BESIKTNING_STATUS_VAL,
   besiktningBehoverAtgard,
+  badrumKontrollBehoverAtgard,
   ELDSTAD_PROVTRYCKNING_INFO,
   flaktHarVarde,
   formateraEldstadStatus,
@@ -26,10 +28,14 @@ import {
   sammanfattaTillagtRum,
   skapaEldstadId,
   skapaTillagtRum,
+  TAPPVATTEN_PLATS_ETIKETTER,
   TILLAGT_RUM_TYP_BESKRIVNINGAR,
   TILLAGT_RUM_TYP_ETIKETTER,
   UPPVARMNING_ETIKETTER,
   type BesiktningStatus,
+  type BadrumKontrollpunktStatus,
+  type BadrumKontrollpunkter,
+  type BadrumTappvatten,
   type EntreDorrTyp,
   type KokLackagekydd,
   type LagenhetBadrum,
@@ -42,6 +48,7 @@ import {
   type LagenhetUppvarmning,
   type RumBesiktning,
   type SenasteRenovering,
+  type TappvattenPlatsTyp,
   type TillagtRumTyp,
   type UppvarmningTyp,
 } from "@/components/lagenhetsarkiv/lagenhet-info";
@@ -252,6 +259,86 @@ function LackagekyddFalt({
   );
 }
 
+function BadrumKontrollpunkterFalt({
+  varde,
+  onChange,
+}: {
+  varde: BadrumKontrollpunkter;
+  onChange: (patch: Partial<BadrumKontrollpunkter>) => void;
+}) {
+  const tappvatten = varde.tappvatten ?? {};
+
+  function uppdateraTappvatten(patch: Partial<BadrumTappvatten>) {
+    onChange({
+      tappvatten: { ...tappvatten, ...patch },
+    });
+  }
+
+  return (
+    <div className="rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-4">
+      <p className="text-xs font-medium text-primary-dark">Kontrollpunkter badrum</p>
+
+      <div>
+        <label className={labelKlass}>Tätskikt vid golvbrunn</label>
+        <select
+          value={varde.tatskiktGolvbrunn ?? ""}
+          onChange={(e) =>
+            onChange({
+              tatskiktGolvbrunn: e.target.value as BadrumKontrollpunktStatus,
+            })
+          }
+          className={inputKlass}
+        >
+          {(Object.keys(BADRUM_KONTROLL_ETIKETTER) as BadrumKontrollpunktStatus[]).map(
+            (s) => (
+              <option key={s || "tom"} value={s}>
+                {BADRUM_KONTROLL_ETIKETTER[s]}
+              </option>
+            ),
+          )}
+        </select>
+      </div>
+
+      <div>
+        <p className={labelKlass}>Tappvatteninstallation</p>
+        <p className="mb-2 text-xs text-muted">
+          Välj teknikskåp eller rörschakt — båda ska ha läckageindikering.
+        </p>
+        <select
+          value={tappvatten.plats ?? ""}
+          onChange={(e) =>
+            uppdateraTappvatten({
+              plats: e.target.value as TappvattenPlatsTyp,
+            })
+          }
+          className={inputKlass}
+        >
+          {(Object.keys(TAPPVATTEN_PLATS_ETIKETTER) as TappvattenPlatsTyp[]).map(
+            (plats) => (
+              <option key={plats || "tom"} value={plats}>
+                {TAPPVATTEN_PLATS_ETIKETTER[plats]}
+              </option>
+            ),
+          )}
+        </select>
+        {tappvatten.plats && (
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={tappvatten.lackageIndikering ?? false}
+              onChange={(e) =>
+                uppdateraTappvatten({ lackageIndikering: e.target.checked })
+              }
+              className="rounded border-border"
+            />
+            Läckageindikering finns
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TillagtRumInnehall({
   rum,
   onChange,
@@ -286,6 +373,24 @@ function TillagtRumInnehall({
             varde={rum.lackagekydd ?? {}}
             onChange={(patch) =>
               onChange({ lackagekydd: { ...rum.lackagekydd, ...patch } })
+            }
+          />
+        </div>
+      )}
+      {typ === "badrum" && (
+        <div className="mt-3">
+          <BadrumKontrollpunkterFalt
+            varde={rum.kontrollpunkter ?? {}}
+            onChange={(patch) =>
+              onChange({
+                kontrollpunkter: {
+                  ...rum.kontrollpunkter,
+                  ...patch,
+                  tappvatten: patch.tappvatten
+                    ? { ...rum.kontrollpunkter?.tappvatten, ...patch.tappvatten }
+                    : rum.kontrollpunkter?.tappvatten,
+                },
+              })
             }
           />
         </div>
@@ -629,6 +734,18 @@ export function LagenhetInfoPanel({
           ? { ...prev.badrum.senasteRenovering, ...patch.senasteRenovering }
           : prev.badrum.senasteRenovering,
         besiktning: mergeBesiktning(prev.badrum.besiktning, patch.besiktning),
+        kontrollpunkter: patch.kontrollpunkter
+          ? {
+              ...prev.badrum.kontrollpunkter,
+              ...patch.kontrollpunkter,
+              tappvatten: patch.kontrollpunkter.tappvatten
+                ? {
+                    ...prev.badrum.kontrollpunkter?.tappvatten,
+                    ...patch.kontrollpunkter.tappvatten,
+                  }
+                : prev.badrum.kontrollpunkter?.tappvatten,
+            }
+          : prev.badrum.kontrollpunkter,
       };
       const next = { ...prev, badrum };
       persist({ lagenhetsRum: next });
@@ -663,6 +780,18 @@ export function LagenhetInfoPanel({
             senasteRenovering: patch.senasteRenovering
               ? { ...r.senasteRenovering, ...patch.senasteRenovering }
               : r.senasteRenovering,
+            kontrollpunkter: patch.kontrollpunkter
+              ? {
+                  ...r.kontrollpunkter,
+                  ...patch.kontrollpunkter,
+                  tappvatten: patch.kontrollpunkter.tappvatten
+                    ? {
+                        ...r.kontrollpunkter?.tappvatten,
+                        ...patch.kontrollpunkter.tappvatten,
+                      }
+                    : r.kontrollpunkter?.tappvatten,
+                }
+              : r.kontrollpunkter,
             besiktning: mergeBesiktning(r.besiktning, patch.besiktning),
           };
         }),
@@ -1016,7 +1145,10 @@ export function LagenhetInfoPanel({
               titel="Badrum"
               status={lagenhetsRum.badrum.besiktning}
               sammanfattning={sammanfattaRumsstatus("Badrum", lagenhetsRum.badrum)}
-              accent={besiktningBehoverAtgard(lagenhetsRum.badrum.besiktning)}
+              accent={
+                besiktningBehoverAtgard(lagenhetsRum.badrum.besiktning) ||
+                badrumKontrollBehoverAtgard(lagenhetsRum.badrum.kontrollpunkter)
+              }
             >
               <div className="mb-3">
                 <GrannPaverkanInfo />
@@ -1034,6 +1166,12 @@ export function LagenhetInfoPanel({
                 />
               </div>
               <div className="mt-3">
+                <BadrumKontrollpunkterFalt
+                  varde={lagenhetsRum.badrum.kontrollpunkter ?? {}}
+                  onChange={(kontrollpunkter) => uppdateraBadrum({ kontrollpunkter })}
+                />
+              </div>
+              <div className="mt-3">
                 <UppvarmningFalt
                   varde={lagenhetsRum.badrum.uppvarmning ?? {}}
                   onChange={(uppvarmning) => uppdateraBadrum({ uppvarmning })}
@@ -1047,7 +1185,11 @@ export function LagenhetInfoPanel({
                 titel={rum.namn}
                 status={rum.besiktning}
                 sammanfattning={sammanfattaTillagtRum(rum)}
-                accent={besiktningBehoverAtgard(rum.besiktning)}
+                accent={
+                  besiktningBehoverAtgard(rum.besiktning) ||
+                  (rum.typ === "badrum" &&
+                    badrumKontrollBehoverAtgard(rum.kontrollpunkter))
+                }
               >
                 <div className="mb-2 flex justify-end">
                   <button

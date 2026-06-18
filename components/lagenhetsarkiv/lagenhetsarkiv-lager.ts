@@ -68,6 +68,10 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
         badrum: {
           senasteRenovering: { ar: "2024", harBilder: true },
           besiktning: { status: "bra" },
+          kontrollpunkter: {
+            tatskiktGolvbrunn: "ok",
+            tappvatten: { plats: "rorschakt", lackageIndikering: true },
+          },
           uppvarmning: { typ: "golvvarme-el", antal: "1" },
         },
         ovrigaRum: [],

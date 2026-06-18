@@ -88,10 +88,38 @@ export type LagenhetKok = {
   besiktning?: RumBesiktning;
 };
 
+export type BadrumKontrollpunktStatus = "" | "ok" | "observera";
+
+export const BADRUM_KONTROLL_ETIKETTER: Record<BadrumKontrollpunktStatus, string> =
+  {
+    "": "Ej bedömd",
+    ok: "OK",
+    observera: "Observera",
+  };
+
+export type TappvattenPlatsTyp = "" | "teknikskap" | "rorschakt";
+
+export const TAPPVATTEN_PLATS_ETIKETTER: Record<TappvattenPlatsTyp, string> = {
+  "": "— Välj plats —",
+  teknikskap: "Teknikskåp",
+  rorschakt: "Rörschakt med vattentät botten",
+};
+
+export type BadrumTappvatten = {
+  plats?: TappvattenPlatsTyp;
+  lackageIndikering?: boolean;
+};
+
+export type BadrumKontrollpunkter = {
+  tatskiktGolvbrunn?: BadrumKontrollpunktStatus;
+  tappvatten?: BadrumTappvatten;
+};
+
 export type LagenhetBadrum = {
   senasteRenovering?: SenasteRenovering;
   uppvarmning?: LagenhetUppvarmning;
   besiktning?: RumBesiktning;
+  kontrollpunkter?: BadrumKontrollpunkter;
 };
 
 export type LagenhetHall = {
@@ -133,6 +161,7 @@ export type LagenhetOvrigtRum = {
   senasteRenovering?: SenasteRenovering;
   lackagekydd?: KokLackagekydd;
   dorrTyp?: EntreDorrTyp;
+  kontrollpunkter?: BadrumKontrollpunkter;
   uppvarmning?: LagenhetUppvarmning;
   besiktning?: RumBesiktning;
 };
@@ -352,7 +381,38 @@ export function skapaTillagtRum(
     uppvarmning: {},
   };
   if (typ === "kok") return { ...bas, lackagekydd: {} };
+  if (typ === "badrum") return { ...bas, kontrollpunkter: {} };
   return bas;
+}
+
+export function formateraBadrumKontrollpunkter(
+  k?: BadrumKontrollpunkter,
+): string | undefined {
+  if (!k) return undefined;
+  const delar: string[] = [];
+  if (k.tatskiktGolvbrunn) {
+    delar.push(
+      `Tätskikt golvbrunn: ${BADRUM_KONTROLL_ETIKETTER[k.tatskiktGolvbrunn]}`,
+    );
+  }
+  if (k.tappvatten?.plats) {
+    const plats = TAPPVATTEN_PLATS_ETIKETTER[k.tappvatten.plats];
+    delar.push(
+      k.tappvatten.lackageIndikering
+        ? `${plats} · läckageindikering`
+        : plats,
+    );
+  }
+  return delar.length > 0 ? delar.join(" · ") : undefined;
+}
+
+export function badrumKontrollBehoverAtgard(k?: BadrumKontrollpunkter): boolean {
+  return (
+    k?.tatskiktGolvbrunn === "observera" ||
+    (k?.tappvatten?.plats !== undefined &&
+      k.tappvatten.plats !== "" &&
+      !k.tappvatten.lackageIndikering)
+  );
 }
 
 export function formateraEntreDorr(d?: EntreDorrTyp): string | undefined {
@@ -403,6 +463,8 @@ export function sammanfattaTillagtRum(r: LagenhetOvrigtRum): string {
   if (varme) delar.push(varme);
   const dorr = formateraEntreDorr(r.dorrTyp);
   if (dorr) delar.push(dorr);
+  const kontroll = formateraBadrumKontrollpunkter(r.kontrollpunkter);
+  if (kontroll) delar.push(kontroll);
   if (r.besiktning?.fordjupadUndersokning) {
     delar.push("Fördjupad undersökning");
   }
@@ -425,17 +487,21 @@ export function sammanfattaRumsstatus(
   opts: {
     besiktning?: RumBesiktning;
     renovering?: SenasteRenovering;
+    senasteRenovering?: SenasteRenovering;
     uppvarmning?: LagenhetUppvarmning;
+    kontrollpunkter?: BadrumKontrollpunkter;
   },
 ): string {
   const delar: string[] = [];
   if (opts.besiktning?.status) {
     delar.push(BESIKTNING_STATUS_ETIKETTER[opts.besiktning.status]);
   }
-  const ren = formateraRenovering(opts.renovering);
+  const ren = formateraRenovering(opts.renovering ?? opts.senasteRenovering);
   if (ren) delar.push(`Renovering ${ren}`);
   const varme = formateraUppvarmning(opts.uppvarmning);
   if (varme) delar.push(varme);
+  const kontroll = formateraBadrumKontrollpunkter(opts.kontrollpunkter);
+  if (kontroll) delar.push(kontroll);
   if (opts.besiktning?.fordjupadUndersokning) {
     delar.push("Fördjupad undersökning");
   }
@@ -459,13 +525,15 @@ export function lagenhetHarIfylldInfo(apartment: ApartmentFolder): boolean {
     formateraUppvarmning(rum.hall.uppvarmning) ||
     formateraUppvarmning(rum.kok.uppvarmning) ||
     formateraUppvarmning(rum.badrum.uppvarmning) ||
+    formateraBadrumKontrollpunkter(rum.badrum.kontrollpunkter) ||
     rum.ovrigaRum.some(
       (r) =>
         r.namn.trim() ||
         formateraUppvarmning(r.uppvarmning) ||
         r.besiktning?.status ||
         formateraRenovering(r.senasteRenovering) ||
-        formateraEntreDorr(r.dorrTyp),
+        formateraEntreDorr(r.dorrTyp) ||
+        formateraBadrumKontrollpunkter(r.kontrollpunkter),
     ) ||
     eldstader.length > 0 ||
     flaktHarVarde(flakt) ||
