@@ -166,24 +166,20 @@ function MappDelSektion({
 
   return (
     <div className="rounded-xl border border-border bg-white">
-      <div className="flex items-center gap-2 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+        <div className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-foreground">{etikett}</span>
+          {sammanfattning && (
+            <span className="block truncate text-xs text-muted">{sammanfattning}</span>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setOppen((v) => !v)}
-          className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
+          className="shrink-0 rounded-lg border border-primary bg-white px-3 py-1.5 text-xs font-semibold text-primary-dark hover:bg-[#eef6f0]"
           aria-expanded={oppen}
         >
-          <span className="min-w-0">
-            <span className="block text-sm font-medium text-foreground">
-              {etikett}
-            </span>
-            {sammanfattning && (
-              <span className="block truncate text-xs text-muted">
-                {sammanfattning}
-              </span>
-            )}
-          </span>
-          <span className="shrink-0 text-xs text-muted">{oppen ? "−" : "+"}</span>
+          {oppen ? "Stäng" : "Öppna"}
         </button>
         <button
           type="button"
@@ -502,6 +498,7 @@ export function RenoveringsMappPanel({
   onSigneraEgenkontroll,
   onLaddaUpSkadebild,
 }: RenoveringsMappPanelProps) {
+  const [oppen, setOppen] = useState(false);
   const mall = hamtaRenoveringsMall(mapp.mallId ?? "ovrigt");
   const forvantade = forvantadeDokumentForMall(mall);
   const totaltDokument = antalDokumentRenoveringsMapp(mapp);
@@ -518,9 +515,13 @@ export function RenoveringsMappPanel({
   });
 
   return (
-    <article className="rounded-2xl border border-border bg-background p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <article
+      className={`rounded-2xl border bg-background transition-shadow ${
+        oppen ? "border-primary/40 shadow-sm" : "border-border"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold text-foreground">{mapp.name}</h4>
             <span className="rounded-full bg-[#eef6f0] px-2 py-0.5 text-xs font-medium text-primary-dark">
@@ -536,7 +537,29 @@ export function RenoveringsMappPanel({
                   : ""
               }`}
           </p>
-          <label className="mt-2 block text-xs">
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setOppen((v) => !v)}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+            aria-expanded={oppen}
+          >
+            {oppen ? "Stäng mapp" : "Öppna mapp"}
+          </button>
+          <button
+            type="button"
+            onClick={onTaBort}
+            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:text-red-800"
+          >
+            Ta bort mapp
+          </button>
+        </div>
+      </div>
+
+      {oppen && (
+        <div className="space-y-4 border-t border-border px-4 pb-4 pt-4">
+          <label className="block text-xs">
             <span className="font-medium text-muted">Typ av renovering</span>
             <select
               value={mapp.mallId ?? "ovrigt"}
@@ -550,15 +573,6 @@ export function RenoveringsMappPanel({
               ))}
             </select>
           </label>
-        </div>
-        <button
-          type="button"
-          onClick={onTaBort}
-          className="text-xs font-medium text-muted hover:text-primary-dark"
-        >
-          Ta bort mapp
-        </button>
-      </div>
 
       {saknade.length > 0 && (
         <div className="mt-4 rounded-lg border border-dashed border-primary/30 bg-[#fafcfa] p-3">
@@ -656,6 +670,8 @@ export function RenoveringsMappPanel({
           );
         })}
       </div>
+        </div>
+      )}
     </article>
   );
 }

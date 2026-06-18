@@ -457,27 +457,71 @@ export function ApartmentArchiveDemo() {
             Skapa lägenhet
           </button>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {apartments.map((apartment) => (
-            <button
-              key={apartment.id}
-              type="button"
-              onClick={() => setActiveApartmentId(apartment.id)}
-              className={`rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
-                apartment.id === activeApartment.id
-                  ? "border-primary bg-[#e2f0e6] text-primary-dark"
-                  : "border-border bg-white text-foreground hover:border-primary/40"
-              }`}
-            >
-              {formatLagenhetEtikett(apartment.lagenhetsnummer)}
-              {apartment.folders.length > 0 && (
-                <span className="ml-1 text-xs font-normal text-muted">
-                  · {apartment.folders.length} renovering
-                  {apartment.folders.length > 1 ? "ar" : ""}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {apartments.map((apartment) => {
+            const aktiv = apartment.id === activeApartment.id;
+            return (
+              <div
+                key={apartment.id}
+                className={`relative rounded-2xl border-2 p-4 transition-shadow ${
+                  aktiv
+                    ? "border-primary bg-[#e2f0e6] shadow-md"
+                    : "border-border bg-white hover:border-primary/40 hover:shadow-sm"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveApartmentId(apartment.id)}
+                  className="w-full text-left"
+                >
+                  <p className="text-lg font-bold text-foreground">
+                    {formatLagenhetEtikett(apartment.lagenhetsnummer)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {apartment.folders.length > 0
+                      ? `${apartment.folders.length} renoveringsmapp${
+                          apartment.folders.length > 1 ? "ar" : ""
+                        }`
+                      : "Inga renoveringsmappar"}
+                  </p>
+                  {aktiv && (
+                    <span className="mt-2 inline-block rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      Vald
+                    </span>
+                  )}
+                </button>
+                {apartments.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => deleteApartment(apartment.id)}
+                    className="absolute right-3 top-3 text-xs text-muted hover:text-red-800"
+                  >
+                    Ta bort
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
+            Lägenhetsmappar
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Grundmappar för {formatLagenhetEtikett(activeApartment.lagenhetsnummer)}.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            {activeApartment.basePages.map((page) => (
+              <div
+                key={page}
+                className="rounded-xl border border-border bg-white p-4 shadow-sm"
+              >
+                <p className="text-sm font-semibold text-foreground">{page}</p>
+                <p className="mt-1 text-xs text-muted">Grundmapp för dokument</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -489,50 +533,15 @@ export function ApartmentArchiveDemo() {
         />
       </div>
 
-      <div className="grid lg:grid-cols-[0.8fr_1.2fr]">
-        <aside className="border-b border-border p-5 lg:border-b-0 lg:border-r sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-            Hantera lägenheter
-          </p>
-          <div className="mt-4 space-y-2">
-            {apartments.map((apartment) => (
-              <div
-                key={apartment.id}
-                className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
-                  apartment.id === activeApartment.id
-                    ? "border-primary bg-[#e2f0e6]"
-                    : "border-border bg-background"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveApartmentId(apartment.id)}
-                  className="text-left text-sm font-medium text-foreground"
-                >
-                  {formatLagenhetEtikett(apartment.lagenhetsnummer)}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deleteApartment(apartment.id)}
-                  disabled={apartments.length === 1}
-                  className="text-xs text-muted hover:text-primary-dark disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Ta bort
-                </button>
-              </div>
-            ))}
-          </div>
-        </aside>
+      <div className="border-b border-border p-5 sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
+          Renoveringsarkiv
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          Mappar och dokument för {formatLagenhetEtikett(activeApartment.lagenhetsnummer)}.
+        </p>
 
-        <section className="p-5 sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-            Renoveringsarkiv
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            Mappar och dokument för {formatLagenhetEtikett(activeApartment.lagenhetsnummer)}.
-          </p>
-
-          <div className="mt-5 rounded-2xl border border-border p-4">
+        <div className="mt-5 rounded-2xl border border-border p-4">
             <h4 className="font-semibold text-foreground">Byt lägenhetsnummer</h4>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               Byt nummer utan att förlora mappar eller dokument — allt följer med
@@ -594,18 +603,6 @@ export function ApartmentArchiveDemo() {
                 {nummerbyteMeddelande.text}
               </p>
             )}
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {activeApartment.basePages.map((page) => (
-              <div
-                key={page}
-                className="rounded-xl border border-border bg-background p-4"
-              >
-                <p className="text-sm font-semibold text-foreground">{page}</p>
-                <p className="mt-1 text-xs text-muted">Grundmapp för dokument</p>
-              </div>
-            ))}
           </div>
 
           <div className="mt-6 rounded-2xl border border-primary/25 bg-[#fafcfa] p-4">
@@ -791,7 +788,6 @@ export function ApartmentArchiveDemo() {
               ))
             )}
           </div>
-        </section>
       </div>
     </div>
   );
