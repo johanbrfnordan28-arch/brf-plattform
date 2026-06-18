@@ -56,7 +56,7 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
       antalWC: "1",
       lagenhetsRum: {
         hall: {
-          besiktning: { status: "ok", senastBesiktad: "2025-03-15" },
+          besiktning: { status: "normalt", senastBesiktad: "2025-03-15" },
           uppvarmning: { typ: "radiator", antal: "2" },
         },
         kok: {
@@ -67,7 +67,7 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
         },
         badrum: {
           senasteRenovering: { ar: "2024", harBilder: true },
-          besiktning: { status: "ok" },
+          besiktning: { status: "bra" },
           uppvarmning: { typ: "golvvarme-el", antal: "1" },
         },
         ovrigaRum: [],

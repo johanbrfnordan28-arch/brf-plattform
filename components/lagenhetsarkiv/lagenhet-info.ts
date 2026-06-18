@@ -15,19 +15,50 @@ export const UPPVARMNING_ETIKETTER: Record<UppvarmningTyp, string> = {
   elradiator: "Elradiator",
 };
 
-export type BesiktningStatus = "" | "ok" | "observera" | "daligt";
+export type BesiktningStatus = "" | "bra" | "normalt" | "observera";
+
+/** @deprecated Migreras till normalt */
+export type LegacyBesiktningStatus = "ok" | "daligt";
 
 export const BESIKTNING_STATUS_ETIKETTER: Record<BesiktningStatus, string> = {
   "": "Ej bedömd",
-  ok: "OK",
+  bra: "Bra skick",
+  normalt: "Normalt skick",
   observera: "Observera",
-  daligt: "Dåligt skick",
 };
+
+export const BESIKTNING_STATUS_VAL: BesiktningStatus[] = [
+  "",
+  "bra",
+  "normalt",
+  "observera",
+];
+
+export function normaliseraBesiktningStatus(
+  status?: BesiktningStatus | LegacyBesiktningStatus | string,
+): BesiktningStatus {
+  if (status === "ok") return "normalt";
+  if (status === "daligt") return "observera";
+  if (status === "bra" || status === "normalt" || status === "observera") {
+    return status;
+  }
+  return "";
+}
+
+function normaliseraRumBesiktning(
+  besiktning?: RumBesiktning,
+): RumBesiktning | undefined {
+  if (!besiktning) return undefined;
+  return {
+    ...besiktning,
+    status: normaliseraBesiktningStatus(besiktning.status),
+  };
+}
 
 /** Enkel besiktning per rum — kan kompletteras löpande. */
 export type RumBesiktning = {
   status?: BesiktningStatus;
-  /** Kryssas i t.ex. vid dåligt skick — utlöser fördjupad undersökning. */
+  /** Kryssas i vid observera eller osäker konstruktion — utlöser fördjupad undersökning. */
   fordjupadUndersokning?: boolean;
   senastBesiktad?: string;
   notering?: string;
@@ -189,17 +220,27 @@ export function normaliseraLagenhetsRum(
 ): LagenhetsRumsInfo {
   if (apartment.lagenhetsRum) {
     return {
-      hall: apartment.lagenhetsRum.hall ?? {},
+      hall: {
+        ...apartment.lagenhetsRum.hall,
+        besiktning: normaliseraRumBesiktning(apartment.lagenhetsRum.hall?.besiktning),
+      },
       kok: {
         ...apartment.lagenhetsRum.kok,
         lackagekydd: {
           ...apartment.lagenhetsRum.kok?.lackagekydd,
         },
+        besiktning: normaliseraRumBesiktning(apartment.lagenhetsRum.kok?.besiktning),
       },
-      badrum: apartment.lagenhetsRum.badrum ?? {},
+      badrum: {
+        ...apartment.lagenhetsRum.badrum,
+        besiktning: normaliseraRumBesiktning(
+          apartment.lagenhetsRum.badrum?.besiktning,
+        ),
+      },
       ovrigaRum: (apartment.lagenhetsRum.ovrigaRum ?? []).map((r) => ({
         ...r,
         typ: r.typ ?? "ovrigt",
+        besiktning: normaliseraRumBesiktning(r.besiktning),
       })),
     };
   }
@@ -260,7 +301,6 @@ export function formateraRenovering(r?: SenasteRenovering): string | undefined {
 
 export function besiktningBehoverAtgard(b?: RumBesiktning): boolean {
   return (
-    b?.status === "daligt" ||
     b?.status === "observera" ||
     b?.fordjupadUndersokning === true
   );

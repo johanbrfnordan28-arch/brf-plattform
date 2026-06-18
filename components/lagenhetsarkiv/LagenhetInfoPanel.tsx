@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { ApartmentFolder } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import {
   BESIKTNING_STATUS_ETIKETTER,
+  BESIKTNING_STATUS_VAL,
   besiktningBehoverAtgard,
   ELDSTAD_PROVTRYCKNING_INFO,
   flaktHarVarde,
@@ -102,13 +103,11 @@ function byggSparPatch(
 function StatusBadge({ besiktning }: { besiktning?: RumBesiktning }) {
   const status = besiktning?.status ?? "";
   const klass =
-    status === "ok"
+    status === "bra" || status === "normalt"
       ? "bg-[#e2f0e6] text-primary-dark"
       : status === "observera"
         ? "bg-amber-100 text-amber-950"
-        : status === "daligt"
-          ? "bg-red-100 text-red-900"
-          : "bg-slate-100 text-muted";
+        : "bg-slate-100 text-muted";
 
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
@@ -425,9 +424,7 @@ function BesiktningFalt({
   onChange: (next: RumBesiktning) => void;
 }) {
   const visarFordjupad =
-    varde.status === "daligt" ||
-    varde.status === "observera" ||
-    varde.fordjupadUndersokning;
+    varde.status === "observera" || varde.fordjupadUndersokning;
 
   return (
     <div className="rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-3">
@@ -442,18 +439,16 @@ function BesiktningFalt({
               ...varde,
               status,
               fordjupadUndersokning:
-                status === "daligt" ? true : varde.fordjupadUndersokning,
+                status === "observera" ? true : varde.fordjupadUndersokning,
             });
           }}
           className={inputKlass}
         >
-          {(Object.keys(BESIKTNING_STATUS_ETIKETTER) as BesiktningStatus[]).map(
-            (s) => (
-              <option key={s || "tom"} value={s}>
-                {BESIKTNING_STATUS_ETIKETTER[s]}
-              </option>
-            ),
-          )}
+          {BESIKTNING_STATUS_VAL.map((s) => (
+            <option key={s || "tom"} value={s}>
+              {BESIKTNING_STATUS_ETIKETTER[s]}
+            </option>
+          ))}
         </select>
       </div>
       {visarFordjupad && (
@@ -471,7 +466,7 @@ function BesiktningFalt({
               Fördjupad undersökning behövs
             </span>
             <span className="mt-0.5 block text-xs text-muted">
-              Kryssa i vid t.ex. dåligt skick, fukt eller osäker konstruktion.
+              Kryssa i vid observera-status, fukt eller osäker konstruktion.
             </span>
           </span>
         </label>
