@@ -54,7 +54,6 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
       boyta: "78",
       antalBadrum: "1",
       antalWC: "1",
-      installationer: ["Radiatorer (vattenburen)", "Luftvärmepump"],
       lagenhetsRum: {
         hall: {
           besiktning: { status: "ok", senastBesiktad: "2025-03-15" },
@@ -73,7 +72,13 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
         },
         ovrigaRum: [],
       },
-      eldstader: [{ id: "eldstad-demo-1", godkand: true }],
+      eldstader: [
+        {
+          id: "eldstad-demo-1",
+          godkand: true,
+          eldningsforbud: false,
+        },
+      ],
     },
     ...["1002", "1003", "1004", "1005"].map((nr, index) => ({
       id: index + 2,
