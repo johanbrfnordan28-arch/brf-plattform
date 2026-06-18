@@ -30,6 +30,10 @@ import {
   MEDLEMMAR_RENOVERING_EVENT,
 } from "@/components/medlemmar/medlemmar-lager";
 import {
+  RENOVERING_MEDLEM_SIGNERING_EVENT,
+} from "@/components/medlemmar/renovering-medlems-signering-lager";
+import type { MedlemsKravState } from "@/components/lagenhetsarkiv/medlems-krav";
+import {
   RenoveringsMappPanel,
   skapaSigneratEgenkontrollDokument,
 } from "@/components/lagenhetsarkiv/RenoveringsMappPanel";
@@ -110,6 +114,22 @@ export function ApartmentArchiveDemo() {
     window.addEventListener(MEDLEMMAR_RENOVERING_EVENT, syncRenoveringstyper);
     return () =>
       window.removeEventListener(MEDLEMMAR_RENOVERING_EVENT, syncRenoveringstyper);
+  }, []);
+
+  useEffect(() => {
+    function syncEfterMedlemSignering() {
+      const sparad = lasLagenhetsarkiv();
+      if (sparad) setApartments(sparad.apartments);
+    }
+    window.addEventListener(
+      RENOVERING_MEDLEM_SIGNERING_EVENT,
+      syncEfterMedlemSignering,
+    );
+    return () =>
+      window.removeEventListener(
+        RENOVERING_MEDLEM_SIGNERING_EVENT,
+        syncEfterMedlemSignering,
+      );
   }, []);
 
   const valdMallObj = useMemo(
@@ -328,6 +348,20 @@ export function ApartmentArchiveDemo() {
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) => ({
         ...m,
         forvantadeHandlingar: handlingar,
+      })),
+    }));
+  }
+
+  function uppdateraMedlemsKrav(
+    apartmentId: number,
+    mappId: number,
+    medlemsKrav: MedlemsKravState,
+  ) {
+    uppdateraLägenhet(apartmentId, (a) => ({
+      ...a,
+      folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) => ({
+        ...m,
+        medlemsKrav,
       })),
     }));
   }
@@ -790,6 +824,8 @@ export function ApartmentArchiveDemo() {
                 <RenoveringsMappPanel
                   key={mapp.id}
                   mapp={mapp}
+                  apartmentId={apartment.id}
+                  lagenhetsnummer={apartment.lagenhetsnummer}
                   onTaBort={() => taBortRenoveringsMapp(apartment.id, mapp.id)}
                   onBytTyp={(nyMallId) =>
                     bytMappTyp(apartment.id, mapp.id, nyMallId)
@@ -806,6 +842,9 @@ export function ApartmentArchiveDemo() {
                       mapp.id,
                       handlingar,
                     )
+                  }
+                  onUppdateraMedlemsKrav={(krav) =>
+                    uppdateraMedlemsKrav(apartment.id, mapp.id, krav)
                   }
                   onLäggTillDokument={(undermappId, filnamn) =>
                     läggTillDokumentIMapp(

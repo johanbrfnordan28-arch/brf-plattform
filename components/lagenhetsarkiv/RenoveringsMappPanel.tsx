@@ -23,6 +23,8 @@ import {
   type RenoveringsMappDel,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
+import { MedlemsKravPanel } from "@/components/lagenhetsarkiv/MedlemsKravPanel";
+import type { MedlemsKravState } from "@/components/lagenhetsarkiv/medlems-krav";
 
 type EgenkontrollListaProps = {
   mapp: RenoveringsMapp;
@@ -474,11 +476,14 @@ function UndermappInnehall({
 
 type RenoveringsMappPanelProps = {
   mapp: RenoveringsMapp;
+  apartmentId: number;
+  lagenhetsnummer: string;
   onTaBort: () => void;
   onBytTyp: (mallId: RenoveringsMallId) => void;
   onLäggTillDel: (del: RenoveringsMappDel) => void;
   onTaBortDel: (del: RenoveringsMappDel) => void;
   onUppdateraForvantadeHandlingar: (handlingar: string[]) => void;
+  onUppdateraMedlemsKrav: (krav: MedlemsKravState) => void;
   onLäggTillDokument: (undermappId: string, filnamn: string) => void;
   onTaBortDokument: (undermappId: string, docId: string) => void;
   onSigneraEgenkontroll: (punktId: string) => void;
@@ -487,11 +492,14 @@ type RenoveringsMappPanelProps = {
 
 export function RenoveringsMappPanel({
   mapp,
+  apartmentId,
+  lagenhetsnummer,
   onTaBort,
   onBytTyp,
   onLäggTillDel,
   onTaBortDel,
   onUppdateraForvantadeHandlingar,
+  onUppdateraMedlemsKrav,
   onLäggTillDokument,
   onTaBortDokument,
   onSigneraEgenkontroll,
@@ -574,6 +582,17 @@ export function RenoveringsMappPanel({
               ))}
             </select>
           </label>
+
+          <MedlemsKravPanel
+            medlemsKrav={mapp.medlemsKrav}
+            mallId={mapp.mallId ?? "ovrigt"}
+            mappNamn={mapp.name}
+            mappId={mapp.id}
+            apartmentId={apartmentId}
+            lagenhetsnummer={lagenhetsnummer}
+            mallEtikett={mall.etikett}
+            onUppdatera={onUppdateraMedlemsKrav}
+          />
 
       {saknade.length > 0 && (
         <div className="mt-4 rounded-lg border border-dashed border-primary/30 bg-[#fafcfa] p-3">
