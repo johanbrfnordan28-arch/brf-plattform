@@ -228,6 +228,40 @@ export function laggaTillMappDel(
   return next;
 }
 
+/** Byter renoveringstyp på befintlig mapp — behåller namn och dokument i kvarvarande delar. */
+export function bytRenoveringsMappMall(
+  mapp: RenoveringsMapp,
+  nyMallId: RenoveringsMallId,
+): RenoveringsMapp {
+  if ((mapp.mallId ?? "ovrigt") === nyMallId) return mapp;
+
+  const mall = hamtaRenoveringsMall(nyMallId);
+  const tillgangligaUndermappar = undermappTyperForMall(mall);
+  const next: RenoveringsMapp = {
+    ...mapp,
+    mallId: nyMallId,
+    undermappar: mapp.undermappar.filter((u) =>
+      tillgangligaUndermappar.includes(u.typ),
+    ),
+  };
+
+  if (mappHarDel(mapp, "egenkontroller")) {
+    next.egenkontroller = egenkontrollPunkterForMall(mall).map((p) => ({
+      ...p,
+      signerad: false,
+      skadebilder: [],
+    }));
+  }
+
+  if (mappHarDel(mapp, "handlingar")) {
+    next.forvantadeHandlingar = [
+      ...forvantadeDokumentForMall(mall).handlingar,
+    ];
+  }
+
+  return next;
+}
+
 export function taBortMappDel(
   mapp: RenoveringsMapp,
   del: RenoveringsMappDel,

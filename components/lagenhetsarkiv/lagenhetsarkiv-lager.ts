@@ -7,7 +7,7 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 
-const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv";
+const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v2";
 
 export const LAGENHETSARKIV_EVENT = "lagenhetsarkiv-uppdaterad";
 
@@ -49,6 +49,31 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
       lagenhetsnummer: "1001",
       basePages: [...lagenhetsBasSidor],
       folders: [badrum2024],
+      adress: "Storgatan 1, lgh 1001",
+      vaning: "3",
+      boyta: "78",
+      antalBadrum: "1",
+      antalWC: "1",
+      installationer: ["Radiatorer (vattenburen)", "Luftvärmepump"],
+      lagenhetsRum: {
+        hall: {
+          besiktning: { status: "ok", senastBesiktad: "2025-03-15" },
+          uppvarmning: { typ: "radiator", antal: "2" },
+        },
+        kok: {
+          senasteRenovering: { ar: "2019", harDokumentation: true },
+          lackagekydd: { diskmaskin: true, kylFrys: true },
+          besiktning: { status: "observera" },
+          uppvarmning: { typ: "golvvarme-vatten", antal: "1" },
+        },
+        badrum: {
+          senasteRenovering: { ar: "2024", harBilder: true },
+          besiktning: { status: "ok" },
+          uppvarmning: { typ: "golvvarme-el", antal: "1" },
+        },
+        ovrigaRum: [],
+      },
+      eldstader: [{ id: "eldstad-demo-1", godkand: true }],
     },
     ...["1002", "1003", "1004", "1005"].map((nr, index) => ({
       id: index + 2,

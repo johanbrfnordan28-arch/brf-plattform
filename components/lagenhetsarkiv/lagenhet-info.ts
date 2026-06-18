@@ -89,9 +89,11 @@ export type LagenhetEldstad = {
 
 /** Fläkt som endast betjänar denna lägenhet — inte fastighetens gemensamma system. */
 export type LagenhetFlakt = {
+  /** Fläkt/ventilation som endast betjänar denna lägenhet. */
   aktiv?: boolean;
-  beskrivning?: string;
+  egenVentilation?: boolean;
   rokgasflakt?: boolean;
+  beskrivning?: string;
 };
 
 export function skapaLagenhetRumId(): string {
@@ -169,9 +171,19 @@ export function normaliseraFlakt(apartment: ApartmentFolder): LagenhetFlakt {
   if (!aktiv && !apartment.ventilation?.trim()) return {};
   return {
     aktiv: aktiv || undefined,
-    beskrivning: apartment.ventilation,
+    egenVentilation: apartment.harEgenFlaktVentilation || undefined,
     rokgasflakt: apartment.harRokgasFlakt || undefined,
+    beskrivning: apartment.ventilation,
   };
+}
+
+export function flaktHarVarde(flakt: LagenhetFlakt): boolean {
+  return !!(
+    flakt.aktiv ||
+    flakt.egenVentilation ||
+    flakt.rokgasflakt ||
+    flakt.beskrivning?.trim()
+  );
 }
 
 export function formateraUppvarmning(u?: LagenhetUppvarmning): string | undefined {
@@ -253,6 +265,9 @@ export function lagenhetHarIfylldInfo(apartment: ApartmentFolder): boolean {
         r.besiktning?.status,
     ) ||
     eldstader.length > 0 ||
-    flakt.aktiv
+    flaktHarVarde(flakt) ||
+    (apartment.installationer?.length ?? 0) > 0 ||
+    apartment.antalBadrum?.trim() ||
+    apartment.antalWC?.trim()
   );
 }
