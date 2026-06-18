@@ -34,14 +34,12 @@ export default function ForeningMedlemmarPage() {
         <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-foreground">Lägenhetsarkiv</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Välj lägenhet i listan, fyll i{" "}
-            <a
-              href="#lagenhetsuppgifter"
-              className="font-medium text-primary-dark underline-offset-2 hover:underline"
-            >
-              lägenhetsuppgifter och besiktning
-            </a>{" "}
-            — sedan skapa renoveringsmappar vid behov.
+            Välj lägenhet ovan — panelen{" "}
+            <strong className="font-medium text-foreground">
+              Lägenhetsuppgifter & tekniska installationer
+            </strong>{" "}
+            visas direkt under lägenhetslistan med statusöversikt, rum, besiktning
+            och installationer. Skapa renoveringsmappar längre ned i samma vy.
           </p>
 
           <div className="mt-8">

@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ApartmentFolder } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
+import {
+  hamtaInstallationer,
+  LAGENHET_INSTALLATION_SNABBVAL,
+  type ApartmentFolder,
+} from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import {
   BESIKTNING_STATUS_ETIKETTER,
   besiktningBehoverAtgard,
+  flaktHarVarde,
   formateraRenovering,
   formateraUppvarmning,
   lagenhetHarIfylldInfo,
@@ -48,6 +53,9 @@ function byggSparPatch(
     balkong: string;
     kallareForrad: string;
     pPlats: string;
+    antalBadrum: string;
+    antalWC: string;
+    installationer: string[];
     lagenhetsRum: LagenhetsRumsInfo;
     eldstader: LagenhetEldstad[];
     flakt: LagenhetFlakt;
@@ -65,11 +73,14 @@ function byggSparPatch(
     balkong: data.balkong.trim() || undefined,
     kallareForrad: data.kallareForrad.trim() || undefined,
     pPlats: data.pPlats.trim() || undefined,
+    antalBadrum: data.antalBadrum.trim() || undefined,
+    antalWC: data.antalWC.trim() || undefined,
+    installationer:
+      data.installationer.length > 0 ? data.installationer : undefined,
     lagenhetsRum: data.lagenhetsRum,
     eldstader: data.eldstader.length > 0 ? data.eldstader : undefined,
-    flakt: data.flakt.aktiv ? data.flakt : undefined,
+    flakt: flaktHarVarde(data.flakt) ? data.flakt : undefined,
     lagenhetNotering: data.lagenhetNotering.trim() || undefined,
-    installationer: undefined,
     varme: undefined,
     senastStambyte: undefined,
     eldstadAntal: undefined,
@@ -78,8 +89,6 @@ function byggSparPatch(
     harRokgasFlakt: undefined,
     ventilation: undefined,
     antalRum: undefined,
-    antalBadrum: undefined,
-    antalWC: undefined,
   };
 }
 
@@ -393,10 +402,16 @@ export function LagenhetInfoPanel({
     normaliseraEldstader(apartment),
   );
   const [flakt, setFlakt] = useState<LagenhetFlakt>(normaliseraFlakt(apartment));
+  const [installationer, setInstallationer] = useState<string[]>(
+    hamtaInstallationer(apartment),
+  );
+  const [antalBadrum, setAntalBadrum] = useState(apartment.antalBadrum ?? "");
+  const [antalWC, setAntalWC] = useState(apartment.antalWC ?? "");
   const [lagenhetNotering, setLagenhetNotering] = useState(
     apartment.lagenhetNotering ?? "",
   );
   const [nyttRumsnamn, setNyttRumsnamn] = useState("");
+  const [nyInstallation, setNyInstallation] = useState("");
 
   useEffect(() => {
     setAdress(apartment.adress ?? "");
@@ -412,6 +427,9 @@ export function LagenhetInfoPanel({
     setLagenhetsRum(normaliseraLagenhetsRum(apartment));
     setEldstader(normaliseraEldstader(apartment));
     setFlakt(normaliseraFlakt(apartment));
+    setInstallationer(hamtaInstallationer(apartment));
+    setAntalBadrum(apartment.antalBadrum ?? "");
+    setAntalWC(apartment.antalWC ?? "");
     setLagenhetNotering(apartment.lagenhetNotering ?? "");
   }, [apartment.id]);
 
@@ -426,6 +444,9 @@ export function LagenhetInfoPanel({
     balkong: string;
     kallareForrad: string;
     pPlats: string;
+    antalBadrum: string;
+    antalWC: string;
+    installationer: string[];
     lagenhetsRum: LagenhetsRumsInfo;
     eldstader: LagenhetEldstad[];
     flakt: LagenhetFlakt;
@@ -442,6 +463,9 @@ export function LagenhetInfoPanel({
       balkong,
       kallareForrad,
       pPlats,
+      antalBadrum,
+      antalWC,
+      installationer,
       lagenhetsRum,
       eldstader,
       flakt,
@@ -578,6 +602,30 @@ export function LagenhetInfoPanel({
     });
   }
 
+  function laggTillInstallation(namn: string) {
+    const text = namn.trim();
+    if (!text) return;
+    if (
+      installationer.some((i) => i.toLowerCase() === text.toLowerCase())
+    ) {
+      return;
+    }
+    setInstallationer((prev) => {
+      const next = [...prev, text];
+      persist({ installationer: next });
+      return next;
+    });
+    setNyInstallation("");
+  }
+
+  function taBortInstallation(namn: string) {
+    setInstallationer((prev) => {
+      const next = prev.filter((i) => i !== namn);
+      persist({ installationer: next });
+      return next;
+    });
+  }
+
   function sparaGrund(felt: Partial<{
     adress: string;
     vaning: string;
@@ -589,6 +637,8 @@ export function LagenhetInfoPanel({
     balkong: string;
     kallareForrad: string;
     pPlats: string;
+    antalBadrum: string;
+    antalWC: string;
     lagenhetNotering: string;
   }>) {
     if (felt.adress !== undefined) setAdress(felt.adress);
@@ -601,6 +651,8 @@ export function LagenhetInfoPanel({
     if (felt.balkong !== undefined) setBalkong(felt.balkong);
     if (felt.kallareForrad !== undefined) setKallareForrad(felt.kallareForrad);
     if (felt.pPlats !== undefined) setPPlats(felt.pPlats);
+    if (felt.antalBadrum !== undefined) setAntalBadrum(felt.antalBadrum);
+    if (felt.antalWC !== undefined) setAntalWC(felt.antalWC);
     if (felt.lagenhetNotering !== undefined) setLagenhetNotering(felt.lagenhetNotering);
     persist(felt);
   }
@@ -747,6 +799,51 @@ export function LagenhetInfoPanel({
                 value={andelstal}
                 onBlur={(e) => sparaGrund({ andelstal: e.target.value })}
                 onChange={(e) => setAndelstal(e.target.value)}
+                className={inputKlass}
+              />
+            </div>
+            <div>
+              <label className={labelKlass}>Uppmätt yta (m²)</label>
+              <input
+                type="number"
+                min="0"
+                value={uppmattYta}
+                onBlur={(e) => sparaGrund({ uppmattYta: e.target.value })}
+                onChange={(e) => setUppmattYta(e.target.value)}
+                className={inputKlass}
+              />
+            </div>
+            <div>
+              <label className={labelKlass}>Antal badrum</label>
+              <input
+                type="number"
+                min="0"
+                value={antalBadrum}
+                onBlur={(e) => sparaGrund({ antalBadrum: e.target.value })}
+                onChange={(e) => setAntalBadrum(e.target.value)}
+                placeholder="t.ex. 1"
+                className={inputKlass}
+              />
+            </div>
+            <div>
+              <label className={labelKlass}>Antal WC</label>
+              <input
+                type="number"
+                min="0"
+                value={antalWC}
+                onBlur={(e) => sparaGrund({ antalWC: e.target.value })}
+                onChange={(e) => setAntalWC(e.target.value)}
+                placeholder="t.ex. 1"
+                className={inputKlass}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelKlass}>Ritning / planritning</label>
+              <input
+                value={ritning}
+                onBlur={(e) => sparaGrund({ ritning: e.target.value })}
+                onChange={(e) => setRitning(e.target.value)}
+                placeholder="Filnamn eller länk"
                 className={inputKlass}
               />
             </div>
@@ -958,9 +1055,78 @@ export function LagenhetInfoPanel({
 
         <Sektion
           titel="Tekniska installationer"
-          beskrivning="Eldstäder och fläkt som endast betjänar lägenheten"
+          beskrivning="Värme, ventilation och eldstäder i lägenheten"
+          defaultOppen
         >
           <div className="space-y-4">
+            <div>
+              <p className={labelKlass}>Installationer i lägenheten</p>
+              <p className="mb-2 text-xs text-muted">
+                Lägg till eller ta bort — t.ex. golvvärme, luftvärmepump eller
+                radiatorer. Fjärrvärme registreras inte här (ingår i fastighetens
+                system).
+              </p>
+              {installationer.length > 0 ? (
+                <ul className="mb-2 space-y-1.5">
+                  {installationer.map((inst) => (
+                    <li
+                      key={inst}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-[#fafcfa] px-3 py-2"
+                    >
+                      <span className="text-sm text-foreground">{inst}</span>
+                      <button
+                        type="button"
+                        onClick={() => taBortInstallation(inst)}
+                        className="text-xs text-muted hover:text-red-800"
+                      >
+                        Ta bort
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mb-2 text-xs text-muted">
+                  Inga installationer registrerade ännu.
+                </p>
+              )}
+              <div className="mb-2 flex flex-wrap gap-2">
+                {LAGENHET_INSTALLATION_SNABBVAL.map((snabbval) => (
+                  <button
+                    key={snabbval}
+                    type="button"
+                    onClick={() => laggTillInstallation(snabbval)}
+                    disabled={installationer.some(
+                      (i) => i.toLowerCase() === snabbval.toLowerCase(),
+                    )}
+                    className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/40 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    + {snabbval}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={nyInstallation}
+                  onChange={(e) => setNyInstallation(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      laggTillInstallation(nyInstallation);
+                    }
+                  }}
+                  placeholder="Egen installation, t.ex. Värmepump"
+                  className={inputKlass}
+                />
+                <button
+                  type="button"
+                  onClick={() => laggTillInstallation(nyInstallation)}
+                  className="shrink-0 rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+                >
+                  Lägg till
+                </button>
+              </div>
+            </div>
+
             <div>
               <p className={labelKlass}>Eldstäder</p>
               {eldstader.length > 0 ? (
@@ -1030,24 +1196,31 @@ export function LagenhetInfoPanel({
                 <input
                   type="checkbox"
                   checked={flakt.aktiv ?? false}
-                  onChange={(e) => uppdateraFlakt({ aktiv: e.target.checked })}
+                  onChange={(e) =>
+                    uppdateraFlakt({
+                      aktiv: e.target.checked,
+                      ...(!e.target.checked
+                        ? { egenVentilation: false, rokgasflakt: false }
+                        : {}),
+                    })
+                  }
                   className="rounded border-border"
                 />
                 Fläkt som endast betjänar lägenheten
               </label>
               {flakt.aktiv && (
                 <div className="space-y-2">
-                  <input
-                    value={flakt.beskrivning ?? ""}
-                    onBlur={(e) =>
-                      uppdateraFlakt({ beskrivning: e.target.value })
-                    }
-                    onChange={(e) =>
-                      setFlakt((prev) => ({ ...prev, beskrivning: e.target.value }))
-                    }
-                    placeholder="Beskrivning, t.ex. köksfläkt med egen kanal"
-                    className={inputKlass}
-                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={flakt.egenVentilation ?? false}
+                      onChange={(e) =>
+                        uppdateraFlakt({ egenVentilation: e.target.checked })
+                      }
+                      className="rounded border-border"
+                    />
+                    Egen ventilation
+                  </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
@@ -1059,6 +1232,17 @@ export function LagenhetInfoPanel({
                     />
                     Rökgasfläkt
                   </label>
+                  <input
+                    value={flakt.beskrivning ?? ""}
+                    onBlur={(e) =>
+                      uppdateraFlakt({ beskrivning: e.target.value })
+                    }
+                    onChange={(e) =>
+                      setFlakt((prev) => ({ ...prev, beskrivning: e.target.value }))
+                    }
+                    placeholder="Beskrivning, t.ex. köksfläkt med egen kanal"
+                    className={inputKlass}
+                  />
                 </div>
               )}
             </div>

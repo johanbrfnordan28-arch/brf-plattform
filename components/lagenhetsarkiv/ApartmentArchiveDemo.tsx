@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   appliceraLagenhetsnummerByte,
   bytLagenhetsnummer,
+  bytRenoveringsMappMall,
   formatLagenhetEtikett,
   hamtaNastaLagenhetsnummer,
   lagenhetsBasSidor,
@@ -56,6 +57,9 @@ export function ApartmentArchiveDemo() {
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
   const [valdMall, setValdMall] = useState<RenoveringsMallId>("badrum");
+  const [parallellaMallVal, setParallellaMallVal] = useState<RenoveringsMallId[]>(
+    [],
+  );
   const [nyMappNamn, setNyMappNamn] = useState("");
   const [valdaRenoveringstyper, setValdaRenoveringstyper] = useState<string[]>([]);
   const [skapadFeedback, setSkapadFeedback] = useState<string | null>(null);
@@ -239,6 +243,35 @@ export function ApartmentArchiveDemo() {
 
   function skapaMappFranMall(mallId: RenoveringsMallId = valdMall) {
     skapaMappar([mallId], nyMappNamn);
+  }
+
+  function vaxlaParallellMall(mallId: RenoveringsMallId) {
+    setValdMall(mallId);
+    setSkapadFeedback(null);
+    setParallellaMallVal((prev) =>
+      prev.includes(mallId)
+        ? prev.filter((id) => id !== mallId)
+        : [...prev, mallId],
+    );
+  }
+
+  function skapaParallellaMappar() {
+    const mallIds =
+      parallellaMallVal.length > 0 ? parallellaMallVal : [valdMall];
+    skapaMappar(
+      mallIds,
+      mallIds.length === 1 ? nyMappNamn : undefined,
+    );
+    setParallellaMallVal([]);
+  }
+
+  function bytMappTyp(mappId: number, nyMallId: RenoveringsMallId) {
+    uppdateraAktivLägenhet((a) => ({
+      ...a,
+      folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) =>
+        bytRenoveringsMappMall(m, nyMallId),
+      ),
+    }));
   }
 
   function taBortRenoveringsMapp(mappId: number) {
@@ -580,8 +613,9 @@ export function ApartmentArchiveDemo() {
               Ny renoveringsmapp
             </h4>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Välj typ och skapa en tom mapp. Lägg sedan till delar — handlingar,
-              egenkontroller, ritning m.m. — efter behov i respektive projekt.
+              Välj en eller flera typer för parallella projekt. Skapa tomma mappar
+              och lägg sedan till delar — handlingar, egenkontroller, ritning m.m.
+              — steg för steg i respektive mapp.
             </p>
 
             {foreslagnaMallar.length > 0 && (
@@ -641,24 +675,32 @@ export function ApartmentArchiveDemo() {
 
             <p className="mt-2 text-xs text-muted">{valdMallObj.beskrivning}</p>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {renoveringsMallar.map((mall) => (
-                <button
-                  key={mall.id}
-                  type="button"
-                  onClick={() => {
-                    setValdMall(mall.id);
-                    setSkapadFeedback(null);
-                  }}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-                    valdMall === mall.id
-                      ? "border-primary bg-[#e2f0e6] text-primary-dark"
-                      : "border-border bg-white text-foreground hover:border-primary/40"
-                  }`}
-                >
-                  {mall.etikett}
-                </button>
-              ))}
+            <p className="mt-3 text-xs text-muted">
+              Klicka för att välja typ — klicka igen för att lägga till eller ta
+              bort i parallell skapning.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {renoveringsMallar.map((mall) => {
+                const parallellVald = parallellaMallVal.includes(mall.id);
+                const aktiv = valdMall === mall.id;
+                return (
+                  <button
+                    key={mall.id}
+                    type="button"
+                    onClick={() => vaxlaParallellMall(mall.id)}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      parallellVald
+                        ? "border-primary bg-[#e2f0e6] text-primary-dark"
+                        : aktiv
+                          ? "border-primary/60 bg-white text-primary-dark"
+                          : "border-border bg-white text-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    {parallellVald ? "✓ " : ""}
+                    {mall.etikett}
+                  </button>
+                );
+              })}
             </div>
 
             <label className="mt-4 block text-sm">
@@ -677,13 +719,23 @@ export function ApartmentArchiveDemo() {
             </label>
 
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => skapaMappFranMall()}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-              >
-                Skapa {valdMallObj.etikett.toLowerCase()}-mapp
-              </button>
+              {parallellaMallVal.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={skapaParallellaMappar}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+                >
+                  Skapa {parallellaMallVal.length} mappar parallellt
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => skapaParallellaMappar()}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+                >
+                  Skapa {valdMallObj.etikett.toLowerCase()}-mapp
+                </button>
+              )}
               {activeApartment.folders.length > 0 && (
                 <span className="text-xs text-muted">
                   {activeApartment.folders.length} mapp
@@ -717,6 +769,7 @@ export function ApartmentArchiveDemo() {
                   key={mapp.id}
                   mapp={mapp}
                   onTaBort={() => taBortRenoveringsMapp(mapp.id)}
+                  onBytTyp={(nyMallId) => bytMappTyp(mapp.id, nyMallId)}
                   onLäggTillDel={(del) => laggTillDelIMapp(mapp.id, del)}
                   onTaBortDel={(del) => taBortDelFranMapp(mapp.id, del)}
                   onUppdateraForvantadeHandlingar={(handlingar) =>

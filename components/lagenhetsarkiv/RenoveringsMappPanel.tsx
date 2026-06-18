@@ -5,8 +5,10 @@ import {
   arStartbesiktningPunkt,
   forvantadeDokumentForMall,
   hamtaRenoveringsMall,
+  renoveringsMallar,
   renoveringsUndermappTyper,
   undermappTyperForMall,
+  type RenoveringsMallId,
   type RenoveringsUndermappTyp,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
 import {
@@ -478,6 +480,7 @@ function UndermappInnehall({
 type RenoveringsMappPanelProps = {
   mapp: RenoveringsMapp;
   onTaBort: () => void;
+  onBytTyp: (mallId: RenoveringsMallId) => void;
   onLäggTillDel: (del: RenoveringsMappDel) => void;
   onTaBortDel: (del: RenoveringsMappDel) => void;
   onUppdateraForvantadeHandlingar: (handlingar: string[]) => void;
@@ -490,6 +493,7 @@ type RenoveringsMappPanelProps = {
 export function RenoveringsMappPanel({
   mapp,
   onTaBort,
+  onBytTyp,
   onLäggTillDel,
   onTaBortDel,
   onUppdateraForvantadeHandlingar,
@@ -532,6 +536,20 @@ export function RenoveringsMappPanel({
                   : ""
               }`}
           </p>
+          <label className="mt-2 block text-xs">
+            <span className="font-medium text-muted">Typ av renovering</span>
+            <select
+              value={mapp.mallId ?? "ovrigt"}
+              onChange={(e) => onBytTyp(e.target.value as RenoveringsMallId)}
+              className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm text-foreground"
+            >
+              {renoveringsMallar.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.etikett}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <button
           type="button"
