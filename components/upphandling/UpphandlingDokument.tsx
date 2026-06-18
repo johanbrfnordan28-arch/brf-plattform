@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { ContentSection } from "@/components/ContentSection";
 import { DokumentbankPanel } from "@/components/dokumentbank/DokumentbankPanel";
 import type { DokumentbankMall } from "@/components/dokumentbank/mallar";
@@ -479,9 +480,7 @@ function KategoriKort({
               {antalIfyllda} dokument
             </span>
           )}
-          <span className="text-primary-dark" aria-hidden>
-            {state.öppen ? "−" : "+"}
-          </span>
+          <OppnaStangIkon oppen={state.öppen} />
         </span>
       </button>
 

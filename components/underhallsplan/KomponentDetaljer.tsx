@@ -1,5 +1,6 @@
 "use client";
 
+import { OppnaStangIkon, OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { useState } from "react";
 import {
   UnderkomponentKort,
@@ -334,9 +335,7 @@ export function KomponentDetaljer({
           className="flex w-full items-center gap-2 rounded-lg border border-border bg-white px-3 py-2.5 text-left"
           aria-expanded={öppnaDeltyper}
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#e2f0e6] text-xs font-bold text-primary-dark">
-            {öppnaDeltyper ? "−" : "+"}
-          </span>
+          <OppnaStangIkon oppen={öppnaDeltyper} storlek="sm" />
           <span className="text-sm font-semibold text-foreground">
             {mall.deltypSektionTitel}
           </span>
@@ -709,23 +708,22 @@ export function KomponentDetaljer({
                 }}
                 headerAction={
                   <div className="flex flex-col items-end gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleUnderkomponentDetaljer(rad.id, rad.aktiv)
-                      }
-                      aria-expanded={ärÖppen}
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold ${
-                        ärÖppen
-                          ? "border border-border bg-white text-foreground hover:bg-muted/30"
-                          : ärLast
-                            ? "border border-amber-200 bg-amber-50/80 text-amber-950"
-                            : "border border-primary/50 bg-[#e2f0e6] text-primary-dark hover:bg-[#d4e8da]"
-                      }`}
-                    >
-                      <span aria-hidden>{ärÖppen ? "▴" : "▾"}</span>
-                      {ärÖppen ? "Stäng" : ärLast ? "Låst" : "Öppna"}
-                    </button>
+                    {ärLast ? (
+                      <span className="rounded-lg border border-amber-200 bg-amber-50/80 px-2.5 py-1.5 text-xs font-semibold text-amber-950">
+                        Låst
+                      </span>
+                    ) : (
+                      <OppnaStangKnapp
+                        oppen={ärÖppen}
+                        onClick={() => toggleUnderkomponentDetaljer(rad.id, rad.aktiv)}
+                        storlek="sm"
+                        ariaLabel={
+                          ärÖppen
+                            ? `Stäng ${etikettMedEgen}`
+                            : `Öppna ${etikettMedEgen}`
+                        }
+                      />
+                    )}
                     {navFel && (
                       <div
                         role="alert"

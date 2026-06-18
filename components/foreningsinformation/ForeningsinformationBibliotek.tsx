@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import { NyckelKvittenserPanel } from "@/components/foreningsinformation/NyckelKvittenserPanel";
 import {
@@ -275,7 +276,7 @@ function HuvudmappRad({
           className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white"
           aria-hidden
         >
-          {state.öppen ? "−" : "+"}
+          <OppnaStangIkon oppen={state.öppen} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-lg font-semibold text-foreground">
@@ -410,7 +411,7 @@ function UndermappRad({
           }`}
           aria-hidden
         >
-          {state.öppen ? "−" : "+"}
+          <OppnaStangIkon oppen={state.öppen} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-foreground">

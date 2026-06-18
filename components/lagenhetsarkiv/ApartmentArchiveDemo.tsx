@@ -41,6 +41,7 @@ import {
   arStartbesiktningPunkt,
   type RenoveringsMallId,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 
 function uppdateraRenoveringsMapp(
   mappar: RenoveringsMapp[],
@@ -510,18 +511,15 @@ export function ApartmentArchiveDemo() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <button
-                    type="button"
+                  <OppnaStangKnapp
+                    oppen={oppen}
                     onClick={() => vaxlaOppenLagenhet(apartment.id)}
-                    className={
+                    ariaLabel={
                       oppen
-                        ? "rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/5"
-                        : "rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+                        ? `Stäng lägenhet ${etikett}`
+                        : `Öppna lägenhet ${etikett}`
                     }
-                    aria-expanded={oppen}
-                  >
-                    {oppen ? "Stäng lägenhet" : "Öppna lägenhet"}
-                  </button>
+                  />
                 </div>
               </div>
 

@@ -52,6 +52,7 @@ import {
   type TillagtRumTyp,
   type UppvarmningTyp,
 } from "@/components/lagenhetsarkiv/lagenhet-info";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 
 const inputKlass =
   "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -168,7 +169,7 @@ function Rullgardin({
             </span>
           )}
         </span>
-        <span className="shrink-0 text-xs text-muted">{oppen ? "−" : "+"}</span>
+        <OppnaStangIkon oppen={oppen} storlek="sm" />
       </button>
       {oppen && (
         <div className="space-y-3 border-t border-border px-3 pb-3 pt-3">
@@ -210,7 +211,7 @@ function Sektion({
             </span>
           )}
         </span>
-        <span className="text-xs text-muted">{oppen ? "−" : "+"}</span>
+        <OppnaStangIkon oppen={oppen} storlek="sm" />
       </button>
       {oppen && children}
     </div>

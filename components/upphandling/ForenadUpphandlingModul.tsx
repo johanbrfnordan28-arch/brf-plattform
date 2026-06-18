@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import {
   ARENDE_STATUS_ETIKETTER,
   ARENDE_STATUS_FARGER,
@@ -185,12 +186,7 @@ function ArendeKort({
             </span>
           )}
         </span>
-        <span
-          className="mt-1 shrink-0 text-muted"
-          aria-hidden
-        >
-          {öppen ? "▲" : "▼"}
-        </span>
+        <OppnaStangIkon oppen={öppen} className="mt-1" />
       </button>
 
       {öppen && (

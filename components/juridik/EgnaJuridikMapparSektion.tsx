@@ -9,6 +9,7 @@ import {
   type EgenJuridikMapp,
   type EgnaJuridikMapparState,
 } from "@/components/juridik/juridik-egna-mappar-lager";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 
 const inputKlass =
   "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -235,12 +236,7 @@ export function EgnaJuridikMapparSektion({
                   className="flex flex-1 items-start gap-3 text-left"
                   aria-expanded={mappUi[mapp.id]?.öppen ?? false}
                 >
-                  <span
-                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e2f0e6] text-sm text-primary-dark"
-                    aria-hidden
-                  >
-                    {mappUi[mapp.id]?.öppen ? "−" : "+"}
-                  </span>
+                  <OppnaStangIkon oppen={mappUi[mapp.id]?.öppen ?? false} className="mt-0.5" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-base font-semibold text-foreground">
                       {mapp.titel}
