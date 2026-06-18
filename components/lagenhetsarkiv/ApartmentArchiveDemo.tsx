@@ -52,7 +52,7 @@ function uppdateraRenoveringsMapp(
 
 export function ApartmentArchiveDemo() {
   const [apartments, setApartments] = useState<ApartmentFolder[]>([]);
-  const [activeApartmentId, setActiveApartmentId] = useState(1);
+  const [oppenLagenhetsId, setOppenLagenhetsId] = useState<number | null>(null);
   const [nextApartmentNumber, setNextApartmentNumber] = useState(1002);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
@@ -69,6 +69,8 @@ export function ApartmentArchiveDemo() {
     typ: "ok" | "fel";
     text: string;
   } | null>(null);
+  const [bekraftarBorttagningLagenhetId, setBekraftarBorttagningLagenhetId] =
+    useState<number | null>(null);
 
   useEffect(() => {
     const sparad = lasLagenhetsarkiv();
@@ -81,8 +83,8 @@ export function ApartmentArchiveDemo() {
       state = skapaTomtLagenhetsarkiv();
     }
     setApartments(state.apartments);
-    setActiveApartmentId(state.activeApartmentId);
     setNextApartmentNumber(state.nextApartmentNumber);
+    setOppenLagenhetsId(null);
     skipFirstSave.current = true;
     setHydrated(true);
   }, []);
@@ -96,9 +98,8 @@ export function ApartmentArchiveDemo() {
     sparaLagenhetsarkiv({
       apartments,
       nextApartmentNumber,
-      activeApartmentId,
     });
-  }, [apartments, nextApartmentNumber, activeApartmentId, hydrated]);
+  }, [apartments, nextApartmentNumber, hydrated]);
 
   useEffect(() => {
     function syncRenoveringstyper() {
@@ -110,30 +111,19 @@ export function ApartmentArchiveDemo() {
       window.removeEventListener(MEDLEMMAR_RENOVERING_EVENT, syncRenoveringstyper);
   }, []);
 
-  const activeApartment = useMemo(
-    () =>
-      apartments.find((apartment) => apartment.id === activeApartmentId) ??
-      apartments[0],
-    [activeApartmentId, apartments],
-  );
-
   const valdMallObj = useMemo(
     () => hamtaRenoveringsMall(valdMall),
     [valdMall],
   );
 
-  const foreslagnaMallar = useMemo(() => {
-    if (!activeApartment) return [];
+  function hamtaForeslagnaMallar(apartment: ApartmentFolder) {
     return valdaRenoveringstyper
       .filter((id) => renoveringsMallar.some((m) => m.id === id))
       .map((id) => hamtaRenoveringsMall(id as RenoveringsMallId))
-      .filter(
-        (mall) =>
-          !activeApartment.folders.some((f) => f.mallId === mall.id),
-      );
-  }, [valdaRenoveringstyper, activeApartment]);
+      .filter((mall) => !apartment.folders.some((f) => f.mallId === mall.id));
+  }
 
-  if (!hydrated || !activeApartment) {
+  if (!hydrated || apartments.length === 0) {
     return (
       <div className="rounded-3xl border border-border bg-surface p-8 text-center text-sm text-muted">
         Laddar lägenhetsarkiv…
@@ -141,15 +131,23 @@ export function ApartmentArchiveDemo() {
     );
   }
 
-  function uppdateraAktivLägenhet(
+  function uppdateraLägenhet(
+    apartmentId: number,
     uppdatera: (apartment: ApartmentFolder) => ApartmentFolder,
   ) {
-    if (!activeApartment) return;
     setApartments((current) =>
-      current.map((a) =>
-        a.id === activeApartment.id ? uppdatera(a) : a,
-      ),
+      current.map((a) => (a.id === apartmentId ? uppdatera(a) : a)),
     );
+  }
+
+  function vaxlaOppenLagenhet(id: number) {
+    setOppenLagenhetsId((current) => {
+      const stangs = current === id;
+      if (stangs) setBekraftarBorttagningLagenhetId(null);
+      return stangs ? null : id;
+    });
+    setSkapadFeedback(null);
+    setNummerbyteMeddelande(null);
   }
 
   function createApartment() {
@@ -162,7 +160,7 @@ export function ApartmentArchiveDemo() {
     };
 
     setApartments((current) => [...current, apartment]);
-    setActiveApartmentId(id);
+    setOppenLagenhetsId(id);
     setNextApartmentNumber((current) => current + 1);
   }
 
@@ -173,8 +171,11 @@ export function ApartmentArchiveDemo() {
     setApartments(remaining);
     setNextApartmentNumber(hamtaNastaLagenhetsnummer(remaining));
 
-    if (activeApartmentId === id) {
-      setActiveApartmentId(remaining[0].id);
+    if (oppenLagenhetsId === id) {
+      setOppenLagenhetsId(null);
+    }
+    if (bekraftarBorttagningLagenhetId === id) {
+      setBekraftarBorttagningLagenhetId(null);
     }
   }
 
@@ -197,7 +198,7 @@ export function ApartmentArchiveDemo() {
         result.till,
       ),
     );
-    setActiveApartmentId(result.apartmentId);
+    setOppenLagenhetsId(result.apartmentId);
     setNummerbyteMeddelande({
       typ: "ok",
       text: `${formatLagenhetEtikett(result.från)} är nu ${formatLagenhetEtikett(result.till)}. Alla undermappar och dokument ligger kvar.`,
@@ -206,16 +207,20 @@ export function ApartmentArchiveDemo() {
     setTillLagenhetsnummer("");
   }
 
-  function fyllAktuelltNummer() {
-    if (!activeApartment) return;
-    setFrånLagenhetsnummer(activeApartment.lagenhetsnummer);
+  function fyllAktuelltNummer(lagenhetsnummer: string) {
+    setFrånLagenhetsnummer(lagenhetsnummer);
     setNummerbyteMeddelande(null);
   }
 
-  function skapaMappar(mallIds: RenoveringsMallId[], egnaNamn?: string) {
-    if (!activeApartment || mallIds.length === 0) return;
+  function skapaMappar(
+    apartmentId: number,
+    mallIds: RenoveringsMallId[],
+    egnaNamn?: string,
+  ) {
+    const apartment = apartments.find((a) => a.id === apartmentId);
+    if (!apartment || mallIds.length === 0) return;
 
-    let tempFolders = [...activeApartment.folders];
+    let tempFolders = [...apartment.folders];
     const nyaMappar = mallIds.map((mallId) => {
       const namn =
         mallIds.length === 1 && egnaNamn?.trim()
@@ -226,7 +231,7 @@ export function ApartmentArchiveDemo() {
       return mapp;
     });
 
-    uppdateraAktivLägenhet((a) => ({
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: [...nyaMappar, ...a.folders],
     }));
@@ -241,8 +246,8 @@ export function ApartmentArchiveDemo() {
     );
   }
 
-  function skapaMappFranMall(mallId: RenoveringsMallId = valdMall) {
-    skapaMappar([mallId], nyMappNamn);
+  function skapaMappFranMall(apartmentId: number, mallId: RenoveringsMallId = valdMall) {
+    skapaMappar(apartmentId, [mallId], nyMappNamn);
   }
 
   function vaxlaParallellMall(mallId: RenoveringsMallId) {
@@ -255,18 +260,23 @@ export function ApartmentArchiveDemo() {
     );
   }
 
-  function skapaParallellaMappar() {
+  function skapaParallellaMappar(apartmentId: number) {
     const mallIds =
       parallellaMallVal.length > 0 ? parallellaMallVal : [valdMall];
     skapaMappar(
+      apartmentId,
       mallIds,
       mallIds.length === 1 ? nyMappNamn : undefined,
     );
     setParallellaMallVal([]);
   }
 
-  function bytMappTyp(mappId: number, nyMallId: RenoveringsMallId) {
-    uppdateraAktivLägenhet((a) => ({
+  function bytMappTyp(
+    apartmentId: number,
+    mappId: number,
+    nyMallId: RenoveringsMallId,
+  ) {
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) =>
         bytRenoveringsMappMall(m, nyMallId),
@@ -274,15 +284,19 @@ export function ApartmentArchiveDemo() {
     }));
   }
 
-  function taBortRenoveringsMapp(mappId: number) {
-    uppdateraAktivLägenhet((a) => ({
+  function taBortRenoveringsMapp(apartmentId: number, mappId: number) {
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: a.folders.filter((m) => m.id !== mappId),
     }));
   }
 
-  function laggTillDelIMapp(mappId: number, del: RenoveringsMappDel) {
-    uppdateraAktivLägenhet((a) => ({
+  function laggTillDelIMapp(
+    apartmentId: number,
+    mappId: number,
+    del: RenoveringsMappDel,
+  ) {
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) =>
         laggaTillMappDel(m, del),
@@ -290,8 +304,12 @@ export function ApartmentArchiveDemo() {
     }));
   }
 
-  function taBortDelFranMapp(mappId: number, del: RenoveringsMappDel) {
-    uppdateraAktivLägenhet((a) => ({
+  function taBortDelFranMapp(
+    apartmentId: number,
+    mappId: number,
+    del: RenoveringsMappDel,
+  ) {
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) =>
         taBortMappDel(m, del),
@@ -300,10 +318,11 @@ export function ApartmentArchiveDemo() {
   }
 
   function uppdateraForvantadeHandlingar(
+    apartmentId: number,
     mappId: number,
     handlingar: string[],
   ) {
-    uppdateraAktivLägenhet((a) => ({
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (m) => ({
         ...m,
@@ -313,6 +332,7 @@ export function ApartmentArchiveDemo() {
   }
 
   function läggTillDokumentIMapp(
+    apartmentId: number,
     mappId: number,
     undermappId: string,
     filnamn: string,
@@ -320,7 +340,7 @@ export function ApartmentArchiveDemo() {
     const trimmed = filnamn.trim();
     if (!trimmed) return;
 
-    uppdateraAktivLägenhet((a) => ({
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (mapp) => ({
         ...mapp,
@@ -344,11 +364,12 @@ export function ApartmentArchiveDemo() {
   }
 
   function taBortDokumentFranMapp(
+    apartmentId: number,
     mappId: number,
     undermappId: string,
     docId: string,
   ) {
-    uppdateraAktivLägenhet((a) => ({
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (mapp) => ({
         ...mapp,
@@ -362,6 +383,7 @@ export function ApartmentArchiveDemo() {
   }
 
   function laddaUpSkadebild(
+    apartmentId: number,
     mappId: number,
     punktId: string,
     filnamn: string,
@@ -375,7 +397,7 @@ export function ApartmentArchiveDemo() {
       uppladdad: new Date().toLocaleDateString("sv-SE"),
     };
 
-    uppdateraAktivLägenhet((a) => ({
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (mapp) => ({
         ...mapp,
@@ -393,8 +415,12 @@ export function ApartmentArchiveDemo() {
     }));
   }
 
-  function signeraEgenkontroll(mappId: number, punktId: string) {
-    uppdateraAktivLägenhet((a) => ({
+  function signeraEgenkontroll(
+    apartmentId: number,
+    mappId: number,
+    punktId: string,
+  ) {
+    uppdateraLägenhet(apartmentId, (a) => ({
       ...a,
       folders: uppdateraRenoveringsMapp(a.folders, mappId, (mapp) => {
         const punkt = mapp.egenkontroller.find((p) => p.id === punktId);
@@ -446,7 +472,8 @@ export function ApartmentArchiveDemo() {
               Lägenhetsregister
             </p>
             <p className="mt-1 text-sm text-muted">
-              Välj lägenhet — status och uppgifter visas nedan.
+              Alla lägenheter är stängda som standard — öppna en i taget för att
+              se uppgifter och renoveringsarkiv.
             </p>
           </div>
           <button
@@ -457,91 +484,92 @@ export function ApartmentArchiveDemo() {
             Skapa lägenhet
           </button>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {apartments.map((apartment) => {
-            const aktiv = apartment.id === activeApartment.id;
-            return (
-              <div
-                key={apartment.id}
-                className={`relative rounded-2xl border-2 p-4 transition-shadow ${
-                  aktiv
-                    ? "border-primary bg-[#e2f0e6] shadow-md"
-                    : "border-border bg-white hover:border-primary/40 hover:shadow-sm"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveApartmentId(apartment.id)}
-                  className="w-full text-left"
-                >
-                  <p className="text-lg font-bold text-foreground">
-                    {formatLagenhetEtikett(apartment.lagenhetsnummer)}
-                  </p>
+      </div>
+
+      <div className="space-y-4 p-5 sm:p-6">
+        {apartments.map((apartment) => {
+          const oppen = apartment.id === oppenLagenhetsId;
+          const foreslagnaMallar = hamtaForeslagnaMallar(apartment);
+          const etikett = formatLagenhetEtikett(apartment.lagenhetsnummer);
+
+          return (
+            <article
+              key={apartment.id}
+              className="rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-bold text-foreground">{etikett}</h3>
                   <p className="mt-1 text-xs text-muted">
                     {apartment.folders.length > 0
                       ? `${apartment.folders.length} renoveringsmapp${
                           apartment.folders.length > 1 ? "ar" : ""
                         }`
                       : "Inga renoveringsmappar"}
+                    {apartment.adress ? ` · ${apartment.adress}` : ""}
                   </p>
-                  {aktiv && (
-                    <span className="mt-2 inline-block rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                      Vald
-                    </span>
-                  )}
-                </button>
-                {apartments.length > 1 && (
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => deleteApartment(apartment.id)}
-                    className="absolute right-3 top-3 text-xs text-muted hover:text-red-800"
+                    onClick={() => vaxlaOppenLagenhet(apartment.id)}
+                    className={
+                      oppen
+                        ? "rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/5"
+                        : "rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+                    }
+                    aria-expanded={oppen}
                   >
-                    Ta bort
+                    {oppen ? "Stäng lägenhet" : "Öppna lägenhet"}
                   </button>
-                )}
+                </div>
               </div>
-            );
-          })}
-        </div>
 
-        <div className="mt-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-            Lägenhetsmappar
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Grundmappar för {formatLagenhetEtikett(activeApartment.lagenhetsnummer)}.
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {activeApartment.basePages.map((page) => (
-              <div
-                key={page}
-                className="rounded-xl border border-border bg-white p-4 shadow-sm"
-              >
-                <p className="text-sm font-semibold text-foreground">{page}</p>
-                <p className="mt-1 text-xs text-muted">Grundmapp för dokument</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+              {oppen && (
+                <div className="space-y-6 border-t border-border px-4 pb-5 pt-4 sm:px-5">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
+                      Lägenhetsmappar
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      Grundmappar för {etikett}.
+                    </p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      {apartment.basePages.map((page) => (
+                        <div
+                          key={page}
+                          className="rounded-xl border border-border bg-background p-4 shadow-sm"
+                        >
+                          <p className="text-sm font-semibold text-foreground">
+                            {page}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            Grundmapp för dokument
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-      <div id="lagenhetsuppgifter" className="scroll-mt-24 border-b border-border p-5 sm:p-6">
-        <LagenhetInfoPanel
-          apartment={activeApartment}
-          lagenhetsEtikett={formatLagenhetEtikett(activeApartment.lagenhetsnummer)}
-          onUppdatera={(patch) => uppdateraAktivLägenhet((a) => ({ ...a, ...patch }))}
-        />
-      </div>
+                  <div id="lagenhetsuppgifter" className="scroll-mt-24">
+                    <LagenhetInfoPanel
+                      apartment={apartment}
+                      lagenhetsEtikett={etikett}
+                      onUppdatera={(patch) =>
+                        uppdateraLägenhet(apartment.id, (a) => ({ ...a, ...patch }))
+                      }
+                    />
+                  </div>
 
-      <div className="border-b border-border p-5 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-          Renoveringsarkiv
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          Mappar och dokument för {formatLagenhetEtikett(activeApartment.lagenhetsnummer)}.
-        </p>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
+                      Renoveringsarkiv
+                    </p>
+                    <p className="mt-1 text-sm text-muted">
+                      Mappar och dokument för {etikett}.
+                    </p>
 
-        <div className="mt-5 rounded-2xl border border-border p-4">
+                    <div className="mt-5 rounded-2xl border border-border p-4">
             <h4 className="font-semibold text-foreground">Byt lägenhetsnummer</h4>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               Byt nummer utan att förlora mappar eller dokument — allt följer med
@@ -583,13 +611,13 @@ export function ApartmentArchiveDemo() {
               >
                 Byt nummer
               </button>
-              <button
-                type="button"
-                onClick={fyllAktuelltNummer}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]/60"
-              >
-                Använd aktiv lägenhet ({activeApartment.lagenhetsnummer})
-              </button>
+                        <button
+                          type="button"
+                          onClick={() => fyllAktuelltNummer(apartment.lagenhetsnummer)}
+                          className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]/60"
+                        >
+                          Använd denna lägenhet ({apartment.lagenhetsnummer})
+                        </button>
             </div>
             {nummerbyteMeddelande && (
               <p
@@ -629,7 +657,7 @@ export function ApartmentArchiveDemo() {
                     <button
                       key={mall.id}
                       type="button"
-                      onClick={() => skapaMappFranMall(mall.id)}
+                      onClick={() => skapaMappFranMall(apartment.id, mall.id)}
                       className="rounded-lg border border-primary bg-[#eef6f0] px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
                     >
                       + {mall.etikett}
@@ -639,7 +667,10 @@ export function ApartmentArchiveDemo() {
                     <button
                       type="button"
                       onClick={() =>
-                        skapaMappar(foreslagnaMallar.map((m) => m.id))
+                        skapaMappar(
+                          apartment.id,
+                          foreslagnaMallar.map((m) => m.id),
+                        )
                       }
                       className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
                     >
@@ -707,10 +738,7 @@ export function ApartmentArchiveDemo() {
               <input
                 value={nyMappNamn}
                 onChange={(e) => setNyMappNamn(e.target.value)}
-                placeholder={foreslagetMappNamn(
-                  valdMall,
-                  activeApartment.folders,
-                )}
+                placeholder={foreslagetMappNamn(valdMall, apartment.folders)}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
@@ -719,7 +747,7 @@ export function ApartmentArchiveDemo() {
               {parallellaMallVal.length > 1 ? (
                 <button
                   type="button"
-                  onClick={skapaParallellaMappar}
+                  onClick={() => skapaParallellaMappar(apartment.id)}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
                 >
                   Skapa {parallellaMallVal.length} mappar parallellt
@@ -727,22 +755,21 @@ export function ApartmentArchiveDemo() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => skapaParallellaMappar()}
+                  onClick={() => skapaParallellaMappar(apartment.id)}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
                 >
                   Skapa {valdMallObj.etikett.toLowerCase()}-mapp
                 </button>
               )}
-              {activeApartment.folders.length > 0 && (
+              {apartment.folders.length > 0 && (
                 <span className="text-xs text-muted">
-                  {activeApartment.folders.length} mapp
-                  {activeApartment.folders.length > 1 ? "ar" : ""} i denna
-                  lägenhet
+                  {apartment.folders.length} mapp
+                  {apartment.folders.length > 1 ? "ar" : ""} i denna lägenhet
                 </span>
               )}
             </div>
 
-            {skapadFeedback && (
+            {skapadFeedback && oppenLagenhetsId === apartment.id && (
               <p className="mt-3 text-sm font-medium text-primary-dark" role="status">
                 {skapadFeedback}
               </p>
@@ -750,44 +777,123 @@ export function ApartmentArchiveDemo() {
           </div>
 
           <div className="mt-5 space-y-4">
-            {activeApartment.folders.length > 0 && (
+            {apartment.folders.length > 0 && (
               <p className="text-sm font-semibold text-foreground">
-                Renoveringsmappar ({activeApartment.folders.length})
+                Renoveringsmappar ({apartment.folders.length})
               </p>
             )}
-            {activeApartment.folders.length === 0 ? (
+            {apartment.folders.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">
                 Inga renoveringsmappar ännu. Skapa en mapp ovan och lägg till
-                delar steg för steg — t.ex. handlingar och egenkontroller.
+                delar steg för steg.
               </p>
             ) : (
-              activeApartment.folders.map((mapp) => (
+              apartment.folders.map((mapp) => (
                 <RenoveringsMappPanel
                   key={mapp.id}
                   mapp={mapp}
-                  onTaBort={() => taBortRenoveringsMapp(mapp.id)}
-                  onBytTyp={(nyMallId) => bytMappTyp(mapp.id, nyMallId)}
-                  onLäggTillDel={(del) => laggTillDelIMapp(mapp.id, del)}
-                  onTaBortDel={(del) => taBortDelFranMapp(mapp.id, del)}
+                  onTaBort={() => taBortRenoveringsMapp(apartment.id, mapp.id)}
+                  onBytTyp={(nyMallId) =>
+                    bytMappTyp(apartment.id, mapp.id, nyMallId)
+                  }
+                  onLäggTillDel={(del) =>
+                    laggTillDelIMapp(apartment.id, mapp.id, del)
+                  }
+                  onTaBortDel={(del) =>
+                    taBortDelFranMapp(apartment.id, mapp.id, del)
+                  }
                   onUppdateraForvantadeHandlingar={(handlingar) =>
-                    uppdateraForvantadeHandlingar(mapp.id, handlingar)
+                    uppdateraForvantadeHandlingar(
+                      apartment.id,
+                      mapp.id,
+                      handlingar,
+                    )
                   }
                   onLäggTillDokument={(undermappId, filnamn) =>
-                    läggTillDokumentIMapp(mapp.id, undermappId, filnamn)
+                    läggTillDokumentIMapp(
+                      apartment.id,
+                      mapp.id,
+                      undermappId,
+                      filnamn,
+                    )
                   }
                   onTaBortDokument={(undermappId, docId) =>
-                    taBortDokumentFranMapp(mapp.id, undermappId, docId)
+                    taBortDokumentFranMapp(
+                      apartment.id,
+                      mapp.id,
+                      undermappId,
+                      docId,
+                    )
                   }
                   onSigneraEgenkontroll={(punktId) =>
-                    signeraEgenkontroll(mapp.id, punktId)
+                    signeraEgenkontroll(apartment.id, mapp.id, punktId)
                   }
                   onLaddaUpSkadebild={(punktId, filnamn) =>
-                    laddaUpSkadebild(mapp.id, punktId, filnamn)
+                    laddaUpSkadebild(apartment.id, mapp.id, punktId, filnamn)
                   }
                 />
               ))
             )}
           </div>
+
+                  {apartments.length > 1 && (
+                    <div className="border-t border-border pt-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+                        Administration
+                      </p>
+                      {bekraftarBorttagningLagenhetId === apartment.id ? (
+                        <div
+                          className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-4"
+                          role="alertdialog"
+                          aria-labelledby={`bekrafta-borttagning-lgh-${apartment.id}`}
+                        >
+                          <p
+                            id={`bekrafta-borttagning-lgh-${apartment.id}`}
+                            className="text-sm font-semibold text-foreground"
+                          >
+                            Bekräfta borttagning av lägenhet
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-muted">
+                            Lägenhet {etikett} tas bort från registret tillsammans
+                            med alla tillhörande mappar och uppladdad dokumentation.
+                            Åtgärden är permanent och kan inte ångras.
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setBekraftarBorttagningLagenhetId(null)}
+                              className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
+                            >
+                              Avbryt
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteApartment(apartment.id)}
+                              className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-900"
+                            >
+                              Ja, ta bort lägenheten
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setBekraftarBorttagningLagenhetId(apartment.id)
+                          }
+                          className="mt-3 text-sm font-medium text-red-800 hover:text-red-900"
+                        >
+                          Ta bort lägenhet ur registret…
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  </div>
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

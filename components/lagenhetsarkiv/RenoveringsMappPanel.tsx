@@ -499,6 +499,7 @@ export function RenoveringsMappPanel({
   onLaddaUpSkadebild,
 }: RenoveringsMappPanelProps) {
   const [oppen, setOppen] = useState(false);
+  const [bekraftarBorttagning, setBekraftarBorttagning] = useState(false);
   const mall = hamtaRenoveringsMall(mapp.mallId ?? "ovrigt");
   const forvantade = forvantadeDokumentForMall(mall);
   const totaltDokument = antalDokumentRenoveringsMapp(mapp);
@@ -514,17 +515,26 @@ export function RenoveringsMappPanel({
     return ordning.indexOf(a.typ) - ordning.indexOf(b.typ);
   });
 
+  function vaxlaOppen() {
+    setOppen((v) => {
+      if (v) setBekraftarBorttagning(false);
+      return !v;
+    });
+  }
+
+  function hanteraTaBortMapp() {
+    onTaBort();
+    setBekraftarBorttagning(false);
+    setOppen(false);
+  }
+
   return (
-    <article
-      className={`rounded-2xl border bg-background transition-shadow ${
-        oppen ? "border-primary/40 shadow-sm" : "border-border"
-      }`}
-    >
+    <article className="rounded-2xl border border-border bg-background">
       <div className="flex flex-wrap items-start justify-between gap-3 p-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold text-foreground">{mapp.name}</h4>
-            <span className="rounded-full bg-[#eef6f0] px-2 py-0.5 text-xs font-medium text-primary-dark">
+            <span className="rounded-full bg-muted/10 px-2 py-0.5 text-xs font-medium text-muted">
               {mall.etikett}
             </span>
           </div>
@@ -541,18 +551,15 @@ export function RenoveringsMappPanel({
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setOppen((v) => !v)}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+            onClick={vaxlaOppen}
+            className={
+              oppen
+                ? "rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/5"
+                : "rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+            }
             aria-expanded={oppen}
           >
             {oppen ? "Stäng mapp" : "Öppna mapp"}
-          </button>
-          <button
-            type="button"
-            onClick={onTaBort}
-            className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:text-red-800"
-          >
-            Ta bort mapp
           </button>
         </div>
       </div>
@@ -670,6 +677,51 @@ export function RenoveringsMappPanel({
           );
         })}
       </div>
+
+          <div className="mt-6 border-t border-border pt-4">
+            {bekraftarBorttagning ? (
+              <div
+                className="rounded-lg border border-red-200 bg-red-50/60 p-4"
+                role="alertdialog"
+                aria-labelledby={`bekrafta-borttagning-mapp-${mapp.id}`}
+              >
+                <p
+                  id={`bekrafta-borttagning-mapp-${mapp.id}`}
+                  className="text-sm font-semibold text-foreground"
+                >
+                  Bekräfta borttagning av renoveringsmapp
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  Renoveringsmappen «{mapp.name}» och all tillhörande
+                  dokumentation raderas permanent. Åtgärden kan inte ångras.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBekraftarBorttagning(false)}
+                    className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={hanteraTaBortMapp}
+                    className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-900"
+                  >
+                    Ja, ta bort mappen
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setBekraftarBorttagning(true)}
+                className="text-sm font-medium text-red-800 hover:text-red-900"
+              >
+                Ta bort renoveringsmapp…
+              </button>
+            )}
+          </div>
         </div>
       )}
     </article>
