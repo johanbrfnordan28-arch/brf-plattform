@@ -1,6 +1,8 @@
 import {
   egenkontrollPunkterForMall,
+  forvantadeDokumentForMall,
   hamtaRenoveringsMall,
+  undermappEtikett,
   undermappTyperForMall,
   type RenoveringsMallId,
   type RenoveringsUndermappTyp,
@@ -34,12 +36,25 @@ export type RenoveringsMapp = {
   mallId?: RenoveringsMallId;
   undermappar: RenoveringsUndermapp[];
   egenkontroller: EgenkontrollPunkt[];
+  /** Redigerbar checklista — handlingar som ska laddas upp. */
+  forvantadeHandlingar?: string[];
 };
+
+export type RenoveringsMappDel = "egenkontroller" | RenoveringsUndermappTyp;
 
 /** @deprecated Använd RenoveringsMapp */
 export type RenovationFolder = RenoveringsMapp;
 
-/** Värmesystem i lägenheten — flera alternativ möjliga. */
+/** Snabbval vid registrering av tekniska installationer i lägenheten. */
+export const LAGENHET_INSTALLATION_SNABBVAL = [
+  "Golvvärme (vattenburen)",
+  "Golvvärme (elektrisk)",
+  "Radiatorer (vattenburen)",
+  "Elradiatorer",
+  "Luftvärmepump",
+] as const;
+
+/** @deprecated Använd installationer */
 export type LagenhetVarme =
   | "golvvarme-vatten"
   | "golvvarme-el"
@@ -48,7 +63,7 @@ export type LagenhetVarme =
   | "varmepump-luft"
   | "fjarvarmepanel";
 
-export const LAGENHET_VARME_ETIKETTER: Record<LagenhetVarme, string> = {
+const LEGACY_VARME_ETIKETTER: Record<LagenhetVarme, string> = {
   "golvvarme-vatten": "Golvvärme (vattenburen)",
   "golvvarme-el": "Golvvärme (elektrisk)",
   radiatorer: "Radiatorer (vattenburen)",
@@ -71,6 +86,10 @@ export type ApartmentFolder = {
   vaning?: string;
   /** Antal rum, t.ex. "3 rum och kök". */
   antalRum?: string;
+  /** Antal badrum. */
+  antalBadrum?: string;
+  /** Antal WC (toaletter). */
+  antalWC?: string;
   /** Registrerad bostadsyta (BOA) i m². */
   boyta?: string;
   /** Biarea (BIA) i m², t.ex. förråd, garage. */
@@ -81,21 +100,50 @@ export type ApartmentFolder = {
   andelstal?: string;
   /** Referens till ritning — filnamn eller länk. */
   ritning?: string;
-  /** Värmesystem i lägenheten. */
+  /** Tekniska installationer i lägenheten, t.ex. golvvärme, luftvärmepump. */
+  installationer?: string[];
+  /** @deprecated Använd installationer */
   varme?: LagenhetVarme[];
-  /** Ventilationssystem, t.ex. "FTX", "F", "Självdrag". */
-  ventilation?: string;
   /** Balkong/terrass, t.ex. "Ja, 7 m² mot söder". */
   balkong?: string;
   /** Källarförråd — nummer eller beskrivning. */
   kallareForrad?: string;
   /** P-plats — nummer eller info. */
   pPlats?: string;
-  /** År för senast utfört stambyte. */
-  senastStambyte?: string;
   /** Övrig notering om lägenheten. */
   lagenhetNotering?: string;
+  /** Hall, kök, badrum och övriga rum med uppvärmning m.m. */
+  lagenhetsRum?: import("@/components/lagenhetsarkiv/lagenhet-info").LagenhetsRumsInfo;
+  /** Eldstäder i lägenheten — godkännande per eldstad. */
+  eldstader?: import("@/components/lagenhetsarkiv/lagenhet-info").LagenhetEldstad[];
+  /** Fläkt som endast betjänar denna lägenhet. */
+  flakt?: import("@/components/lagenhetsarkiv/lagenhet-info").LagenhetFlakt;
+  /** @deprecated Använd eldstader */
+  eldstadAntal?: string;
+  /** @deprecated Använd eldstader */
+  eldstadGodkand?: boolean;
+  /** @deprecated Använd flakt */
+  harEgenFlaktVentilation?: boolean;
+  /** @deprecated Använd flakt */
+  harRokgasFlakt?: boolean;
+  /** @deprecated Använd flakt */
+  ventilation?: string;
+  /** @deprecated Borttagen — använd lagenhetsRum */
+  senastStambyte?: string;
 };
+
+/** Returnerar sparade installationer, med migrering från äldre varme-fält. */
+export function hamtaInstallationer(apartment: ApartmentFolder): string[] {
+  if (apartment.installationer?.length) {
+    return apartment.installationer;
+  }
+  if (apartment.varme?.length) {
+    return apartment.varme
+      .filter((v) => v !== "fjarvarmepanel")
+      .map((v) => LEGACY_VARME_ETIKETTER[v] ?? v);
+  }
+  return [];
+}
 
 export const lagenhetsBasSidor = ["Anmälningar", "Beslut", "Slutdokument"] as const;
 
@@ -116,17 +164,85 @@ export function skapaRenoveringsMapp(
     id: mappId,
     name,
     mallId,
-    undermappar: undermappTyperForMall(mall).map((typ) => ({
-      id: `${mappId}-${typ}`,
-      typ,
-      dokument: [],
-    })),
-    egenkontroller: egenkontrollPunkterForMall(mall).map((p) => ({
-      ...p,
-      signerad: false,
-      skadebilder: [],
-    })),
+    undermappar: [],
+    egenkontroller: [],
   };
+}
+
+export function mappDelEtikett(del: RenoveringsMappDel): string {
+  if (del === "egenkontroller") return "Egenkontroller";
+  return undermappEtikett(del);
+}
+
+export function tilgangligaMappDelar(mallId: RenoveringsMallId): RenoveringsMappDel[] {
+  const mall = hamtaRenoveringsMall(mallId);
+  return ["egenkontroller", ...undermappTyperForMall(mall)];
+}
+
+export function mappHarDel(mapp: RenoveringsMapp, del: RenoveringsMappDel): boolean {
+  if (del === "egenkontroller") return mapp.egenkontroller.length > 0;
+  return mapp.undermappar.some((u) => u.typ === del);
+}
+
+export function saknadeMappDelar(mapp: RenoveringsMapp): RenoveringsMappDel[] {
+  const mallId = mapp.mallId ?? "ovrigt";
+  return tilgangligaMappDelar(mallId).filter((del) => !mappHarDel(mapp, del));
+}
+
+export function laggaTillMappDel(
+  mapp: RenoveringsMapp,
+  del: RenoveringsMappDel,
+): RenoveringsMapp {
+  if (mappHarDel(mapp, del)) return mapp;
+  const mall = hamtaRenoveringsMall(mapp.mallId ?? "ovrigt");
+
+  if (del === "egenkontroller") {
+    return {
+      ...mapp,
+      egenkontroller: egenkontrollPunkterForMall(mall).map((p) => ({
+        ...p,
+        signerad: false,
+        skadebilder: [],
+      })),
+    };
+  }
+
+  const next: RenoveringsMapp = {
+    ...mapp,
+    undermappar: [
+      ...mapp.undermappar,
+      {
+        id: `${mapp.id}-${del}-${Date.now()}`,
+        typ: del,
+        dokument: [],
+      },
+    ],
+  };
+
+  if (del === "handlingar" && !next.forvantadeHandlingar?.length) {
+    next.forvantadeHandlingar = [
+      ...forvantadeDokumentForMall(mall).handlingar,
+    ];
+  }
+
+  return next;
+}
+
+export function taBortMappDel(
+  mapp: RenoveringsMapp,
+  del: RenoveringsMappDel,
+): RenoveringsMapp {
+  if (del === "egenkontroller") {
+    return { ...mapp, egenkontroller: [] };
+  }
+  const next: RenoveringsMapp = {
+    ...mapp,
+    undermappar: mapp.undermappar.filter((u) => u.typ !== del),
+  };
+  if (del === "handlingar") {
+    next.forvantadeHandlingar = undefined;
+  }
+  return next;
 }
 
 export function antalDokumentRenoveringsMapp(mapp: RenoveringsMapp): number {

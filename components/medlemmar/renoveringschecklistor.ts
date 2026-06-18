@@ -17,7 +17,7 @@ export type RenoveringsTyp = {
 export const grundkrav: RenoveringsTyp = {
   id: "grundkrav",
   etikett: "Grundkrav",
-  beskrivning: "Gäller alla renoveringar — ska vara klart innan medlemmen får påbörja.",
+  beskrivning: "Gäller alla renoveringar och ska vara uppfyllda innan medlemmen får påbörja.",
   punkter: [
     {
       id: "anmalan",

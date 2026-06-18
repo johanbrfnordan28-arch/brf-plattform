@@ -155,7 +155,18 @@ export const renoveringsMallar: RenoveringsMall[] = [
     beskrivning: "Våtrumsrenovering med våtrumsdokument och stamkoordinering.",
     standardNamn: "Badrumsrenovering",
     egenkontrollPunkter: [
-      { id: "badrum-fukt", text: "Fuktmätning före rivning dokumenterad." },
+      {
+        id: "badrum-fukt-efter-rivning",
+        text: "Fuktkontroll efter rivning — bedömning och fotodokumentation genomförd.",
+      },
+      {
+        id: "badrum-fukt-extern",
+        text: "Vid misstanke om fukt har styrelse, medlem och entreprenör vid behov begärt fuktmätning av extern part.",
+      },
+      {
+        id: "badrum-fukt-entreprenor",
+        text: "Entreprenörens egen fuktmätning genomförd och dokumenterad i egenkontroll.",
+      },
       { id: "badrum-tatskikt", text: "Tätskikt och fall kontrollerat enligt våtrumsregler." },
       { id: "badrum-slut", text: "Slutbesiktning och våtrumsdokument klart." },
     ],
@@ -318,6 +329,21 @@ export function hamtaRenoveringsMall(
     renoveringsMallar.find((m) => m.id === id) ??
     renoveringsMallar.find((m) => m.id === "ovrigt")!
   );
+}
+
+/** Föreslår mappnamn — numrerar om flera mappar av samma typ redan finns. */
+export function foreslagetMappNamn(
+  mallId: RenoveringsMallId,
+  befintliga: { name: string; mallId?: RenoveringsMallId }[],
+): string {
+  const mall = hamtaRenoveringsMall(mallId);
+  const ar = new Date().getFullYear();
+  const bas = `${mall.standardNamn} ${ar}`;
+  const liknande = befintliga.filter(
+    (f) => f.mallId === mallId || f.name.startsWith(mall.standardNamn),
+  );
+  if (liknande.length === 0) return bas;
+  return `${bas} (${liknande.length + 1})`;
 }
 
 export function undermappEtikett(typ: RenoveringsUndermappTyp): string {

@@ -126,7 +126,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     {
       title: isForening ? "Medlemmar" : "Renoveringshistorik & rutiner",
       description: isForening
-        ? "Renoveringsanmälan, utskick och lägenhetsarkiv med mappar per lägenhet."
+        ? "Lägenhetsarkiv, renoveringshistorik och anmälningar med checklista per åtgärd."
         : "Historik per lägenhet, renoveringsrutiner och anmälan med checklista.",
       href: `${base}/medlemmar`,
       icon: isForening ? "👥" : "📋",
