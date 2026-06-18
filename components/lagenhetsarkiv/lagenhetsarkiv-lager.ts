@@ -18,7 +18,6 @@ export function lagenhetsarkivStorageKey(): string {
 export type LagenhetsarkivState = {
   apartments: ApartmentFolder[];
   nextApartmentNumber: number;
-  activeApartmentId: number;
 };
 
 export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
@@ -95,7 +94,6 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
   return {
     apartments,
     nextApartmentNumber: 1006,
-    activeApartmentId: 1,
   };
 }
 
@@ -110,7 +108,6 @@ export function skapaTomtLagenhetsarkiv(): LagenhetsarkivState {
       },
     ],
     nextApartmentNumber: 1002,
-    activeApartmentId: 1,
   };
 }
 
@@ -122,14 +119,9 @@ function normaliseraState(raw: unknown): LagenhetsarkivState | null {
     typeof data.nextApartmentNumber === "number" && data.nextApartmentNumber > 0
       ? data.nextApartmentNumber
       : 1002;
-  const activeApartmentId =
-    typeof data.activeApartmentId === "number"
-      ? data.activeApartmentId
-      : data.apartments[0].id;
   return {
     apartments: data.apartments,
     nextApartmentNumber,
-    activeApartmentId,
   };
 }
 
