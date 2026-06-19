@@ -18,7 +18,7 @@ export type GuideFilm = {
 
 export type GuideTips = {
   id: string;
-  kategori: "upphandling" | "entreprenor";
+  kategori: "upphandling" | "entreprenor" | "projekt";
   titel: string;
   ingress: string;
   punkter: string[];
@@ -258,6 +258,29 @@ export const guideTips: GuideTips[] = [
       "Ge betyg i entreprenörsregistret när arbetet är färdigt och uppföljt.",
       "Notera vad som fungerade dåligt — så ni undviker samma misstag.",
       "Uppdatera underhållsplanen om komponenter bytts eller renoverats.",
+    ],
+  },
+  {
+    id: "projektutvardering",
+    kategori: "projekt",
+    titel: "Projektutvärdering — checklista",
+    ingress:
+      "Jämför ekonomi och risker före, under och efter projektet — inklusive entreprenörens ansvarstid. Säkerhet kan inte värderas i kronor men ska alltid bedömas separat.",
+    punkter: [
+      "Baslinje 2–5 år före start: samla förbrukning av vatten, el och värme (kWh, m³, fjärrvärme eller motsvarande) så trender syns innan åtgärden.",
+      "Baslinje 2–5 år före start: notera försäkringspremier, självrisker och historik av försäkringsskador — vad kostade skadorna totalt och vad ersattes?",
+      "Baslinje 2–5 år före start: dokumentera drift- och underhållskostnader för berörda delar (t.ex. tak, stammar, fasad) så ni kan jämföra före/efter.",
+      "Finansiering: om likvida medel saknas i kassan bör högre avsättning till underhållsfond planeras minst två år före projektstart — undvik att låsa budgeten sent.",
+      "Investeringskostnad: projektkostnad, finansiering, ränta och eventuella tilläggsarbeten — tydligt avgränsat i beslutsunderlaget.",
+      "Efter godkänd slutbesiktning: följ upp samma nyckeltal (vatten, el, värme) minst lika länge som ni har baslinje — idealiskt genom hela entreprenörens ansvarstid (10 år).",
+      "Payback time (återbetalningstid): räkna när lägre driftkostnader och färre skador har täckt projektets nettokostnad — t.ex. om värme och el minskar med X kr/år, hur många år tar det?",
+      "Avskrivning vs payback: ett energiprojekt kan betala sig på t.ex. 5 år medan teknisk avskrivning är 20 år — då blir åren 6–20 ett plus i kassan som kan finansiera nästa åtgärd.",
+      "Fördröjd renovering: skjuter ni på åtgärden växer ofta både skadekostnad och investeringsbehov — ta med det i jämförelsen mellan ”göra nu” och ”vänta”.",
+      "Säkerhet (ej i kronor): bedöm brand, utrymning, fall, fukt och personsäkerhet vid och efter projektet — detta kan inte ersättas av en payback-kalkyl.",
+      "Försäkringsrisker: kartlägg kommande förändringar i försäkringsskydd, höjda premier eller begränsad ersättning efter större skador eller flera skadeärenden.",
+      "Skador utan full ersättning: räkna med att flera skador eller skador utanför policyn kan behöva täckas av föreningen — budgetera för självrisk och ”luckor” i försäkringen.",
+      "Entreprenörens ansvarstid (10 år): spara slutbesiktning, garantibevis och avvikelser; följ upp om fel upptäcks inom ansvarstiden så krav kan ställas i tid.",
+      "Sammanställning till styrelsen: en sida med före/efter-siffror, payback, kvarvarande risker och säkerhetsbedömning — underlag inför nästa projekt och årsredovisning.",
     ],
   },
 ];
