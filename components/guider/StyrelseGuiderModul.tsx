@@ -101,9 +101,10 @@ export function StyrelseGuiderModul() {
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-muted">
               Se filmen om förbyggande brandskydd, fyll i formuläret med årlig
-              kontroll och bocka av checklistan — brandvarnare, utrymning,
-              medlemmars renovering och entreprenörens dokumentation vid större
-              projekt.
+              kontroll och bocka av checklistan — brandvarnare, medlemmars eget
+              ansvar (årlig kontroll i lägenheten, påminnelser vid städdag och
+              jul), utrymning, medlemmars renovering och entreprenörens
+              dokumentation vid större projekt.
             </p>
           </div>
           {sbaFilm && (
