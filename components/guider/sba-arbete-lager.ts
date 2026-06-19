@@ -21,6 +21,9 @@ export type SbaArbeteState = {
   entreprenorInformerad: boolean;
   dokumentationLevererad: boolean;
   medlemsRenoveringAnteckning: string;
+  senastMedlemsinfoStaddag: string;
+  senastMedlemsinfoJul: string;
+  medlemsinfoAnteckning: string;
   avvikelser: string;
   projektKommunikation: string;
   checklista: Record<string, boolean>;
@@ -39,6 +42,9 @@ export function tomSbaArbete(): SbaArbeteState {
     entreprenorInformerad: false,
     dokumentationLevererad: false,
     medlemsRenoveringAnteckning: "",
+    senastMedlemsinfoStaddag: "",
+    senastMedlemsinfoJul: "",
+    medlemsinfoAnteckning: "",
     avvikelser: "",
     projektKommunikation: "",
     checklista: {},
@@ -73,6 +79,9 @@ export function normaliseraSbaArbete(raw: unknown): SbaArbeteState {
     entreprenorInformerad: Boolean(d.entreprenorInformerad),
     dokumentationLevererad: Boolean(d.dokumentationLevererad),
     medlemsRenoveringAnteckning: String(d.medlemsRenoveringAnteckning ?? ""),
+    senastMedlemsinfoStaddag: String(d.senastMedlemsinfoStaddag ?? ""),
+    senastMedlemsinfoJul: String(d.senastMedlemsinfoJul ?? ""),
+    medlemsinfoAnteckning: String(d.medlemsinfoAnteckning ?? ""),
     avvikelser: String(d.avvikelser ?? ""),
     projektKommunikation: String(d.projektKommunikation ?? ""),
     checklista:

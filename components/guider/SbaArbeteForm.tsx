@@ -16,6 +16,7 @@ import {
 type SektionId =
   | "grund"
   | "utrustning"
+  | "medlemsinfo"
   | "projekt"
   | "checklista"
   | "avvikelser"
@@ -70,6 +71,7 @@ export function SbaArbeteForm() {
   >({
     grund: true,
     utrustning: false,
+    "medlemsinfo": false,
     projekt: false,
     avvikelser: false,
     sammanfattning: true,
@@ -131,9 +133,12 @@ export function SbaArbeteForm() {
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           Systematiskt brandskyddsarbete är förbyggande — brandvarnare,
-          brandsläckare, utrymning och skyltning kontrolleras årligen. Vid
-          medlemmars och föreningens projekt ska brandskydd kommuniceras; större
-          projekt kräver brandskyddsdokumentation från entreprenören.
+          brandsläckare, utrymning och skyltning kontrolleras årligen i
+          gemensamma utrymmen. Medlemmarna ansvarar för brandvarnare i sin
+          lägenhet; påminn minst en gång per år, gärna vid städdag och inför
+          jul. Vid medlemmars och föreningens projekt ska brandskydd
+          kommuniceras; större projekt kräver brandskyddsdokumentation från
+          entreprenören.
         </p>
       </div>
 
@@ -291,6 +296,68 @@ export function SbaArbeteForm() {
               Kontrollera årligen — byt batteri enligt tillverkarens anvisning och
               utöka antal brandvarnare vid behov efter ombyggnad.
             </p>
+          </Sektion>
+
+          <Sektion
+            id="medlemsinfo"
+            titel="Medlemmars eget ansvar och påminnelser"
+            sammanfattning={
+              state.senastMedlemsinfoStaddag || state.senastMedlemsinfoJul
+                ? `Städdag: ${state.senastMedlemsinfoStaddag || "—"} · Jul: ${state.senastMedlemsinfoJul || "—"}`
+                : "Brandvarnare i lägenheten — påminn minst 1 gång/år"
+            }
+            oppen={Boolean(oppnaSektioner.medlemsinfo)}
+            onVaxla={vaxlaSektion}
+          >
+            <p className="text-sm leading-relaxed text-muted">
+              Varje medlem ska kontrollera brandvarnare i sin lägenhet årligen.
+              Frivilligt förebyggande — släckfilt, brandplan, fria vägar — är
+              bra eftersom en brand påverkar grannar och hela föreningen.
+              Påminn minst en gång per år, gärna två: vid städdag på sommaren
+              och inför jul när brandrisken är förhöjd.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="font-medium text-foreground">
+                  Senaste påminnelse — städdag / sommar
+                </span>
+                <input
+                  type="date"
+                  value={state.senastMedlemsinfoStaddag}
+                  onChange={(e) =>
+                    uppdatera({ senastMedlemsinfoStaddag: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-foreground">
+                  Senaste påminnelse — inför jul
+                </span>
+                <input
+                  type="date"
+                  value={state.senastMedlemsinfoJul}
+                  onChange={(e) =>
+                    uppdatera({ senastMedlemsinfoJul: e.target.value })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+            <label className="block text-sm">
+              <span className="font-medium text-foreground">
+                Anteckning — hur medlemmarna informerats
+              </span>
+              <textarea
+                value={state.medlemsinfoAnteckning}
+                onChange={(e) =>
+                  uppdatera({ medlemsinfoAnteckning: e.target.value })
+                }
+                rows={3}
+                placeholder="T.ex. nyhetsbrev juni, anslag vid städdag, portalutskick december…"
+                className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+              />
+            </label>
           </Sektion>
 
           <Sektion
@@ -524,6 +591,14 @@ export function SbaArbeteForm() {
                     {state.projektNamn ? ` — ${state.projektNamn}` : ""}
                   </li>
                 )}
+                {(state.senastMedlemsinfoStaddag ||
+                  state.senastMedlemsinfoJul) && (
+                  <li>
+                    Medlemsinfo: städdag{" "}
+                    {state.senastMedlemsinfoStaddag || "—"}, jul{" "}
+                    {state.senastMedlemsinfoJul || "—"}
+                  </li>
+                )}
                 {state.avvikelser.trim() && (
                   <li>Avvikelser: {state.avvikelser.trim()}</li>
                 )}
@@ -555,9 +630,10 @@ export function SbaArbeteForm() {
 
       <p className="text-xs text-muted">
         Uppgifterna sparas automatiskt i webbläsaren. SBA är förbyggande — årlig
-        kontroll av brandvarnare, släckutrustning och fria utrymningsvägar är
-        grunden. Vid större föreningsprojekt ska entreprenören lämna
-        brandskyddsdokumentation.
+        kontroll av brandvarnare och släckutrustning i gemensamma utrymmen, plus
+        medlemmarnas egen kontroll av brandvarnare i lägenheten. Påminn minst en
+        gång per år, gärna vid städdag och inför jul. Vid större
+        föreningsprojekt ska entreprenören lämna brandskyddsdokumentation.
       </p>
     </div>
   );

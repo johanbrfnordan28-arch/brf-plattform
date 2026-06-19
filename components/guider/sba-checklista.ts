@@ -15,11 +15,11 @@ export const sbaChecklistaSektioner: SbaChecklistaSektion[] = [
   {
     id: "forbyggande",
     etikett: "Löpande förbyggande",
-    beskrivning: "Årlig kontroll och vid behov utökning — brandvarnare, släckutrustning och skyltning.",
+    beskrivning: "Årlig kontroll i gemensamma utrymmen — brandvarnare, släckutrustning och skyltning.",
     punkter: [
       {
         id: "brandvarnare-arlig",
-        text: "Brandvarnare kontrolleras årligen — funktion, signal och batteribyte enligt tillverkarens anvisning.",
+        text: "Brandvarnare i gemensamma utrymmen kontrolleras årligen — funktion, signal och batteribyte enligt tillverkarens anvisning.",
       },
       {
         id: "brandvarnare-utoka",
@@ -109,6 +109,38 @@ export const sbaChecklistaSektioner: SbaChecklistaSektion[] = [
       {
         id: "avvikelse-uppfoljning",
         text: "Avvikelser från kontroll dokumenteras, åtgärdas och följs upp till nästa rond.",
+      },
+    ],
+  },
+  {
+    id: "medlemsansvar",
+    etikett: "Medlemmars eget ansvar",
+    beskrivning:
+      "Varje medlem ansvarar för brandvarnare i sin lägenhet. Styrelsen påminner minst en gång per år — gärna två, t.ex. vid städdag och inför jul.",
+    punkter: [
+      {
+        id: "medlem-brandvarnare-egen",
+        text: "Medlemmen kontrollerar brandvarnare i lägenheten årligen — funktion, signal och batteribyte enligt tillverkarens anvisning.",
+      },
+      {
+        id: "medlem-ansvar-info",
+        text: "Medlemmarna informeras om sitt eget ansvar för förebyggande brandskydd i bostaden.",
+      },
+      {
+        id: "medlem-frivilligt",
+        text: "Frivilligt förebyggande (t.ex. släckfilt, brandplan hemma, fria utrymningsvägar i lägenheten) uppmuntras — en brand påverkar grannar och hela föreningen.",
+      },
+      {
+        id: "medlem-info-arlig",
+        text: "Medlemmarnas brandskyddsansvar påtalas minst en gång per år — i nyhetsbrev, portal eller vid sammankomst.",
+      },
+      {
+        id: "medlem-info-staddag",
+        text: "Sommar/städdag: påminnelse om brandvarnare och förebyggande åtgärder — grillning, förråd och gemensamma utrymmen ger ofta förhöjd risk.",
+      },
+      {
+        id: "medlem-info-jul",
+        text: "Inför jul: extra påminnelse om brandrisk — levande ljus, julgran, laddare och elprylar i hemmet.",
       },
     ],
   },

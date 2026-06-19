@@ -142,15 +142,19 @@ export const guideFilmer: GuideFilm[] = [
     titel: "Systematiskt brandskyddsarbete (SBA)",
     längd: "ca 60 sek",
     beskrivning:
-      "Förbyggande brandskydd — årlig kontroll, utrymning, medlemmars renovering och brandskyddsdokumentation vid större projekt.",
+      "Förbyggande brandskydd — årlig kontroll, medlemmars eget ansvar, utrymning och brandskyddsdokumentation vid större projekt.",
     scener: [
       {
         titel: "Förbyggande SBA",
         text: "SBA (systematiskt brandskyddsarbete) handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar årliga kontroller innan riskerna växer.",
       },
       {
+        titel: "Medlemmars eget ansvar",
+        text: "Brandvarnare i lägenheten ska kontrolleras årligen av medlemmen — funktion, signal och batteribyte. Frivilligt förebyggande som släckfilt och brandplan hemma är bra: en brand påverkar grannar och hela föreningen. Påminn minst en gång per år, gärna två — vid städdag på sommaren och inför jul när brandrisken är förhöjd.",
+      },
+      {
         titel: "Brandvarnare och släckare",
-        text: "Brandvarnare kontrolleras årligen — funktion, batteribyte och utökning vid behov. Brandsläckare och annan släckutrustning ska vara på plats, inom giltighetstid och korrekt skyltad.",
+        text: "I gemensamma utrymmen kontrolleras brandvarnare årligen av föreningen — funktion, batteribyte och utökning vid behov. Brandsläckare och annan släckutrustning ska vara på plats, inom giltighetstid och korrekt skyltad.",
       },
       {
         titel: "Utrymning och skyltning",
@@ -323,7 +327,7 @@ export const guideTips: GuideTips[] = [
     kategori: "brandskydd",
     titel: "Systematiskt brandskyddsarbete (SBA) — checklista",
     ingress:
-      "Förbyggande brandskydd med årlig kontroll av brandvarnare, brandsläckare, utrymning och skyltning — samt brandskydd vid medlemmars och föreningens projekt.",
+      "Förbyggande brandskydd med årlig kontroll av brandvarnare, brandsläckare, utrymning och skyltning — medlemmars eget ansvar (brandvarnare i lägenheten) och påminnelser vid städdag och jul — samt brandskydd vid medlemmars och föreningens projekt.",
     punkter: sbaChecklistaPunkterSomText(),
   },
 ];
