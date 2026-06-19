@@ -1,4 +1,5 @@
 import { antalForeningsHuvudmappar } from "@/components/foreningsinformation/mappar";
+import { sbaChecklistaPunkterSomText } from "@/components/guider/sba-checklista";
 
 export type GuideFilmScen = {
   titel: string;
@@ -18,7 +19,7 @@ export type GuideFilm = {
 
 export type GuideTips = {
   id: string;
-  kategori: "upphandling" | "entreprenor" | "projekt";
+  kategori: "upphandling" | "entreprenor" | "projekt" | "brandskydd";
   titel: string;
   ingress: string;
   punkter: string[];
@@ -139,25 +140,33 @@ export const guideFilmer: GuideFilm[] = [
     id: "brandskydd-sba",
     modul: "Brandskydd",
     titel: "Systematiskt brandskyddsarbete (SBA)",
-    längd: "ca 50 sek",
+    längd: "ca 60 sek",
     beskrivning:
-      "Förbyggande brandskydd — i projekt, löpande under åren och med tydlig dokumentation.",
+      "Förbyggande brandskydd — årlig kontroll, utrymning, medlemmars renovering och brandskyddsdokumentation vid större projekt.",
     scener: [
       {
-        titel: "Förbyggande syfte",
-        text: "SBA handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar kontroller och åtgärder innan riskerna växer.",
+        titel: "Förbyggande SBA",
+        text: "SBA (systematiskt brandskyddsarbete) handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar årliga kontroller innan riskerna växer.",
       },
       {
-        titel: "Brandskydd i projekt",
-        text: "När huset renoveras eller lägenheter byggs om ska fastighetens brandskydd vara en del av projektet — branddörrar, utrymningsvägar och rökgasevakuering får inte glömmas bort.",
+        titel: "Brandvarnare och släckare",
+        text: "Brandvarnare kontrolleras årligen — funktion, batteribyte och utökning vid behov. Brandsläckare och annan släckutrustning ska vara på plats, inom giltighetstid och korrekt skyltad.",
       },
       {
-        titel: "Löpande arbete",
-        text: "Det återkommande arbetet under åren är minst lika viktigt: årlig egenkontroll, branddörrar som stänger, fria utrymningsvägar och eventuell brandkonsult.",
+        titel: "Utrymning och skyltning",
+        text: "Utrymningsskyltar på väggen och vägvisning på golvet ska leda tydligt. Utrymningsvägar ska vara fria — i trapphus får ingen förvaring ske som kan orsaka brand eller försvåra utrymning.",
+      },
+      {
+        titel: "Medlemmars renovering",
+        text: "Vid lägenhetsrenovering är brandskydd viktigt — enklare information till medlemmen om brandceller, brandfarliga produkter och att trapphus ska hållas fritt.",
+      },
+      {
+        titel: "Föreningens projekt",
+        text: "Vid större projekt ska entreprenören ta fram brandskyddsdokumentation — hur brand förhindras och hur brandspridning minimeras. Mindre projekt kan hanteras med enklare skriftlig kommunikation.",
       },
       {
         titel: "Dokumentation",
-        text: "Protokoll, avvikelser och genomförda åtgärder sparas i portalen — så nästa styrelse och myndigheter ser att brandskyddet sköts över tid.",
+        text: "Protokoll, avvikelser och brandskyddsdokumentation sparas i portalen — så nästa styrelse och myndigheter ser att brandskyddet sköts över tid.",
       },
     ],
   },
@@ -308,5 +317,13 @@ export const guideTips: GuideTips[] = [
       "Entreprenörens ansvarstid (10 år): spara slutbesiktning, garantibevis och avvikelser; följ upp om fel upptäcks inom ansvarstiden så krav kan ställas i tid.",
       "Sammanställning till styrelsen: en sida med före/efter-siffror, payback, kvarvarande risker och säkerhetsbedömning — underlag inför nästa projekt och årsredovisning.",
     ],
+  },
+  {
+    id: "sba-arbete",
+    kategori: "brandskydd",
+    titel: "Systematiskt brandskyddsarbete (SBA) — checklista",
+    ingress:
+      "Förbyggande brandskydd med årlig kontroll av brandvarnare, brandsläckare, utrymning och skyltning — samt brandskydd vid medlemmars och föreningens projekt.",
+    punkter: sbaChecklistaPunkterSomText(),
   },
 ];
