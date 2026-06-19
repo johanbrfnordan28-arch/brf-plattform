@@ -256,8 +256,24 @@ export function UpphandlingSidaInnehall() {
       <ContentSection title="Så arbetar styrelsen" plain>
         <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/50 p-5 text-sm leading-relaxed text-foreground">
           <ol className="list-decimal space-y-2 pl-5">
+            <li>
+              Ta in en <strong>projektledare</strong> (kategori under Konsulter &
+              specialisttjänster) som hjälper styrelsen ta fram handlingarna —
+              beskrivning, underlag och anbudsunderlag.
+            </li>
             <li>Ladda upp eller hämta mallar till förfrågningsunderlaget per kategori.</li>
-            <li>Markera när underlaget är komplett — två styrelseledamöter godkänner.</li>
+            <li>
+              När handlingarna är i slutskedet: anlita en{" "}
+              <strong>besiktningsman/kvinna</strong> som får i uppgift att läsa
+              handlingarna utifrån det hen senare ska besiktiga. På det sätt
+              minimeras kostnader för oklarheter och tilläggsarbeten i
+              efterhand.
+            </li>
+            <li>
+              När projektledare och besiktningsman är klara ska styrelsen godkänna
+              handlingarna — två styrelseledamöter — innan de släpps för
+              upphandling.
+            </li>
             <li>Ange sista anbudsdag och publicera till BRF Företags sida.</li>
             <li>
               Efter anbudsutvärdering godkänner två ledamöter beslutet och registrerar
