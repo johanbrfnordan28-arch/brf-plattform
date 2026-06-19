@@ -4,7 +4,16 @@ import { useState } from "react";
 import { KortGuideFilm } from "@/components/guider/KortGuideFilm";
 import { guideFilmer, guideTips } from "@/components/guider/guider";
 
-type TipsFilter = "alla" | "upphandling" | "entreprenor";
+type TipsFilter = "alla" | "upphandling" | "entreprenor" | "projekt";
+
+const tipsKategoriEtikett: Record<
+  (typeof guideTips)[number]["kategori"],
+  string
+> = {
+  upphandling: "Upphandling",
+  entreprenor: "Entreprenörer",
+  projekt: "Projekt",
+};
 
 export function StyrelseGuiderModul() {
   const [tipsFilter, setTipsFilter] = useState<TipsFilter>("alla");
@@ -53,6 +62,7 @@ export function StyrelseGuiderModul() {
                 ["alla", "Alla"],
                 ["upphandling", "Upphandling"],
                 ["entreprenor", "Entreprenörer"],
+                ["projekt", "Projekt"],
               ] as const
             ).map(([id, etikett]) => (
               <button
@@ -78,7 +88,7 @@ export function StyrelseGuiderModul() {
               className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
             >
               <span className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-                {tips.kategori === "upphandling" ? "Upphandling" : "Entreprenörer"}
+                {tipsKategoriEtikett[tips.kategori]}
               </span>
               <h3 className="mt-2 text-lg font-semibold text-foreground">{tips.titel}</h3>
               <p className="mt-2 text-sm text-muted">{tips.ingress}</p>
