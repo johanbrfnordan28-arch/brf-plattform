@@ -14,7 +14,7 @@ export default function JuridikPage() {
     <ModulePage
       title="Juridik"
       icon="⚖️"
-      intro="Ett gemensamt bibliotek för alla föreningar på plattformen: vägledande domar, tips inför möten och råd om att hålla nere kostnader vid tvister. Styrelsen fattar beslut i sin förening — innehållet här är underlag, inte juridisk rådgivning."
+      intro="Gemensamt juridikbibliotek som fylls på centralt: vägledande domar och råd för alla föreningar. Egna dokument laddar styrelsen upp i egna mappar — de syns bara i er förening. Materialet är underlag, inte juridisk rådgivning."
     >
       <ContentSection title="Bibliotek" plain>
         <JuridikModul />

@@ -1,7 +1,7 @@
 import { domMappar } from "@/components/juridik/domar";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
-/** Gemensamt bibliotek — samma för alla föreninger (ingen forening-prefix). */
+/** @deprecated Skrivning sker inte längre från förenings-UI — gemensamt bibliotek fylls centralt (juridik-centralt-bibliotek.ts). Typer behålls för kompatibilitet. */
 const JURIDIK_BIBLIOTEK_KEY = "brf-juridik-bibliotek";
 
 export const JURIDIK_BIBLIOTEK_EVENT = "juridik-bibliotek-uppdaterad";

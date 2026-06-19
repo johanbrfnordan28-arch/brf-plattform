@@ -19,7 +19,7 @@ export default function ForeningJuridikPage() {
     <ModulePage
       title="Juridik"
       icon="⚖️"
-      intro="Vägledande domar, praktiska råd och mallar — allt på ett ställe inför svåra styrelsebeslut. Skapa egna mappar för era ärenden. Materialet är underlag för styrelsen — inte juridisk rådgivning."
+      intro="Vägledande domar och råd från det centrala biblioteket — plus egna mappar där er styrelse sparar ärenden som bara ni ser. Förstå vägledningen i tid så sparar både styrelse och medlemmar pengar om tvist skulle uppstå. Materialet ersätter inte juridisk rådgivning."
     >
       <TipsPanel tips={tips.juridik} />
       <ContentSection title="Bibliotek" plain>
