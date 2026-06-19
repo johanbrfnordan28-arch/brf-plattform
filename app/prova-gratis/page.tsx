@@ -4,7 +4,7 @@ import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 export const metadata: Metadata = {
   title: "Prova gratis — BRF Företag",
   description:
-    "Skapa er testförening och logga in direkt — gratis testperiod.",
+    "Fem testföreningar att prova gratis — logga in direkt, data sparas per förening.",
 };
 
 export default function ProvaGratisPage() {

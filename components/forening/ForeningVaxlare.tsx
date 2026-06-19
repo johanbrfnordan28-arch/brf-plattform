@@ -14,6 +14,7 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { sakraStandardTestForeningar } from "@/lib/testforeningar";
 
 function foreningInitial(namn: string, id: string): string {
   if (id === GRUNDMALL_FORENING_ID) return "G";
@@ -29,6 +30,7 @@ export function ForeningVaxlare() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const ladda = useCallback(() => {
+    sakraStandardTestForeningar();
     const id = lasAktivForeningId();
     setAktivId(id);
     let lista = listaAllaForeningerForVaxlare();

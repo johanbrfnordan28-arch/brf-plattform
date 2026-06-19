@@ -3,7 +3,9 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import { hamtaStandardTestForeningTestplan } from "@/lib/testforeningar";
 import {
+  hamtaTestplan,
   testplaner,
   testplanNordan28,
   testplanNordan30,
@@ -38,6 +40,12 @@ export function hamtaTillgangligaTestplaner(
 ): TestplanDefinition[] {
   const id = foreningId ?? lasAktivForeningId();
   if (arGrundmallForening(id)) return testplaner;
+
+  const standardPlan = hamtaStandardTestForeningTestplan(id);
+  if (standardPlan) {
+    const plan = hamtaTestplan(standardPlan);
+    return plan ? [plan] : [];
+  }
 
   const namn = foreningNamn ?? lasForeningProfil(id)?.namn ?? "";
   if (matcharNordan28(id, namn)) return [testplanNordan28];
