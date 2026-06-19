@@ -184,6 +184,32 @@ export const guideFilmer: GuideFilm[] = [
     ],
   },
   {
+    id: "projektutvardering",
+    modul: "Projekt",
+    titel: "Projektutvärdering — ekonomi och payback",
+    längd: "ca 55 sek",
+    beskrivning:
+      "Jämför drift, försäkring och investering före och efter — räkna payback och kassa-plus under avskrivningstiden.",
+    scener: [
+      {
+        titel: "Baslinje 2–5 år före",
+        text: "Samla vatten, el, värme, försäkringspremier och skadehistorik innan projektet startar — så ni ser trender och kan jämföra.",
+      },
+      {
+        titel: "Efter slutbesiktning",
+        text: "Följ upp samma nyckeltal efter godkänd slutbesiktning — idealiskt genom hela entreprenörens tioåriga ansvarstid.",
+      },
+      {
+        titel: "Payback och kassa-plus",
+        text: "Räkna återbetalningstid när lägre drift täcker investeringen. Betalar sig projektet på fem år med tjugo års avskrivning blir resterande år ett plus i kassan.",
+      },
+      {
+        titel: "Säkerhet och försäkring",
+        text: "Säkerhet kan inte värderas i kronor — bedöm brand, utrymning och fukt separat. Budgetera för försäkringsluckor och skador som inte ersätts fullt ut.",
+      },
+    ],
+  },
+  {
     id: "saknar-funktion",
     modul: "Plattformen",
     titel: "Saknar du en funktion eller komponent?",
