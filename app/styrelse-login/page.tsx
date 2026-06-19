@@ -3,7 +3,8 @@ import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 
 export const metadata: Metadata = {
   title: "Logga in — BRF Företag",
-  description: "Logga in på er testförening eller skapa en ny.",
+  description:
+    "Välj bland fem testföreningar och logga in med ett klick — data sparas separat per förening.",
 };
 
 export default function StyrelseLoginPage() {
