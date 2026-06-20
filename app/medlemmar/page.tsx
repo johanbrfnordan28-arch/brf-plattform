@@ -14,37 +14,39 @@ export default function MedlemmarPage() {
     <ModulePage
       title="Renoveringshistorik & rutiner"
       icon="📋"
-      intro="Samlad historik över renoveringar, tydliga rutiner för vad som gäller vid olika åtgärder — och en strukturerad anmälan så styrelsen får rätt underlag i tid."
+      intro="Samlad historik över renoveringar, tydliga rutiner för vad som gäller — och en strukturerad anmälan så styrelsen får rätt underlag i tid."
     >
       <ContentSection title="Renoveringshistorik">
         <p>
           Se vad som gjorts i lägenheten över tid — dokument, datum och status.
-          Historiken hjälper styrelsen och medlemmen att slippa gissa vad som
-          redan är godkänt eller utfört.
+          Historiken hjälper styrelsen och medlemmen att slippa gissa vad som redan
+          är godkänt eller utfört.
         </p>
       </ContentSection>
 
       <ContentSection title="Rutiner vid renovering">
         <p>
           Tydliga rutiner för olika åtgärder: målning, slipning av golv, badrum,
-          kök, flytt av kök/badrum, ändrad planlösning eller håltagning i bärande
-          vägg. Grundkrav ingår alltid; checklistan byggs på tills medlemmen får
-          klartecken att påbörja.
+          kök, flytt av kök eller badrum, ändrad planlösning och håltagning i
+          bärande vägg. Grundkrav gäller alltid; checklistan byggs på tills
+          medlemmen får klartecken att påbörja.
         </p>
       </ContentSection>
 
-      <ContentSection title="Anmälan och mallar">
+      <ContentSection title="Anmälan och underlag">
         <p>
           Medlemmen vet vad som krävs innan start, laddar ner mallar och laddar
-          upp bevis (försäkring, entreprenör). Styrelsen får anmälningar i samma
-          format och ser status per lägenhet — mindre ad hoc-e-post.
+          upp underlag — försäkring, entreprenör och egenkontroller. Styrelsen får
+          anmälningar i samma format och ser status per lägenhet, utan löst
+          e-postutbyte.
         </p>
       </ContentSection>
 
       <ContentSection title="Lägenhetsarkiv efter inloggning">
         <p>
           Mappar per lägenhet, full renoveringshistorik och uppladdade dokument
-          finns i den inloggade föreningssidan under samma modul.
+          finns i den inloggade föreningssidan — under samma modul som
+          renoveringsanmälan.
         </p>
         <Link
           href="/styrelse-login"

@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Medlemmar")),
     description:
-      "Medlemmar, renoveringar och lägenhetsarkiv för styrelsen.",
+      "Lägenhetsarkiv, renoveringshistorik och anmälningar för styrelsen och medlemmarna.",
   };
 }
 
@@ -19,44 +19,48 @@ export default function ForeningMedlemmarPage() {
     <ModulePage
       title="Medlemmar"
       icon="👥"
-      intro="Hantera medlemmar, renoveringsärenden och lägenhetsarkiv — allt samlat i föreningens inloggade miljö."
+      intro="Lägenhetsuppgifter, renoveringshistorik och anmälningar samlade på ett ställe — med tydliga krav innan medlemmen får påbörja."
     >
-      <ContentSection title="För medlem och styrelse">
+      <ContentSection title="Så fungerar modulen">
         <p>
-          Medlemmen vet vad som krävs innan start, laddar ner mallar och laddar upp
-          bevis. Styrelsen får anmälningar i samma format och ser status per
-          lägenhet.
+          Styrelsen bygger upp ett lägenhetsarkiv med grunduppgifter och dokument per
+          lägenhet. När en medlem planerar renovering väljer styrelsen typ av åtgärd — då
+          skapas en checklista med grundkrav och tillägg. Medlemmen ser samma krav,
+          laddar upp underlag och får klartecken när allt är godkänt.
         </p>
       </ContentSection>
 
-      <ContentSection title="Mallbibliotek och utskick">
-        <p>
-          Mallar för kontrakt, försäkringsbevis, egenkontroller och anmälan.
-          Styrelsen kan skicka ut påminnelser till medlemmar som planerar
-          renovering.
-        </p>
-      </ContentSection>
+      <section id="lagenhetsarkiv" className="scroll-mt-24">
+        <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+          <h2 className="text-xl font-semibold text-foreground">Lägenhetsarkiv</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            Välj lägenhet ovan — panelen{" "}
+            <strong className="font-medium text-foreground">
+              Lägenhetsuppgifter & tekniska installationer
+            </strong>{" "}
+            visas direkt under lägenhetslistan med statusöversikt, rum, besiktning
+            och installationer. Skapa renoveringsmappar längre ned i samma vy.
+          </p>
+
+          <div className="mt-8">
+            <ApartmentArchiveDemo />
+          </div>
+        </article>
+      </section>
 
       <section id="renoveringar" className="scroll-mt-24">
         <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-foreground">Renoveringar</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Styrelsen väljer vilken renovering medlemmen planerar — då byggs en
-            checklista med grundkrav och tillägg per typ. Grundkraven omfattar
-            bland annat att ventiler ska vara täckta och att byggdamm inte sprids till
-            grannlägenheter eller föreningens ventilationssystem. När allt är
-            godkänt kan medlemmen få klartecken att påbörja.
+            Välj vilken renovering medlemmen planerar — då byggs en checklista med
+            grundkrav och tillägg per typ. Grundkraven omfattar bland annat att ventiler
+            ska vara täckta och att byggdamm inte sprids till grannlägenheter eller
+            föreningens ventilationssystem. När alla punkter är godkända kan medlemmen
+            få klartecken att påbörja.
           </p>
 
           <div className="mt-8">
             <RenoveringsAnmalan />
-          </div>
-
-          <div id="lagenhetsarkiv" className="mt-10 scroll-mt-24 border-t border-border pt-8">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">
-              Lägenhetsarkiv
-            </h3>
-            <ApartmentArchiveDemo />
           </div>
         </article>
       </section>
