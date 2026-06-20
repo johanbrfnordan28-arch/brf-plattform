@@ -63,6 +63,18 @@ export const grundkrav: RenoveringsTyp = {
       id: "utrymning-renovering",
       text: "Utrymningsvägar, nödbelysning och rökgasfläktar i trapphus får inte blockeras eller stängas av under renoveringen.",
     },
+    {
+      id: "arbetsmiljo",
+      text: "Arbetsmiljöplan och riskbedömning finns för arbeten som påverkar gemensamma ytor eller grannar.",
+    },
+    {
+      id: "avfall-transport",
+      text: "Transport av material och byggavfall sker enligt föreningens rutiner — inga föremål får stå kvar i trapphus eller på gård utan godkännande.",
+    },
+    {
+      id: "slutbesiktning",
+      text: "Slutbesiktning och återställning av gemensamma ytor är planerade innan renoveringen avslutas.",
+    },
   ],
 };
 
@@ -93,6 +105,18 @@ export const renoveringsTyper: RenoveringsTyp[] = [
         id: "trapphus-stadning",
         text: "Behov av extra städning i trapphus är avstämt med styrelsen; styrelsen avgör omfattningen och medlemmen faktureras vid behov.",
       },
+      {
+        id: "torktid",
+        text: "Torktider mellan strykningar och ventilation under arbetet är angivna så att fukt och lukt inte sprids.",
+      },
+      {
+        id: "asbest-kontroll",
+        text: "Vid misstanke om äldre färg eller material har risk för asbest eller bly bedömts innan rivning eller slipning.",
+      },
+      {
+        id: "slutstadning",
+        text: "Slutstädning av lägenhet och eventuellt trapphus efter målning är planerad.",
+      },
     ],
   },
   {
@@ -116,6 +140,18 @@ export const renoveringsTyper: RenoveringsTyp[] = [
       {
         id: "kompetens",
         text: "Utförare har erforderlig kompetens; maskiner med dammsugning används där det är möjligt.",
+      },
+      {
+        id: "ventilation-tackning",
+        text: "Ventiler och kanaler är täckta under slipning så att damm inte sprids till grannlägenheter.",
+      },
+      {
+        id: "brandfarliga-vaxor",
+        text: "Brandfarliga produkter (oljor, lack, thinner) hanteras och förvaras säkert enligt leverantörens anvisning.",
+      },
+      {
+        id: "golv-skydd",
+        text: "Skydd av dörrar, lister och angränsande ytor vid slipning och ytbehandling är beskrivet.",
       },
     ],
   },
@@ -141,6 +177,18 @@ export const renoveringsTyper: RenoveringsTyp[] = [
         id: "avfall",
         text: "Byggavfall, transport och städ i trapphus är ordnat enligt föreningens rutiner.",
       },
+      {
+        id: "golvbrunn-fall",
+        text: "Golvbrunn, fall och tätskikt i våtzon är specificerade — bilder på befintligt skick dokumenteras vid start.",
+      },
+      {
+        id: "el-vatten",
+        text: "El i våtutrymme och jordfelsbrytare följer gällande regler; elarbete planeras av behörig.",
+      },
+      {
+        id: "luftning-tork",
+        text: "Torkning, luftning och fuktmätning efter våtarbeten är planerade innan ytskikt monteras.",
+      },
       ...vvsRenoveringChecklistaPunkter,
     ],
   },
@@ -165,6 +213,18 @@ export const renoveringsTyper: RenoveringsTyp[] = [
       {
         id: "brand",
         text: "Brandskydd kring spis och ugn samt avstånd till brännbart material är kontrollerat.",
+      },
+      {
+        id: "gas-el",
+        text: "Gasanslutning, spis och ugn är avstämda med behörig installatör om byte eller flytt planeras.",
+      },
+      {
+        id: "vattentryck",
+        text: "Vattenanslutning och tryck för diskmaskin/tvätt är kontrollerat vid byte av vitvaror.",
+      },
+      {
+        id: "golv-vagg",
+        text: "Golv och väggytor bakom skåp och vitvaror beskrivs — fukt och tätskikt vid diskbänk är angivet.",
       },
       ...vvsRenoveringChecklistaPunkter,
     ],
@@ -196,6 +256,18 @@ export const renoveringsTyper: RenoveringsTyp[] = [
         id: "grann-stom",
         text: "Påverkan på grannlägenhet, stomme och bärande konstruktion under flytten är bedömd.",
       },
+      {
+        id: "ritning-godk",
+        text: "Ritning eller skiss över ny placering är uppladdad och ska godkännas av styrelsen innan start.",
+      },
+      {
+        id: "tidsplan-stammor",
+        text: "Tidsplan för stammarbete och vattenavstängning är koordinerad med föreningen och grannar.",
+      },
+      {
+        id: "golv-hojd",
+        text: "Golvnivåer, fall och höjdskillnader vid flytt av våtzon är utredda.",
+      },
       ...vvsRenoveringChecklistaPunkter,
     ],
   },
@@ -222,6 +294,18 @@ export const renoveringsTyper: RenoveringsTyp[] = [
         id: "stammar-barande",
         text: "Påverkan på stammar, bärande konstruktion och grannlägenheter är utredd.",
       },
+      {
+        id: "ljud-brand",
+        text: "Ljud- och brandklassning mellan rum efter planändring är bedömd.",
+      },
+      {
+        id: "fukt-vatzon",
+        text: "Våtzonens placering och fuktskydd efter ny indelning följer gällande våtrumsregler.",
+      },
+      {
+        id: "ventilation-plan",
+        text: "Ventilation och luftflöde efter ändrad planlösning är kontrollerat.",
+      },
     ],
   },
   {
@@ -245,6 +329,42 @@ export const renoveringsTyper: RenoveringsTyp[] = [
       {
         id: "arbetsmiljo",
         text: "Arbetsmiljö, damm och tillfällig avstämning mot grannar är beskrivna.",
+      },
+      {
+        id: "tillfallig-stod",
+        text: "Tillfällig stödning och återställning efter håltagning är planerad enligt konstruktörens anvisning.",
+      },
+      {
+        id: "ljud-buller",
+        text: "Buller och vibrationer vid håltagning är avstämda med grannar och styrelsen.",
+      },
+      {
+        id: "dokumentation-efter",
+        text: "Dokumentation och bilder efter utfört ingrepp sparas i renoveringsmappen.",
+      },
+    ],
+  },
+  {
+    id: "ovrigt",
+    etikett: "Övrig renovering",
+    beskrivning: "Annat renoveringsarbete som inte passar övriga typer.",
+    alltidMedGrundkrav: true,
+    punkter: [
+      {
+        id: "beskrivning",
+        text: "Renoveringens omfattning och syfte är tydligt beskrivet i anmälan.",
+      },
+      {
+        id: "risk",
+        text: "Risker för grannar, gemensamma ytor och fastighetens installationer är bedömda.",
+      },
+      {
+        id: "tidsplan",
+        text: "Tidsplan med start, slut och eventuella avstängningar är angiven.",
+      },
+      {
+        id: "dokumentation",
+        text: "Relevant dokumentation (ritning, produktblad, intyg) ska kunna uppvisas vid behov.",
       },
     ],
   },

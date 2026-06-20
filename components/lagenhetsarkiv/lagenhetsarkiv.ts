@@ -7,6 +7,10 @@ import {
   type RenoveringsMallId,
   type RenoveringsUndermappTyp,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
+import {
+  skapaMedlemsKravForTyp,
+  type MedlemsKravState,
+} from "@/components/lagenhetsarkiv/medlems-krav";
 
 export type LagenhetsDokument = {
   id: string;
@@ -38,6 +42,8 @@ export type RenoveringsMapp = {
   egenkontroller: EgenkontrollPunkt[];
   /** Redigerbar checklista — handlingar som ska laddas upp. */
   forvantadeHandlingar?: string[];
+  /** Krav som medlemmen ska godkänna (checkpunkter + BankID). */
+  medlemsKrav?: MedlemsKravState;
 };
 
 export type RenoveringsMappDel = "egenkontroller" | RenoveringsUndermappTyp;
@@ -166,6 +172,7 @@ export function skapaRenoveringsMapp(
     mallId,
     undermappar: [],
     egenkontroller: [],
+    medlemsKrav: skapaMedlemsKravForTyp(mallId),
   };
 }
 
@@ -243,6 +250,9 @@ export function bytRenoveringsMappMall(
     undermappar: mapp.undermappar.filter((u) =>
       tillgangligaUndermappar.includes(u.typ),
     ),
+    medlemsKrav: mapp.medlemsKrav?.medlemSignerad
+      ? mapp.medlemsKrav
+      : skapaMedlemsKravForTyp(nyMallId),
   };
 
   if (mappHarDel(mapp, "egenkontroller")) {
