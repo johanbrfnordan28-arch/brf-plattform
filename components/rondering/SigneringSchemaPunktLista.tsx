@@ -1,5 +1,6 @@
 "use client";
 
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { useMemo, useState } from "react";
 import {
   grupperaSchemaPunkter,
@@ -104,12 +105,7 @@ export function SigneringSchemaPunktLista({
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   aria-expanded={arOppen}
                 >
-                  <span
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#e2f0e6] text-sm font-bold text-primary-dark"
-                    aria-hidden
-                  >
-                    {arOppen ? "−" : "+"}
-                  </span>
+                  <OppnaStangIkon oppen={arOppen} storlek="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-foreground">
                       {grupp.namn}

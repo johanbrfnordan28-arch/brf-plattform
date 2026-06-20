@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { Besiktningar } from "@/components/underhallsplan/BesiktningarSteg";
 import { BildstodAnalys } from "@/components/underhallsplan/BildstodAnalys";
 import { Renoveringshistorik } from "@/components/underhallsplan/Renoveringshistorik";
@@ -352,11 +353,6 @@ function StegPanel({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-primary-dark">
             Steg {stegNummer}
-            {open && (
-              <span className="ml-2 rounded-full bg-[#e2f0e6] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-dark">
-                Öppet
-              </span>
-            )}
           </p>
           <h2 className="mt-1 text-xl font-semibold text-foreground">{titel}</h2>
           {!open && summary && (
@@ -373,24 +369,19 @@ function StegPanel({
         </div>
         {!alwaysOpen && (
           <div className="flex shrink-0 flex-col items-end gap-2">
-            <button
-              type="button"
-              onClick={() => onToggle(id)}
-              aria-expanded={open}
-              aria-controls={`${id}-innehall`}
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm transition-colors ${
-                open
-                  ? "border border-border bg-white text-foreground hover:bg-muted/30"
-                  : isLocked
-                    ? "border border-amber-200 bg-amber-50/80 text-amber-950 hover:bg-amber-50"
-                    : "border-2 border-primary bg-[#e2f0e6] text-primary-dark hover:bg-[#d4e8da]"
-              }`}
-            >
-              <span aria-hidden className="text-base leading-none">
-                {open ? "▴" : "▾"}
+            {isLocked ? (
+              <span className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs font-semibold text-amber-950">
+                Låst steg
               </span>
-              {open ? "Stäng steg" : isLocked ? "Låst steg" : "Öppna steg"}
-            </button>
+            ) : (
+              <OppnaStangKnapp
+                oppen={open}
+                onClick={() => onToggle(id)}
+                ariaLabel={
+                  open ? `Stäng steg ${stegNummer}: ${titel}` : `Öppna steg ${stegNummer}: ${titel}`
+                }
+              />
+            )}
           </div>
         )}
       </div>
