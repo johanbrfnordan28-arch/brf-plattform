@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { TipsPanel } from "@/components/TipsPanel";
 import { JuridikModul } from "@/components/juridik/JuridikModul";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
+import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -17,8 +19,9 @@ export default function ForeningJuridikPage() {
     <ModulePage
       title="Juridik"
       icon="⚖️"
-      intro="Gemensamt bibliotek för alla föreningar: vägledande domar, tips inför möten med medlemmar och juridiskt ombud, samt råd för att minska kostnader vid tvister. Styrelsen i er förening fattar alltid besluten — materialet här är underlag, inte juridisk rådgivning."
+      intro="Vägledande domar och råd från det centrala biblioteket — plus egna mappar där er styrelse sparar ärenden som bara ni ser. Förstå vägledningen i tid så sparar både styrelse och medlemmar pengar om tvist skulle uppstå. Materialet ersätter inte juridisk rådgivning."
     >
+      <TipsPanel tips={tips.juridik} />
       <ContentSection title="Bibliotek" plain>
         <JuridikModul />
       </ContentSection>
