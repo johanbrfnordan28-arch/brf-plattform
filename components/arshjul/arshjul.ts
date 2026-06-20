@@ -4,6 +4,9 @@ export type ArshjulKategori =
   | "besiktning"
   | "ekonomi"
   | "stamma"
+  | "styrelsemote"
+  | "byggmote"
+  | "deklaration"
   | "underhall"
   | "juridik"
   | "medlemmar"
@@ -11,11 +14,26 @@ export type ArshjulKategori =
 
 export type ArshjulHandelseTyp = "engang" | "arlig" | "intervall";
 
+/** Föreslagna underkategorier som visas som snabbval i formuläret. */
+export const foreslagnUnderkategorier: string[] = [
+  "Projekteringsmöte",
+  "OVK Besiktning",
+  "Statusbesiktning",
+  "Slutbesiktning",
+  "Garantibesiktning",
+  "Energideklaration",
+  "Fastighetsdeklaration",
+  "Radonmätning",
+  "Upphandling",
+];
+
 export type ArshjulHandelse = {
   id: string;
   titel: string;
   beskrivning: string;
   kategori: ArshjulKategori;
+  /** Valfri underkategori — t.ex. "OVK Besiktning", "Styrelsemöte". */
+  underkategori?: string;
   typ: ArshjulHandelseTyp;
   /** Engång — YYYY-MM-DD. */
   datum?: string;
@@ -70,6 +88,9 @@ export const kategoriEtiketter: Record<ArshjulKategori, string> = {
   besiktning: "Besiktning",
   ekonomi: "Ekonomi",
   stamma: "Stämma",
+  styrelsemote: "Styrelsemöte",
+  byggmote: "Byggmöte",
+  deklaration: "Deklaration",
   underhall: "Underhåll",
   juridik: "Juridik",
   medlemmar: "Medlemmar",
@@ -80,6 +101,9 @@ export const kategoriFarger: Record<ArshjulKategori, string> = {
   besiktning: "bg-sky-100 text-sky-950 border-sky-200",
   ekonomi: "bg-emerald-100 text-emerald-950 border-emerald-200",
   stamma: "bg-violet-100 text-violet-950 border-violet-200",
+  styrelsemote: "bg-indigo-100 text-indigo-950 border-indigo-200",
+  byggmote: "bg-orange-100 text-orange-950 border-orange-200",
+  deklaration: "bg-teal-100 text-teal-950 border-teal-200",
   underhall: "bg-amber-100 text-amber-950 border-amber-200",
   juridik: "bg-slate-100 text-slate-900 border-slate-200",
   medlemmar: "bg-rose-100 text-rose-950 border-rose-200",
@@ -115,7 +139,10 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
     ...raw,
     titel: raw.titel?.trim() ?? "Utan titel",
     beskrivning: raw.beskrivning?.trim() ?? "",
-    kategori: raw.kategori ?? "ovrigt",
+    kategori: (raw.kategori && raw.kategori in kategoriEtiketter)
+      ? raw.kategori
+      : "ovrigt",
+    underkategori: raw.underkategori?.trim() || undefined,
     typ: raw.typ ?? "engang",
     paminnelseDagar,
     klar: Boolean(raw.klar),
