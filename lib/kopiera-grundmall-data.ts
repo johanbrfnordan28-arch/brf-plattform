@@ -17,7 +17,7 @@ const GRUNDMALL_DATA_NYCKLAR = [
   "brf-forening-sotning-protokoll",
   "brf-nyckel-kvittenser",
   "brf-egna-nycklar",
-  "brf-lagenhetsarkiv",
+  "brf-lagenhetsarkiv-v2",
   "brf-medlemmar-renovering",
   "brf-dokumentbank-egna",
   "brf-upphandling-kategori-dokument",

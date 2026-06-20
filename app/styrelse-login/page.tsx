@@ -1,49 +1,32 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ContentSection } from "@/components/ContentSection";
-import { ModulePage } from "@/components/ModulePage";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 
 export const metadata: Metadata = {
-  title: "Logga in styrelse — BRF Företag",
-  description: "Separat inloggning för föreningar och styrelser.",
+  title: "Logga in — BRF Företag",
+  description:
+    "Välj bland fem testföreningar och logga in med ett klick — data sparas separat per förening.",
 };
 
 export default function StyrelseLoginPage() {
   return (
-    <ModulePage
-      title="Logga in styrelse"
-      icon="🔐"
-      intro="Styrelsen kan skapa en eller flera förenings sidor och växla mellan dem. Plattformsuppdateringar slås ihop på alla föreningar utan att radera ifyllda uppgifter."
-    >
-      <ContentSection title="Skapa vår förening" id="skapa-forening" plain>
-        <p className="mb-4 text-sm text-muted">
-          Tryck på den gröna knappen nedan för att skapa er föreningssida. Ni kan ha flera
-          föreningar i samma webbläsare — välj aktiv förening i headern efteråt.
+    <main className="flex min-h-[calc(100vh-4rem)] flex-col justify-center bg-surface/40 py-12">
+      {/* Header */}
+      <div className="mb-8 text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary-dark">
+          BRF Företag · Styrelseportalen
         </p>
-        <SkapaForeningPanel visaSnabbstart />
-      </ContentSection>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Logga in
+        </h1>
+      </div>
 
-      <ContentSection title="Demo-inloggning">
-        <p>
-          I den riktiga versionen verifieras användaren med lösenord eller BankID.
-          I prototypen kan du gå direkt till föreningens sida genom knappen nedan.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/investerare"
-            className="inline-flex rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary-dark"
-          >
-            Investerardemo (rekommenderat)
-          </Link>
-          <Link
-            href="/forening"
-            className="inline-flex rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground hover:border-primary/50"
-          >
-            Gå till Styrelseflow
-          </Link>
-        </div>
-      </ContentSection>
-    </ModulePage>
+      {/* Login-modulen */}
+      <StyrelseLoginModul />
+
+      {/* Footer-notering */}
+      <p className="mt-10 text-center text-xs text-muted">
+        All data sparas lokalt i din webbläsare under testperioden.
+      </p>
+    </main>
   );
 }

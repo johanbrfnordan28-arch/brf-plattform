@@ -50,9 +50,12 @@ export type UnderhallsplanLagratState = {
   krPerKvmAr: number;
 };
 
-export function harUnderhallsplanSparat(): boolean {
+export function harUnderhallsplanSparat(foreningId?: string): boolean {
   if (typeof window === "undefined") return false;
-  return Boolean(localStorage.getItem(storageKey()));
+  const key = foreningId
+    ? foreningStorageKey(STORAGE_KEY_BASE, foreningId)
+    : storageKey();
+  return Boolean(localStorage.getItem(key));
 }
 
 function uppgraderaUnderhallsplanState(
@@ -131,6 +134,7 @@ export type SparaUnderhallsplanResult =
 
 export function sparaUnderhallsplanState(
   state: UnderhallsplanLagratState,
+  foreningId?: string,
 ): SparaUnderhallsplanResult {
   if (typeof window === "undefined") {
     return {
@@ -139,7 +143,10 @@ export function sparaUnderhallsplanState(
       message: localStorageFelMeddelande("unavailable"),
     };
   }
-  const result = safeSetLocalStorage(storageKey(), JSON.stringify(state));
+  const key = foreningId
+    ? foreningStorageKey(STORAGE_KEY_BASE, foreningId)
+    : storageKey();
+  const result = safeSetLocalStorage(key, JSON.stringify(state));
   if (!result.ok) {
     return {
       ok: false,
