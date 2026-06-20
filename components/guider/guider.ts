@@ -1,4 +1,5 @@
 import { antalForeningsHuvudmappar } from "@/components/foreningsinformation/mappar";
+import { sbaChecklistaPunkterSomText } from "@/components/guider/sba-checklista";
 
 export type GuideFilmScen = {
   titel: string;
@@ -18,7 +19,7 @@ export type GuideFilm = {
 
 export type GuideTips = {
   id: string;
-  kategori: "upphandling" | "entreprenor";
+  kategori: "upphandling" | "entreprenor" | "projekt" | "brandskydd";
   titel: string;
   ingress: string;
   punkter: string[];
@@ -139,25 +140,37 @@ export const guideFilmer: GuideFilm[] = [
     id: "brandskydd-sba",
     modul: "Brandskydd",
     titel: "Systematiskt brandskyddsarbete (SBA)",
-    längd: "ca 50 sek",
+    längd: "ca 60 sek",
     beskrivning:
-      "Förbyggande brandskydd — i projekt, löpande under åren och med tydlig dokumentation.",
+      "Förbyggande brandskydd — årlig kontroll, medlemmars eget ansvar, utrymning och brandskyddsdokumentation vid större projekt.",
     scener: [
       {
-        titel: "Förbyggande syfte",
-        text: "SBA handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar kontroller och åtgärder innan riskerna växer.",
+        titel: "Förbyggande SBA",
+        text: "SBA (systematiskt brandskyddsarbete) handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar årliga kontroller innan riskerna växer.",
       },
       {
-        titel: "Brandskydd i projekt",
-        text: "När huset renoveras eller lägenheter byggs om ska fastighetens brandskydd vara en del av projektet — branddörrar, utrymningsvägar och rökgasevakuering får inte glömmas bort.",
+        titel: "Medlemmars eget ansvar",
+        text: "Brandvarnare i lägenheten ska kontrolleras årligen av medlemmen — funktion, signal och batteribyte. Frivilligt förebyggande som släckfilt och brandplan hemma är bra: en brand påverkar grannar och hela föreningen. Påminn minst en gång per år, gärna två — vid städdag på sommaren och inför jul när brandrisken är förhöjd.",
       },
       {
-        titel: "Löpande arbete",
-        text: "Det återkommande arbetet under åren är minst lika viktigt: årlig egenkontroll, branddörrar som stänger, fria utrymningsvägar och eventuell brandkonsult.",
+        titel: "Brandvarnare och släckare",
+        text: "I gemensamma utrymmen kontrolleras brandvarnare årligen av föreningen — funktion, batteribyte och utökning vid behov. Brandsläckare och annan släckutrustning ska vara på plats, inom giltighetstid och korrekt skyltad.",
+      },
+      {
+        titel: "Utrymning och skyltning",
+        text: "Utrymningsskyltar på väggen och vägvisning på golvet ska leda tydligt. Utrymningsvägar ska vara fria — i trapphus får ingen förvaring ske som kan orsaka brand eller försvåra utrymning.",
+      },
+      {
+        titel: "Medlemmars renovering",
+        text: "Vid lägenhetsrenovering är brandskydd viktigt — enklare information till medlemmen om brandceller, brandfarliga produkter och att trapphus ska hållas fritt.",
+      },
+      {
+        titel: "Föreningens projekt",
+        text: "Vid större projekt ska entreprenören ta fram brandskyddsdokumentation — hur brand förhindras och hur brandspridning minimeras. Mindre projekt kan hanteras med enklare skriftlig kommunikation.",
       },
       {
         titel: "Dokumentation",
-        text: "Protokoll, avvikelser och genomförda åtgärder sparas i portalen — så nästa styrelse och myndigheter ser att brandskyddet sköts över tid.",
+        text: "Protokoll, avvikelser och brandskyddsdokumentation sparas i portalen — så nästa styrelse och myndigheter ser att brandskyddet sköts över tid.",
       },
     ],
   },
@@ -180,6 +193,32 @@ export const guideFilmer: GuideFilm[] = [
       {
         titel: "Belysning",
         text: "LED och styrning sänker elräkningen; armaturbyte planeras separat.",
+      },
+    ],
+  },
+  {
+    id: "projektutvardering",
+    modul: "Projekt",
+    titel: "Projektutvärdering — ekonomi och payback",
+    längd: "ca 55 sek",
+    beskrivning:
+      "Jämför drift, försäkring och investering före och efter — räkna payback och kassa-plus under avskrivningstiden.",
+    scener: [
+      {
+        titel: "Baslinje 2–5 år före",
+        text: "Samla vatten, el, värme, försäkringspremier och skadehistorik innan projektet startar — så ni ser trender och kan jämföra.",
+      },
+      {
+        titel: "Efter slutbesiktning",
+        text: "Följ upp samma nyckeltal efter godkänd slutbesiktning — idealiskt genom hela entreprenörens tioåriga ansvarstid.",
+      },
+      {
+        titel: "Payback och kassa-plus",
+        text: "Räkna återbetalningstid när lägre drift täcker investeringen. Betalar sig projektet på fem år med tjugo års avskrivning blir resterande år ett plus i kassan.",
+      },
+      {
+        titel: "Säkerhet och försäkring",
+        text: "Säkerhet kan inte värderas i kronor — bedöm brand, utrymning och fukt separat. Budgetera för försäkringsluckor och skador som inte ersätts fullt ut.",
       },
     ],
   },
@@ -259,5 +298,36 @@ export const guideTips: GuideTips[] = [
       "Notera vad som fungerade dåligt — så ni undviker samma misstag.",
       "Uppdatera underhållsplanen om komponenter bytts eller renoverats.",
     ],
+  },
+  {
+    id: "projektutvardering",
+    kategori: "projekt",
+    titel: "Projektutvärdering — checklista",
+    ingress:
+      "Jämför ekonomi och risker före, under och efter projektet — inklusive entreprenörens ansvarstid. Säkerhet kan inte värderas i kronor men ska alltid bedömas separat.",
+    punkter: [
+      "Baslinje 2–5 år före start: samla förbrukning av vatten, el och värme (kWh, m³, fjärrvärme eller motsvarande) så trender syns innan åtgärden.",
+      "Baslinje 2–5 år före start: notera försäkringspremier, självrisker och historik av försäkringsskador — vad kostade skadorna totalt och vad ersattes?",
+      "Baslinje 2–5 år före start: dokumentera drift- och underhållskostnader för berörda delar (t.ex. tak, stammar, fasad) så ni kan jämföra före/efter.",
+      "Finansiering: om likvida medel saknas i kassan bör högre avsättning till underhållsfond planeras minst två år före projektstart — undvik att låsa budgeten sent.",
+      "Investeringskostnad: projektkostnad, finansiering, ränta och eventuella tilläggsarbeten — tydligt avgränsat i beslutsunderlaget.",
+      "Efter godkänd slutbesiktning: följ upp samma nyckeltal (vatten, el, värme) minst lika länge som ni har baslinje — idealiskt genom hela entreprenörens ansvarstid (10 år).",
+      "Payback time (återbetalningstid): räkna när lägre driftkostnader och färre skador har täckt projektets nettokostnad — t.ex. om värme och el minskar med X kr/år, hur många år tar det?",
+      "Avskrivning vs payback: ett energiprojekt kan betala sig på t.ex. 5 år medan teknisk avskrivning är 20 år — då blir åren 6–20 ett plus i kassan som kan finansiera nästa åtgärd.",
+      "Fördröjd renovering: skjuter ni på åtgärden växer ofta både skadekostnad och investeringsbehov — ta med det i jämförelsen mellan ”göra nu” och ”vänta”.",
+      "Säkerhet (ej i kronor): bedöm brand, utrymning, fall, fukt och personsäkerhet vid och efter projektet — detta kan inte ersättas av en payback-kalkyl.",
+      "Försäkringsrisker: kartlägg kommande förändringar i försäkringsskydd, höjda premier eller begränsad ersättning efter större skador eller flera skadeärenden.",
+      "Skador utan full ersättning: räkna med att flera skador eller skador utanför policyn kan behöva täckas av föreningen — budgetera för självrisk och ”luckor” i försäkringen.",
+      "Entreprenörens ansvarstid (10 år): spara slutbesiktning, garantibevis och avvikelser; följ upp om fel upptäcks inom ansvarstiden så krav kan ställas i tid.",
+      "Sammanställning till styrelsen: en sida med före/efter-siffror, payback, kvarvarande risker och säkerhetsbedömning — underlag inför nästa projekt och årsredovisning.",
+    ],
+  },
+  {
+    id: "sba-arbete",
+    kategori: "brandskydd",
+    titel: "Systematiskt brandskyddsarbete (SBA) — checklista",
+    ingress:
+      "Förbyggande brandskydd med årlig kontroll av brandvarnare, brandsläckare, utrymning och skyltning — medlemmars eget ansvar (brandvarnare i lägenheten) och påminnelser vid städdag och jul — samt brandskydd vid medlemmars och föreningens projekt.",
+    punkter: sbaChecklistaPunkterSomText(),
   },
 ];
