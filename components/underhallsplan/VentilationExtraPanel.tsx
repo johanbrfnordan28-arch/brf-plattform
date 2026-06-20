@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { formatKr } from "@/components/underhallsplan/besiktningar";
 import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
+import { KostnadPrisVarning } from "@/components/underhallsplan/KostnadPrisVarning";
+import { hamtaRiktprisVentilationExtraTyp } from "@/components/underhallsplan/underhall-atgard-riktpris";
 import {
+  beraknaVentilationExtraPostKr,
+  normaliseraVentilationExtraPost,
   skapaTomVentilationExtraPost,
   summeraVentilationExtraPoster,
-  normaliseraVentilationExtraPost,
+  summeraVentilationExtraTotaltKr,
   ventilationExtraTyper,
   type VentilationExtraPost,
   type VentilationExtraTypId,
@@ -148,6 +153,38 @@ export function VentilationExtraPanel({
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     />
                   </label>
+
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Pris per st (kr)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1000}
+                      value={post.enhetsprisKr}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, { enhetsprisKr: e.target.value })
+                      }
+                      placeholder={String(
+                        hamtaRiktprisVentilationExtraTyp(post.typ),
+                      )}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                    <span className="mt-0.5 block text-[10px] text-muted">
+                      Tomt = riktpris ca{" "}
+                      {hamtaRiktprisVentilationExtraTyp(
+                        post.typ,
+                      ).toLocaleString("sv-SE")}{" "}
+                      kr/st
+                    </span>
+                  </label>
+
+                  {beraknaVentilationExtraPostKr(post) > 0 && (
+                    <p className="text-sm font-semibold text-primary-dark sm:col-span-2">
+                      Summa: {formatKr(beraknaVentilationExtraPostKr(post))}
+                    </p>
+                  )}
                 </div>
               </li>
             );
@@ -190,10 +227,19 @@ export function VentilationExtraPanel({
       </div>
 
       {poster.length > 0 && (
-        <ListaSummeringPanel
-          titel="Sammanfattning fläktar"
-          rader={summeraVentilationExtraPoster(poster)}
-        />
+        <>
+          <ListaSummeringPanel
+            titel="Sammanfattning fläktar"
+            rader={summeraVentilationExtraPoster(poster)}
+          />
+          {summeraVentilationExtraTotaltKr(poster) > 0 && (
+            <p className="text-right text-sm font-bold text-primary-dark">
+              Totalt fläktar:{" "}
+              {formatKr(summeraVentilationExtraTotaltKr(poster))}
+            </p>
+          )}
+          <KostnadPrisVarning kompakt />
+        </>
       )}
     </div>
   );

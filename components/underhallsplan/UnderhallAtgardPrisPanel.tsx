@@ -2,13 +2,12 @@
 
 import { formatKr } from "@/components/underhallsplan/besiktningar";
 import { KostnadPrisVarning } from "@/components/underhallsplan/KostnadPrisVarning";
-import type { FasadAtgardId } from "@/components/underhallsplan/fasad-atgard";
+import { fasadAtgardEtikett } from "@/components/underhallsplan/fasad-atgard";
 import {
-  beraknaFasadAtgardPrisSumma,
-  byggFasadAtgardPrisTabell,
+  beraknaFasadAtgardPrisRad,
   skapaTomFasadAtgardPrisRad,
   type FasadAtgardPrisEnhet,
-  type FasadAtgardPrisRegister,
+  type FasadAtgardPrisRad,
 } from "@/components/underhallsplan/fasad-atgard-pris";
 import { BlandadStyckPosterLista } from "@/components/underhallsplan/BlandadStyckPosterLista";
 import {
@@ -19,30 +18,58 @@ import {
   summeraFasadBlandadPris,
   UNDERHALL_BLANDAD_RESERVATION,
 } from "@/components/underhallsplan/underhall-blandad-pris";
+import {
+  hamtaRiktprisForAtgard,
+  normaliseraAtgardPrisRegisterMedRikt,
+} from "@/components/underhallsplan/underhall-atgard-riktpris";
+import {
+  underhallAtgardEtikett,
+  type UnderhallTillfallenPlanNyckel,
+} from "@/components/underhallsplan/underhall-atgard-katalog";
 
-type FasadAtgardPrisPanelProps = {
-  valdaAtgarder: FasadAtgardId[];
-  priser: FasadAtgardPrisRegister;
+type UnderhallAtgardPrisPanelProps = {
+  planNyckel: UnderhallTillfallenPlanNyckel;
+  valdaAtgarder: string[];
+  priser: Record<string, FasadAtgardPrisRad>;
   defaultKvm?: string;
-  onChange: (priser: FasadAtgardPrisRegister) => void;
+  defaultAntal?: string;
+  onChange: (priser: Record<string, FasadAtgardPrisRad>) => void;
 };
 
-export function FasadAtgardPrisPanel({
+export function UnderhallAtgardPrisPanel({
+  planNyckel,
   valdaAtgarder,
   priser,
   defaultKvm,
+  defaultAntal,
   onChange,
-}: FasadAtgardPrisPanelProps) {
+}: UnderhallAtgardPrisPanelProps) {
   if (valdaAtgarder.length === 0) return null;
 
-  const tabell = byggFasadAtgardPrisTabell(valdaAtgarder, priser);
-  const totaltKr = beraknaFasadAtgardPrisSumma(valdaAtgarder, priser);
+  const normaliserade = normaliseraAtgardPrisRegisterMedRikt(
+    planNyckel,
+    priser,
+    valdaAtgarder,
+    defaultKvm,
+    defaultAntal,
+  );
 
-  function uppdateraRad(
-    id: FasadAtgardId,
-    patch: Partial<ReturnType<typeof skapaTomFasadAtgardPrisRad>>,
-  ) {
-    const befintlig = priser[id] ?? skapaTomFasadAtgardPrisRad(defaultKvm);
+  const totaltKr = valdaAtgarder.reduce((sum, id) => {
+    const rad = normaliserade[id];
+    if (!rad) return sum;
+    return sum + beraknaFasadAtgardPrisRad(rad);
+  }, 0);
+
+  function uppdateraRad(id: string, patch: Partial<FasadAtgardPrisRad>) {
+    const befintlig =
+      normaliserade[id] ??
+      normaliseraAtgardPrisRegisterMedRikt(
+        planNyckel,
+        {},
+        [id],
+        defaultKvm,
+        defaultAntal,
+      )[id];
     const next = { ...befintlig, ...patch };
     if (
       (patch.prisEnhet === "kvm" || next.prisEnhet === "kvm") &&
@@ -58,31 +85,70 @@ export function FasadAtgardPrisPanel({
     }
     onChange({
       ...priser,
+      ...normaliserade,
       [id]: next,
     });
+  }
+
+  function etikett(id: string): string {
+    if (planNyckel === "fonster" || planNyckel.startsWith("typ-")) {
+      return underhallAtgardEtikett(planNyckel, id);
+    }
+    if (planNyckel === "tak-takyta") {
+      return underhallAtgardEtikett(planNyckel, id);
+    }
+    try {
+      return fasadAtgardEtikett(id as Parameters<typeof fasadAtgardEtikett>[0]);
+    } catch {
+      return underhallAtgardEtikett(planNyckel, id);
+    }
   }
 
   return (
     <fieldset className="rounded-lg border border-primary/30 bg-[#eef6f0]/50 p-3 sm:p-4">
       <legend className="px-1 text-xs font-semibold text-primary-dark">
-        Prissättning per fasadåtgärd
+        Prissättning per åtgärd
       </legend>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Välj <strong className="font-medium">blandad</strong> för yta (m²), styck
-        och total — eller enbart m², st eller total. {UNDERHALL_BLANDAD_RESERVATION}
+        Ange yta (m²) eller antal (st) — planen räknar ut summan. Riktvärden
+        fylls i som utgångspunkt; justera med offert eller{" "}
+        <strong className="font-medium">prislista</strong>.{" "}
+        {UNDERHALL_BLANDAD_RESERVATION}
       </p>
 
       <div className="mt-3 space-y-4">
-        {tabell.map((rad) => (
-          <FasadAtgardPrisKort
-            key={rad.id}
-            etikett={rad.etikett}
-            rad={priser[rad.id] ?? skapaTomFasadAtgardPrisRad(defaultKvm)}
-            defaultKvm={defaultKvm}
-            summaKr={rad.summaKr}
-            onChange={(patch) => uppdateraRad(rad.id, patch)}
-          />
-        ))}
+        {valdaAtgarder.map((id) => {
+          const rad =
+            normaliserade[id] ??
+            normaliseraAtgardPrisRegisterMedRikt(
+              planNyckel,
+              {},
+              [id],
+              defaultKvm,
+              defaultAntal,
+            )[id];
+          const rikt = hamtaRiktprisForAtgard(planNyckel, id);
+          const summaKr = beraknaFasadAtgardPrisRad(rad);
+          return (
+            <AtgardPrisKort
+              key={id}
+              etikett={etikett(id)}
+              rad={rad}
+              defaultKvm={defaultKvm}
+              summaKr={summaKr}
+              riktprisHint={
+                rikt
+                  ? rikt.enhet === "kvm"
+                    ? `Riktpris ca ${rikt.prisKr.toLocaleString("sv-SE")} kr/m²`
+                    : rikt.enhet === "styck"
+                      ? `Riktpris ca ${rikt.prisKr.toLocaleString("sv-SE")} kr/st`
+                      : `Riktpris ca ${rikt.prisKr.toLocaleString("sv-SE")} kr totalt`
+                  : undefined
+              }
+              onChange={(patch) => uppdateraRad(id, patch)}
+            />
+          );
+        })}
       </div>
 
       <p className="mt-4 text-right text-sm font-bold text-primary-dark">
@@ -96,30 +162,35 @@ export function FasadAtgardPrisPanel({
   );
 }
 
-function FasadAtgardPrisKort({
+function AtgardPrisKort({
   etikett,
   rad,
   defaultKvm,
   summaKr,
+  riktprisHint,
   onChange,
 }: {
   etikett: string;
-  rad: ReturnType<typeof skapaTomFasadAtgardPrisRad>;
+  rad: FasadAtgardPrisRad;
   defaultKvm?: string;
   summaKr: number;
-  onChange: (patch: Partial<ReturnType<typeof skapaTomFasadAtgardPrisRad>>) => void;
+  riktprisHint?: string;
+  onChange: (patch: Partial<FasadAtgardPrisRad>) => void;
 }) {
   const delar = parseBlandadFranFasadRad(rad);
   const summering = summeraFasadBlandadPris(delar);
   const impl =
-    rad.prisEnhet === "blandad"
-      ? beraknaImplikeradeEnhetspriser(delar)
-      : null;
+    rad.prisEnhet === "blandad" ? beraknaImplikeradeEnhetspriser(delar) : null;
 
   return (
     <div className="rounded-lg border border-border bg-white p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">{etikett}</p>
+        <div>
+          <p className="text-sm font-medium text-foreground">{etikett}</p>
+          {riktprisHint && (
+            <p className="text-[10px] text-muted">{riktprisHint}</p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <select
             value={rad.prisEnhet}
@@ -188,8 +259,8 @@ function FasadAtgardPrisKort({
           </label>
           {summering.totalSkiljerSig && (
             <p className="text-xs text-amber-950">
-              Total skiljer {formatKr(Math.abs(summering.restKr))} från
-              ytdel + styckdel.
+              Total skiljer {formatKr(Math.abs(summering.restKr))} från ytdel +
+              styckdel.
             </p>
           )}
           {impl && (
@@ -229,6 +300,7 @@ function FasadAtgardPrisKort({
               type="number"
               value={rad.enhetsprisKr}
               onChange={(e) => onChange({ enhetsprisKr: e.target.value })}
+              placeholder={riktprisHint ? "Riktpris" : undefined}
               className="mt-0.5 w-full rounded border px-2 py-1 text-sm"
             />
           </label>
@@ -260,4 +332,9 @@ function FasadAtgardPrisKort({
       )}
     </div>
   );
+}
+
+/** Bakåtkompatibilitet — fasad använder samma prisrad-modell. */
+export function skapaTomAtgardPrisRad(defaultKvm?: string): FasadAtgardPrisRad {
+  return skapaTomFasadAtgardPrisRad(defaultKvm);
 }

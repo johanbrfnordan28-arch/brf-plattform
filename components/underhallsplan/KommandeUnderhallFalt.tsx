@@ -191,8 +191,16 @@ export function KommandeUnderhallFalt({
         <UnderhallKostnadFalt
           rad={rad}
           onChange={onChange}
+          komponentNamn={komponentNamn}
+          underkomponentId={underkomponentId}
           visaAlltidEnhetspris={
-            underkomponentId === "fasadmaterial" || underkomponentId === "takyta"
+            underkomponentId === "fasadmaterial" ||
+            underkomponentId === "takyta" ||
+            komponentNamn === "Ventilation" ||
+            (komponentNamn === "Tak" &&
+              ["ventilationshuv", "skorsten", "takkupa"].includes(
+                underkomponentId,
+              ))
           }
         />
       </div>
