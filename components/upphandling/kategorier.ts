@@ -12,6 +12,7 @@ export const entreprenadKategorier = [
 export const konsultKategorier = [
   "Konstruktör/arkitekt",
   "Projektledning",
+  "Besiktningsman/Kvinna",
   "Bygglov",
   "Ljudmätning",
   "Tillgänglighet",
@@ -52,7 +53,7 @@ export const upphandlingsGrupper: UpphandlingsGrupp[] = [
     id: "konsulter",
     titel: "Konsulter & specialisttjänster",
     beskrivning:
-      "Yrkesområden som ofta upphandlas separat från själva entreprenaden, t.ex. vid större ombyggnader eller myndighetskrav.",
+      "Yrkesområden som ofta underupphandlas separat från själva entreprenaden — t.ex. projektledning, besiktningsman och myndighetskrav.",
     kategorier: konsultKategorier,
   },
   {
