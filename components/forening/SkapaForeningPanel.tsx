@@ -187,10 +187,10 @@ export function SkapaForeningPanel({
           </button>
           {!kompakt && (
             <Link
-              href="/mina-foreningar"
+              href="/testande-foreningar"
               className="inline-flex items-center rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-medium text-foreground hover:border-[#5a9a6e]/50"
             >
-              Visa mina testföreningar
+              Visa testande föreningar
             </Link>
           )}
         </div>

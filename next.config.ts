@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         destination: "/forening/arshjul",
         permanent: false,
       },
+      {
+        source: "/mina-foreningar",
+        destination: "/testande-foreningar",
+        permanent: false,
+      },
     ];
   },
 };

@@ -23,10 +23,10 @@ export default function ProvaGratisPage() {
             Steg 1 — Skapa föreningens sida
           </h2>
           <Link
-            href="/mina-foreningar"
+            href="/testande-foreningar"
             className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
           >
-            Visa registrerade testföreningar
+            Visa testande föreningar
           </Link>
         </div>
         <SkapaForeningPanel visaSnabbstart />
