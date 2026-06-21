@@ -4,7 +4,7 @@ import { ModulePage } from "@/components/ModulePage";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 
 export const metadata: Metadata = {
-  title: "Skapa vår förening — BRF Företag",
+  title: "Skapa vår förening — Styrelsenavet",
   description:
     "Styrelsen skapar er förenings sida och kan prova plattformen gratis i 30 dagar.",
 };
@@ -23,10 +23,10 @@ export default function ProvaGratisPage() {
             Steg 1 — Skapa föreningens sida
           </h2>
           <Link
-            href="/testande-foreningar"
+            href="/provperioder"
             className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
           >
-            Visa testande föreningar
+            Visa pågående provperioder
           </Link>
         </div>
         <SkapaForeningPanel visaSnabbstart />

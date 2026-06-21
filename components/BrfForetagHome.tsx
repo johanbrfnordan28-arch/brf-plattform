@@ -166,7 +166,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             <ForeningHeroEtikett />
           ) : (
             <p className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-dark">
-              BRF Företag · För styrelser som vill ha kontroll
+              Styrelsenavet · För styrelser som vill driva föreningen framåt
             </p>
           )}
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
@@ -177,7 +177,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "BRF Företag samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som håller."}
+              : "Styrelsenavet samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som driver föreningen framåt."}
           </p>
 
           {isForening && <ForeningValkommenRand />}

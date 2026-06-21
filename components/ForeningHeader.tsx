@@ -79,7 +79,7 @@ export function ForeningHeader() {
             href="/"
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
           >
-            BRF Företag
+            Styrelsenavet
           </Link>
           <Link
             href="/"

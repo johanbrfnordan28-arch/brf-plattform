@@ -70,7 +70,7 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
   if (!redo) {
     return (
       <div className="rounded-xl border border-border bg-background/80 px-4 py-3 text-sm text-muted">
-        Laddar testande föreningar …
+        Laddar pågående provperioder …
       </div>
     );
   }
@@ -79,17 +79,17 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-background/80 p-5">
         <p className="text-sm font-semibold text-foreground">
-          Inga föreningar i testläge hittades i den här webbläsaren ännu.
+          Inga pågående provperioder hittades i den här webbläsaren ännu.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Skapa en testmiljö först. Den sparas lokalt i webbläsaren och dyker
+          Starta en provperiod först. Den sparas lokalt i webbläsaren och dyker
           sedan upp här så att föreningen kan logga in igen.
         </p>
         <Link
           href={PROVA_GRATIS_PATH}
           className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Skapa testmiljö
+          Starta provperiod
         </Link>
       </div>
     );
@@ -100,7 +100,7 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-primary-dark">
-            Testande föreningar
+            Pågående provperioder
           </p>
           <h3 className="mt-1 text-xl font-bold text-foreground">
             Välj förening att logga in på

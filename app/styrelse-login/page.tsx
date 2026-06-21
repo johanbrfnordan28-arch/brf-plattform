@@ -6,7 +6,7 @@ import { ForeningInloggningsLista } from "@/components/forening/ForeningInloggni
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 
 export const metadata: Metadata = {
-  title: "Logga in styrelse — BRF Företag",
+  title: "Logga in styrelse — Styrelsenavet",
   description: "Separat inloggning för föreningar och styrelser.",
 };
 
@@ -17,18 +17,18 @@ export default function StyrelseLoginPage() {
       icon="🔐"
       intro="Styrelsen kan skapa en eller flera förenings sidor och växla mellan dem. Plattformsuppdateringar slås ihop på alla föreningar utan att radera ifyllda uppgifter."
     >
-      <ContentSection title="Testande föreningar" id="testande-foreningar" plain>
+      <ContentSection title="Pågående provperioder" id="provperioder" plain>
         <p className="mb-4 text-sm leading-relaxed text-muted">
-          Har föreningen redan skapat en testmiljö i den här webbläsaren? Välj
+          Har föreningen redan startat en provperiod i den här webbläsaren? Välj
           föreningen i listan nedan för att logga in direkt.
         </p>
         <ForeningInloggningsLista kompakt />
       </ContentSection>
 
-      <ContentSection title="Skapa ny testmiljö" id="skapa-forening" plain>
+      <ContentSection title="Starta ny provperiod" id="skapa-forening" plain>
         <p className="mb-4 text-sm text-muted">
           Tryck på den gröna knappen nedan för att skapa er föreningssida. Ni kan ha flera
-          föreningar i samma webbläsare — de visas sedan under Testande föreningar.
+          föreningar i samma webbläsare — de visas sedan under Pågående provperioder.
         </p>
         <SkapaForeningPanel visaSnabbstart />
       </ContentSection>

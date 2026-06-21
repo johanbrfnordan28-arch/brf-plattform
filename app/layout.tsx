@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "BRF Företag — Underhållsplan och upphandling för styrelser",
+  title: "Styrelsenavet — Underhållsplan och upphandling för styrelser",
   description:
     "Prova gratis i 30 dagar. Underhållsplan, upphandling av stora och små entreprenader, dokument och beslutsstöd — samlat för BRF-styrelser.",
 };

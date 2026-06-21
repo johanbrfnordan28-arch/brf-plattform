@@ -97,7 +97,7 @@ export function SkapaForeningPanel({
         Skapa vår förening
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Ni får en egen kopia av grundmallen — samma moduler som BRF Företag visar,
+        Ni får en egen kopia av grundmallen — samma moduler som Styrelsenavet visar,
         men med <strong className="text-foreground">ert föreningsnamn</strong> och
         er egen data i webbläsaren (demo).
       </p>
@@ -132,7 +132,7 @@ export function SkapaForeningPanel({
           />
           <span className="text-muted">
             Jag bekräftar att jag är styrelseledamot eller har styrelsens mandat att
-            skapa föreningens sida i BRF Företag.
+            skapa föreningens sida i Styrelsenavet.
           </span>
         </label>
 
@@ -187,10 +187,10 @@ export function SkapaForeningPanel({
           </button>
           {!kompakt && (
             <Link
-              href="/testande-foreningar"
+              href="/provperioder"
               className="inline-flex items-center rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-medium text-foreground hover:border-[#5a9a6e]/50"
             >
-              Visa testande föreningar
+              Visa pågående provperioder
             </Link>
           )}
         </div>

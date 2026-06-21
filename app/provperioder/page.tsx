@@ -4,17 +4,17 @@ import { ModulePage } from "@/components/ModulePage";
 import { ForeningInloggningsLista } from "@/components/forening/ForeningInloggningsLista";
 
 export const metadata: Metadata = {
-  title: "Testande föreningar — BRF Företag",
+  title: "Pågående provperioder — Styrelsenavet",
   description:
-    "Välj bland föreningar som provar BRF Företag och öppna rätt testmiljö i Styrelseflow.",
+    "Välj bland föreningar som provar Styrelsenavet och öppna rätt testmiljö i Styrelseflow.",
 };
 
-export default function TestandeForeningarPage() {
+export default function ProvperioderPage() {
   return (
     <ModulePage
-      title="Testande föreningar"
+      title="Pågående provperioder"
       icon="🏘️"
-      intro="Här visas föreningar som har skapat en testmiljö i den här webbläsaren. Välj förening för att logga in och fortsätta i Styrelseflow."
+      intro="Här visas föreningar som har startat en provperiod i den här webbläsaren. Välj förening för att logga in och fortsätta i Styrelseflow."
     >
       <ForeningInloggningsLista />
 
@@ -23,15 +23,15 @@ export default function TestandeForeningarPage() {
           Ser du inte föreningen?
         </h2>
         <p className="mt-3">
-          Testmiljöer sparas lokalt i den webbläsare där de skapades. Om du
+          Provperioder sparas lokalt i den webbläsare där de skapades. Om du
           byter dator, webbläsare eller rensar webbplatsdata behöver föreningen
-          skapa en ny testmiljö.
+          starta en ny provperiod.
         </p>
         <Link
           href="/prova-gratis"
           className="mt-4 inline-flex rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
-          Skapa ny testmiljö
+          Starta ny provperiod
         </Link>
       </div>
     </ModulePage>

@@ -18,7 +18,12 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/mina-foreningar",
-        destination: "/testande-foreningar",
+        destination: "/provperioder",
+        permanent: false,
+      },
+      {
+        source: "/testande-foreningar",
+        destination: "/provperioder",
         permanent: false,
       },
     ];

@@ -18,10 +18,10 @@ export function Header() {
             style={{ backgroundColor: "var(--primary)" }}
             aria-hidden
           >
-            B
+            S
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">
-            BRF Företag
+            Styrelsenavet
           </span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
@@ -37,10 +37,10 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <Link
-            href="/testande-foreningar"
+            href="/provperioder"
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark md:inline-flex"
           >
-            Testande föreningar
+            Provperioder
           </Link>
           <Link
             href={PROVA_GRATIS_PATH}

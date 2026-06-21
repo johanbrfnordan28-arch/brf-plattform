@@ -115,16 +115,119 @@ function normaliseraProfilFranOkand(
   };
 }
 
-function lasProfilFranJson(
+function laggTillProfilIMap(
+  profiler: Map<string, ForeningProfil>,
+  profil: ForeningProfil | null,
+): void {
+  if (!profil || profil.id === GRUNDMALL_FORENING_ID) return;
+  const befintlig = profiler.get(profil.id);
+  if (!befintlig || profilFullhet(profil) >= profilFullhet(befintlig)) {
+    profiler.set(profil.id, profil);
+  }
+}
+
+function laggTillProfilerFranJson(
+  profiler: Map<string, ForeningProfil>,
   raw: string | null | undefined,
   fallbackId?: string,
-): ForeningProfil | null {
-  if (!raw) return null;
+): void {
+  if (!raw) return;
   try {
-    return normaliseraProfilFranOkand(JSON.parse(raw), fallbackId);
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        laggTillProfilIMap(profiler, normaliseraProfilFranOkand(item, fallbackId));
+      }
+      return;
+    }
+    const maybeRegistry = parsed as Partial<ForeningRegistry>;
+    if (Array.isArray(maybeRegistry.poster)) {
+      for (const item of maybeRegistry.poster) {
+        laggTillProfilIMap(profiler, normaliseraProfilFranOkand(item, fallbackId));
+      }
+      return;
+    }
+    laggTillProfilIMap(profiler, normaliseraProfilFranOkand(parsed, fallbackId));
   } catch {
-    return null;
+    /* trasig eller irrelevant JSON */
   }
+}
+
+function samlaForeningProfilerFranLagring(): {
+  profiler: ForeningProfil[];
+  andrat: boolean;
+} {
+  if (typeof window === "undefined") return { profiler: [], andrat: false };
+
+  const registry = lasForeningRegistryInternt();
+  const ursprungligJson = JSON.stringify(registry.poster);
+  const profiler = new Map<string, ForeningProfil>();
+  let hittadeSekundart = false;
+
+  for (const post of registry.poster) {
+    laggTillProfilIMap(profiler, normaliseraProfilFranOkand(post, post.id));
+  }
+
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+
+    if (key.startsWith("brf-f-")) {
+      const rest = key.slice("brf-f-".length);
+      const id = rest.includes("--") ? rest.slice(0, rest.indexOf("--")) : "";
+      if (!id || id === GRUNDMALL_FORENING_ID) continue;
+
+      if (key.endsWith(PROFIL_NYCKEL_SUFFIX)) {
+        const fore = profiler.size;
+        laggTillProfilerFranJson(profiler, localStorage.getItem(key), id);
+        if (profiler.size !== fore) hittadeSekundart = true;
+      } else if (!profiler.has(id)) {
+        // Äldre/avbrutna skapanden kan sakna profilpost men ha moduldatan kvar.
+        laggTillProfilIMap(profiler, tomProfil(id, foreningNamnFranId(id)));
+        hittadeSekundart = true;
+      }
+      continue;
+    }
+
+    // Fångar äldre registry-/profilnycklar utan att tolka all appdata som förening.
+    const lowerKey = key.toLowerCase();
+    if (
+      lowerKey.includes("forening") &&
+      (lowerKey.includes("profil") ||
+        lowerKey.includes("registry") ||
+        lowerKey.includes("register"))
+    ) {
+      const fore = profiler.size;
+      laggTillProfilerFranJson(profiler, localStorage.getItem(key));
+      if (profiler.size !== fore) hittadeSekundart = true;
+    }
+  }
+
+  try {
+    const fore = profiler.size;
+    laggTillProfilerFranJson(
+      profiler,
+      sessionStorage.getItem(SENAST_SKAPAD_PROFIL_KEY),
+    );
+    if (profiler.size !== fore) hittadeSekundart = true;
+  } catch {
+    /* ignore */
+  }
+  const foreCookie = profiler.size;
+  laggTillProfilerFranJson(profiler, cookieHamtaSenastProfil());
+  if (profiler.size !== foreCookie) hittadeSekundart = true;
+
+  const aktivId = lasAktivForeningId();
+  if (aktivId && aktivId !== GRUNDMALL_FORENING_ID && !profiler.has(aktivId)) {
+    laggTillProfilIMap(profiler, tomProfil(aktivId, foreningNamnFranId(aktivId)));
+    hittadeSekundart = true;
+  }
+
+  const samlade = [...profiler.values()];
+  return {
+    profiler: samlade,
+    andrat: hittadeSekundart || JSON.stringify(samlade) !== ursprungligJson,
+  };
 }
 
 /** Jämför föreningsnamn utan skilj på versaler och extra mellanslag. */
@@ -140,7 +243,9 @@ export function normaliseraForeningsNamn(namn: string): string {
 export function finnForeningMedNamn(namn: string): ForeningProfil | null {
   const nyckel = normaliseraForeningsNamn(namn);
   if (!nyckel) return null;
-  for (const post of lasForeningRegistryInternt().poster) {
+  const poster =
+    typeof window === "undefined" ? lasForeningRegistryInternt().poster : listaForeningar();
+  for (const post of poster) {
     if (post.id === GRUNDMALL_FORENING_ID) continue;
     if (normaliseraForeningsNamn(post.namn) === nyckel) return post;
   }
@@ -274,63 +379,20 @@ export function lasForeningRegistry(): ForeningRegistry {
  */
 export function repareraForeningRegistry(): boolean {
   if (typeof window === "undefined") return false;
+  const samlade = samlaForeningProfilerFranLagring();
+  if (!samlade.andrat) return rengoraDubblettForeningar();
+
   const registry = lasForeningRegistryInternt();
-  const ursprungligJson = JSON.stringify(registry.poster);
-  const profiler = new Map<string, ForeningProfil>();
-  let andrat = false;
-
-  function laggTillProfil(profil: ForeningProfil | null): void {
-    if (!profil || profil.id === GRUNDMALL_FORENING_ID) return;
-    const befintlig = profiler.get(profil.id);
-    if (!befintlig || profilFullhet(profil) >= profilFullhet(befintlig)) {
-      profiler.set(profil.id, profil);
-    }
-  }
-
-  for (const post of registry.poster) {
-    laggTillProfil(normaliseraProfilFranOkand(post, post.id));
-  }
-
-  for (let i = 0; i < localStorage.length; i += 1) {
-    const key = localStorage.key(i);
-    if (!key?.startsWith("brf-f-")) continue;
-    const rest = key.slice("brf-f-".length);
-    const id = rest.includes("--") ? rest.slice(0, rest.indexOf("--")) : "";
-    if (!id || id === GRUNDMALL_FORENING_ID) continue;
-
-    if (key.endsWith(PROFIL_NYCKEL_SUFFIX)) {
-      laggTillProfil(lasProfilFranJson(localStorage.getItem(key), id));
-    } else if (!profiler.has(id)) {
-      // Äldre/avbrutna skapanden kan sakna profilpost men ha moduldatan kvar.
-      laggTillProfil(tomProfil(id, foreningNamnFranId(id)));
-      andrat = true;
-    }
-  }
+  registry.poster = samlade.profiler;
 
   try {
-    laggTillProfil(lasProfilFranJson(sessionStorage.getItem(SENAST_SKAPAD_PROFIL_KEY)));
+    sparaRegistry(registry);
   } catch {
-    /* ignore */
-  }
-  laggTillProfil(lasProfilFranJson(cookieHamtaSenastProfil()));
-
-  const aktivId = lasAktivForeningId();
-  if (aktivId && aktivId !== GRUNDMALL_FORENING_ID && !profiler.has(aktivId)) {
-    laggTillProfil(tomProfil(aktivId, foreningNamnFranId(aktivId)));
+    return false;
   }
 
-  registry.poster = [...profiler.values()];
-  andrat = andrat || JSON.stringify(registry.poster) !== ursprungligJson;
-
-  if (andrat) {
-    try {
-      sparaRegistry(registry);
-    } catch {
-      return false;
-    }
-  }
-
-  return andrat || rengoraDubblettForeningar();
+  rengoraDubblettForeningar();
+  return true;
 }
 
 function sparaRegistry(registry: ForeningRegistry): void {
@@ -356,10 +418,10 @@ export function skapaForeningIdFranNamn(namn: string): string {
     .replace(/^-|-$/g, "")
     .slice(0, 40);
   const bas = slug || "forening";
-  const registry = lasForeningRegistry();
+  const befintliga = typeof window === "undefined" ? lasForeningRegistry().poster : listaForeningar();
   let id = bas;
   let n = 2;
-  while (registry.poster.some((p) => p.id === id)) {
+  while (befintliga.some((p) => p.id === id)) {
     id = `${bas}-${n}`;
     n += 1;
   }
@@ -731,7 +793,7 @@ export function skapaNyForening(namn: string): ForeningProfil {
   const befintlig = finnForeningMedNamn(trimmat);
   if (befintlig) {
     throw new Error(
-      `Föreningen «${befintlig.namn}» finns redan. Öppna Testande föreningar och logga in där i stället för att skapa en ny.`,
+      `Föreningen «${befintlig.namn}» finns redan. Öppna Pågående provperioder och logga in där i stället för att skapa en ny.`,
     );
   }
 
@@ -774,7 +836,8 @@ export function kopieraGrundmallOmNyForening(foreningId: string): void {
 }
 
 export function listaForeningar(): ForeningProfil[] {
-  return lasForeningRegistry().poster;
+  if (typeof window === "undefined") return lasForeningRegistry().poster;
+  return samlaForeningProfilerFranLagring().profiler;
 }
 
 /** Grundmall + alla skapade föreningar (för migrering och växlare). */
