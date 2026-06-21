@@ -582,10 +582,10 @@ const komponentMallar: Record<string, KomponentMall> = {
     namn: "Tak",
     deltypSektionTitel: "Takbeläggning / typ",
     deltyper: [
-      { id: "bandlaggd-plat", etikett: "Bandlagd plåttak" },
+      { id: "bandlaggd-plat", etikett: "Bandtäckt plåttak" },
       { id: "korrugerad-plat", etikett: "Korrugerad plåt" },
-      { id: "tegel", etikett: "Tegel" },
-      { id: "papp", etikett: "Papp" },
+      { id: "tegel", etikett: "Tegeltak" },
+      { id: "papp", etikett: "Bitumenbaserad tätskiktsmatta (takpapp)" },
     ],
     underkomponenter: [
       {
