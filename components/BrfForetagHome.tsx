@@ -4,7 +4,6 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningInloggningsLista } from "@/components/forening/ForeningInloggningsLista";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
-import { SkapaForeningNavKnapp } from "@/components/forening/SkapaForeningNavKnapp";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
