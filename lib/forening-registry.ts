@@ -78,7 +78,6 @@ const PROFIL_NYCKEL_SUFFIX = `--${FORENING_PROFIL_BASE_KEY}`;
 const TESTPLAN_PROVPERIODER: Record<string, { id: string; namn: string }> = {
   "test-sailor": { id: "brf-sailor", namn: "Brf Sailor" },
   "test-nordan-28": { id: "brf-nordan-28", namn: "Brf Nordan 28" },
-  "test-nordan-30": { id: "brf-nordan-30", namn: "Brf Nordan 30" },
 };
 
 function foreningNamnFranId(id: string): string {

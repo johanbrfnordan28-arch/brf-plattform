@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  forberedInvesterarDemo,
+} from "@/lib/investerar-demo-seed";
+import {
   avslutaProvperiodForening,
   bootstrapForeningFranUrl,
   FORENING_AKTIV_EVENT,
   GRUNDMALL_FORENING_ID,
+  sparaForeningProfil,
   lasAktivForeningId,
   listaForeningar,
   markeraPendingAktivForening,
@@ -15,10 +19,43 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { harUnderhallsplanSparat } from "@/components/underhallsplan/underhallsplan-lager";
+import type { TestplanId } from "@/components/underhallsplan/testplaner";
 
 type Props = {
   kompakt?: boolean;
 };
+
+const STANDARD_PROVPERIODER: Array<
+  ForeningProfil & { testplanId: TestplanId; standardProvperiod: true }
+> = [
+  {
+    id: "brf-nordan-28",
+    namn: "Brf Nordan 28",
+    skapadTidpunkt: "2026-01-01T00:00:00.000Z",
+    organisationsnummer: "",
+    epost: "",
+    postadress: "",
+    ort: "",
+    kontaktperson: "",
+    grundinfoPaborjad: true,
+    testplanId: "test-nordan-28",
+    standardProvperiod: true,
+  },
+  {
+    id: "brf-sailor",
+    namn: "Brf Sailor",
+    skapadTidpunkt: "2026-01-01T00:00:00.000Z",
+    organisationsnummer: "",
+    epost: "",
+    postadress: "",
+    ort: "",
+    kontaktperson: "",
+    grundinfoPaborjad: true,
+    testplanId: "test-sailor",
+    standardProvperiod: true,
+  },
+];
 
 const AVTALSVAL_STORAGE_KEY = "brf-provperiod-avtalsval";
 
@@ -65,6 +102,28 @@ function formateraDatum(iso: string): string {
   }).format(datum);
 }
 
+function arNordan30(profil: ForeningProfil): boolean {
+  const id = profil.id.toLowerCase();
+  const namn = profil.namn.toLowerCase();
+  return id.includes("nordan-30") || namn.includes("nordan 30");
+}
+
+function standardTestplanId(foreningId: string): TestplanId | null {
+  return STANDARD_PROVPERIODER.find((p) => p.id === foreningId)?.testplanId ?? null;
+}
+
+function sammanfogaMedStandardProvperioder(lista: ForeningProfil[]): ForeningProfil[] {
+  const utanNordan30 = lista.filter((profil) => !arNordan30(profil));
+  const map = new Map<string, ForeningProfil>();
+  for (const standard of STANDARD_PROVPERIODER) {
+    map.set(standard.id, standard);
+  }
+  for (const profil of utanNordan30) {
+    map.set(profil.id, profil);
+  }
+  return [...map.values()];
+}
+
 export function ForeningInloggningsLista({ kompakt = false }: Props) {
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [aktivId, setAktivId] = useState(GRUNDMALL_FORENING_ID);
@@ -83,13 +142,15 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
     bootstrapForeningFranUrl();
     repareraForeningRegistry();
     const id = lasAktivForeningId();
-    const lista = listaForeningar()
+    const lista = sammanfogaMedStandardProvperioder(
+      listaForeningar()
         .filter((f) => f.id !== GRUNDMALL_FORENING_ID)
         .sort(
           (a, b) =>
             new Date(b.skapadTidpunkt).getTime() -
             new Date(a.skapadTidpunkt).getTime(),
-        );
+        ),
+    );
     setAktivId(id);
     setForeningar(lista);
     const hittadIndex = lista.findIndex((f) => f.id === id);
@@ -113,7 +174,16 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
   function oppnaForening(profil: ForeningProfil) {
     setOppnarId(profil.id);
     markeraPendingAktivForening(profil.id);
+    try {
+      sparaForeningProfil(profil, { tyst: true });
+    } catch {
+      /* Det räcker ofta att aktiv id sätts, men profilen sparas när det går. */
+    }
     sattAktivForeningId(profil.id, { tyst: true });
+    const testplanId = standardTestplanId(profil.id);
+    if (testplanId && !harUnderhallsplanSparat()) {
+      forberedInvesterarDemo(testplanId);
+    }
     window.location.assign("/forening");
   }
 
@@ -173,6 +243,12 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
   }
 
   function avslutaProvperiod(profil: ForeningProfil) {
+    if (standardTestplanId(profil.id)) {
+      window.alert(
+        `${profil.namn} är en fast provperiod i Styrelsenavet och ligger kvar som snabbval. Du kan starta om den när som helst.`,
+      );
+      return;
+    }
     const ok = window.confirm(
       `Avsluta provperioden för ${profil.namn}? Detta tar bort föreningens lokala testdata i den här webbläsaren.`,
     );
@@ -249,6 +325,28 @@ export function ForeningInloggningsLista({ kompakt = false }: Props) {
         >
           + Skapa ny
         </Link>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {STANDARD_PROVPERIODER.map((profil) => (
+          <button
+            key={profil.id}
+            type="button"
+            onClick={() => oppnaForening(profil)}
+            disabled={Boolean(oppnarId)}
+            className="rounded-2xl border-2 border-primary bg-white p-4 text-left shadow-sm transition hover:bg-[#eef6f0] hover:shadow-md disabled:cursor-wait disabled:opacity-70"
+          >
+            <span className="block text-xs font-semibold uppercase tracking-wide text-primary-dark">
+              Snabbval provperiod
+            </span>
+            <span className="mt-1 block text-xl font-bold text-foreground">
+              Öppna {profil.namn}
+            </span>
+            <span className="mt-1 block text-sm text-muted">
+              Gå direkt till föreningens sida med förifylld underhållsplan.
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
