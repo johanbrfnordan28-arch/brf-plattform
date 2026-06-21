@@ -294,10 +294,10 @@ export const underhallElsutbleckVarning =
   "Dörr med elslutbleck: smörj aldrig låscylindern eller låshusets inre delar med olja eller fett — det kan låsa cylindern och störa elslutblecket. Underhåll elslutbleckets glidyta separat med tillverkargodkänt fett (ofta ca 2 gånger/år).";
 
 export const underhallAllaFonsterText =
-  "På fönster: smörj beslag och rörliga delar regelbundet — ingår i löpande skötsel oavsett material.";
+  "På fönster: välj skötselråd efter material (trä, aluminiumklätt trä, PVC/plast eller aluminium). Smörj beslag och rörliga delar regelbundet — det ingår i löpande skötsel oavsett material.";
 
 export const underhallAllaDorrarText =
-  "På dörrar: välj löpande låsåtgärder nedan. Vid kodlås och elslutbleck — följ tillverkarens råd; cylindern får inte oljas.";
+  "På dörrar och lås: skilj på vanlig cylinder/låshus, kodlås och elslutbleck. Välj löpande låsåtgärder nedan och följ tillverkarens råd; cylindern får inte oljas.";
 
 export function hamtaDorrMaterialId(p: FonsterDorrPost): DorrMaterialId | undefined {
   if (p.dorrMaterial) return p.dorrMaterial;
