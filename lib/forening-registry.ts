@@ -75,6 +75,12 @@ function normaliseraRegistry(raw: unknown): ForeningRegistry {
 
 const PROFIL_NYCKEL_SUFFIX = `--${FORENING_PROFIL_BASE_KEY}`;
 
+const TESTPLAN_PROVPERIODER: Record<string, { id: string; namn: string }> = {
+  "test-sailor": { id: "brf-sailor", namn: "Brf Sailor" },
+  "test-nordan-28": { id: "brf-nordan-28", namn: "Brf Nordan 28" },
+  "test-nordan-30": { id: "brf-nordan-30", namn: "Brf Nordan 30" },
+};
+
 function foreningNamnFranId(id: string): string {
   const delar = id
     .replace(/^brf-/, "")
@@ -153,6 +159,53 @@ function laggTillProfilerFranJson(
   }
 }
 
+function laggTillTestplanProfilFranOkand(
+  profiler: Map<string, ForeningProfil>,
+  raw: unknown,
+): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  const p = raw as { aktivTestplan?: unknown; sparad?: unknown };
+  if (typeof p.aktivTestplan !== "string") return false;
+  const demo = TESTPLAN_PROVPERIODER[p.aktivTestplan];
+  if (!demo) return false;
+  const fore = profiler.size;
+  laggTillProfilIMap(profiler, {
+    id: demo.id,
+    namn: demo.namn,
+    skapadTidpunkt:
+      typeof p.sparad === "string" && p.sparad.trim()
+        ? p.sparad
+        : new Date().toISOString(),
+    organisationsnummer: "",
+    epost: "",
+    postadress: "",
+    ort: "",
+    kontaktperson: "",
+    grundinfoPaborjad: true,
+  });
+  return profiler.size !== fore;
+}
+
+function laggTillTestplanProfilFranJson(
+  profiler: Map<string, ForeningProfil>,
+  raw: string | null | undefined,
+): boolean {
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      let andrat = false;
+      for (const item of parsed) {
+        andrat = laggTillTestplanProfilFranOkand(profiler, item) || andrat;
+      }
+      return andrat;
+    }
+    return laggTillTestplanProfilFranOkand(profiler, parsed);
+  } catch {
+    return false;
+  }
+}
+
 function samlaForeningProfilerFranLagring(): {
   profiler: ForeningProfil[];
   andrat: boolean;
@@ -180,8 +233,17 @@ function samlaForeningProfilerFranLagring(): {
       if (key.endsWith(PROFIL_NYCKEL_SUFFIX)) {
         const fore = profiler.size;
         laggTillProfilerFranJson(profiler, localStorage.getItem(key), id);
+        hittadeSekundart =
+          laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+          hittadeSekundart;
         if (profiler.size !== fore) hittadeSekundart = true;
-      } else if (!profiler.has(id)) {
+      } else {
+        hittadeSekundart =
+          laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+          hittadeSekundart;
+      }
+
+      if (!key.endsWith(PROFIL_NYCKEL_SUFFIX) && !profiler.has(id)) {
         // Äldre/avbrutna skapanden kan sakna profilpost men ha moduldatan kvar.
         laggTillProfilIMap(profiler, tomProfil(id, foreningNamnFranId(id)));
         hittadeSekundart = true;
@@ -199,7 +261,17 @@ function samlaForeningProfilerFranLagring(): {
     ) {
       const fore = profiler.size;
       laggTillProfilerFranJson(profiler, localStorage.getItem(key));
+      hittadeSekundart =
+        laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+        hittadeSekundart;
       if (profiler.size !== fore) hittadeSekundart = true;
+    } else if (
+      lowerKey.includes("underhallsplan") ||
+      lowerKey.includes("underhållsplan")
+    ) {
+      hittadeSekundart =
+        laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+        hittadeSekundart;
     }
   }
 
