@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ModulePage } from "@/components/ModulePage";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 
@@ -17,9 +18,17 @@ export default function ProvaGratisPage() {
       intro="Här skapar styrelsen er egen föreningssida (kopia av grundmallen). Fyll i namn, bocka i bekräftelsen och tryck på den gröna knappen nedan."
     >
       <div>
-        <h2 className="mb-4 text-xl font-semibold text-foreground">
-          Steg 1 — Skapa föreningens sida
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold text-foreground">
+            Steg 1 — Skapa föreningens sida
+          </h2>
+          <Link
+            href="/mina-foreningar"
+            className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+          >
+            Visa registrerade testföreningar
+          </Link>
+        </div>
         <SkapaForeningPanel visaSnabbstart />
       </div>
     </ModulePage>

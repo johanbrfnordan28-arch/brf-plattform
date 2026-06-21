@@ -37,6 +37,12 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <Link
+            href="/mina-foreningar"
+            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark md:inline-flex"
+          >
+            Mina testföreningar
+          </Link>
+          <Link
             href={PROVA_GRATIS_PATH}
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
           >
@@ -46,7 +52,7 @@ export function Header() {
             href="/styrelse-login"
             className="brf-knapp-gron px-4 py-2 text-sm"
           >
-            Logga in styrelse
+            Logga in
           </Link>
         </div>
       </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { ForeningInloggningsLista } from "@/components/forening/ForeningInloggningsLista";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 
 export const metadata: Metadata = {
@@ -16,10 +17,18 @@ export default function StyrelseLoginPage() {
       icon="🔐"
       intro="Styrelsen kan skapa en eller flera förenings sidor och växla mellan dem. Plattformsuppdateringar slås ihop på alla föreningar utan att radera ifyllda uppgifter."
     >
-      <ContentSection title="Skapa vår förening" id="skapa-forening" plain>
+      <ContentSection title="Mina testföreningar" id="mina-foreningar" plain>
+        <p className="mb-4 text-sm leading-relaxed text-muted">
+          Har du redan skapat en testförening i den här webbläsaren? Välj den i
+          listan nedan för att logga in direkt.
+        </p>
+        <ForeningInloggningsLista kompakt />
+      </ContentSection>
+
+      <ContentSection title="Skapa ny testförening" id="skapa-forening" plain>
         <p className="mb-4 text-sm text-muted">
           Tryck på den gröna knappen nedan för att skapa er föreningssida. Ni kan ha flera
-          föreningar i samma webbläsare — välj aktiv förening i headern efteråt.
+          föreningar i samma webbläsare — de visas sedan under Mina testföreningar.
         </p>
         <SkapaForeningPanel visaSnabbstart />
       </ContentSection>

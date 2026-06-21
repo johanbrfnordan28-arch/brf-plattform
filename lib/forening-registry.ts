@@ -656,7 +656,7 @@ export function skapaNyForening(namn: string): ForeningProfil {
   const befintlig = finnForeningMedNamn(trimmat);
   if (befintlig) {
     throw new Error(
-      `Föreningen «${befintlig.namn}» finns redan. Välj den i listan uppe till höger i stället för att skapa en ny.`,
+      `Föreningen «${befintlig.namn}» finns redan. Öppna Mina testföreningar och logga in där i stället för att skapa en ny.`,
     );
   }
 
