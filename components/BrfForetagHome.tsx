@@ -2,8 +2,8 @@ import Link from "next/link";
 import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
+import { ForeningInloggningsLista } from "@/components/forening/ForeningInloggningsLista";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
-import { SkapaForeningNavKnapp } from "@/components/forening/SkapaForeningNavKnapp";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
@@ -166,7 +166,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             <ForeningHeroEtikett />
           ) : (
             <p className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-dark">
-              BRF Företag · För styrelser som vill ha kontroll
+              Styrelsenavet · För styrelser som vill driva föreningen framåt
             </p>
           )}
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
@@ -177,7 +177,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "BRF Företag samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som håller."}
+              : "Styrelsenavet samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som driver föreningen framåt."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -258,6 +258,26 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </div>
         </div>
       </section>
+
+      {!isForening && (
+        <section id="provperioder" className="border-b border-border bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+            <div className="mb-5 max-w-2xl">
+              <p className="text-sm font-semibold text-primary-dark">
+                Logga in via Styrelsenavet
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-foreground">
+                Snurra fram föreningens provperiod
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Flera styrelsemedlemmar kan börja på första sidan, välja rätt
+                provperiod i hjulet och sedan öppna föreningens egen sida.
+              </p>
+            </div>
+            <ForeningInloggningsLista />
+          </div>
+        </section>
+      )}
 
       {!isForening && (
         <section
@@ -497,7 +517,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               månadsdebitering.
             </p>
           </div>
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-5">
             <div className="rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
                 Rekommenderas att börja här
@@ -519,7 +539,29 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </div>
             <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Ettårsavtal
+                Månadsvis
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-foreground">
+                Flexibelt
+              </h3>
+              <p className="mt-1 text-sm text-primary-dark">
+                kort start utan längre bindning
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-muted">
+                <li>Passar när styrelsen vill prova arbetssättet löpande</li>
+                <li>Kan växlas upp till längre avtal senare</li>
+                <li>Samma moduler som i övriga avtal</li>
+              </ul>
+              <Link
+                href="/#provperioder"
+                className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
+              >
+                Välj via provperiod →
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Årsvis
               </p>
               <h3 className="mt-2 text-xl font-bold text-foreground">
                 Spara 30&nbsp;%
@@ -533,15 +575,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 <li>Uppsägningstid 6 månader</li>
               </ul>
               <Link
-                href="#intro-film"
+                href="/#provperioder"
                 className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
               >
-                Se filmerna för pris →
+                Välj via provperiod →
               </Link>
             </div>
             <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Tvåårsavtal
+                2 år
               </p>
               <h3 className="mt-2 text-xl font-bold text-foreground">
                 Spara upp till 60&nbsp;%
@@ -555,10 +597,32 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 <li>Samma moduler och support som övriga avtal</li>
               </ul>
               <Link
-                href="#intro-film"
+                href="/#provperioder"
                 className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
               >
-                Se filmerna för pris →
+                Välj via provperiod →
+              </Link>
+            </div>
+            <div className="rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                3 år
+              </p>
+              <h3 className="mt-2 text-xl font-bold text-foreground">
+                Längst period
+              </h3>
+              <p className="mt-1 text-sm text-primary-dark">
+                för långsiktig kontinuitet
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-muted">
+                <li>Bäst när föreningen vill säkra flera styrelseår</li>
+                <li>Underhållsplan och avtal följer med över mandatperioder</li>
+                <li>Tryggt val för större föreningar och fler projekt</li>
+              </ul>
+              <Link
+                href="/#provperioder"
+                className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
+              >
+                Välj via provperiod →
               </Link>
             </div>
           </div>

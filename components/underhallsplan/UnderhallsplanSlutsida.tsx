@@ -39,6 +39,8 @@ import type { Besiktning } from "@/components/underhallsplan/besiktningar";
 import type { Samfallighetsavgift } from "@/components/underhallsplan/samfallighetsavgift";
 import { samlaPlanUnderhallTidslista } from "@/components/underhallsplan/plan-underhall-tidslista";
 import {
+  PLAN_SLUTSIDA_BILAGA_INTRO,
+  PLAN_SLUTSIDA_BILAGOR,
   PLAN_SLUTSIDA_CHECKLISTA,
   PLAN_SLUTSIDA_ERFARENHET,
   PLAN_SLUTSIDA_LEVANDE_PLAN,
@@ -672,7 +674,6 @@ export function UnderhallsplanSlutsida({
         <PrintSida
           sidnummer={6}
           titel="Tips och råd"
-          className="print:break-after-auto"
         >
           <p className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-4 py-3 text-sm leading-relaxed text-foreground">
             Planen visar siffror och tider — nedan kompletterar erfarenhetsbaserade
@@ -722,6 +723,72 @@ export function UnderhallsplanSlutsida({
             {PLAN_SLUTSIDA_LEVANDE_PLAN} Styrelsen ansvarar för att planen följs
             upp, uppdateras och att beslut stämmer med föreningens stadgar och
             medlemmarnas intresse på lång sikt.
+          </p>
+        </PrintSida>
+
+        <PrintSida
+          sidnummer={7}
+          titel="Bilagor — skötselråd"
+          className="print:break-after-auto"
+        >
+          <p className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-4 py-3 text-sm leading-relaxed text-foreground">
+            {PLAN_SLUTSIDA_BILAGA_INTRO}
+          </p>
+
+          <div className="mt-6 grid gap-5 lg:grid-cols-2 print:grid-cols-1">
+            {PLAN_SLUTSIDA_BILAGOR.map((avsnitt) => (
+              <section
+                key={avsnitt.rubrik}
+                className="rounded-xl border border-border bg-background/80 p-5"
+              >
+                <h3 className="text-base font-semibold text-foreground">
+                  {avsnitt.rubrik}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {avsnitt.ingress}
+                </p>
+
+                {avsnitt.viktigt && avsnitt.viktigt.length > 0 && (
+                  <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-foreground/85">
+                    {avsnitt.viktigt.map((punkt) => (
+                      <li key={punkt}>{punkt}</li>
+                    ))}
+                  </ul>
+                )}
+
+                <ul className="mt-4 space-y-3">
+                  {avsnitt.lankar.map((lank) => (
+                    <li
+                      key={lank.url}
+                      className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      <a
+                        href={lank.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-primary-dark underline-offset-2 hover:underline"
+                      >
+                        {lank.etikett}
+                      </a>
+                      {lank.kommentar && (
+                        <p className="mt-1 text-xs leading-relaxed text-muted">
+                          {lank.kommentar}
+                        </p>
+                      )}
+                      <p className="mt-1 break-all text-[11px] leading-relaxed text-muted print:text-[10px]">
+                        {lank.url}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+
+          <p className="mt-6 rounded-lg border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-xs leading-relaxed text-amber-950">
+            Lägg till föreningens egna drift- och underhållsdokument när de finns.
+            Det gäller särskilt fönster med blandade material, entrédörrar med
+            passersystem samt lås med elslutbleck.
           </p>
         </PrintSida>
 

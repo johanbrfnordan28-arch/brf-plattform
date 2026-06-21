@@ -14,6 +14,9 @@ import type {
 } from "@/components/underhallsplan/renoveringar";
 import { RenoveringInkluderadeDelar } from "@/components/underhallsplan/RenoveringInkluderadeDelar";
 import {
+  renoveringMaterialAlternativ,
+} from "@/components/underhallsplan/renovering-material";
+import {
   filtreraPlaneradeForKommandeAtgard,
   visaInkluderadePanel,
 } from "@/components/underhallsplan/renovering-inkludering";
@@ -74,6 +77,10 @@ export function RenoveringDelFormular({
   const visaTakKlumpsumma =
     komponentNamn === "Tak" && !visaStambyteKlumpsumma;
   const visaInkluderade = visaInkluderadePanel(komponentNamn);
+  const materialAlternativ = renoveringMaterialAlternativ(
+    komponentNamn,
+    underkomponentId,
+  );
   const planeradeKommande = useMemo(() => {
     if (!utkastRenovering) return planerade;
     return filtreraPlaneradeForKommandeAtgard(utkastRenovering, planerade);
@@ -116,6 +123,31 @@ export function RenoveringDelFormular({
             className="mt-1 w-full rounded-lg border border-border px-2.5 py-1.5 text-sm"
           />
         </label>
+        {materialAlternativ.length > 0 && (
+          <label className="block text-sm sm:col-span-2">
+            <span className="text-xs font-medium text-muted">
+              Material / ytskikt
+            </span>
+            <select
+              value={form.material}
+              onChange={(e) =>
+                onFormChange((c) => ({ ...c, material: e.target.value }))
+              }
+              className="mt-1 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm"
+            >
+              <option value="">Välj material / ytskikt</option>
+              {materialAlternativ.map((alt) => (
+                <option key={alt.id} value={alt.id}>
+                  {alt.etikett}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-muted">
+              Välj det material som faktiskt lades/renoverades. För papptak används
+              yrkesbenämningen bitumenbaserad tätskiktsmatta.
+            </span>
+          </label>
+        )}
         <label className="block text-sm sm:col-span-2">
           <span className="text-xs font-medium text-muted">Omfattning</span>
           <textarea

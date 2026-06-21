@@ -35,6 +35,10 @@ import {
   tomRenoveringDelForm,
 } from "@/components/underhallsplan/renovering-del-form";
 import {
+  renoveringMaterialAlternativ,
+  renoveringMaterialEtikett,
+} from "@/components/underhallsplan/renovering-material";
+import {
   gissaInkluderadeUnderkomponenter,
   hamtaHuvudUnderkomponentIdForRenovering,
 } from "@/components/underhallsplan/renovering-inkludering";
@@ -77,6 +81,7 @@ const emptyForm = {
   underkomponentId: "",
   ar: "",
   titel: "",
+  material: "",
   omfattning: "",
   kostnadKr: "",
   avdragProcent: "",
@@ -173,6 +178,7 @@ export function Renoveringshistorik({
       del: uk?.etikett,
       ar,
       titel: form.titel.trim(),
+      material: form.material.trim() || undefined,
       omfattning: form.omfattning.trim() || "—",
       kostnadKr: Number.isNaN(kostnad ?? NaN) ? undefined : kostnad,
       avdragProcent:
@@ -466,6 +472,7 @@ export function Renoveringshistorik({
                 fordelningKontext,
               );
               const balkongMeta = formateraBalkongRenoveringMeta(item);
+              const materialText = renoveringMaterialEtikett(item.material);
               return (
                 <li
                   key={item.id}
@@ -480,6 +487,11 @@ export function Renoveringshistorik({
                       <h3 className="mt-1 text-base font-semibold text-foreground">
                         {item.titel}
                       </h3>
+                      {materialText && (
+                        <p className="mt-1 text-xs font-medium text-primary-dark">
+                          Material/ytskikt: {materialText}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {onOpenKomponent && (
@@ -563,6 +575,11 @@ export function Renoveringshistorik({
                   {listRedigerarId !== item.id && (
                     <>
                       <p className="mt-2 text-sm text-muted">{item.omfattning}</p>
+                      {materialText && (
+                        <p className="mt-1 text-xs font-medium text-primary-dark">
+                          Material/ytskikt: {materialText}
+                        </p>
+                      )}
                       {balkongMeta && (
                         <p className="mt-1 text-xs font-medium text-primary-dark">
                           {balkongMeta}
@@ -765,6 +782,39 @@ export function Renoveringshistorik({
                 className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
               />
             </label>
+            {renoveringMaterialAlternativ(
+              form.komponent,
+              form.underkomponentId,
+            ).length > 0 && (
+              <label className="block sm:col-span-2">
+                <span className="text-sm font-medium text-foreground">
+                  Material / ytskikt
+                </span>
+                <select
+                  value={form.material}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      material: event.target.value,
+                    }))
+                  }
+                  className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                >
+                  <option value="">Välj material / ytskikt</option>
+                  {renoveringMaterialAlternativ(
+                    form.komponent,
+                    form.underkomponentId,
+                  ).map((alt) => (
+                    <option key={alt.id} value={alt.id}>
+                      {alt.etikett}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-muted">
+                  För papptak: välj bitumenbaserad tätskiktsmatta (takpapp).
+                </span>
+              </label>
+            )}
             <label className="block sm:col-span-2">
               <span className="text-sm font-medium text-foreground">Omfattning</span>
               <textarea

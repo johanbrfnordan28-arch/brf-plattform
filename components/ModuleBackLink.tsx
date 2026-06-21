@@ -14,11 +14,11 @@ export function ModuleBackLink() {
         href={isForening ? "/forening" : "/"}
         className="brf-lank-gron text-sm"
       >
-        {isForening ? `← Till ${STYRELSEFLOW_NAMN}` : "← Tillbaka till BRF Företag"}
+        {isForening ? `← Till ${STYRELSEFLOW_NAMN}` : "← Tillbaka till Styrelsenavet"}
       </Link>
       {isForening && (
         <Link href="/" className="text-sm font-medium text-muted hover:text-primary-dark">
-          BRF Företags huvudsida
+          Styrelsenavets huvudsida
         </Link>
       )}
     </div>

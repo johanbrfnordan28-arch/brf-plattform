@@ -15,9 +15,13 @@ import {
 const INLINE_AKTIVERA_BODY = `
     var profilKey = "brf-f-" + id + "--${FORENING_PROFIL_BASE_KEY}";
     var befintlig = null;
+    var harProfilKey = false;
     try {
       var rawProfil = localStorage.getItem(profilKey);
-      if (rawProfil) befintlig = JSON.parse(rawProfil);
+      if (rawProfil) {
+        harProfilKey = true;
+        befintlig = JSON.parse(rawProfil);
+      }
     } catch (e0) {}
     if (!befintlig) {
       try {
@@ -63,6 +67,8 @@ const INLINE_AKTIVERA_BODY = `
         if (idx >= 0) reg.poster[idx] = profil;
         else reg.poster.push(profil);
         localStorage.setItem("${FORENING_REGISTRY_KEY}", JSON.stringify(reg));
+      }
+      if (skaSkrivaProfil || !harProfilKey) {
         localStorage.setItem(profilKey, profilJson);
       }
       localStorage.setItem("${FORENING_AKTIV_ID_KEY}", id);

@@ -6,7 +6,7 @@ import {
 import {
   testplaner,
   testplanNordan28,
-  testplanNordan30,
+  testplanSailor,
   type TestplanDefinition,
   type TestplanId,
 } from "@/components/underhallsplan/testplaner";
@@ -26,10 +26,10 @@ function matcharNordan28(foreningId: string, foreningNamn: string): boolean {
   return id.includes("nordan-28") || namn.includes("nordan 28");
 }
 
-function matcharNordan30(foreningId: string, foreningNamn: string): boolean {
+function matcharSailor(foreningId: string, foreningNamn: string): boolean {
   const id = foreningId.toLowerCase();
   const namn = foreningNamn.toLowerCase();
-  return id.includes("nordan-30") || namn.includes("nordan 30");
+  return id.includes("sailor") || namn.includes("sailor");
 }
 
 export function hamtaTillgangligaTestplaner(
@@ -41,7 +41,7 @@ export function hamtaTillgangligaTestplaner(
 
   const namn = foreningNamn ?? lasForeningProfil(id)?.namn ?? "";
   if (matcharNordan28(id, namn)) return [testplanNordan28];
-  if (matcharNordan30(id, namn)) return [testplanNordan30];
+  if (matcharSailor(id, namn)) return [testplanSailor];
 
   return [];
 }

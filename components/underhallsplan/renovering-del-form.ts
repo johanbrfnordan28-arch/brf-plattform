@@ -7,6 +7,7 @@ import type {
 export type RenoveringDelFormState = {
   ar: string;
   titel: string;
+  material: string;
   omfattning: string;
   kostnadKr: string;
   avdragProcent: string;
@@ -28,6 +29,7 @@ export function tomRenoveringDelForm(): RenoveringDelFormState {
   return {
     ar: "",
     titel: "",
+    material: "",
     omfattning: "",
     kostnadKr: "",
     avdragProcent: "",
@@ -50,6 +52,7 @@ export function renoveringTillDelForm(post: UtfördRenovering): RenoveringDelFor
   return {
     ar: String(post.ar),
     titel: post.titel,
+    material: post.material ?? "",
     omfattning: post.omfattning === "—" ? "" : post.omfattning,
     kostnadKr: post.kostnadKr != null ? String(post.kostnadKr) : "",
     avdragProcent:
@@ -119,6 +122,7 @@ export function delFormTillRenovering(args: {
     del: args.del,
     ar,
     titel: args.form.titel.trim(),
+    material: args.form.material.trim() || undefined,
     omfattning: args.form.omfattning.trim() || "—",
     kostnadKr: Number.isNaN(kostnad ?? NaN) ? undefined : kostnad,
     avdragProcent:

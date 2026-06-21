@@ -62,21 +62,244 @@ function tomtRegistry(): ForeningRegistry {
 
 function normaliseraRegistry(raw: unknown): ForeningRegistry {
   if (!raw || typeof raw !== "object") return tomtRegistry();
-  const o = raw as ForeningRegistry;
-  if (!Array.isArray(o.poster)) return tomtRegistry();
+  const o = raw as ForeningRegistry | ForeningProfil[];
+  const poster = Array.isArray(o) ? o : Array.isArray(o.poster) ? o.poster : null;
+  if (!poster) return tomtRegistry();
   return {
     version: 1,
-    poster: o.poster.filter(
-      (p): p is ForeningProfil =>
-        typeof p === "object" &&
-        p != null &&
-        typeof p.id === "string" &&
-        typeof p.namn === "string",
-    ),
+    poster: poster
+      .map((p) => normaliseraProfilFranOkand(p))
+      .filter((p): p is ForeningProfil => Boolean(p)),
   };
 }
 
 const PROFIL_NYCKEL_SUFFIX = `--${FORENING_PROFIL_BASE_KEY}`;
+
+const TESTPLAN_PROVPERIODER: Record<string, { id: string; namn: string }> = {
+  "test-sailor": { id: "brf-sailor", namn: "Brf Sailor" },
+  "test-nordan-28": { id: "brf-nordan-28", namn: "Brf Nordan 28" },
+};
+
+function foreningNamnFranId(id: string): string {
+  const delar = id
+    .replace(/^brf-/, "")
+    .split("-")
+    .filter(Boolean)
+    .map((del) => del.charAt(0).toUpperCase() + del.slice(1));
+  return delar.length > 0 ? `Brf ${delar.join(" ")}` : "Testförening";
+}
+
+function normaliseraProfilFranOkand(
+  raw: unknown,
+  fallbackId?: string,
+): ForeningProfil | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Partial<ForeningProfil>;
+  const id =
+    typeof p.id === "string" && p.id.trim()
+      ? p.id.trim()
+      : fallbackId?.trim();
+  if (!id || id === GRUNDMALL_FORENING_ID) return null;
+  return {
+    id,
+    namn:
+      typeof p.namn === "string" && p.namn.trim()
+        ? p.namn.trim()
+        : foreningNamnFranId(id),
+    skapadTidpunkt:
+      typeof p.skapadTidpunkt === "string" && p.skapadTidpunkt.trim()
+        ? p.skapadTidpunkt
+        : new Date().toISOString(),
+    organisationsnummer:
+      typeof p.organisationsnummer === "string" ? p.organisationsnummer : "",
+    epost: typeof p.epost === "string" ? p.epost : "",
+    postadress: typeof p.postadress === "string" ? p.postadress : "",
+    ort: typeof p.ort === "string" ? p.ort : "",
+    kontaktperson: typeof p.kontaktperson === "string" ? p.kontaktperson : "",
+    grundinfoPaborjad: Boolean(p.grundinfoPaborjad),
+  };
+}
+
+function laggTillProfilIMap(
+  profiler: Map<string, ForeningProfil>,
+  profil: ForeningProfil | null,
+): void {
+  if (!profil || profil.id === GRUNDMALL_FORENING_ID) return;
+  const befintlig = profiler.get(profil.id);
+  if (!befintlig || profilFullhet(profil) >= profilFullhet(befintlig)) {
+    profiler.set(profil.id, profil);
+  }
+}
+
+function laggTillProfilerFranJson(
+  profiler: Map<string, ForeningProfil>,
+  raw: string | null | undefined,
+  fallbackId?: string,
+): void {
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        laggTillProfilIMap(profiler, normaliseraProfilFranOkand(item, fallbackId));
+      }
+      return;
+    }
+    const maybeRegistry = parsed as Partial<ForeningRegistry>;
+    if (Array.isArray(maybeRegistry.poster)) {
+      for (const item of maybeRegistry.poster) {
+        laggTillProfilIMap(profiler, normaliseraProfilFranOkand(item, fallbackId));
+      }
+      return;
+    }
+    laggTillProfilIMap(profiler, normaliseraProfilFranOkand(parsed, fallbackId));
+  } catch {
+    /* trasig eller irrelevant JSON */
+  }
+}
+
+function laggTillTestplanProfilFranOkand(
+  profiler: Map<string, ForeningProfil>,
+  raw: unknown,
+): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  const p = raw as { aktivTestplan?: unknown; sparad?: unknown };
+  if (typeof p.aktivTestplan !== "string") return false;
+  const demo = TESTPLAN_PROVPERIODER[p.aktivTestplan];
+  if (!demo) return false;
+  const fore = profiler.size;
+  laggTillProfilIMap(profiler, {
+    id: demo.id,
+    namn: demo.namn,
+    skapadTidpunkt:
+      typeof p.sparad === "string" && p.sparad.trim()
+        ? p.sparad
+        : new Date().toISOString(),
+    organisationsnummer: "",
+    epost: "",
+    postadress: "",
+    ort: "",
+    kontaktperson: "",
+    grundinfoPaborjad: true,
+  });
+  return profiler.size !== fore;
+}
+
+function laggTillTestplanProfilFranJson(
+  profiler: Map<string, ForeningProfil>,
+  raw: string | null | undefined,
+): boolean {
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      let andrat = false;
+      for (const item of parsed) {
+        andrat = laggTillTestplanProfilFranOkand(profiler, item) || andrat;
+      }
+      return andrat;
+    }
+    return laggTillTestplanProfilFranOkand(profiler, parsed);
+  } catch {
+    return false;
+  }
+}
+
+function samlaForeningProfilerFranLagring(): {
+  profiler: ForeningProfil[];
+  andrat: boolean;
+} {
+  if (typeof window === "undefined") return { profiler: [], andrat: false };
+
+  const registry = lasForeningRegistryInternt();
+  const ursprungligJson = JSON.stringify(registry.poster);
+  const profiler = new Map<string, ForeningProfil>();
+  let hittadeSekundart = false;
+
+  for (const post of registry.poster) {
+    laggTillProfilIMap(profiler, normaliseraProfilFranOkand(post, post.id));
+  }
+
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+
+    if (key.startsWith("brf-f-")) {
+      const rest = key.slice("brf-f-".length);
+      const id = rest.includes("--") ? rest.slice(0, rest.indexOf("--")) : "";
+      if (!id || id === GRUNDMALL_FORENING_ID) continue;
+
+      if (key.endsWith(PROFIL_NYCKEL_SUFFIX)) {
+        const fore = profiler.size;
+        laggTillProfilerFranJson(profiler, localStorage.getItem(key), id);
+        hittadeSekundart =
+          laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+          hittadeSekundart;
+        if (profiler.size !== fore) hittadeSekundart = true;
+      } else {
+        hittadeSekundart =
+          laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+          hittadeSekundart;
+      }
+
+      if (!key.endsWith(PROFIL_NYCKEL_SUFFIX) && !profiler.has(id)) {
+        // Äldre/avbrutna skapanden kan sakna profilpost men ha moduldatan kvar.
+        laggTillProfilIMap(profiler, tomProfil(id, foreningNamnFranId(id)));
+        hittadeSekundart = true;
+      }
+      continue;
+    }
+
+    // Fångar äldre registry-/profilnycklar utan att tolka all appdata som förening.
+    const lowerKey = key.toLowerCase();
+    if (
+      lowerKey.includes("forening") &&
+      (lowerKey.includes("profil") ||
+        lowerKey.includes("registry") ||
+        lowerKey.includes("register"))
+    ) {
+      const fore = profiler.size;
+      laggTillProfilerFranJson(profiler, localStorage.getItem(key));
+      hittadeSekundart =
+        laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+        hittadeSekundart;
+      if (profiler.size !== fore) hittadeSekundart = true;
+    } else if (
+      lowerKey.includes("underhallsplan") ||
+      lowerKey.includes("underhållsplan")
+    ) {
+      hittadeSekundart =
+        laggTillTestplanProfilFranJson(profiler, localStorage.getItem(key)) ||
+        hittadeSekundart;
+    }
+  }
+
+  try {
+    const fore = profiler.size;
+    laggTillProfilerFranJson(
+      profiler,
+      sessionStorage.getItem(SENAST_SKAPAD_PROFIL_KEY),
+    );
+    if (profiler.size !== fore) hittadeSekundart = true;
+  } catch {
+    /* ignore */
+  }
+  const foreCookie = profiler.size;
+  laggTillProfilerFranJson(profiler, cookieHamtaSenastProfil());
+  if (profiler.size !== foreCookie) hittadeSekundart = true;
+
+  const aktivId = lasAktivForeningId();
+  if (aktivId && aktivId !== GRUNDMALL_FORENING_ID && !profiler.has(aktivId)) {
+    laggTillProfilIMap(profiler, tomProfil(aktivId, foreningNamnFranId(aktivId)));
+    hittadeSekundart = true;
+  }
+
+  const samlade = [...profiler.values()];
+  return {
+    profiler: samlade,
+    andrat: hittadeSekundart || JSON.stringify(samlade) !== ursprungligJson,
+  };
+}
 
 /** Jämför föreningsnamn utan skilj på versaler och extra mellanslag. */
 export function normaliseraForeningsNamn(namn: string): string {
@@ -91,7 +314,9 @@ export function normaliseraForeningsNamn(namn: string): string {
 export function finnForeningMedNamn(namn: string): ForeningProfil | null {
   const nyckel = normaliseraForeningsNamn(namn);
   if (!nyckel) return null;
-  for (const post of lasForeningRegistryInternt().poster) {
+  const poster =
+    typeof window === "undefined" ? lasForeningRegistryInternt().poster : listaForeningar();
+  for (const post of poster) {
     if (post.id === GRUNDMALL_FORENING_ID) continue;
     if (normaliseraForeningsNamn(post.namn) === nyckel) return post;
   }
@@ -225,37 +450,20 @@ export function lasForeningRegistry(): ForeningRegistry {
  */
 export function repareraForeningRegistry(): boolean {
   if (typeof window === "undefined") return false;
+  const samlade = samlaForeningProfilerFranLagring();
+  if (!samlade.andrat) return rengoraDubblettForeningar();
+
   const registry = lasForeningRegistryInternt();
-  const ids = new Set(registry.poster.map((p) => p.id));
-  let andrat = false;
+  registry.poster = samlade.profiler;
 
-  for (let i = 0; i < localStorage.length; i += 1) {
-    const key = localStorage.key(i);
-    if (!key?.startsWith("brf-f-") || !key.endsWith(PROFIL_NYCKEL_SUFFIX)) continue;
-    const id = key.slice("brf-f-".length, key.length - PROFIL_NYCKEL_SUFFIX.length);
-    if (!id || id === GRUNDMALL_FORENING_ID || ids.has(id)) continue;
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-      const profil = JSON.parse(raw) as ForeningProfil;
-      if (typeof profil.namn !== "string" || !profil.namn.trim()) continue;
-      registry.poster.push({ ...profil, id });
-      ids.add(id);
-      andrat = true;
-    } catch {
-      /* hoppa över trasig post */
-    }
+  try {
+    sparaRegistry(registry);
+  } catch {
+    return false;
   }
 
-  if (andrat) {
-    try {
-      sparaRegistry(registry);
-    } catch {
-      return false;
-    }
-  }
-
-  return andrat || rengoraDubblettForeningar();
+  rengoraDubblettForeningar();
+  return true;
 }
 
 function sparaRegistry(registry: ForeningRegistry): void {
@@ -281,10 +489,10 @@ export function skapaForeningIdFranNamn(namn: string): string {
     .replace(/^-|-$/g, "")
     .slice(0, 40);
   const bas = slug || "forening";
-  const registry = lasForeningRegistry();
+  const befintliga = typeof window === "undefined" ? lasForeningRegistry().poster : listaForeningar();
   let id = bas;
   let n = 2;
-  while (registry.poster.some((p) => p.id === id)) {
+  while (befintliga.some((p) => p.id === id)) {
     id = `${bas}-${n}`;
     n += 1;
   }
@@ -656,7 +864,7 @@ export function skapaNyForening(namn: string): ForeningProfil {
   const befintlig = finnForeningMedNamn(trimmat);
   if (befintlig) {
     throw new Error(
-      `Föreningen «${befintlig.namn}» finns redan. Välj den i listan uppe till höger i stället för att skapa en ny.`,
+      `Föreningen «${befintlig.namn}» finns redan. Öppna Pågående provperioder och logga in där i stället för att skapa en ny.`,
     );
   }
 
@@ -698,8 +906,47 @@ export function kopieraGrundmallOmNyForening(foreningId: string): void {
   }
 }
 
+export function avslutaProvperiodForening(foreningId: string): boolean {
+  if (
+    typeof window === "undefined" ||
+    !foreningId ||
+    foreningId === GRUNDMALL_FORENING_ID
+  ) {
+    return false;
+  }
+
+  const registry = lasForeningRegistryInternt();
+  registry.poster = registry.poster.filter((p) => p.id !== foreningId);
+  taBortForeningFranLagring(foreningId);
+
+  try {
+    sparaRegistry(registry);
+  } catch {
+    return false;
+  }
+
+  if (lasAktivForeningId() === foreningId) {
+    sattAktivForeningId(GRUNDMALL_FORENING_ID, { tyst: true });
+  }
+
+  try {
+    if (sessionStorage.getItem(PENDING_AKTIV_FORENING_KEY) === foreningId) {
+      sessionStorage.removeItem(PENDING_AKTIV_FORENING_KEY);
+    }
+    if (sessionStorage.getItem(NYSS_SKAPAD_FLAG_KEY) === foreningId) {
+      sessionStorage.removeItem(NYSS_SKAPAD_FLAG_KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  return true;
+}
+
 export function listaForeningar(): ForeningProfil[] {
-  return lasForeningRegistry().poster;
+  if (typeof window === "undefined") return lasForeningRegistry().poster;
+  return samlaForeningProfilerFranLagring().profiler;
 }
 
 /** Grundmall + alla skapade föreningar (för migrering och växlare). */

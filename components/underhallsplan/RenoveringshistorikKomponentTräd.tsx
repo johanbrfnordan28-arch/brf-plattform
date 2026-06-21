@@ -34,6 +34,7 @@ import {
   underkomponenterIRenoveringshistorik,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import { renoveringMaterialEtikett } from "@/components/underhallsplan/renovering-material";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 
 type ValdDel = {
@@ -333,6 +334,7 @@ export function RenoveringshistorikKomponentTräd({
                               const ärRedigering =
                                 redigerarId === post.id && formÖppen;
                               const balkongMeta = formateraBalkongRenoveringMeta(post);
+                              const materialText = renoveringMaterialEtikett(post.material);
                               return (
                                 <li
                                   key={post.id}
@@ -355,6 +357,7 @@ export function RenoveringshistorikKomponentTräd({
                                         {formatKostnad(post.kostnadKr)}
                                         {(post.avdragProcent ?? 0) > 0 &&
                                           ` · avdrag ${post.avdragProcent}%`}
+                                        {materialText && ` · ${materialText}`}
                                         {balkongMeta && ` · ${balkongMeta}`}
                                       </p>
                                     </button>

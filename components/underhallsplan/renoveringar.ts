@@ -49,6 +49,8 @@ export type UtfördRenovering = {
   balkongRadId?: string;
   ar: number;
   titel: string;
+  /** Material/ytskikt vid utfört arbete, t.ex. bandtäckt plåt eller puts. */
+  material?: string;
   omfattning: string;
   kostnadKr?: number;
   /**
@@ -117,6 +119,7 @@ export const demoRenoveringarFranForvaltare: UtfördRenovering[] = [
     komponent: "Tak",
     ar: 2019,
     titel: "Omläggning tak",
+    material: "bitumen-tatskiktsmatta",
     omfattning: "Byte av takbeläggning, kompletterande plåtarbeten.",
     kostnadKr: 1_850_000,
     entreprenor: "Tak & Plåt AB",
@@ -128,6 +131,7 @@ export const demoRenoveringarFranForvaltare: UtfördRenovering[] = [
     komponent: "Fasad",
     ar: 2016,
     titel: "Ommålning fasad",
+    material: "puts",
     omfattning: "Tvätt och ommålning av putsad fasad, reparation av sprickor.",
     kostnadKr: 620_000,
     entreprenor: "Fasadpartner Syd",
