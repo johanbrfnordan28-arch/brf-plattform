@@ -26,7 +26,7 @@ const scenesPublic: InformationsFilmScen[] = [
   },
   {
     titel: "Prova gratis i 30 dagar",
-    text: "Testa plattformen i er takt. Ettårsavtal ger 30 % rabatt och tvåårsavtal upp till 60 % jämfört med månadsdebitering.",
+    text: "Testa plattformen i er takt. När provperioden är klar kan ni välja månadsvis, årsvis, 2 år eller 3 år beroende på hur lång kontinuitet styrelsen vill säkra.",
   },
 ];
 

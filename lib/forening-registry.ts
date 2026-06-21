@@ -835,6 +835,44 @@ export function kopieraGrundmallOmNyForening(foreningId: string): void {
   }
 }
 
+export function avslutaProvperiodForening(foreningId: string): boolean {
+  if (
+    typeof window === "undefined" ||
+    !foreningId ||
+    foreningId === GRUNDMALL_FORENING_ID
+  ) {
+    return false;
+  }
+
+  const registry = lasForeningRegistryInternt();
+  registry.poster = registry.poster.filter((p) => p.id !== foreningId);
+  taBortForeningFranLagring(foreningId);
+
+  try {
+    sparaRegistry(registry);
+  } catch {
+    return false;
+  }
+
+  if (lasAktivForeningId() === foreningId) {
+    sattAktivForeningId(GRUNDMALL_FORENING_ID, { tyst: true });
+  }
+
+  try {
+    if (sessionStorage.getItem(PENDING_AKTIV_FORENING_KEY) === foreningId) {
+      sessionStorage.removeItem(PENDING_AKTIV_FORENING_KEY);
+    }
+    if (sessionStorage.getItem(NYSS_SKAPAD_FLAG_KEY) === foreningId) {
+      sessionStorage.removeItem(NYSS_SKAPAD_FLAG_KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  return true;
+}
+
 export function listaForeningar(): ForeningProfil[] {
   if (typeof window === "undefined") return lasForeningRegistry().poster;
   return samlaForeningProfilerFranLagring().profiler;
