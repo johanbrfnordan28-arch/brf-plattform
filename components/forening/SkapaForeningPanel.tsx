@@ -187,7 +187,7 @@ export function SkapaForeningPanel({
           </button>
           {!kompakt && (
             <Link
-              href="/provperioder"
+              href="/#provperioder"
               className="inline-flex items-center rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-medium text-foreground hover:border-[#5a9a6e]/50"
             >
               Visa pågående provperioder

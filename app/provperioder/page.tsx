@@ -14,7 +14,7 @@ export default function ProvperioderPage() {
     <ModulePage
       title="Pågående provperioder"
       icon="🏘️"
-      intro="Här visas föreningar som har startat en provperiod i den här webbläsaren. Välj förening för att logga in och fortsätta i Styrelseflow."
+      intro="Här visas föreningar som har startat en provperiod i den här webbläsaren. Snurra fram rätt förening, logga in och fortsätt i Styrelseflow."
     >
       <ForeningInloggningsLista />
 

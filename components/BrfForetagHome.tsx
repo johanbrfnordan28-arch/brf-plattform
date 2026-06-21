@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
+import { ForeningInloggningsLista } from "@/components/forening/ForeningInloggningsLista";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningNavKnapp } from "@/components/forening/SkapaForeningNavKnapp";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
@@ -258,6 +259,26 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </div>
         </div>
       </section>
+
+      {!isForening && (
+        <section id="provperioder" className="border-b border-border bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+            <div className="mb-5 max-w-2xl">
+              <p className="text-sm font-semibold text-primary-dark">
+                Logga in via Styrelsenavet
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-foreground">
+                Snurra fram föreningens provperiod
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Flera styrelsemedlemmar kan börja på första sidan, välja rätt
+                provperiod i hjulet och sedan öppna föreningens egen sida.
+              </p>
+            </div>
+            <ForeningInloggningsLista />
+          </div>
+        </section>
+      )}
 
       {!isForening && (
         <section
