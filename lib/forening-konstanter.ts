@@ -14,5 +14,11 @@ export function arStandardTestForening(foreningId: string): boolean {
   return (STANDARD_TESTFORENING_IDS as readonly string[]).includes(foreningId);
 }
 
+/** Publik landningssida (/). */
+export const BRF_NAVET_NAMN = "BRF Navet";
+
+/** Intern inloggning till grundmodulen — endast plattformsteam. */
+export const NAVET_INLOGGNING_LABEL = "Navet-inloggning";
+
 /** Inloggad styrelses förstasida (/forening). */
 export const STYRELSEFLOW_NAMN = "Styrelseflow";

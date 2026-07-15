@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { BRF_NAVET_NAMN, STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 
 export function ModuleBackLink() {
   const pathname = usePathname();
@@ -14,11 +14,11 @@ export function ModuleBackLink() {
         href={isForening ? "/forening" : "/"}
         className="brf-lank-gron text-sm"
       >
-        {isForening ? `← Till ${STYRELSEFLOW_NAMN}` : "← Tillbaka till BRF Företag"}
+        {isForening ? `← Till ${STYRELSEFLOW_NAMN}` : `← Tillbaka till ${BRF_NAVET_NAMN}`}
       </Link>
       {isForening && (
         <Link href="/" className="text-sm font-medium text-muted hover:text-primary-dark">
-          BRF Företags huvudsida
+          {BRF_NAVET_NAMN}s huvudsida
         </Link>
       )}
     </div>

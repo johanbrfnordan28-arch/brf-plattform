@@ -661,6 +661,39 @@ export function hamtaPubliceradeUpphandlingar(): PubliceradUpphandling[] {
   );
 }
 
+/** Publik BRF Navet-sida — samlar publicerade uppdrag från alla föreningar (ej grundmall). */
+export function hamtaPubliceradeUpphandlingarFranAllaForeningar(): PubliceradUpphandling[] {
+  if (typeof window === "undefined") return [];
+
+  const prefix = `brf-f-`;
+  const suffix = `--${UPPHANDLING_BASE}`;
+  const sedda = new Set<string>();
+  const all: PubliceradUpphandling[] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(prefix) || !key.endsWith(suffix)) continue;
+
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const lager = normaliseraLager(JSON.parse(raw) as Partial<UpphandlingLager>);
+      for (const upph of lager.publicerade) {
+        const unik = `${key}::${upph.id}`;
+        if (sedda.has(unik)) continue;
+        sedda.add(unik);
+        all.push(upph);
+      }
+    } catch {
+      /* ignorera trasig data */
+    }
+  }
+
+  return all.sort(
+    (a, b) => new Date(b.publicerad).getTime() - new Date(a.publicerad).getTime(),
+  );
+}
+
 export function hamtaUtvarderingForUpphandling(
   upphandlingId: string,
 ): Anbudsutvardering | undefined {

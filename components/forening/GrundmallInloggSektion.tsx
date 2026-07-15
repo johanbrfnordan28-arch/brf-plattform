@@ -3,10 +3,10 @@
 import Link from "next/link";
 import {
   GRUNDMALL_FORENING_ID,
-  GRUNDMALL_NAMN,
   markeraPendingAktivForening,
   sattAktivForeningId,
 } from "@/lib/forening-registry";
+import { NAVET_INLOGGNING_LABEL } from "@/lib/forening-konstanter";
 
 export function GrundmallInloggSektion() {
   function loggaInGrundmall() {
@@ -19,13 +19,13 @@ export function GrundmallInloggSektion() {
     <div className="mx-auto max-w-lg px-4">
       <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-5 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Internt · Utveckling av plattformen
+          Endast plattformsteam
         </p>
-        <h2 className="mt-2 text-lg font-bold text-foreground">{GRUNDMALL_NAMN}</h2>
+        <h2 className="mt-2 text-lg font-bold text-foreground">Grundmodulen</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          För er som jobbar med masterkopian — demo-innehåll, mallar och
-          plattformsfunktioner som nya föreningssidor kopieras från. Styrelser i
-          test ska välja testförening ovan i stället.
+          Masterkopia med demo-innehåll, mallar och plattformsfunktioner som nya
+          föreningssidor kopieras från. Styrelser i test ska välja testförening
+          ovan i stället.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button
@@ -33,7 +33,7 @@ export function GrundmallInloggSektion() {
             onClick={loggaInGrundmall}
             className="rounded-xl border border-border bg-white px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/50 hover:bg-[#eef6f0]"
           >
-            Logga in · {GRUNDMALL_NAMN}
+            {NAVET_INLOGGNING_LABEL}
           </button>
           <Link
             href="/intern"

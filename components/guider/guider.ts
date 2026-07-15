@@ -71,24 +71,122 @@ export const guideFilmer: GuideFilm[] = [
     ],
   },
   {
-    id: "rondering",
-    modul: "Rondering",
-    titel: "Rondering och signering",
-    längd: "ca 40 sek",
+    id: "arshjul",
+    modul: "Årshjul & kalender",
+    titel: "Så fungerar styrelsens årshjul",
+    längd: "ca 45 sek",
     beskrivning:
-      "Checklistor, månadssignering och avvikelser — enkelt för fastighetsskötare och städ.",
+      "Se hur årshjul, tidslinje och påminnelser hänger ihop — utan att behöva öppna verktyget själv.",
     scener: [
       {
-        titel: "Schema och checklista",
-        text: "Entreprenören ser vad som ska göras och när — inga oklara papper i fickan.",
+        titel: "Årshjuls-vyn",
+        text: "Styrelsen ser hela året i ett grepp — stämma, bokslut, OVK och möten samlade per månad.",
       },
       {
-        titel: "Signera utfört",
-        text: "Utfört arbete signeras digitalt så styrelsen ser att ronderingen är gjord.",
+        titel: "Tidslinje flera år framåt",
+        text: "Byt till tidslinje och planera besiktningar och projekt långt innan deadline — inte i sista stund.",
       },
       {
-        titel: "Avvikelse",
-        text: "Saknas något rapporteras det direkt — styrelsen slipper jaga svar i efterhand.",
+        titel: "Påminnelser i rätt tid",
+        text: "Ställ in hur många dagar före ni vill bli påmind — inget viktigt datum glöms bort.",
+      },
+      {
+        titel: "Koppling till underhållsplan",
+        text: "Besiktningar från underhållsplanen kan importeras direkt — samma datum, ett ställe att följa upp.",
+      },
+      {
+        titel: "Överlever mandatperioder",
+        text: "Nästa styrelse tar över samma plan — historik och kommande händelser finns kvar.",
+      },
+    ],
+  },
+  {
+    id: "projekt",
+    modul: "Projekt",
+    titel: "Projektmappen — från förarbete till avslut",
+    längd: "ca 50 sek",
+    beskrivning:
+      "Styrelsen börjar enkelt med beskrivning och status — vi hjälper till med struktur, dokument och uppföljning.",
+    scener: [
+      {
+        titel: "Projektbeskrivning",
+        text: "Börja med en enkel modell: vad projektet gäller, hur läget är idag och vad ni vill ha när det är klart.",
+      },
+      {
+        titel: "Projektmappen",
+        text: "Kontrakt, ritningar och protokoll samlas per projekt och år — inget letande i mejl.",
+      },
+      {
+        titel: "Tidsplan och årshjul",
+        text: "Milstolpar kan föras över till årshjulet så styrelsen får påminnelse i rätt tid.",
+      },
+      {
+        titel: "Garantibesiktning",
+        text: "Modulen påminner när garantitiden närmar sig slut — innan ni förlorar rätten att reklamera.",
+      },
+      {
+        titel: "Stöd för resten",
+        text: "Upphandling, projektledning och tyngre dokumentation — det kan ni ta hjälp med när förarbetet är klart.",
+      },
+    ],
+  },
+  {
+    id: "rondering",
+    modul: "Rondering & avvikelser",
+    titel: "Rondering, signering och spårbarhet",
+    längd: "ca 45 sek",
+    beskrivning:
+      "Checklistor och månadssignering — se hur spårbarhet och avvikelser höjer kvaliteten i praktiken.",
+    scener: [
+      {
+        titel: "Tydliga checklistor",
+        text: "Utvändig och invändig rondering, städning i trapphus och tvättstuga — alla vet vad som ska ingå.",
+      },
+      {
+        titel: "Signering varje månad",
+        text: "Fastighetsskötare eller städbolag signerar utfört arbete — bara det höjer nivån jämfört med muntliga löften.",
+      },
+      {
+        titel: "Spårbarhet",
+        text: "Styrelsen ser vem som signerat, när och vad som gjorts — historik som finns kvar, inte i någons mejl.",
+      },
+      {
+        titel: "Avvikelser med uppföljning",
+        text: "Saknas något rapporteras det direkt med allvarlighetsgrad — och följs upp tills det är åtgärdat.",
+      },
+      {
+        titel: "Styrelsen har kontroll",
+        text: "Ingen utebliven rondering eller städning blir osynlig — ni kan agera innan medlemmarna hör av sig.",
+      },
+    ],
+  },
+  {
+    id: "lagenhetskort",
+    modul: "Lägenhetskort & renovering",
+    titel: "Lägenhetskort — enkelt för styrelsen, spårbart för alla",
+    längd: "ca 50 sek",
+    beskrivning:
+      "Ett kort per lägenhet med renoveringshistorik, krav och signering av överenskommelser.",
+    scener: [
+      {
+        titel: "Lägenhetskort",
+        text: "Varje lägenhet får ett tydligt kort — grunduppgifter, renoveringar och dokument på ett ställe.",
+      },
+      {
+        titel: "Enkelt för styrelsen",
+        text: "Välj typ av renovering — checklistan byggs automatiskt. Inget mejlkaos, samma format varje gång.",
+      },
+      {
+        titel: "Spårbar historik",
+        text: "Vad som gjorts, när och vem som godkänt — historiken finns kvar när styrelsen byts.",
+      },
+      {
+        titel: "Överenskommelse med medlem",
+        text: "Styrelsen skickar krav och villkor — medlemmen godkänner och signerar digitalt.",
+      },
+      {
+        titel: "Signering med BankID",
+        text: "När allt är klart signeras överenskommelsen — spårbart vem som stått för vad, innan arbetet startar.",
       },
     ],
   },
@@ -177,22 +275,30 @@ export const guideFilmer: GuideFilm[] = [
   {
     id: "energi",
     modul: "Energi & drift",
-    titel: "Värme, belysning och livslängd",
-    längd: "ca 45 sek",
+    titel: "Energi, drift och payback time",
+    längd: "ca 50 sek",
     beskrivning:
-      "Skillnaden mellan teknisk livslängd och energiåtgärder som sänker driftkostnaden.",
+      "Värme, belysning och payback — jämför kostnader före och efter investering.",
     scener: [
       {
-        titel: "Två olika saker",
-        text: "Byte planeras efter teknisk livslängd — energiåtgärder ger effekt tidigare.",
+        titel: "Ett ständigt arbete",
+        text: "Tips och råd om energi och drift utvecklas löpande — modulen växer med er förenings behov.",
       },
       {
-        titel: "Värme",
-        text: "Injustering och rondering av undercentralen minskar onödig förbrukning.",
+        titel: "Teknisk livslängd vs energi",
+        text: "Stora byten planeras i underhållsplanen — injustering, LED och styrning ger effekt tidigare.",
       },
       {
-        titel: "Belysning",
-        text: "LED och styrning sänker elräkningen; armaturbyte planeras separat.",
+        titel: "Kostnader före och efter",
+        text: "Samla driftkostnad innan åtgärden — det är grunden för att se om investeringen lönar sig.",
+      },
+      {
+        titel: "Payback time",
+        text: "Räkna hur många år det tar innan lägre värme- och elkostnad täckt investeringen — centralt för styrelsens beslut.",
+      },
+      {
+        titel: "Kassa-plus efter payback",
+        text: "När payback är nådd kan återstående avskrivningstid bli ett plus — pengar till nästa åtgärd.",
       },
     ],
   },

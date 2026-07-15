@@ -11,11 +11,6 @@ const nextConfig: NextConfig = {
         destination: "/forening/arshjul",
         permanent: true,
       },
-      {
-        source: "/årshjul",
-        destination: "/forening/arshjul",
-        permanent: false,
-      },
     ];
   },
 };

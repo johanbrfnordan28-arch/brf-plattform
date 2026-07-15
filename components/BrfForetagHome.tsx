@@ -4,9 +4,9 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { GrundmallInloggSektion } from "@/components/forening/GrundmallInloggSektion";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { ForeningsFormationSektion } from "@/components/forening/ForeningsFormationSektion";
 import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { BRF_NAVET_NAMN, STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
 
@@ -78,6 +78,13 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       ]
     : [
         {
+          title: "Årshjul & kalender",
+          description:
+            "Slipp missa OVK, stämma och bokslut — påminnelser och tidslinje flera år framåt.",
+          href: `${base}/arshjul`,
+          icon: "📅",
+        },
+        {
           title: "Underhållsplan",
           description:
             "Komponentregister, besiktningar och budget i samma plan — beslutsstöd som håller över tid.",
@@ -120,29 +127,30 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       title: "Projekt",
       description: isForening
         ? "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument."
-        : "Projektmappar med årtal och underlag — hantering efter inloggning.",
+        : "Börja med projektbeskrivning, status och målbild — stöd finns för resten.",
       href: `${base}/projekt`,
       icon: "📐",
     },
     {
-      title: isForening ? "Medlemmar" : "Renoveringshistorik & rutiner",
+      title: isForening ? "Medlemmar" : "Lägenhetskort & renovering",
       description: isForening
         ? "Lägenhetsarkiv, renoveringshistorik och anmälningar med checklista per åtgärd."
-        : "Historik per lägenhet, renoveringsrutiner och anmälan med checklista.",
+        : "Ett kort per lägenhet — enkelt för styrelsen, spårbart med signering av överenskommelser.",
       href: `${base}/medlemmar`,
-      icon: isForening ? "👥" : "📋",
+      icon: isForening ? "👥" : "🏠",
     },
     {
       title: "Rondering & avvikelser",
       description:
-        "Tydliga checklistor, signering och avvikelserapportering för städning och fastighetsskötsel.",
+        "Signering och spårbarhet för städ och rondering — höjer kvaliteten varje månad.",
       href: `${base}/rondering`,
       icon: "✅",
     },
     {
       title: "Energi & drift",
-      description:
-        "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
+      description: isForening
+        ? "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen."
+        : "Payback time och kostnader före/efter — tips om energi och drift som utvecklas löpande.",
       href: `${base}/energi`,
       icon: "⚡",
     },
@@ -167,7 +175,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             <ForeningHeroEtikett />
           ) : (
             <p className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-dark">
-              BRF Företag · För styrelser som vill ha kontroll
+              {BRF_NAVET_NAMN} · För styrelser som vill ha kontroll
             </p>
           )}
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
@@ -178,7 +186,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "BRF Företag ger styrelsen ett strukturerat verktyg för 50-årsplan, upphandlingar och löpande dokumentation — slipp kalkylark, mejlkedjor och papper som försvinner."}
+              : `${BRF_NAVET_NAMN} ger styrelsen ett strukturerat verktyg för 50-årsplan, upphandlingar och löpande dokumentation — slipp kalkylark, mejlkedjor och papper som försvinner.`}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -229,10 +237,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             ) : (
               <>
                 <Link
-                  href={PROVA_GRATIS_PATH}
+                  href="#foreningsformation"
                   className="brf-knapp-gron px-5 py-3 text-sm"
                 >
-                  Vi vill pröva gratis i 30 dagar
+                  Skapa er förening — gratis i 30 dagar
                 </Link>
                 <Link
                   href="#inloggning"
@@ -267,25 +275,26 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             <div className="mb-8 max-w-2xl">
               <p className="text-sm font-semibold text-primary-dark">Inloggning</p>
               <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Välj testförening eller skapa er egen
+                Vill ni bara titta först? Välj en testförening
               </h2>
               <p className="mt-2 text-muted">
-                Testa med en av de fem demo-föreningarna — eller skapa en egen kopia
-                med ert föreningsnamn. All data sparas separat per förening.
+                Fem demo-föreningar att klicka sig in i — perfekt om ni vill utforska
+                innan ni skapar er egen. Vill ni starta på riktigt? Scrolla till{" "}
+                <a
+                  href="#foreningsformation"
+                  className="font-medium text-primary-dark underline hover:no-underline"
+                >
+                  föreningsformationen
+                </a>{" "}
+                nedan.
               </p>
             </div>
-            <StyrelseLoginModul visaGrundmallInlogg={false} />
-            <div id="skapa-forening" className="mx-auto mt-10 max-w-lg scroll-mt-24 px-4">
-              <p className="mb-4 text-sm text-muted">
-                Skapa flera föreningar och växla mellan dem på föreningssidorna.
-                Gemensamma plattformsuppdateringar slås ihop överallt — era ifyllda
-                uppgifter behålls.
-              </p>
-              <SkapaForeningPanel kompakt visaSnabbstart />
-            </div>
+            <StyrelseLoginModul />
           </div>
         </section>
       )}
+
+      {!isForening && <ForeningsFormationSektion />}
 
       {!isForening && (
         <section className="border-b border-border bg-[#eef6f0]/60">

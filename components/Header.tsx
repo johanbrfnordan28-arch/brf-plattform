@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 const nav = [
@@ -21,7 +22,7 @@ export function Header() {
             B
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">
-            BRF Företag
+            {BRF_NAVET_NAMN}
           </span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
