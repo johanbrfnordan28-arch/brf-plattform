@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
+import { GrundmallInloggSektion } from "@/components/forening/GrundmallInloggSektion";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
-import { SkapaForeningNavKnapp } from "@/components/forening/SkapaForeningNavKnapp";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
@@ -234,7 +235,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Vi vill pröva gratis i 30 dagar
                 </Link>
                 <Link
-                  href="/styrelse-login"
+                  href="#inloggning"
                   className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
                 >
                   Logga in styrelse
@@ -259,15 +260,29 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
       {!isForening && (
         <section
-          id="skapa-forening"
+          id="inloggning"
           className="scroll-mt-24 border-b border-border bg-surface/80"
         >
           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-            <p className="mb-4 max-w-2xl text-sm text-muted">
-              Skapa flera föreningar och växla mellan dem på föreningssidorna. Gemensamma
-              plattformsuppdateringar slås ihop överallt — era ifyllda uppgifter behålls.
-            </p>
-            <SkapaForeningPanel kompakt visaSnabbstart />
+            <div className="mb-8 max-w-2xl">
+              <p className="text-sm font-semibold text-primary-dark">Inloggning</p>
+              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+                Välj testförening eller skapa er egen
+              </h2>
+              <p className="mt-2 text-muted">
+                Testa med en av de fem demo-föreningarna — eller skapa en egen kopia
+                med ert föreningsnamn. All data sparas separat per förening.
+              </p>
+            </div>
+            <StyrelseLoginModul visaGrundmallInlogg={false} />
+            <div id="skapa-forening" className="mx-auto mt-10 max-w-lg scroll-mt-24 px-4">
+              <p className="mb-4 text-sm text-muted">
+                Skapa flera föreningar och växla mellan dem på föreningssidorna.
+                Gemensamma plattformsuppdateringar slås ihop överallt — era ifyllda
+                uppgifter behålls.
+              </p>
+              <SkapaForeningPanel kompakt visaSnabbstart />
+            </div>
           </div>
         </section>
       )}
@@ -587,6 +602,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </ul>
             </div>
           </div>
+        </section>
+      )}
+
+      {!isForening && (
+        <section
+          id="grundmall-inlogg"
+          className="scroll-mt-24 border-t border-border bg-surface/40 py-12 sm:py-16"
+        >
+          <GrundmallInloggSektion />
         </section>
       )}
     </main>

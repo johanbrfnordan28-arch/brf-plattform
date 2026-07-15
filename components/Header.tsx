@@ -43,7 +43,7 @@ export function Header() {
             Pröva gratis
           </Link>
           <Link
-            href="/styrelse-login"
+            href="/#inloggning"
             className="brf-knapp-gron px-4 py-2 text-sm"
           >
             Logga in styrelse

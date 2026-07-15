@@ -7,10 +7,16 @@ import {
   sattAktivForeningId,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { GrundmallInloggSektion } from "@/components/forening/GrundmallInloggSektion";
 import {
   listaInloggningsTestForeningar,
   rensaStandardTestForening,
 } from "@/lib/testforeningar";
+
+type StyrelseLoginModulProps = {
+  /** Grundmall-inloggning visas längst ner i modulen (standard på inloggningssidor). */
+  visaGrundmallInlogg?: boolean;
+};
 
 function initial(namn: string): string {
   return namn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
@@ -92,7 +98,9 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
   );
 }
 
-export function StyrelseLoginModul() {
+export function StyrelseLoginModul({
+  visaGrundmallInlogg = true,
+}: StyrelseLoginModulProps = {}) {
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [rensaId, setRensaId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -227,6 +235,12 @@ export function StyrelseLoginModul() {
           </div>
         </div>
       </div>
+
+      {visaGrundmallInlogg && (
+        <div className="border-t border-border pt-6">
+          <GrundmallInloggSektion />
+        </div>
+      )}
     </div>
   );
 }
