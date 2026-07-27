@@ -2,11 +2,10 @@ import Link from "next/link";
 import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
 import { GrundmallInloggSektion } from "@/components/forening/GrundmallInloggSektion";
-import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { ForeningsFormationSektion } from "@/components/forening/ForeningsFormationSektion";
 import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
-import { BRF_NAVET_NAMN, STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
 
@@ -165,33 +164,27 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
   return (
     <main>
-      <section className="relative overflow-hidden border-b border-border">
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
-          aria-hidden
-        />
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-          {isForening ? (
-            <ForeningHeroEtikett />
-          ) : (
+      {isForening ? (
+        <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+          <ForeningValkommenRand />
+        </div>
+      ) : (
+        <section className="relative overflow-hidden border-b border-border">
+          <div
+            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+            aria-hidden
+          />
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
             <p className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-dark">
               {BRF_NAVET_NAMN} · För styrelser som vill ha kontroll
             </p>
-          )}
-          <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            {isForening
-              ? STYRELSEFLOW_NAMN
-              : "Allt styrelsen behöver — underhåll, upphandling och dokumentation på ett ställe"}
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
-            {isForening
-              ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : `${BRF_NAVET_NAMN} ger styrelsen ett strukturerat verktyg för 50-årsplan, upphandlingar och löpande dokumentation — slipp kalkylark, mejlkedjor och papper som försvinner.`}
-          </p>
+            <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Allt styrelsen behöver — underhåll, upphandling och dokumentation på ett ställe
+            </h1>
+            <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
+              {`${BRF_NAVET_NAMN} ger styrelsen ett strukturerat verktyg för 50-årsplan, upphandlingar och löpande dokumentation — slipp kalkylark, mejlkedjor och papper som försvinner.`}
+            </p>
 
-          {isForening && <ForeningValkommenRand />}
-
-          {!isForening && (
             <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground">
               <li className="flex items-center gap-2">
                 <span className="text-primary" aria-hidden>✓</span>
@@ -210,55 +203,36 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Upphandla med låsta anbud och spårbart beslut
               </li>
             </ul>
-          )}
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            {isForening ? (
-              <>
-                <Link
-                  href={`${base}/arshjul`}
-                  className="rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-                >
-                  Årshjul & kalender
-                </Link>
-                <Link
-                  href="#moduler"
-                  className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
-                >
-                  Alla moduler
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="#foreningsformation"
-                  className="brf-knapp-gron px-5 py-3 text-sm"
-                >
-                  Skapa er förening — gratis i 30 dagar
-                </Link>
-                <Link
-                  href="#inloggning"
-                  className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
-                >
-                  Logga in styrelse
-                </Link>
-                <Link
-                  href="#intro-film"
-                  className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
-                >
-                  Se filmerna — få prisuppgift
-                </Link>
-                <Link
-                  href="#fokus"
-                  className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
-                >
-                  Varför underhåll & upphandling
-                </Link>
-              </>
-            )}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="#foreningsformation"
+                className="brf-knapp-gron px-5 py-3 text-sm"
+              >
+                Skapa er förening — gratis i 30 dagar
+              </Link>
+              <Link
+                href="#inloggning"
+                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
+              >
+                Logga in styrelse
+              </Link>
+              <Link
+                href="#intro-film"
+                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
+              >
+                Se filmerna — få prisuppgift
+              </Link>
+              <Link
+                href="#fokus"
+                className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
+              >
+                Varför underhåll & upphandling
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {!isForening && (
         <section
