@@ -222,12 +222,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Årshjul & kalender
                 </Link>
                 <Link
-                  href="#intro-film"
-                  className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
-                >
-                  Se kort film (30 sek)
-                </Link>
-                <Link
                   href="#moduler"
                   className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
                 >
@@ -315,9 +309,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </section>
       )}
 
-      <div id="intro-film">
-        <FilmDemo variant={isForening ? "forening" : "public"} />
-      </div>
+      {!isForening && (
+        <div id="intro-film">
+          <FilmDemo variant="public" />
+        </div>
+      )}
 
       {isForening && (
         <section className="border-b border-border bg-[#eef6f0]/50">
