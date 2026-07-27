@@ -33,8 +33,8 @@ export const STANDARD_TESTFORENINGAR = [
   },
   {
     id: "test-forening-4",
-    namn: "Brf Test 4 — Sailor",
-    testplanId: "test-sailor" satisfies TestplanId,
+    namn: "Brf Test 4 — Ekhagen",
+    testplanId: "test-90" satisfies TestplanId,
   },
   {
     id: "test-forening-5",

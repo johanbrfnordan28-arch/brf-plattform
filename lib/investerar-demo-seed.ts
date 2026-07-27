@@ -53,7 +53,7 @@ export function byggLagratStateFranTestplan(
 
 /** Skriver demo-underhållsplan till localStorage (endast webbläsare). */
 export function forberedInvesterarDemo(
-  id: TestplanId = "test-sailor",
+  id: TestplanId = "test-90",
 ): void {
   if (typeof window === "undefined") return;
   sparaUnderhallsplanState(byggLagratStateFranTestplan(id));

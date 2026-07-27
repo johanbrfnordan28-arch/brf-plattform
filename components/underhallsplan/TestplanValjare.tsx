@@ -29,9 +29,9 @@ export function TestplanValjare({
       <p className="mt-2 text-sm leading-relaxed text-foreground">
         {visaGrundmallDemo ? (
           <>
-            Demo-föreningar från olika epoker plus{" "}
-            <strong>Brf Sailor (2013)</strong> vid Publika vägen 25–29. Varje plan har
-            ifylld boarea, tomtstorlek, lägenhetsantal och komponentregister.
+            Tidstypiska grundmallar från olika epoker — sekelskifte, 50-, 70- och
+            90-tal. Varje grundmall har ifylld boarea, tomtstorlek och
+            komponentregister; antal lägenheter anpassas vid registreringen.
             Renoveringshistorik fyller du i manuellt i steg 2.
           </>
         ) : (
@@ -47,9 +47,9 @@ export function TestplanValjare({
             Test av kostnadsfördelning (klumpsummor)
           </p>
           <p className="mt-1 text-sm text-amber-950/90">
-            <strong>Tallvinden (25 lgh)</strong> — stambyte som klumpsumma fördelas på
+            <strong>Tallvinden (50-tal)</strong> — stambyte som klumpsumma fördelas på
             VVS-delar; fönster i etapper per väderstreck.{" "}
-            <strong>Parklyckan (45 lgh)</strong> — totalentreprenad tak + fasad som delas
+            <strong>Parklyckan (70-tal)</strong> — totalentreprenad tak + fasad som delas
             automatiskt. Lägg till egna poster under steg 4.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">

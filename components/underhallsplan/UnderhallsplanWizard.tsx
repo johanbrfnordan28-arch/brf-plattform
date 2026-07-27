@@ -568,10 +568,7 @@ export function UnderhallsplanWizard() {
 
   function uppdateraTillgangligaTestplaner() {
     const foreningId = lasAktivForeningId();
-    const profil = lasForeningProfil(foreningId);
-    setTillgangligaTestplaner(
-      hamtaTillgangligaTestplaner(foreningId, profil?.namn ?? ""),
-    );
+    setTillgangligaTestplaner(hamtaTillgangligaTestplaner(foreningId));
   }
 
   useEffect(() => {
@@ -588,11 +585,7 @@ export function UnderhallsplanWizard() {
     if (sparad) {
       if (
         sparad.aktivTestplan &&
-        !arTillatenTestplanForForening(
-          sparad.aktivTestplan,
-          foreningId,
-          profil?.namn ?? "",
-        )
+        !arTillatenTestplanForForening(sparad.aktivTestplan, foreningId)
       ) {
         const plan = hamtaTestplan(sparad.aktivTestplan);
         setDemoVarning(
@@ -747,8 +740,7 @@ export function UnderhallsplanWizard() {
 
   function laddaTestplan(id: TestplanId) {
     const foreningId = lasAktivForeningId();
-    const profil = lasForeningProfil(foreningId);
-    if (!arTillatenTestplanForForening(id, foreningId, profil?.namn ?? "")) {
+    if (!arTillatenTestplanForForening(id, foreningId)) {
       return;
     }
     if (
