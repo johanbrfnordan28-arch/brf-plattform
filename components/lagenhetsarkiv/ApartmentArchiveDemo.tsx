@@ -551,6 +551,17 @@ export function ApartmentArchiveDemo() {
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {oppen && apartments.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBekraftarBorttagningLagenhetId(apartment.id)
+                        }
+                        className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-300 hover:bg-red-50"
+                      >
+                        Ta bort
+                      </button>
+                    )}
                     <OppnaStangKnapp
                       oppen={oppen}
                       onClick={() => vaxlaOppenLagenhet(apartment.id)}
@@ -562,6 +573,42 @@ export function ApartmentArchiveDemo() {
                     />
                   </div>
                 </div>
+
+                {oppen && bekraftarBorttagningLagenhetId === apartment.id && (
+                  <div
+                    className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-4"
+                    role="alertdialog"
+                    aria-labelledby={`bekrafta-borttagning-lgh-${apartment.id}`}
+                  >
+                    <p
+                      id={`bekrafta-borttagning-lgh-${apartment.id}`}
+                      className="text-sm font-semibold text-foreground"
+                    >
+                      Bekräfta borttagning av lägenhet
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted">
+                      Lägenhet {etikett} tas bort från registret tillsammans med
+                      alla tillhörande mappar och uppladdad dokumentation.
+                      Åtgärden är permanent och kan inte ångras.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBekraftarBorttagningLagenhetId(null)}
+                        className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
+                      >
+                        Avbryt
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteApartment(apartment.id)}
+                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-900"
+                      >
+                        Ja, ta bort lägenheten
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <LagenhetGrunduppgifterKort apartment={apartment} />
               </div>
@@ -881,59 +928,6 @@ export function ApartmentArchiveDemo() {
               ))
             )}
           </div>
-
-                  {apartments.length > 1 && (
-                    <div className="border-t border-border pt-5">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-                        Administration
-                      </p>
-                      {bekraftarBorttagningLagenhetId === apartment.id ? (
-                        <div
-                          className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-4"
-                          role="alertdialog"
-                          aria-labelledby={`bekrafta-borttagning-lgh-${apartment.id}`}
-                        >
-                          <p
-                            id={`bekrafta-borttagning-lgh-${apartment.id}`}
-                            className="text-sm font-semibold text-foreground"
-                          >
-                            Bekräfta borttagning av lägenhet
-                          </p>
-                          <p className="mt-1 text-xs leading-relaxed text-muted">
-                            Lägenhet {etikett} tas bort från registret tillsammans
-                            med alla tillhörande mappar och uppladdad dokumentation.
-                            Åtgärden är permanent och kan inte ångras.
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setBekraftarBorttagningLagenhetId(null)}
-                              className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
-                            >
-                              Avbryt
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteApartment(apartment.id)}
-                              className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-900"
-                            >
-                              Ja, ta bort lägenheten
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setBekraftarBorttagningLagenhetId(apartment.id)
-                          }
-                          className="mt-3 text-sm font-medium text-red-800 hover:text-red-900"
-                        >
-                          Ta bort lägenhet ur registret…
-                        </button>
-                      )}
-                    </div>
-                  )}
                   </div>
                 </div>
               )}
