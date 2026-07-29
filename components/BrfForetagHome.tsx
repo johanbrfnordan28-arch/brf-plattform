@@ -289,73 +289,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </div>
       )}
 
-      {isForening && (
-        <section className="border-b border-border bg-[#eef6f0]/50">
-          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-            <div className="mb-8 max-w-2xl">
-              <p className="text-sm font-semibold text-primary-dark">Snabbvägar</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Vanliga verktyg för styrelsen
-              </h2>
-              <p className="mt-2 text-muted">
-                Årshjulet samlar påminnelser och långsiktiga datum — t.ex. OVK och
-                stämma — så inget glöms bort.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                {
-                  title: "Årshjul & kalender",
-                  href: `${base}/arshjul`,
-                  icon: "📅",
-                  text: "Påminnelser och tidslinje flera år framåt",
-                  accent: true,
-                },
-                {
-                  title: "Underhållsplan",
-                  href: `${base}/underhallsplan`,
-                  icon: "🔧",
-                  text: "Komponenter, besiktningar och budget",
-                },
-                {
-                  title: "Upphandling",
-                  href: `${base}/upphandling`,
-                  icon: "📋",
-                  text: "Mallar och Upphandla-knappen",
-                },
-                {
-                  title: "Projekt",
-                  href: `${base}/projekt`,
-                  icon: "📐",
-                  text: "Projektmappar och checklistor",
-                },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`group flex flex-col rounded-2xl border p-5 shadow-sm transition-all hover:shadow-md ${
-                    item.accent
-                      ? "border-primary bg-white hover:border-primary-dark"
-                      : "border-border bg-surface hover:border-primary/40"
-                  }`}
-                >
-                  <span className="text-2xl" aria-hidden>
-                    {item.icon}
-                  </span>
-                  <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary-dark">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 flex-1 text-sm text-muted">{item.text}</p>
-                  <span className="mt-3 text-sm font-medium text-primary-dark">
-                    Öppna →
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {!isForening && (
         <section
           id="fokus"
@@ -423,7 +356,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </h2>
           <p className="mt-2 text-muted">
             {isForening
-              ? "Samma moduler som på den publika sidan — här arbetar styrelsen i er förenings miljö."
+              ? "Välj en modul för att arbeta i er förenings miljö — underhållsplan, upphandling, rondering, dokument och mer."
               : "Dokument, rondering, entreprenörer och medlemshantering — allt hänger ihop när grunden är på plats."}
           </p>
         </div>
@@ -434,49 +367,50 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </div>
       </section>
 
-      <section
-        id="upphandlingar"
-        className="border-y border-border bg-surface/60"
-      >
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mb-10 max-w-2xl">
-            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-              {isForening ? "Upphandlingar" : "Stora och små entreprenader"}
-            </h2>
-            <p className="mt-2 text-muted">
-              {isForening
-                ? "Föreningen eller deras ombud tar fram ett underlag och trycker på Upphandla."
-                : "Samma flöde oavsett om det gäller tak, stambyte, fastighetsskötsel eller brandkonsult — kategori, mallar och låsta anbud."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {upphandlingsKategorier.map((name) => (
-              <span
-                key={name}
-                className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:bg-[#e8f3ec] hover:text-primary-dark"
+      {!isForening && (
+        <section
+          id="upphandlingar"
+          className="border-y border-border bg-surface/60"
+        >
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+            <div className="mb-10 max-w-2xl">
+              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+                Stora och små entreprenader
+              </h2>
+              <p className="mt-2 text-muted">
+                Samma flöde oavsett om det gäller tak, stambyte, fastighetsskötsel
+                eller brandkonsult — kategori, mallar och låsta anbud.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {upphandlingsKategorier.map((name) => (
+                <span
+                  key={name}
+                  className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:bg-[#e8f3ec] hover:text-primary-dark"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+            <div className="mt-10 rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
+              <h3 className="font-semibold text-primary-dark">Upphandla-knappen</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                Styrelsen eller ett anlitat ombud fyller i mallar och bifogar
+                handlingar. Entreprenörer med godkänt konto kan begära underlag och
+                lämna anbud — först låst till efter sista anbudsdag.
+              </p>
+              <Link
+                href={`${base}/upphandling`}
+                className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
               >
-                {name}
-              </span>
-            ))}
+                Läs om upphandling
+              </Link>
+            </div>
           </div>
-          <div className="mt-10 rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
-            <h3 className="font-semibold text-primary-dark">Upphandla-knappen</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              Styrelsen eller ett anlitat ombud fyller i mallar och bifogar
-              handlingar. Entreprenörer med godkänt konto kan begära underlag och
-              lämna anbud — först låst till efter sista anbudsdag.
-            </p>
-            <Link
-              href={`${base}/upphandling`}
-              className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-            >
-              Läs om upphandling
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {!isForening ? (
+      {!isForening && (
         <section id="priser" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mb-10 max-w-2xl">
             <p className="text-sm font-semibold text-primary-dark">Pris & avtal</p>
@@ -552,33 +486,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               >
                 Se filmerna för pris →
               </Link>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-              <p className="text-sm font-semibold text-primary-dark">Er förening</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground">
-                Rondering som styrelsen kan följa upp
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Schema, checklistor och signering samlat så att utebliven rondering
-                eller städning blir svårare att missa.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border bg-[#e8f3ec] p-6 sm:p-8">
-              <p className="text-sm font-semibold text-primary-dark">Pris & avtal</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground">
-                Tydlig avtalsmodell
-              </h2>
-              <ul className="mt-4 space-y-2 text-sm text-muted">
-                <li>Avtalstid: 1 år</li>
-                <li>Automatisk förlängning</li>
-                <li>Fakturering kvartalsvis</li>
-                <li>Uppsägningstid: 6 månader</li>
-              </ul>
             </div>
           </div>
         </section>

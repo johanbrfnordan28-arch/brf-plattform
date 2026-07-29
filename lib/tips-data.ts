@@ -197,7 +197,7 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "💰",
       titel: "Koppla till åtgärder i planen",
-      text: "Priser från leverantörer kan kopplas direkt till underhållsåtgärder i Vår plan — kostnadsuppskattningen uppdateras automatiskt.",
+      text: "Priser från leverantörer kan kopplas direkt till underhållsåtgärder i Åtgärdsplan — kostnadsuppskattningen uppdateras automatiskt.",
     },
     {
       ikon: "📅",

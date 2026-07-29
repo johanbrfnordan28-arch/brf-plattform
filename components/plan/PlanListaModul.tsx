@@ -175,7 +175,7 @@ export function PlanListaModul() {
   }, []);
 
   function hanteraSkapaNyPlan() {
-    const namn = nyttPlanNamn.trim() || "Ny underhållsplan";
+    const namn = nyttPlanNamn.trim() || "Ny åtgärdsplan";
     skapaNyPlan(namn);
     setNyttPlanNamn("");
     setSkaparPlan(false);
@@ -269,7 +269,7 @@ export function PlanListaModul() {
             {!visaPeriodValjare && (
               <p className="mt-3 text-xs text-muted/80">
                 Grundmallen används som utgångspunkt när du skapar en ny
-                underhållsplan — komponenter och åtgärder kopieras automatiskt.
+                åtgärdsplan — komponenter och åtgärder kopieras automatiskt.
                 Klicka <strong>Välj period</strong> för att förifyllas med
                 typiska komponenter från fastighetens byggnadsperiod.
               </p>
@@ -282,7 +282,7 @@ export function PlanListaModul() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold uppercase tracking-wide text-muted">
-            Underhållsplaner
+            Åtgärdsplaner
           </h2>
           <span className="rounded-full bg-border/50 px-2.5 py-0.5 text-xs font-medium text-muted">
             {planer.length} st
@@ -291,9 +291,8 @@ export function PlanListaModul() {
 
         {planer.length === 0 && !skaparPlan && (
           <p className="mb-4 text-sm text-muted">
-            Inga planer skapade ännu. Klicka nedan för att skapa din första
-            underhållsplan — grundmallens komponenter och åtgärder kopieras
-            automatiskt.
+            Inga åtgärdsplaner skapade ännu. Klicka nedan för att skapa din
+            första — grundmallens komponenter och åtgärder kopieras automatiskt.
           </p>
         )}
 
@@ -375,7 +374,7 @@ export function PlanListaModul() {
                     if (e.key === "Enter") hanteraSkapaNyPlan();
                     if (e.key === "Escape") setSkaparPlan(false);
                   }}
-                  placeholder="t.ex. Underhållsplan 2025–2075"
+                  placeholder="t.ex. Åtgärdsplan 2025–2075"
                   autoFocus
                   className="flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
@@ -413,7 +412,7 @@ export function PlanListaModul() {
               >
                 <path d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z" />
               </svg>
-              Skapa ny underhållsplan
+              Skapa ny åtgärdsplan
             </button>
           )}
         </div>

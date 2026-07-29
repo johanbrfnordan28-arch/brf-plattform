@@ -9,8 +9,13 @@ import { GRUNDMALL_NAMN } from "@/lib/forening-registry";
 const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
   {
+    href: "/forening/underhallsplan",
+    label: "Underhållsplan",
+    aktivPa: (p: string) => p.startsWith("/forening/underhallsplan"),
+  },
+  {
     href: "/forening/plan",
-    label: "Vår plan",
+    label: "Åtgärdsplan",
     aktivPa: (p: string) => p.startsWith("/forening/plan"),
   },
   {

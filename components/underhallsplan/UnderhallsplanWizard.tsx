@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { Besiktningar } from "@/components/underhallsplan/BesiktningarSteg";
 import { BildstodAnalys } from "@/components/underhallsplan/BildstodAnalys";
@@ -182,13 +183,6 @@ const grundFields: {
     label: "Antal våningar",
     placeholder: "t.ex. 5",
     type: "number",
-  },
-  {
-    key: "antalByggnader",
-    label: "Antal byggnader",
-    placeholder: "t.ex. 1",
-    type: "number",
-    hint: "Styr antal adresser och hus — synkas med fasadytor och fönster nedan.",
   },
   {
     key: "uppvarmning",
@@ -1079,14 +1073,42 @@ export function UnderhallsplanWizard() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
         <div>
-          <p className="text-sm font-semibold text-foreground">Spara dina uppdateringar</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">
+              Spara dina uppdateringar
+            </p>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                harOsparadeAndringar
+                  ? "bg-amber-100 text-amber-900"
+                  : sparadTid
+                    ? "bg-[#dcefe2] text-primary-dark"
+                    : "bg-border/50 text-muted"
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                aria-hidden
+                className={`h-1.5 w-1.5 rounded-full ${
+                  harOsparadeAndringar
+                    ? "bg-amber-500"
+                    : sparadTid
+                      ? "bg-primary"
+                      : "bg-muted"
+                }`}
+              />
+              {harOsparadeAndringar
+                ? "Sparar…"
+                : sparadTid
+                  ? "Sparat"
+                  : "Autosparas"}
+            </span>
+          </div>
           <p className="mt-0.5 text-xs text-muted">
             {sparadTid
               ? `Senast sparad ${new Date(sparadTid).toLocaleString("sv-SE")}. Ändringar sparas automatiskt i webbläsaren.`
               : "Sparas automatiskt lokalt i webbläsaren när du redigerar."}
-            {harOsparadeAndringar && sparadTid
-              ? " Sparar…"
-              : null}
           </p>
           {sparFel && (
             <p className="mt-1 text-xs font-medium text-red-700" role="alert">
@@ -1101,6 +1123,52 @@ export function UnderhallsplanWizard() {
         >
           Spara nu
         </button>
+      </div>
+
+      <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/60 px-4 py-4">
+        <p className="text-sm font-semibold text-primary-dark">
+          Så här arbetar du i planen
+        </p>
+        <ul className="mt-2 space-y-1.5 text-sm text-muted">
+          <li className="flex gap-2">
+            <span className="text-primary" aria-hidden>
+              1.
+            </span>
+            <span>
+              Börja med <strong>Steg 1 — Grunduppgifter</strong>. Det låser upp
+              beräkningar och AI-stöd i övriga steg.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-primary" aria-hidden>
+              2.
+            </span>
+            <span>
+              Därefter kan du fylla i <strong>steg 2–6 i valfri ordning</strong> —
+              ett steg i taget. Allt sparas automatiskt.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-primary" aria-hidden>
+              3.
+            </span>
+            <span>
+              <strong>Steg 7 — Summering</strong> visar ett löpande utkast av
+              50-årsbudgeten. Öppna den när som helst för att se hur planen växer
+              fram.
+            </span>
+          </li>
+        </ul>
+        <p className="mt-3 text-xs text-muted">
+          Vill du bara ha en enkel åtgärds- och kostnadslista? Använd{" "}
+          <Link
+            href="/forening/plan"
+            className="font-medium text-primary-dark underline hover:no-underline"
+          >
+            Åtgärdsplan
+          </Link>{" "}
+          i stället.
+        </p>
       </div>
 
       {demoVarning && (
