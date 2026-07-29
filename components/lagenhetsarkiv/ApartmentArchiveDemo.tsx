@@ -39,6 +39,10 @@ import {
 } from "@/components/lagenhetsarkiv/RenoveringsMappPanel";
 import { LagenhetInfoPanel } from "@/components/lagenhetsarkiv/LagenhetInfoPanel";
 import {
+  LagenhetGrunduppgifterKort,
+  LagenhetsarkivSammanstallning,
+} from "@/components/lagenhetsarkiv/LagenhetGrunduppgifter";
+import {
   foreslagetMappNamn,
   hamtaRenoveringsMall,
   renoveringsMallar,
@@ -507,8 +511,8 @@ export function ApartmentArchiveDemo() {
               Lägenhetsregister
             </p>
             <p className="mt-1 text-sm text-muted">
-              Alla lägenheter är stängda som standard — öppna en i taget för att
-              se uppgifter och renoveringsarkiv.
+              Grunduppgifterna visas direkt på varje kort. Öppna en lägenhet för
+              att redigera detaljer, besiktning och renoveringsarkiv.
             </p>
           </div>
           <button
@@ -521,6 +525,8 @@ export function ApartmentArchiveDemo() {
         </div>
       </div>
 
+      <LagenhetsarkivSammanstallning apartments={apartments} />
+
       <div className="space-y-4 p-5 sm:p-6">
         {apartments.map((apartment) => {
           const oppen = apartment.id === oppenLagenhetsId;
@@ -532,29 +538,32 @@ export function ApartmentArchiveDemo() {
               key={apartment.id}
               className="rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20"
             >
-              <div className="flex flex-wrap items-start justify-between gap-3 p-4">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-bold text-foreground">{etikett}</h3>
-                  <p className="mt-1 text-xs text-muted">
-                    {apartment.folders.length > 0
-                      ? `${apartment.folders.length} renoveringsmapp${
-                          apartment.folders.length > 1 ? "ar" : ""
-                        }`
-                      : "Inga renoveringsmappar"}
-                    {apartment.adress ? ` · ${apartment.adress}` : ""}
-                  </p>
+              <div className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-bold text-foreground">{etikett}</h3>
+                    <p className="mt-1 text-xs text-muted">
+                      {apartment.folders.length > 0
+                        ? `${apartment.folders.length} renoveringsmapp${
+                            apartment.folders.length > 1 ? "ar" : ""
+                          }`
+                        : "Inga renoveringsmappar"}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <OppnaStangKnapp
+                      oppen={oppen}
+                      onClick={() => vaxlaOppenLagenhet(apartment.id)}
+                      ariaLabel={
+                        oppen
+                          ? `Stäng lägenhet ${etikett}`
+                          : `Öppna lägenhet ${etikett}`
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <OppnaStangKnapp
-                    oppen={oppen}
-                    onClick={() => vaxlaOppenLagenhet(apartment.id)}
-                    ariaLabel={
-                      oppen
-                        ? `Stäng lägenhet ${etikett}`
-                        : `Öppna lägenhet ${etikett}`
-                    }
-                  />
-                </div>
+
+                <LagenhetGrunduppgifterKort apartment={apartment} />
               </div>
 
               {oppen && (

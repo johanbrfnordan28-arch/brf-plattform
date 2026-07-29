@@ -957,7 +957,11 @@ export function LagenhetInfoPanel({
           </table>
         </div>
 
-        <Sektion titel="Grunduppgifter" beskrivning="Adress, yta och tillbehör">
+        <Sektion
+          titel="Grunduppgifter"
+          beskrivning="Andelstal, yta, adress och tillbehör"
+          defaultOppen
+        >
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="sm:col-span-2">
               <label className={labelKlass}>Adress</label>
@@ -1086,7 +1090,6 @@ export function LagenhetInfoPanel({
         <Sektion
           titel="Rum & enkel besiktning"
           beskrivning="Hall, kök och badrum ingår alltid. Uppvärmning väljs per rum. Lägg till fler kök, badrum, WC, entré eller övriga rum."
-          defaultOppen
         >
           <div className="space-y-2">
             <Rullgardin
@@ -1254,7 +1257,6 @@ export function LagenhetInfoPanel({
         <Sektion
           titel="Tekniska installationer"
           beskrivning="Eldstäder och lägenhetsfläkt. Uppvärmning väljs per rum ovan."
-          defaultOppen
         >
           <div className="space-y-4">
             <p className="rounded-lg border border-border bg-[#fafcfa] px-3 py-2 text-xs text-muted">
