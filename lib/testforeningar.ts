@@ -80,8 +80,9 @@ function tomStandardProfil(id: string, namn: string): ForeningProfil {
 function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void {
   if (harUnderhallsplanSparat(foreningId)) return;
   forberedNyForening(foreningId);
+  const namn = lasForeningProfil(foreningId)?.namn;
   sparaUnderhallsplanState(
-    byggLagratStateFranTestplan(testplanId),
+    byggLagratStateFranTestplan(testplanId, namn),
     foreningId,
   );
 }

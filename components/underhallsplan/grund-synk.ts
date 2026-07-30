@@ -51,22 +51,33 @@ export function uppdateraPlanTitelMedLagenheter(
   return bas;
 }
 
-/** Rubrik på slutsidan — följer alltid aktuellt antal från steg 1. */
+/** Rubrik på slutsidan — föreningens namn har företräde framför demoplanens titel. */
 export function hamtaPlanVisningstitel(
   planNamn: string | null,
   grund: Grunduppgifter,
+  foreningsnamn?: string | null,
 ): string {
   const grundNorm = normaliseraGrund(grund);
   const antalLgh = hamtaAntalLagenheterFranGrund(grundNorm);
-  if (planNamn?.trim()) {
-    return uppdateraPlanTitelMedLagenheter(planNamn.trim(), antalLgh);
-  }
   const bas =
-    grundNorm.fastighetsbeteckning.trim() || "Underhållsplan — utkast";
+    foreningsnamn?.trim() ||
+    (planNamn?.trim() ? rensaPlanTitelFranLagenhetsantal(planNamn.trim()) : "") ||
+    grundNorm.fastighetsbeteckning.trim() ||
+    "Underhållsplan — utkast";
   if (antalLgh > 0) {
-    return `${bas} (${antalLgh} lägenheter)`;
+    return uppdateraPlanTitelMedLagenheter(bas, antalLgh);
   }
-  return bas;
+  return rensaPlanTitelFranLagenhetsantal(bas);
+}
+
+/** Bygger plantitel från aktivt föreningsnamn (utan demoplan-namn). */
+export function planNamnFranForeningsnamn(
+  foreningsnamn: string | null | undefined,
+  antalLgh = 0,
+): string | null {
+  const bas = foreningsnamn?.trim();
+  if (!bas) return null;
+  return uppdateraPlanTitelMedLagenheter(bas, antalLgh);
 }
 
 export function hamtaAntalVerksamhetslokaler(grund: Grunduppgifter): number {

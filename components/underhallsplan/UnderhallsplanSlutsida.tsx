@@ -2,6 +2,7 @@
 
 import { useMemo, type ReactNode } from "react";
 import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
+import { hamtaAktivForeningsNamn, arGrundmallForening } from "@/lib/forening-registry";
 import { formatKr } from "@/components/underhallsplan/besiktningar";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
@@ -163,7 +164,13 @@ export function UnderhallsplanSlutsida({
     ? Math.round(summaArsbudget / utgiftsRader.length)
     : 0;
 
-  const titel = hamtaPlanVisningstitel(planNamn, grundNorm);
+  const titel = hamtaPlanVisningstitel(
+    planNamn,
+    grundNorm,
+    arGrundmallForening()
+      ? null
+      : hamtaStyrelseKontakt()?.foreningsnamn || hamtaAktivForeningsNamn(),
+  );
   const kontakt = hamtaStyrelseKontakt();
 
   const underhallTidslista = useMemo(

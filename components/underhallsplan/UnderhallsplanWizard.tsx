@@ -57,6 +57,7 @@ import {
 import {
   arGrundmallForening,
   FORENING_AKTIV_EVENT,
+  hamtaAktivForeningsNamn,
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
@@ -117,6 +118,7 @@ import {
   hamtaAntalLagenheterFranGrund,
   hamtaAntalVerksamhetslokaler,
   normaliseraGrund,
+  planNamnFranForeningsnamn,
   registerBehoverLagenhetsSynk,
   synkaBesiktningarMedGrund,
   synkaRegisterMedAntalLagenheter,
@@ -591,6 +593,23 @@ export function UnderhallsplanWizard() {
       } else {
         appliceraLagratState(sparad);
       }
+      // Slutsidan ska visa den aktiva föreningens namn — inte demoplanens titel.
+      if (!arGrundmallForening(foreningId)) {
+        const foreningsnamn =
+          hamtaStyrelseKontakt(foreningId)?.foreningsnamn ||
+          profil?.namn ||
+          hamtaAktivForeningsNamn();
+        const lgh = hamtaAntalLagenheterFranGrund(
+          normaliseraGrund(sparad.grund),
+        );
+        const synkat = planNamnFranForeningsnamn(foreningsnamn, lgh);
+        if (synkat) {
+          setPlanNamn(synkat);
+          if (synkat !== sparad.planNamn) {
+            sparaUnderhallsplanState({ ...sparad, planNamn: synkat });
+          }
+        }
+      }
     } else {
       const kontakt = hamtaStyrelseKontakt();
       if (kontakt) {
@@ -748,6 +767,12 @@ export function UnderhallsplanWizard() {
     }
     setDemoVarning(null);
     const plan = hamtaTestplan(id);
+    const foreningsnamn = arGrundmallForening(foreningId)
+      ? plan.namn
+      : hamtaStyrelseKontakt(foreningId)?.foreningsnamn ||
+        lasForeningProfil(foreningId)?.namn ||
+        hamtaAktivForeningsNamn() ||
+        plan.namn;
     setGrund(normaliseraGrund(plan.grund));
     setSenastTillagdKomponent(plan.activeComponents[0] ?? null);
     setBesiktningar(plan.besiktningar);
@@ -755,7 +780,12 @@ export function UnderhallsplanWizard() {
     setPlaninstallningar(normaliseraPlaninstallningar(plan.planinstallningar));
     setRenoveringarLista([]);
     setRenoveringSammanfattning(null);
-    setPlanNamn(plan.namn);
+    setPlanNamn(
+      planNamnFranForeningsnamn(
+        foreningsnamn,
+        hamtaAntalLagenheterFranGrund(plan.grund),
+      ) ?? plan.namn,
+    );
     setPlanNotering(plan.planNotering ?? null);
     setAktivTestplan(id);
     setGrundSaved(true);

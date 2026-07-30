@@ -17,6 +17,7 @@ import { skapaStandardSamfallighetsavgift } from "@/components/underhallsplan/sa
 
 export function byggLagratStateFranTestplan(
   id: TestplanId,
+  foreningsnamn?: string,
 ): UnderhallsplanLagratState {
   const plan = hamtaTestplan(id);
   const grund = normaliseraGrund(plan.grund);
@@ -28,12 +29,13 @@ export function byggLagratStateFranTestplan(
     ).register,
   );
   const antalLgh = hamtaAntalLagenheterFranGrund(grund);
+  const titelBas = foreningsnamn?.trim() || plan.namn;
 
   return {
     version: 1,
     sparad: new Date().toISOString(),
     aktivTestplan: id,
-    planNamn: uppdateraPlanTitelMedLagenheter(plan.namn, antalLgh),
+    planNamn: uppdateraPlanTitelMedLagenheter(titelBas, antalLgh),
     planNotering: plan.planNotering ?? null,
     grund,
     planinstallningar: normaliseraPlaninstallningar(plan.planinstallningar),

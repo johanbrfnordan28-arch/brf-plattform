@@ -24,6 +24,10 @@ import {
   styrelseKontaktFranProfil,
 } from "@/lib/styrelse-kontakt";
 import { arStandardTestForening, arStandardTestStartNamn } from "@/lib/testforeningar";
+import {
+  hamtaAntalLagenheterFranGrund,
+  planNamnFranForeningsnamn,
+} from "@/components/underhallsplan/grund-synk";
 
 function lasAktivProfilForFormular(): ForeningProfil | null {
   repareraForeningRegistry();
@@ -102,9 +106,12 @@ export function ForeningProfilFormular() {
       const kontakt = styrelseKontaktFranProfil(uppdaterad);
       const plan = lasUnderhallsplanState();
       if (plan) {
+        const lgh = hamtaAntalLagenheterFranGrund(plan.grund);
         sparaUnderhallsplanState({
           ...plan,
-          planNamn: plan.planNamn || planNamnFranKontakt(kontakt),
+          planNamn:
+            planNamnFranForeningsnamn(kontakt.foreningsnamn, lgh) ||
+            planNamnFranKontakt(kontakt),
           grund: appliceraKontaktPaGrund(plan.grund, kontakt),
           sparad: new Date().toISOString(),
         });
