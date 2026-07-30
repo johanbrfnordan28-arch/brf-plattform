@@ -20,8 +20,15 @@ export default function ForeningUppgifterPage() {
       intro="Här fyller styrelsen i kontaktuppgifter. De används automatiskt i dokument, städschema, egenkontroller, upphandlingsunderlag och underhållsplanen."
     >
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-5">
-        <p className="text-sm font-semibold text-primary-dark">Två steg för nya kunder</p>
-        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
+        <p className="text-sm font-semibold text-primary-dark">
+          Börja här — föreningsuppgifter
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Fyll i namn, kontaktperson, e-post och adress. När uppgifterna är
+          sparade kommer ni direkt till portalen vid nästa inloggning — den här
+          sidan visas bara igen om något saknas.
+        </p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-foreground">
           <li>
             <strong>Styrelsens kontakt</strong> — fyll i formuläret nedan och spara.
           </li>

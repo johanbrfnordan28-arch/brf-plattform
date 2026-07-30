@@ -18,27 +18,27 @@ export { arStandardTestForening };
 export const STANDARD_TESTFORENINGAR = [
   {
     id: "test-forening-1",
-    namn: "Brf Test 1 — Eken",
+    namn: "Brf Test 1",
     testplanId: "test-1900" satisfies TestplanId,
   },
   {
     id: "test-forening-2",
-    namn: "Brf Test 2 — Solsidan",
+    namn: "Brf Test 2",
     testplanId: "test-90" satisfies TestplanId,
   },
   {
     id: "test-forening-3",
-    namn: "Brf Test 3 — Parklyckan",
+    namn: "Brf Test 3",
     testplanId: "test-70" satisfies TestplanId,
   },
   {
     id: "test-forening-4",
-    namn: "Brf Test 4 — Ekhagen",
+    namn: "Brf Test 4",
     testplanId: "test-90" satisfies TestplanId,
   },
   {
     id: "test-forening-5",
-    namn: "Brf Test 5 — Tallvinden",
+    namn: "Brf Test 5",
     testplanId: "test-50" satisfies TestplanId,
   },
 ] as const;
@@ -51,6 +51,11 @@ export const ANTAL_STANDARD_TESTFORENINGAR = STANDARD_TESTFORENINGAR.length;
 const TESTPLAN_PER_FORENING: Record<string, TestplanId> = Object.fromEntries(
   STANDARD_TESTFORENINGAR.map((t) => [t.id, t.testplanId]),
 );
+
+/** Startnamn «Brf Test N» eller äldre «Brf Test N — …» — byts ut mot rent startnamn. */
+export function arStandardTestStartNamn(namn: string): boolean {
+  return /^Brf Test \d+(\s*[—–-].*)?$/i.test(namn.trim());
+}
 
 export function hamtaStandardTestForeningTestplan(
   foreningId: string,
@@ -83,7 +88,7 @@ function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void
 
 /**
  * Säkerställer att alla fem testföreningar finns i registret.
- * Befintlig data i respektive förening rörs inte.
+ * Behåller användarens sparade namn/uppgifter — skriver bara över startnamn.
  */
 export function sakraStandardTestForeningar(): ForeningProfil[] {
   if (typeof window === "undefined") {
@@ -95,9 +100,17 @@ export function sakraStandardTestForeningar(): ForeningProfil[] {
 
   for (const def of STANDARD_TESTFORENINGAR) {
     const befintlig = lasForeningProfil(def.id);
-    const profil = befintlig
-      ? { ...befintlig, id: def.id, namn: def.namn }
-      : tomStandardProfil(def.id, def.namn);
+    let profil: ForeningProfil;
+    if (!befintlig) {
+      profil = tomStandardProfil(def.id, def.namn);
+    } else {
+      // Användarens inmatade föreningsnamn behålls; annars «Brf Test N».
+      const namn =
+        befintlig.namn.trim() && !arStandardTestStartNamn(befintlig.namn)
+          ? befintlig.namn.trim()
+          : def.namn;
+      profil = { ...befintlig, id: def.id, namn };
+    }
     sparaForeningProfil(profil, { tyst: true });
     seedTestForeningOmTom(def.id, def.testplanId);
     resultat.push(profil);

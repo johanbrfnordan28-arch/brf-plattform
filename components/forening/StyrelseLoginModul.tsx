@@ -11,6 +11,7 @@ import {
   listaInloggningsTestForeningar,
   rensaStandardTestForening,
 } from "@/lib/testforeningar";
+import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
 
 function initial(namn: string): string {
   return namn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
@@ -111,7 +112,7 @@ export function StyrelseLoginModul() {
   function loggaIn(id: string) {
     markeraPendingAktivForening(id);
     sattAktivForeningId(id);
-    window.location.assign("/forening");
+    window.location.assign(hamtaForeningStartPath(id));
   }
 
   function bekraftaRensa(id: string) {

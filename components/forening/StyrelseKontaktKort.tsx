@@ -50,28 +50,31 @@ export function StyrelseKontaktKort({
   const komplett = arStyrelseKontaktKomplett(kontakt);
 
   if (kompakt && komplett) {
+    // Ifyllda uppgifter visas inte på varje sida — bara när något saknas.
+    return null;
+  }
+
+  if (kompakt && !komplett) {
     return (
       <div
-        className={`flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-[#eef6f0]/60 px-3 py-2 text-sm ${className}`}
+        className={`rounded-xl border border-amber-200 bg-amber-50/90 p-4 ${className}`}
       >
-        <span className="font-medium text-foreground">{kontakt.foreningsnamn}</span>
-        {kontakt.kontaktperson && (
-          <span className="text-muted">{kontakt.kontaktperson}</span>
-        )}
-        {kontakt.epost && (
-          <a
-            href={`mailto:${kontakt.epost}`}
-            className="font-medium text-primary-dark underline hover:no-underline"
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-amber-950">
+              Föreningsuppgifter saknas
+            </p>
+            <p className="mt-1 text-xs text-amber-900">
+              Fyll i namn, kontaktperson, e-post och adress innan ni fortsätter.
+            </p>
+          </div>
+          <Link
+            href="/forening/uppgifter"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
           >
-            {kontakt.epost}
-          </a>
-        )}
-        <Link
-          href="/forening/uppgifter"
-          className="text-xs text-muted underline hover:text-foreground"
-        >
-          Redigera
-        </Link>
+            Fyll i uppgifter
+          </Link>
+        </div>
       </div>
     );
   }

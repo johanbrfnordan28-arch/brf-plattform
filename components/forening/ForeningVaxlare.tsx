@@ -15,6 +15,7 @@ import {
 } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { sakraStandardTestForeningar } from "@/lib/testforeningar";
+import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
 
 function foreningInitial(namn: string, id: string): string {
   if (id === GRUNDMALL_FORENING_ID) return "G";
@@ -77,6 +78,7 @@ export function ForeningVaxlare() {
     sattAktivForeningId(id);
     setAktivId(id);
     setÖppen(false);
+    router.push(hamtaForeningStartPath(id));
   }
 
   if (!redo) {

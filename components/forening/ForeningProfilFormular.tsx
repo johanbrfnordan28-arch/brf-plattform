@@ -19,9 +19,11 @@ import {
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import {
   appliceraKontaktPaGrund,
+  behoverFyllaForeningsuppgifter,
   planNamnFranKontakt,
   styrelseKontaktFranProfil,
 } from "@/lib/styrelse-kontakt";
+import { arStandardTestForening, arStandardTestStartNamn } from "@/lib/testforeningar";
 
 function lasAktivProfilForFormular(): ForeningProfil | null {
   repareraForeningRegistry();
@@ -111,6 +113,13 @@ export function ForeningProfilFormular() {
       setProfil(uppdaterad);
       setRedigerad(null);
       setSparad(true);
+
+      // När allt obligatoriskt är ifyllt → vidare till portalen (inte vid varje inloggning igen).
+      if (!behoverFyllaForeningsuppgifter(uppdaterad.id)) {
+        window.setTimeout(() => {
+          window.location.assign("/forening");
+        }, 500);
+      }
     } catch (e) {
       setSparFel(
         e instanceof Error ? e.message : "Kunde inte spara — försök igen.",
@@ -118,12 +127,22 @@ export function ForeningProfilFormular() {
     }
   }
 
+  const visaTestNamnTips =
+    arStandardTestForening(profil.id) &&
+    arStandardTestStartNamn(visningsProfil.namn);
+
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6">
       <p className="text-sm text-muted">
         Uppgifterna sparas för <strong className="text-foreground">{profil.namn}</strong>{" "}
         och används i dokument, städschema och underhållsplanen.
       </p>
+      {visaTestNamnTips && (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Byt namnet från «{visningsProfil.namn}» till er riktiga förening — t.ex.
+          Brf Solsidan — så syns det i menyn och i dokument.
+        </p>
+      )}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
           <span className="font-medium text-foreground">Föreningens namn</span>
@@ -131,6 +150,7 @@ export function ForeningProfilFormular() {
             type="text"
             value={visningsProfil.namn}
             onChange={(e) => uppdatera("namn", e.target.value)}
+            placeholder="t.ex. Brf Solsidan"
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
         </label>
