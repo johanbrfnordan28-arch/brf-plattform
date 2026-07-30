@@ -65,13 +65,21 @@ export function ForeningProfilFormular() {
 
   if (!profil || !visningsProfil) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
-        <p className="font-semibold">Ingen förening vald</p>
+      <div className="rounded-xl border border-border bg-surface p-5 text-sm text-muted shadow-sm">
+        <p className="font-semibold text-foreground">Grundmall — ingen kontaktprofil</p>
         <p className="mt-2">
-          <Link href="/prova-gratis" className="font-medium underline">
-            Skapa er förening
-          </Link>{" "}
-          först, eller välj en befintlig förening i menyn uppe till höger.
+          Kontaktuppgifter fylls i per skapad förening. När du är inloggad som
+          grundmall sparar du mallens moduldata med{" "}
+          <strong className="text-foreground">Spara grundmallens data</strong>{" "}
+          nedan.
+        </p>
+        <p className="mt-2">
+          Vill du skapa eller välja en förening? Använd menyn uppe till höger,
+          eller{" "}
+          <Link href="/prova-gratis" className="font-medium text-primary-dark underline">
+            skapa er förening
+          </Link>
+          .
         </p>
       </div>
     );

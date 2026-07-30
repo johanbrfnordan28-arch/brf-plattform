@@ -11,6 +11,9 @@ const GRUNDMALL_DATA_NYCKLAR = [
   "brf-rondering-manadssignering",
   "brf-upphandling-lager",
   "brf-upphandling-schema-bilagor",
+  "brf-upphandling-kategori-dokument",
+  "brf-forenklad-upphandling",
+  "brf-mindre-byggarbeten",
   "brf-arshjul-handelser",
   "brf-grundmall-projekt",
   "brf-tidsplan-bibliotek",
@@ -20,7 +23,15 @@ const GRUNDMALL_DATA_NYCKLAR = [
   "brf-lagenhetsarkiv-v2",
   "brf-medlemmar-renovering",
   "brf-dokumentbank-egna",
-  "brf-upphandling-kategori-dokument",
+  "brf-forenings-dokument",
+  "brf-kommunikation",
+  "brf-entreprenorer-lista",
+  "brf-prislistor",
+  "brf-plan-registry",
+  "brf-sba-arbete",
+  "brf-projektutvardering",
+  "brf-juridik-egna-mappar",
+  "brf-juridik-domar-egna-mappar",
 ] as const;
 
 /** Minimal demo om användaren skapar utan att besökt grundmallen först. */
@@ -68,8 +79,14 @@ function seedMinimalTillForening(foreningId: string): void {
   }
 }
 
-/** Kopierar demo-data från grundmall till ny förening (endast saknade nycklar). */
-export function kopieraGrundmallDataTillForening(foreningId: string): void {
+/**
+ * Kopierar demo-data från grundmall till en förening.
+ * Som standard skrivs bara saknade nycklar — med `skrivOver: true` ersätts allt.
+ */
+export function kopieraGrundmallDataTillForening(
+  foreningId: string,
+  val?: { skrivOver?: boolean },
+): void {
   if (typeof window === "undefined") return;
   if (!foreningId || foreningId === GRUNDMALL_FORENING_ID) return;
 
@@ -79,7 +96,7 @@ export function kopieraGrundmallDataTillForening(foreningId: string): void {
     const kalla = localStorage.getItem(baseKey);
     if (!kalla) continue;
     const malKey = foreningStorageKey(baseKey, foreningId);
-    if (localStorage.getItem(malKey)) continue;
+    if (!val?.skrivOver && localStorage.getItem(malKey)) continue;
     try {
       localStorage.setItem(malKey, kalla);
     } catch {

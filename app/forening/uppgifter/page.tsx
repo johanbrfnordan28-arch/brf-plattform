@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ModulePage } from "@/components/ModulePage";
+import { ForeningDataAdmin } from "@/components/forening/ForeningDataAdmin";
 import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 
@@ -38,6 +39,8 @@ export default function ForeningUppgifterPage() {
       </div>
 
       <ForeningProfilFormular />
+
+      <ForeningDataAdmin />
     </ModulePage>
   );
 }
