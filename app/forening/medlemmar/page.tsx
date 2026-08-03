@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ApartmentArchiveDemo } from "@/components/lagenhetsarkiv/ApartmentArchiveDemo";
 import { RenoveringsAnmalan } from "@/components/medlemmar/RenoveringsAnmalan";
 import { ContentSection } from "@/components/ContentSection";
@@ -65,14 +64,6 @@ export default function ForeningMedlemmarPage() {
         </article>
       </section>
 
-      <p>
-        <Link
-          href="/forening"
-          className="text-sm font-medium text-primary hover:text-primary-dark"
-        >
-          ← Tillbaka till Styrelseflow
-        </Link>
-      </p>
     </ModulePage>
   );
 }

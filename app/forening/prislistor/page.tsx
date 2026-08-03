@@ -1,24 +1,6 @@
-import type { Metadata } from "next";
-import { ModulePage } from "@/components/ModulePage";
-import { PrislistorModul } from "@/components/prislistor/PrislistorModul";
-import { foreningModulMetadata } from "@/lib/forening-metadata-server";
+import { redirect } from "next/navigation";
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    ...(await foreningModulMetadata("Prislistor")),
-    description:
-      "Hantera prislistor från leverantörer — lägg till och uppdatera priser per åtgärdstyp.",
-  };
-}
-
+/** Prislistor är borttagna — priser läggs in manuellt i underhållsplanen. */
 export default function ForeningPrislistorPage() {
-  return (
-    <ModulePage
-      title="Leverantörsprislistor"
-      icon="💰"
-      intro="Lägg in priser från era leverantörer och koppla dem direkt till underhållsåtgärder i planen — kostnadsuppskattningar uppdateras automatiskt utan manuell uträkning."
-    >
-      <PrislistorModul />
-    </ModulePage>
-  );
+  redirect("/forening/underhallsplan");
 }

@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
-import { EntreprenorerRegister } from "@/components/entreprenorer/EntreprenorerRegister";
+import { HusEntreprenorLista } from "@/components/entreprenorer/HusEntreprenorLista";
 import { ModulePage } from "@/components/ModulePage";
-import { TipsPanel } from "@/components/TipsPanel";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
-import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Entreprenörer")),
     description:
-      "Hitta, betygsätt och skicka anbudsförfrågan till godkända entreprenörer — allt på ett ställe.",
+      "Lista entreprenörer som känner huset — egna kontakter för er förening.",
   };
 }
 
@@ -19,11 +17,10 @@ export default function ForeningEntreprenorerPage() {
     <ModulePage
       title="Entreprenörer"
       icon="🏗️"
-      intro="Hitta rätt entreprenör, skicka anbudsförfrågan och betygsätt efter avslutat jobb. Lägg till era egna kontakter och håll leverantörslistan uppdaterad för er förening."
+      intro="Här samlar ni bra entreprenörer som känner huset sedan tidigare. Listan är er egen — lägg till namn, kontaktuppgifter och en kort anteckning."
     >
-      <TipsPanel tips={tips.entreprenorer} />
-      <ContentSection title="Sök och hantera entreprenörer" plain>
-        <EntreprenorerRegister kanRedigera />
+      <ContentSection title="Er lista" plain>
+        <HusEntreprenorLista />
       </ContentSection>
     </ModulePage>
   );

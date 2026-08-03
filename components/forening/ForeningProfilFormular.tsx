@@ -16,7 +16,6 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import {
   appliceraKontaktPaGrund,
   behoverFyllaForeningsuppgifter,
@@ -237,7 +236,7 @@ export function ForeningProfilFormular() {
           href="/forening"
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
         >
-          Tillbaka till {STYRELSEFLOW_NAMN}
+          Till {visningsProfil.namn} huvudsida
         </Link>
       </div>
 

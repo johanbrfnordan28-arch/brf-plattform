@@ -25,7 +25,7 @@ export default async function PlanEditorPage({ params }: Props) {
   const intro =
     planId === GRUNDMALL_PLAN_ID
       ? "Grundmallen används som startpunkt när nya åtgärdsplaner skapas. Lägg till de komponenter och åtgärder som de flesta nya planer bör innehålla."
-      : "Lägg till och ta bort komponenter, planera underhållsåtgärder och koppla prislistor från leverantörer.";
+      : "Lägg till och ta bort komponenter, planera underhållsåtgärder och ange priser manuellt per åtgärd.";
 
   return (
     <ModulePage title={rubrik} icon="📋" intro={intro}>

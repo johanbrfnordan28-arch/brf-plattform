@@ -31,8 +31,8 @@ export const tips: Record<string, TipsPunkt[]> = {
     },
     {
       ikon: "💰",
-      titel: "Koppla priser från leverantörer",
-      text: "Lägg in prislistor under Prislistor och koppla dem direkt till åtgärder i planen — du ser kostnaden i realtid utan manuell uträkning.",
+      titel: "Lägg in priser manuellt",
+      text: "Ange enhetspris eller totalkostnad direkt på varje åtgärd utifrån offert eller egen bedömning — så blir planen er egen kostnadsbild.",
     },
     {
       ikon: "📋",
@@ -97,19 +97,19 @@ export const tips: Record<string, TipsPunkt[]> = {
 
   entreprenorer: [
     {
-      ikon: "✉️",
-      titel: "Skicka anbudsförfrågan direkt",
-      text: "Markera flera entreprenörer med kryssrutan, klicka Skicka anbudsförfrågan och fyll i projekt och datum — e-postmallen öppnas redo att skickas.",
-    },
-    {
-      ikon: "⭐",
-      titel: "Betygsätt efter avslutat jobb",
-      text: "Era omdömen hjälper andra styrelser att välja rätt. Betyg och antal omdömen visas på varje företagskort.",
+      ikon: "🏠",
+      titel: "De som känner huset",
+      text: "Lägg in entreprenörer som arbetat i huset tidigare — skriv en kort anteckning så nästa styrelse vet varför ni litar på dem.",
     },
     {
       ikon: "➕",
       titel: "Egna kontakter",
-      text: "Klicka Lägg till entreprenör för att spara era prefererade hantverkare och servicebolag — de syns bara för er förening.",
+      text: "Klicka Lägg till entreprenör och spara namn, telefon och kategori. Listan syns bara för er förening.",
+    },
+    {
+      ikon: "💰",
+      titel: "Priser i planen",
+      text: "Priser lägger ni in manuellt på åtgärder i underhållsplanen när ni har offert — inte via en gemensam prislista.",
     },
   ],
 

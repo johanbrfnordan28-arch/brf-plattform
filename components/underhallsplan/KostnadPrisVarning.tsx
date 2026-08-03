@@ -8,7 +8,6 @@ type KostnadPrisVarningProps = {
 /** Gemensam text om osäkerhet i kostnadsuppskattningar. */
 export function KostnadPrisVarning({
   kompakt = false,
-  visaPrislistaLank = true,
 }: KostnadPrisVarningProps) {
   return (
     <div
@@ -24,17 +23,10 @@ export function KostnadPrisVarning({
         priser. Ny entreprenör eller materialleverantör, ändrade branschregler
         och myndighetsbeslut kan höja eller sänka kostnadsbilden.
       </p>
-      {visaPrislistaLank && !kompakt && (
+      {!kompakt && (
         <p className="mt-1.5">
-          Använd egna priser från kalkylprogram eller{" "}
-          <a
-            href="/forening/prislistor"
-            className="font-medium text-amber-900 underline hover:text-amber-950"
-          >
-            prislistor i portalen
-          </a>{" "}
-          när ni har offert eller entreprenörsunderlag — justera enhetspris
-          manuellt här.
+          Lägg in egna priser manuellt här när ni har offert eller
+          entreprenörsunderlag — justera enhetspris per åtgärd.
         </p>
       )}
     </div>

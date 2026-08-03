@@ -729,10 +729,10 @@ export function PlanEditorModul({ planId }: Props) {
           ← Tillbaka till planer
         </a>
         <a
-          href="/forening/prislistor"
+          href="/forening/entreprenorer"
           className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary-dark"
         >
-          Prislistor →
+          Entreprenörer →
         </a>
       </div>
     </div>

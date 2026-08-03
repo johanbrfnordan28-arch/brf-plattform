@@ -418,23 +418,19 @@ export function PlanListaModul() {
         </div>
       </section>
 
-      {/* Länk till prislistor */}
       <div className="rounded-xl border border-border bg-surface p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-foreground">Leverantörsprislistor</p>
-            <p className="mt-0.5 text-sm text-muted">
-              Lägg in priser från leverantörer för att koppla åtgärder till
-              aktuella kostnader.
-            </p>
-          </div>
+        <p className="font-semibold text-foreground">Priser per åtgärd</p>
+        <p className="mt-0.5 text-sm text-muted">
+          Lägg in kostnader manuellt på varje åtgärd i planen — utifrån offert
+          eller egen bedömning. Ni kan också samla pålitliga entreprenörer under{" "}
           <a
-            href="/forening/prislistor"
-            className="shrink-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary-dark"
+            href="/forening/entreprenorer"
+            className="font-medium text-primary-dark underline hover:no-underline"
           >
-            Hantera prislistor →
+            Entreprenörer
           </a>
-        </div>
+          .
+        </p>
       </div>
     </div>
   );

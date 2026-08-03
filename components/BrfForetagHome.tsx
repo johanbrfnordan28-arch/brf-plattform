@@ -153,8 +153,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     },
     {
       title: "Entreprenörer",
-      description:
-        "Sök entreprenör för ert projekt — med referenser och betyg från andra föreningar.",
+      description: isForening
+        ? "Lista bra entreprenörer som känner huset — egna kontakter för er förening."
+        : "Sök entreprenör för ert projekt — med referenser och betyg från andra föreningar.",
       href: `${base}/entreprenorer`,
       icon: "🏗️",
     },

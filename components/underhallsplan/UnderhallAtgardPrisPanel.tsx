@@ -111,9 +111,8 @@ export function UnderhallAtgardPrisPanel({
       </legend>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         Ange yta (m²) eller antal (st) — planen räknar ut summan. Riktvärden
-        fylls i som utgångspunkt; justera med offert eller{" "}
-        <strong className="font-medium">prislista</strong>.{" "}
-        {UNDERHALL_BLANDAD_RESERVATION}
+        fylls i som utgångspunkt; justera manuellt med offert eller egen
+        bedömning. {UNDERHALL_BLANDAD_RESERVATION}
       </p>
 
       <div className="mt-3 space-y-4">

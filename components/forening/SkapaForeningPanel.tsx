@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BRF_NAVET_NAMN, STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import { skapaNyForening } from "@/lib/forening-registry";
 import { initieraSkapareSomBehorig } from "@/lib/kund-inloggning";
 import { navigeraTillNyForening } from "@/lib/skapa-forening-navigering";
@@ -207,7 +207,7 @@ export function SkapaForeningPanel({
                 : "Skapar er förening …"}
             </p>
             <p className="mt-1 text-muted">
-              Ni skickas till {STYRELSEFLOW_NAMN} om ett ögonblick.
+              Ni skickas till er förenings huvudsida om ett ögonblick.
             </p>
           </div>
         )}
