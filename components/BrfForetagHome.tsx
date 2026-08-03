@@ -4,7 +4,6 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { GrundmallInloggSektion } from "@/components/forening/GrundmallInloggSektion";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { ForeningsFormationSektion } from "@/components/forening/ForeningsFormationSektion";
-import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
@@ -18,7 +17,7 @@ const featuredPublic = [
     title: "Underhållsplan",
     description:
       "Bygg en 50-årsplan med komponentregister, renoveringshistorik och avsättningsbudget — allt samlat i portalen. Styrelsen har alltid ett aktuellt beslutsunderlag inför stämma och bankkontakter.",
-    href: "/styrelse-login",
+    href: "/underhallsplan",
     icon: "🔧",
     bullets: [
       "50-årsbudget med avsättning genereras automatiskt",
@@ -204,65 +203,33 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </li>
             </ul>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="#foreningsformation"
-                className="brf-knapp-gron px-5 py-3 text-sm"
+                href={PROVA_GRATIS_PATH}
+                className="brf-knapp-gron px-8 py-4 text-base font-semibold shadow-sm sm:text-lg"
               >
-                Skapa er förening — gratis i 30 dagar
+                Pröva gratis
               </Link>
               <Link
-                href="#inloggning"
-                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
+                href="#foreningsformation"
+                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3.5 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6] sm:px-6 sm:text-base"
               >
-                Logga in styrelse
+                Skapa er förening
               </Link>
               <Link
                 href="#intro-film"
-                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
+                className="rounded-lg border border-border bg-surface px-5 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
               >
                 Se filmerna — få prisuppgift
               </Link>
-              <Link
-                href="#fokus"
-                className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
-              >
-                Varför underhåll & upphandling
-              </Link>
             </div>
+            <p className="mt-3 text-sm text-muted">
+              Klicka <strong className="font-medium text-foreground">Pröva gratis</strong>{" "}
+              för att välja en testförening och komma igång direkt — ingen bindning.
+            </p>
           </div>
         </section>
       )}
-
-      {!isForening && (
-        <section
-          id="inloggning"
-          className="scroll-mt-24 border-b border-border bg-surface/80"
-        >
-          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-            <div className="mb-8 max-w-2xl">
-              <p className="text-sm font-semibold text-primary-dark">Inloggning</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Vill ni bara titta först? Välj en testförening
-              </h2>
-              <p className="mt-2 text-muted">
-                Fem demo-föreningar att klicka sig in i — perfekt om ni vill utforska
-                innan ni skapar er egen. Vill ni starta på riktigt? Scrolla till{" "}
-                <a
-                  href="#foreningsformation"
-                  className="font-medium text-primary-dark underline hover:no-underline"
-                >
-                  föreningsformationen
-                </a>{" "}
-                nedan.
-              </p>
-            </div>
-            <StyrelseLoginModul />
-          </div>
-        </section>
-      )}
-
-      {!isForening && <ForeningsFormationSektion />}
 
       {!isForening && (
         <section className="border-b border-border bg-[#eef6f0]/60">
@@ -438,10 +405,13 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </p>
               <Link
                 href={PROVA_GRATIS_PATH}
-                className="brf-knapp-gron mt-6 px-5 py-2.5 text-sm"
+                className="brf-knapp-gron mt-6 px-7 py-3.5 text-base font-semibold shadow-sm"
               >
-                Vi vill pröva gratis i 30 dagar
+                Pröva gratis
               </Link>
+              <p className="mt-2 text-xs text-muted">
+                Välj en testförening och kom igång direkt.
+              </p>
             </div>
             <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -490,6 +460,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </div>
         </section>
       )}
+
+      {!isForening && <ForeningsFormationSektion />}
 
       {!isForening && (
         <section

@@ -12,6 +12,7 @@ import {
   rensaStandardTestForening,
 } from "@/lib/testforeningar";
 import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
+import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 function initial(namn: string): string {
   return namn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
@@ -204,15 +205,15 @@ export function StyrelseLoginModul() {
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
               <code className="flex-1 text-xs font-mono text-foreground">
                 {typeof window !== "undefined"
-                  ? `${window.location.origin}/styrelse-login`
-                  : "/styrelse-login"}
+                  ? `${window.location.origin}${PROVA_GRATIS_PATH}`
+                  : PROVA_GRATIS_PATH}
               </code>
               <button
                 type="button"
                 onClick={() => {
                   if (typeof navigator !== "undefined") {
                     navigator.clipboard.writeText(
-                      `${window.location.origin}/styrelse-login`,
+                      `${window.location.origin}${PROVA_GRATIS_PATH}`,
                     );
                   }
                 }}

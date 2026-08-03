@@ -71,7 +71,7 @@ export default function ArshjulPage() {
           </Link>
           , eller prova i en{" "}
           <Link
-            href="/#inloggning"
+            href="/prova-gratis"
             className="font-medium text-primary-dark underline hover:no-underline"
           >
             testförening
@@ -135,7 +135,7 @@ export default function ArshjulPage() {
             Skapa er förening
           </Link>
           <Link
-            href="/#inloggning"
+            href="/prova-gratis"
             className="rounded-lg border border-border bg-surface px-5 py-2.5 text-sm font-medium text-foreground hover:border-primary/50"
           >
             Prova i testförening

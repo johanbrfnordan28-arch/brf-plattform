@@ -90,10 +90,10 @@ export function FilmDemo({ variant = "public" }: FilmDemoProps) {
             ) : (
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
-                  href="/styrelse-login"
+                  href="/prova-gratis"
                   className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-white/90"
                 >
-                  Prova gratis 30 dagar
+                  Pröva gratis
                 </Link>
                 <Link
                   href="#priser"
