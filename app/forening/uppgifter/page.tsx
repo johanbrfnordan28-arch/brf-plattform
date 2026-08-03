@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ModulePage } from "@/components/ModulePage";
 import { ForeningDataAdmin } from "@/components/forening/ForeningDataAdmin";
 import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
+import { InloggningsBehorigheterPanel } from "@/components/forening/InloggningsBehorigheterPanel";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -46,6 +47,8 @@ export default function ForeningUppgifterPage() {
       </div>
 
       <ForeningProfilFormular />
+
+      <InloggningsBehorigheterPanel />
 
       <ForeningDataAdmin />
     </ModulePage>

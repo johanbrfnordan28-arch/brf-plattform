@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ForeningVaxlare } from "@/components/forening/ForeningVaxlare";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { GRUNDMALL_NAMN } from "@/lib/forening-registry";
+import { rensaInloggningsSession } from "@/lib/kund-inloggning";
 
 const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
@@ -99,8 +100,9 @@ export function ForeningHeader() {
           <ForeningVaxlare />
           <Link
             href="/styrelse-login"
+            onClick={() => rensaInloggningsSession()}
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
-            title="Logga ut och byt förening"
+            title="Logga ut"
           >
             Logga ut
           </Link>

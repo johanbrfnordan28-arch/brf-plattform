@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
-import { GrundmallInloggSektion } from "@/components/forening/GrundmallInloggSektion";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { ForeningsFormationSektion } from "@/components/forening/ForeningsFormationSektion";
 import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
@@ -462,15 +461,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       )}
 
       {!isForening && <ForeningsFormationSektion />}
-
-      {!isForening && (
-        <section
-          id="grundmall-inlogg"
-          className="scroll-mt-24 border-t border-border bg-surface/40 py-12 sm:py-16"
-        >
-          <GrundmallInloggSektion />
-        </section>
-      )}
     </main>
   );
 }

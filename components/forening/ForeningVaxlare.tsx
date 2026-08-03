@@ -13,6 +13,12 @@ import {
   sattAktivForeningId,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { arStandardTestForening } from "@/lib/forening-konstanter";
+import {
+  hittaForeningarForPerson,
+  lasInloggningsSession,
+  rensaInloggningsSession,
+} from "@/lib/kund-inloggning";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { sakraStandardTestForeningar } from "@/lib/testforeningar";
 import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
@@ -34,7 +40,25 @@ export function ForeningVaxlare() {
     sakraStandardTestForeningar();
     const id = lasAktivForeningId();
     setAktivId(id);
-    let lista = listaAllaForeningerForVaxlare();
+    const session = lasInloggningsSession();
+
+    let lista: ForeningProfil[];
+    if (session?.typ === "kund") {
+      // Visa bara föreningar personen har behörighet till — aldrig hela kundkatalogen.
+      lista = hittaForeningarForPerson(session.personnummer);
+    } else if (session?.typ === "anstalld") {
+      // Anställda/support ser aktiv förening, inte en lista över alla kunder.
+      const aktiv = lasForeningProfil(id);
+      lista = aktiv ? [aktiv] : [];
+    } else {
+      lista = listaAllaForeningerForVaxlare().filter(
+        (f) =>
+          f.id === GRUNDMALL_FORENING_ID ||
+          arStandardTestForening(f.id) ||
+          f.id === id,
+      );
+    }
+
     if (id && !lista.some((f) => f.id === id)) {
       const profil = lasForeningProfil(id);
       lista = [
@@ -89,7 +113,7 @@ export function ForeningVaxlare() {
 
   const aktivForening = foreningar.find((f) => f.id === aktivId);
   const aktivNamn = aktivForening?.namn ?? GRUNDMALL_NAMN;
-  const arTest = aktivId !== GRUNDMALL_FORENING_ID;
+  const arTest = arStandardTestForening(aktivId);
   const ini = foreningInitial(aktivNamn, aktivId);
 
   const andraBörjan = foreningar.filter((f) => f.id !== aktivId);
@@ -220,7 +244,11 @@ export function ForeningVaxlare() {
             </button>
             <button
               type="button"
-              onClick={() => { router.push("/styrelse-login"); setÖppen(false); }}
+              onClick={() => {
+                rensaInloggningsSession();
+                router.push("/styrelse-login");
+                setÖppen(false);
+              }}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
             >
               <svg
@@ -236,7 +264,7 @@ export function ForeningVaxlare() {
                   clipRule="evenodd"
                 />
               </svg>
-              Inloggningssida
+              Logga ut
             </button>
           </div>
         </div>

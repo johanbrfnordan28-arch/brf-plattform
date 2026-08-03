@@ -38,10 +38,10 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <Link
-            href="/#foreningsformation"
+            href="/styrelse-login"
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
           >
-            Skapa förening
+            Logga in
           </Link>
           <Link
             href={PROVA_GRATIS_PATH}

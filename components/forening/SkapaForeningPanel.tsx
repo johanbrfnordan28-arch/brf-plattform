@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BRF_NAVET_NAMN, STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { skapaNyForening } from "@/lib/forening-registry";
+import { initieraSkapareSomBehorig } from "@/lib/kund-inloggning";
 import { navigeraTillNyForening } from "@/lib/skapa-forening-navigering";
 
 type Props = {
@@ -49,6 +50,9 @@ export function SkapaForeningPanel({
     setSkapar(true);
     try {
       const profil = skapaNyForening(trimmatNamn);
+      initieraSkapareSomBehorig(profil.id, {
+        namn: profil.kontaktperson || "Styrelseansvarig",
+      });
       setSkapatNamn(profil.namn);
       navigeraTillNyForening(profil);
       window.setTimeout(() => {
