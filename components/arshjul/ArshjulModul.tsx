@@ -17,9 +17,13 @@ import {
   skapaTomHandelse,
   STANDARD_PAMINNELSE_DAGAR,
   type ArshjulHandelse,
-  type ArshjulHandelseTyp,
+  type ArshjulIntervall,
   type ArshjulKategori,
   type ArshjulTillfalle,
+  arFlerarsIntervall,
+  handelseIntervallText,
+  intervallAlternativ,
+  intervallEtiketter,
 } from "@/components/arshjul/arshjul";
 import {
   importeraFranProjekt,
@@ -52,7 +56,7 @@ const exempelHandelser: ArshjulHandelse[] = [
     titel: "Årsstämma",
     beskrivning: "Kallelse, underlag och protokoll.",
     kategori: "stamma",
-    typ: "arlig",
+    intervall: "arlig",
     manad: 4,
     dag: 15,
     paminnelseDagar: [90, 60, 30, 14],
@@ -65,7 +69,7 @@ const exempelHandelser: ArshjulHandelse[] = [
     titel: "Bokslut & budget",
     beskrivning: "Ekonomisk plan och budget inför nästa år.",
     kategori: "ekonomi",
-    typ: "arlig",
+    intervall: "arlig",
     manad: 11,
     dag: 30,
     paminnelseDagar: [60, 30, 14],
@@ -159,7 +163,7 @@ export function ArshjulModul() {
   function markeraKlar(id: string, ar?: number) {
     const h = handelser.find((x) => x.id === id);
     if (!h) return;
-    if (h.typ === "intervall" && ar != null) {
+    if (arFlerarsIntervall(h.intervall) && ar != null) {
       uppdateraHandelse(id, { senastKlarAr: ar, klar: false });
     } else {
       uppdateraHandelse(id, { klar: true });
@@ -373,23 +377,42 @@ export function ArshjulModul() {
               </span>
             </label>
             <label className="block">
-              <span className="text-sm font-medium">Typ</span>
+              <span className="text-sm font-medium">Intervall</span>
               <select
-                value={form.typ}
-                onChange={(e) =>
-                  setForm({ ...form, typ: e.target.value as ArshjulHandelseTyp })
-                }
+                value={form.intervall}
+                onChange={(e) => {
+                  const intervall = e.target.value as ArshjulIntervall;
+                  setForm({
+                    ...form,
+                    intervall,
+                    ...(intervall === "veckovis" || intervall === "engang"
+                      ? {}
+                      : {
+                          manad: form.manad ?? 1,
+                          dag: form.dag ?? 1,
+                        }),
+                    ...(arFlerarsIntervall(intervall)
+                      ? { startAr: form.startAr ?? innevarandeAr }
+                      : {}),
+                  });
+                }}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
-                <option value="engang">Engång (datum)</option>
-                <option value="arlig">Årligen (samma månad)</option>
-                <option value="intervall">Intervall (t.ex. vart 6:e år)</option>
+                {intervallAlternativ.map((i) => (
+                  <option key={i} value={i}>
+                    {intervallEtiketter[i]}
+                  </option>
+                ))}
               </select>
             </label>
 
-            {form.typ === "engang" && (
+            {(form.intervall === "engang" || form.intervall === "veckovis") && (
               <label className="block sm:col-span-2">
-                <span className="text-sm font-medium">Datum</span>
+                <span className="text-sm font-medium">
+                  {form.intervall === "veckovis"
+                    ? "Startdatum (första tillfället)"
+                    : "Datum"}
+                </span>
                 <input
                   type="date"
                   required
@@ -400,24 +423,33 @@ export function ArshjulModul() {
               </label>
             )}
 
-            {(form.typ === "arlig" || form.typ === "intervall") && (
+            {(form.intervall === "manadsvis" ||
+              form.intervall === "kvartalsvis" ||
+              form.intervall === "arlig" ||
+              arFlerarsIntervall(form.intervall)) && (
               <>
-                <label className="block">
-                  <span className="text-sm font-medium">Månad</span>
-                  <select
-                    value={form.manad ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, manad: Number(e.target.value) })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  >
-                    {manadsnamn.map((namn, i) => (
-                      <option key={namn} value={i + 1}>
-                        {namn}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {form.intervall !== "manadsvis" && (
+                  <label className="block">
+                    <span className="text-sm font-medium">
+                      {form.intervall === "kvartalsvis"
+                        ? "Första månad i kvartalet"
+                        : "Månad"}
+                    </span>
+                    <select
+                      value={form.manad ?? 1}
+                      onChange={(e) =>
+                        setForm({ ...form, manad: Number(e.target.value) })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((namn, i) => (
+                        <option key={namn} value={i + 1}>
+                          {namn}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label className="block">
                   <span className="text-sm font-medium">Dag i månaden</span>
                   <input
@@ -434,38 +466,24 @@ export function ArshjulModul() {
               </>
             )}
 
-            {form.typ === "intervall" && (
-              <>
-                <label className="block">
-                  <span className="text-sm font-medium">Första / nästa år</span>
-                  <input
-                    type="number"
-                    min={innevarandeAr - 5}
-                    max={innevarandeAr + 50}
-                    value={form.startAr ?? innevarandeAr}
-                    onChange={(e) =>
-                      setForm({ ...form, startAr: Number(e.target.value) })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-sm font-medium">Intervall (år)</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={form.intervallAr ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, intervallAr: Number(e.target.value) || 1 })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                  <span className="mt-1 block text-xs text-muted">
-                    t.ex. 3 för OVK, 10 för radon, 6 för energideklaration
-                  </span>
-                </label>
-              </>
+            {arFlerarsIntervall(form.intervall) && (
+              <label className="block">
+                <span className="text-sm font-medium">Första / nästa år</span>
+                <input
+                  type="number"
+                  min={innevarandeAr - 5}
+                  max={innevarandeAr + 50}
+                  value={form.startAr ?? innevarandeAr}
+                  onChange={(e) =>
+                    setForm({ ...form, startAr: Number(e.target.value) })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+                <span className="mt-1 block text-xs text-muted">
+                  {intervallEtiketter[form.intervall]} — t.ex. OVK vart 6:e år,
+                  radon vart 10:e år
+                </span>
+              </label>
             )}
 
             <label className="block sm:col-span-2">
@@ -587,11 +605,7 @@ export function ArshjulModul() {
                 )}
                 <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
                 <span className="text-xs text-muted">
-                  {h.typ === "engang" && h.datum
-                    ? formatDatumKort(h.datum)
-                    : h.typ === "arlig"
-                      ? `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`
-                      : `Vart ${h.intervallAr}:e år från ${h.startAr}`}
+                  {handelseIntervallText(h)}
                 </span>
                 <button
                   type="button"
