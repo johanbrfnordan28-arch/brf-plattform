@@ -83,6 +83,10 @@ export const SKADE_CHECKLISTA: { id: string; text: string }[] = [
     text: "Identifiera berörda lägenheter — t.ex. vid badrumsskada på plan 4 ofta lägenheter under.",
   },
   {
+    id: "jav",
+    text: "Kontrollera jäv — drabbade styrelsemedlemmar deltar inte i beslut som gynnar dem.",
+  },
+  {
     id: "medlem-forsakring",
     text: "Informera berörda medlemmar att anmäla till sitt eget försäkringsbolag.",
   },
@@ -91,12 +95,20 @@ export const SKADE_CHECKLISTA: { id: string; text: string }[] = [
     text: "Anmäl till föreningens fastighetsförsäkring när föreningens ansvar kan beröras.",
   },
   {
+    id: "extern-hjalp",
+    text: "Bedöm om extern hjälp behövs — besiktningsman och/eller skadeutredare.",
+  },
+  {
     id: "orsak",
-    text: "Bedöm orsak: förslitning/underhåll, entreprenör, medlem eller annat — dokumentera bedömningen.",
+    text: "Bedöm orsak: förslitning/underhåll, entreprenör, medlem eller annat — dokumentera.",
   },
   {
     id: "entreprenor",
     text: "Om entreprenör kan vara orsak: notera köpare, garanti (ofta 2 år) och ansvarstid (ofta 10 år).",
+  },
+  {
+    id: "policy-stamma",
+    text: "Vid kniviga fall: överväg arbetsgrupp eller låt stämman besluta enligt föreningens policy.",
   },
   {
     id: "historik",

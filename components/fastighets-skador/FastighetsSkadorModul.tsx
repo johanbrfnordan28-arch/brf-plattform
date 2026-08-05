@@ -191,52 +191,56 @@ export function FastighetsSkadorModul() {
       <div className="space-y-4">
         <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/50 p-4 sm:p-5">
           <p className="text-sm font-semibold text-foreground">
-            {info.dokumentation.titel}
+            Vägledning för styrelsen
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            {info.dokumentation.text}
-          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{info.ingress}</p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-border bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-sm font-semibold text-foreground">
-              {info.foljdskador.titel}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
-              {info.foljdskador.text}
-            </p>
-          </div>
-          <div className="rounded-xl border border-border bg-white p-4 shadow-sm sm:p-5">
-            <p className="text-sm font-semibold text-foreground">
-              {info.orsak.titel}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
-              {info.orsak.text}
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-white p-4 shadow-sm sm:p-5">
-          <p className="text-sm font-semibold text-foreground">
-            {info.forsakring.titel}
-          </p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted">
-            {info.forsakring.punkter.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 sm:p-5">
-          <p className="text-sm font-semibold text-amber-950">
-            {info.entreprenor.titel}
-          </p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-amber-950/90">
-            {info.entreprenor.punkter.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
+          {info.block.map((b) => {
+            const accent =
+              b.titel === "Ta in extern hjälp" ||
+              b.titel === "Opartiskhet och jäv" ||
+              b.titel === "Policy, stämma och arbetsgrupp";
+            return (
+              <div
+                key={b.titel}
+                className={`rounded-xl border p-4 shadow-sm sm:p-5 ${
+                  accent
+                    ? "border-amber-200/80 bg-amber-50/50 lg:col-span-2"
+                    : "border-border bg-white"
+                }`}
+              >
+                <p
+                  className={`text-sm font-semibold ${
+                    accent ? "text-amber-950" : "text-foreground"
+                  }`}
+                >
+                  {b.titel}
+                </p>
+                {b.text && (
+                  <p
+                    className={`mt-2 text-sm leading-relaxed ${
+                      accent ? "text-amber-950/90" : "text-muted"
+                    }`}
+                  >
+                    {b.text}
+                  </p>
+                )}
+                {b.punkter && b.punkter.length > 0 && (
+                  <ul
+                    className={`mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed ${
+                      accent ? "text-amber-950/90" : "text-muted"
+                    }`}
+                  >
+                    {b.punkter.map((p) => (
+                      <li key={p}>{p}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

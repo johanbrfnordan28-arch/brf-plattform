@@ -17,7 +17,7 @@ export default function ForeningFastighetsSkadorPage() {
     <ModulePage
       title="Fastighetsskador"
       icon="🩹"
-      intro="Dokumentation, historik och spårbarhet är avgörande när skador inträffar — och långt efteråt. Här registrerar styrelsen skador, går igenom checklistan och sparar uppföljningen per förening."
+      intro="När skador uppstår behövs både snabb handling och tydliga spelregler. Här finns vägledning om försäkring, jäv, extern hjälp och stämma — plus checklista och historik per förening."
     >
       <ContentSection title="Vägledning, checklista och register" plain>
         <FastighetsSkadorModul />
