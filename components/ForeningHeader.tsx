@@ -45,6 +45,11 @@ const nav = [
     aktivPa: (p: string) => p.startsWith("/forening/entreprenorer"),
   },
   {
+    href: "/forening/fastighets-skador",
+    label: "Fastighetsskador",
+    aktivPa: (p: string) => p.startsWith("/forening/fastighets-skador"),
+  },
+  {
     href: "/forening/kommunikation",
     label: "Kommunikation",
     aktivPa: (p: string) => p.startsWith("/forening/kommunikation"),

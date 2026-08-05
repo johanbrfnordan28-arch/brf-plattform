@@ -27,6 +27,7 @@ const GRUNDMALL_DATA_NYCKLAR = [
   "brf-kommunikation",
   "brf-entreprenorer-lista",
   "brf-hus-entreprenorer",
+  "brf-fastighets-skador",
   "brf-prislistor",
   "brf-plan-registry",
   "brf-sba-arbete",

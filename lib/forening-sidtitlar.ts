@@ -13,6 +13,7 @@ export const FORENING_MODUL_TITLAR: Record<string, string> = {
   "/forening/energi": "Energi & drift",
   "/forening/upphandling": "Upphandling",
   "/forening/entreprenorer": "Entreprenörer",
+  "/forening/fastighets-skador": "Fastighetsskador",
   "/forening/rondering": "Rondering & avvikelser",
   "/forening/guider": "Guider & tips",
 };

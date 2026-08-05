@@ -159,6 +159,17 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       href: `${base}/entreprenorer`,
       icon: "🏗️",
     },
+    ...(isForening
+      ? [
+          {
+            title: "Fastighetsskador",
+            description:
+              "Dokumentera skador med checklista, försäkringstips och spårbar historik.",
+            href: `${base}/fastighets-skador`,
+            icon: "🩹",
+          },
+        ]
+      : []),
   ];
 
   return (
