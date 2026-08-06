@@ -24,10 +24,10 @@ import {
   manadsnamn,
   markeraTillfalleKlar,
   motesTypAlternativ,
+  myndighetskravAlternativ,
   normaliseraHandelse,
-  skapaOvkDubbelHandelser,
+  ovrigtAlternativ,
   skapaTomHandelse,
-  STANDARD_PAMINNELSE_DAGAR,
   STANDARD_PLANERING_AR_FRAM,
   stallInTillfalle,
   taBortTillfallePermanent,
@@ -44,7 +44,7 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 type Vy = "arshjul" | "paminnelser";
-type SnabbTyp = "mote" | "ovk" | "atgard";
+type SnabbTyp = "mote" | "myndighetskrav" | "ovrigt";
 
 function lasHandelser(): ArshjulHandelse[] {
   if (typeof window === "undefined") return [];
@@ -121,13 +121,17 @@ export function ArshjulModul() {
   const [planTill, setPlanTill] = useState(kommandeAr);
   const [hoppaSemester, setHoppaSemester] = useState(true);
 
-  // OVK (en enhet)
-  const [ovkVerksamhetAr, setOvkVerksamhetAr] = useState(innevarandeAr);
-  const [ovkBostadAr, setOvkBostadAr] = useState(innevarandeAr + 3);
-
-  // Övrig åtgärd
-  const [ovrigtTitel, setOvrigtTitel] = useState("");
-  const [ovrigtManad, setOvrigtManad] = useState(aktuellManad);
+  // Myndighetskrav / övrigt
+  const [kravTypId, setKravTypId] = useState("ovk_3");
+  const [kravTitel, setKravTitel] = useState("OVK (3 år)");
+  const [kravBeskrivning, setKravBeskrivning] = useState(
+    "Obligatorisk ventilationskontroll — ofta verksamheter.",
+  );
+  const [ovrigtTypId, setOvrigtTypId] = useState("staddag");
+  const [ovrigtTitel, setOvrigtTitel] = useState("Städdag");
+  const [ovrigtBeskrivning, setOvrigtBeskrivning] = useState(
+    "Gemensam städ- och ordningsdag.",
+  );
 
   // Agenda på möte/månad
   const [agendaMoteId, setAgendaMoteId] = useState<string | null>(null);
@@ -183,12 +187,51 @@ export function ArshjulModul() {
     const typ = motesTypAlternativ.find((t) => t.id === id);
     if (!typ) return;
     if (id !== "eget") setMotesTitel(typ.etikett);
-    else if (!motesTitel || motesTypAlternativ.some((t) => t.etikett === motesTitel)) {
+    else if (
+      !motesTitel ||
+      motesTypAlternativ.some((t) => t.etikett === motesTitel)
+    ) {
       setMotesTitel("");
     }
     setIntervall(typ.standardIntervall);
     if (typ.standardManad) setManad(typ.standardManad);
     setHoppaSemester(Boolean(typ.hoppaSemester));
+  }
+
+  function valjKravTyp(id: string) {
+    setKravTypId(id);
+    const typ = myndighetskravAlternativ.find((t) => t.id === id);
+    if (!typ) return;
+    if (id !== "eget") {
+      setKravTitel(typ.etikett);
+      setKravBeskrivning(typ.beskrivning ?? "");
+    } else {
+      setKravTitel("");
+      setKravBeskrivning(typ.beskrivning ?? "");
+    }
+    setIntervall(typ.standardIntervall);
+    if (typ.standardManad) setManad(typ.standardManad);
+    setStartAr(innevarandeAr);
+  }
+
+  function valjOvrigtTyp(id: string) {
+    setOvrigtTypId(id);
+    const typ = ovrigtAlternativ.find((t) => t.id === id);
+    if (!typ) return;
+    if (id !== "eget") {
+      setOvrigtTitel(typ.etikett);
+      setOvrigtBeskrivning(typ.beskrivning ?? "");
+    } else {
+      setOvrigtTitel("");
+      setOvrigtBeskrivning("");
+    }
+    setIntervall(typ.standardIntervall);
+    if (typ.standardManad) setManad(typ.standardManad);
+    if (typ.standardIntervall === "engang") {
+      setDatum(
+        `${valtAr}-${String(typ.standardManad ?? aktuellManad).padStart(2, "0")}-15`,
+      );
+    }
   }
 
   const grupper = useMemo(() => grupperaHandelser(handelser), [handelser]);
@@ -263,37 +306,67 @@ export function ArshjulModul() {
     );
   }
 
-  function skapaOvk() {
-    const styrelse = moten[0];
-    const nya = skapaOvkDubbelHandelser({
-      startArVerksamhet: ovkVerksamhetAr,
-      startArBostader: ovkBostadAr,
-      koppladTillHandelseId: styrelse?.id,
-      kopplaTillMotesAr: innevarandeAr,
-    });
-    setHandelser((cur) => [...cur, ...nya]);
+  function skapaMyndighetskrav() {
+    const typ = myndighetskravAlternativ.find((t) => t.id === kravTypId);
+    const titel =
+      kravTypId === "eget"
+        ? kravTitel.trim()
+        : kravTitel.trim() || typ?.etikett || "Myndighetskrav";
+    if (!titel) {
+      setMeddelande("Ange namn på myndighetskravet.");
+      return;
+    }
+    const bas: Partial<ArshjulHandelse> = {
+      titel,
+      kategori: typ?.kategori ?? "besiktning",
+      underkategori: "Myndighetskrav",
+      beskrivning: kravBeskrivning.trim(),
+      intervall,
+      paminnelseDagar: [365, 180, 90, 30],
+      manad,
+      dag,
+    };
+    if (arFlerarsIntervall(intervall)) {
+      bas.startAr = startAr;
+    }
+    if (intervall === "engang") {
+      bas.datum = datum;
+    }
+    const h = skapaTomHandelse(bas);
+    setHandelser((cur) => [...cur, h]);
     setSkapaOppen(false);
-    setMeddelande(
-      styrelse
-        ? "OVK tillagd (verksamheter + bostäder) och kopplad till styrelsemöte."
-        : "OVK tillagd (verksamheter + bostäder) som en enhet.",
-    );
+    setMeddelande(`${titel} tillagt med påminnelser.`);
   }
 
   function skapaOvrigt() {
-    const titel = ovrigtTitel.trim();
-    if (!titel) return;
-    const h = skapaTomHandelse({
+    const typ = ovrigtAlternativ.find((t) => t.id === ovrigtTypId);
+    const titel =
+      ovrigtTypId === "eget"
+        ? ovrigtTitel.trim()
+        : ovrigtTitel.trim() || typ?.etikett || "Övrigt";
+    if (!titel) {
+      setMeddelande("Ange namn.");
+      return;
+    }
+    const bas: Partial<ArshjulHandelse> = {
       titel,
       kategori: "ovrigt",
-      intervall: "engang",
-      datum: `${valtAr}-${String(ovrigtManad).padStart(2, "0")}-15`,
-      paminnelseDagar: [...STANDARD_PAMINNELSE_DAGAR],
-    });
+      underkategori: "Övrigt",
+      beskrivning: ovrigtBeskrivning.trim(),
+      intervall,
+      paminnelseDagar: [60, 30, 14],
+      manad,
+      dag,
+      planerasFranAr: planFran,
+      planerasTillAr: planTill,
+    };
+    if (intervall === "engang" || intervall === "veckovis") {
+      bas.datum = datum;
+    }
+    const h = skapaTomHandelse(bas);
     setHandelser((cur) => [...cur, h]);
-    setOvrigtTitel("");
     setSkapaOppen(false);
-    setMeddelande(`${titel} tillagd.`);
+    setMeddelande(`${titel} tillagt.`);
   }
 
   function laggTillAgenda() {
@@ -429,8 +502,9 @@ export function ArshjulModul() {
     <div className="space-y-5">
       <div className="max-w-2xl space-y-2">
         <p className="text-sm text-muted">
-          Lägg till möten med intervall och påminnelser — styrelse, bygg,
-          ekonomi, årsstämma m.m. Välj månad för punkter. OVK läggs som en enhet.
+          Lägg till möten, myndighetskrav eller övrigt — med intervall och
+          påminnelser. Alla tre har också <strong>Lägg till</strong> för egna
+          poster.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -484,14 +558,19 @@ export function ArshjulModul() {
             {(
               [
                 ["mote", "Möte"],
-                ["ovk", "OVK"],
-                ["atgard", "Åtgärd"],
+                ["myndighetskrav", "Myndighetskrav"],
+                ["ovrigt", "Övrigt"],
               ] as const
             ).map(([id, label]) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => setSnabbTyp(id)}
+                onClick={() => {
+                  setSnabbTyp(id);
+                  if (id === "mote") valjMotesTyp(motesTypId);
+                  if (id === "myndighetskrav") valjKravTyp(kravTypId);
+                  if (id === "ovrigt") valjOvrigtTyp(ovrigtTypId);
+                }}
                 className={`rounded-full px-3 py-1.5 text-sm ${
                   snabbTyp === id
                     ? "bg-primary text-white"
@@ -532,6 +611,11 @@ export function ArshjulModul() {
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
                 </label>
+              )}
+              {motesTypId === "eget" && (
+                <p className="text-xs text-muted">
+                  Eget möte — välj intervall och datum nedan.
+                </p>
               )}
 
               <label className="block text-sm">
@@ -716,72 +800,230 @@ export function ArshjulModul() {
             </div>
           )}
 
-          {snabbTyp === "ovk" && (
-            <div className="space-y-3">
-              <p className="text-xs text-muted">
-                OVK som en enhet: verksamheter (3 år) och bostäder (6 år).
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm">
-                  Verksamheter — nästa år
-                  <input
-                    type="number"
-                    value={ovkVerksamhetAr}
-                    onChange={(e) => setOvkVerksamhetAr(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block text-sm">
-                  Bostäder — nästa år
-                  <input
-                    type="number"
-                    value={ovkBostadAr}
-                    onChange={(e) => setOvkBostadAr(Number(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                </label>
-              </div>
-              <button
-                type="button"
-                onClick={skapaOvk}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-              >
-                Lägg till OVK
-              </button>
-            </div>
-          )}
-
-          {snabbTyp === "atgard" && (
+          {snabbTyp === "myndighetskrav" && (
             <div className="space-y-3">
               <label className="block text-sm">
-                Titel
-                <input
-                  value={ovrigtTitel}
-                  onChange={(e) => setOvrigtTitel(e.target.value)}
-                  placeholder="t.ex. SBA, radon"
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block text-sm">
-                Månad {valtAr}
+                Typ av myndighetskrav
                 <select
-                  value={ovrigtManad}
-                  onChange={(e) => setOvrigtManad(Number(e.target.value))}
+                  value={kravTypId}
+                  onChange={(e) => valjKravTyp(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                 >
-                  {manadsnamn.map((n, i) => (
-                    <option key={n} value={i + 1}>
-                      {n}
+                  {myndighetskravAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
                     </option>
                   ))}
                 </select>
               </label>
+              {kravTypId === "eget" && (
+                <label className="block text-sm">
+                  Namn
+                  <input
+                    value={kravTitel}
+                    onChange={(e) => setKravTitel(e.target.value)}
+                    placeholder="t.ex. Hissbesiktning"
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {(kravBeskrivning || kravTypId === "eget") && (
+                <label className="block text-sm">
+                  Anteckning
+                  <textarea
+                    value={kravBeskrivning}
+                    onChange={(e) => setKravBeskrivning(e.target.value)}
+                    rows={2}
+                    placeholder={
+                      kravTypId === "sba"
+                        ? "Krav: dokumentation"
+                        : "Valfri beskrivning"
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {kravTypId === "sba" && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  Systematisk brandskyddskontroll ska göras varje år. Kravet är
+                  dokumentation.
+                </p>
+              )}
+              <label className="block text-sm">
+                Intervall
+                <select
+                  value={intervall}
+                  onChange={(e) =>
+                    setIntervall(e.target.value as ArshjulIntervall)
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {intervallAlternativ.map((i) => (
+                    <option key={i} value={i}>
+                      {intervallEtiketter[i]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {(intervall === "engang" || intervall === "veckovis") && (
+                <label className="block text-sm">
+                  Datum
+                  <input
+                    type="date"
+                    value={datum}
+                    onChange={(e) => setDatum(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {(intervall === "arlig" ||
+                arFlerarsIntervall(intervall) ||
+                intervall === "manadsvis" ||
+                intervall === "kvartalsvis") && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Månad
+                    <select
+                      value={manad}
+                      onChange={(e) => setManad(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((n, i) => (
+                        <option key={n} value={i + 1}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Dag
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={dag}
+                      onChange={(e) => setDag(Number(e.target.value) || 1)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
+              {arFlerarsIntervall(intervall) && (
+                <label className="block text-sm">
+                  Första / nästa år
+                  <input
+                    type="number"
+                    value={startAr}
+                    onChange={(e) => setStartAr(Number(e.target.value))}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              <p className="text-xs text-muted">
+                Påminnelser: 365, 180, 90 och 30 dagar före.
+              </p>
+              <button
+                type="button"
+                onClick={skapaMyndighetskrav}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              >
+                Lägg till myndighetskrav
+              </button>
+            </div>
+          )}
+
+          {snabbTyp === "ovrigt" && (
+            <div className="space-y-3">
+              <label className="block text-sm">
+                Typ
+                <select
+                  value={ovrigtTypId}
+                  onChange={(e) => valjOvrigtTyp(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {ovrigtAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {ovrigtTypId === "eget" && (
+                <label className="block text-sm">
+                  Namn
+                  <input
+                    value={ovrigtTitel}
+                    onChange={(e) => setOvrigtTitel(e.target.value)}
+                    placeholder="t.ex. Lekplatsdag"
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              <label className="block text-sm">
+                Intervall
+                <select
+                  value={intervall}
+                  onChange={(e) =>
+                    setIntervall(e.target.value as ArshjulIntervall)
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {intervallAlternativ.map((i) => (
+                    <option key={i} value={i}>
+                      {intervallEtiketter[i]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {(intervall === "engang" || intervall === "veckovis") && (
+                <label className="block text-sm">
+                  Datum
+                  <input
+                    type="date"
+                    value={datum}
+                    onChange={(e) => setDatum(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {(intervall === "arlig" ||
+                arFlerarsIntervall(intervall) ||
+                intervall === "manadsvis" ||
+                intervall === "kvartalsvis") && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Månad
+                    <select
+                      value={manad}
+                      onChange={(e) => setManad(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((n, i) => (
+                        <option key={n} value={i + 1}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Dag
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={dag}
+                      onChange={(e) => setDag(Number(e.target.value) || 1)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={skapaOvrigt}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               >
-                Lägg till åtgärd
+                Lägg till
               </button>
             </div>
           )}
@@ -995,10 +1237,10 @@ export function ArshjulModul() {
 
           <ul className="space-y-2">
             {grupper.map(({ nyckel, poster }) => {
-              const arOvk =
-                poster.length > 1 ||
+              const arMyndighet =
+                poster.every((p) => p.underkategori === "Myndighetskrav") ||
                 Boolean(poster[0]?.gruppNyckel?.startsWith("ovk"));
-              if (arOvk && poster.length >= 1) {
+              if (arMyndighet && poster.length >= 1) {
                 return (
                   <li
                     key={nyckel}
@@ -1006,11 +1248,13 @@ export function ArshjulModul() {
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="font-semibold text-sky-950">OVK</p>
+                        <p className="font-semibold text-sky-950">
+                          Myndighetskrav
+                        </p>
                         <ul className="mt-1 space-y-0.5 text-xs text-sky-900">
                           {poster.map((p) => (
                             <li key={p.id}>
-                              {p.underkategori ?? p.titel}
+                              {p.titel}
                               {" · "}
                               {handelseIntervallText(p)}
                               {p.startAr ? ` · nästa ${p.startAr}` : ""}
@@ -1018,13 +1262,23 @@ export function ArshjulModul() {
                           ))}
                         </ul>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => taBortGrupp(poster)}
-                        className="text-xs text-muted hover:text-red-700"
-                      >
-                        Ta bort
-                      </button>
+                      {poster.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => taBortGrupp(poster)}
+                          className="text-xs text-muted hover:text-red-700"
+                        >
+                          Ta bort
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => taBort(poster[0]!.id)}
+                          className="text-xs text-muted hover:text-red-700"
+                        >
+                          Ta bort
+                        </button>
+                      )}
                     </div>
                   </li>
                 );
@@ -1041,7 +1295,9 @@ export function ArshjulModul() {
                     <span
                       className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}
                     >
-                      {kategoriEtiketter[h.kategori]}
+                      {h.underkategori === "Övrigt"
+                        ? "Övrigt"
+                        : kategoriEtiketter[h.kategori]}
                     </span>
                     <span className="flex-1 font-medium">{h.titel}</span>
                     <span className="text-xs text-muted">

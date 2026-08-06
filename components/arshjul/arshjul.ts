@@ -242,6 +242,119 @@ export const motesTypAlternativ: {
   },
 ];
 
+/** Myndighetskrav (tidigare OVK-knappen) med intervall och påminnelser. */
+export const myndighetskravAlternativ: {
+  id: string;
+  etikett: string;
+  standardIntervall: ArshjulIntervall;
+  standardManad?: number;
+  beskrivning?: string;
+  kategori?: ArshjulKategori;
+}[] = [
+  {
+    id: "ovk_3",
+    etikett: "OVK (3 år)",
+    standardIntervall: "vart_3_ar",
+    standardManad: 6,
+    beskrivning: "Obligatorisk ventilationskontroll — ofta verksamheter.",
+    kategori: "besiktning",
+  },
+  {
+    id: "ovk_6",
+    etikett: "OVK (6 år)",
+    standardIntervall: "vart_6_ar",
+    standardManad: 6,
+    beskrivning: "Obligatorisk ventilationskontroll — ofta bostäder.",
+    kategori: "besiktning",
+  },
+  {
+    id: "radon",
+    etikett: "Radonmätning (10 år)",
+    standardIntervall: "vart_10_ar",
+    standardManad: 10,
+    beskrivning: "Radonmätning enligt krav — vanligen vart 10:e år.",
+    kategori: "besiktning",
+  },
+  {
+    id: "energideklaration",
+    etikett: "Energideklaration (10 år)",
+    standardIntervall: "vart_10_ar",
+    standardManad: 9,
+    beskrivning: "Energideklaration — giltig i 10 år.",
+    kategori: "deklaration",
+  },
+  {
+    id: "sba",
+    etikett: "Systematisk brandskyddskontroll (årligen)",
+    standardIntervall: "arlig",
+    standardManad: 3,
+    beskrivning: "Krav: dokumentation av systematisk brandskyddskontroll (SBA).",
+    kategori: "besiktning",
+  },
+  {
+    id: "eget",
+    etikett: "Lägg till myndighetskrav",
+    standardIntervall: "arlig",
+    standardManad: 6,
+    beskrivning: "Eget myndighetskrav med valfritt intervall.",
+    kategori: "besiktning",
+  },
+];
+
+/** Övrigt — sociala/gemensamma aktiviteter. */
+export const ovrigtAlternativ: {
+  id: string;
+  etikett: string;
+  standardIntervall: ArshjulIntervall;
+  standardManad?: number;
+  beskrivning?: string;
+}[] = [
+  {
+    id: "staddag",
+    etikett: "Städdag",
+    standardIntervall: "arlig",
+    standardManad: 5,
+    beskrivning: "Gemensam städ- och ordningsdag.",
+  },
+  {
+    id: "gardsfest",
+    etikett: "Gårdsfest",
+    standardIntervall: "arlig",
+    standardManad: 8,
+    beskrivning: "Gemensam fest på gården.",
+  },
+  {
+    id: "grillkvall",
+    etikett: "Grillkväll",
+    standardIntervall: "arlig",
+    standardManad: 6,
+  },
+  {
+    id: "bastukvall",
+    etikett: "Bastukväll",
+    standardIntervall: "arlig",
+    standardManad: 10,
+  },
+  {
+    id: "arbetsdag",
+    etikett: "Arbetsdag / underhållsdag",
+    standardIntervall: "arlig",
+    standardManad: 4,
+  },
+  {
+    id: "julpynt",
+    etikett: "Julpyntning",
+    standardIntervall: "arlig",
+    standardManad: 12,
+  },
+  {
+    id: "eget",
+    etikett: "Lägg till",
+    standardIntervall: "engang",
+    beskrivning: "Egen aktivitet eller övrig händelse.",
+  },
+];
+
 export type ArsPlaneringSammanfattning = {
   ar: number;
   tillfallen: number;
