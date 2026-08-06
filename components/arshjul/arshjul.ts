@@ -103,6 +103,8 @@ export const foreslagnMotesPunkter: string[] = [
 export const foreslagnUnderkategorier: string[] = [
   "Projekteringsmöte",
   "OVK Besiktning",
+  "OVK bostäder",
+  "OVK verksamheter",
   "Statusbesiktning",
   "Slutbesiktning",
   "Garantibesiktning",
@@ -111,6 +113,33 @@ export const foreslagnUnderkategorier: string[] = [
   "Radonmätning",
   "Upphandling",
 ];
+
+/** Standard: planera innevarande år + kommande år (inte hela tidslinjen). */
+export const STANDARD_PLANERING_AR_FRAM = 1;
+
+/** Intervall som behöver slutår så möten inte fyller tidslinjen i flera år. */
+export function behoverPlaneringsperiod(intervall: ArshjulIntervall): boolean {
+  return (
+    intervall === "veckovis" ||
+    intervall === "manadsvis" ||
+    intervall === "manadsvis_veckodag" ||
+    intervall === "kvartalsvis"
+  );
+}
+
+export function arMotesKategori(kategori: ArshjulKategori): boolean {
+  return kategori === "styrelsemote" || kategori === "byggmote";
+}
+
+export type ArsPlaneringSammanfattning = {
+  ar: number;
+  tillfallen: number;
+  installda: number;
+  klara: number;
+  oppnaPunkter: number;
+  koppladeAtgarder: number;
+  besiktningar: number;
+};
 
 export type ArshjulHandelse = {
   id: string;
@@ -129,6 +158,24 @@ export type ArshjulHandelse = {
   dag?: number;
   /** Flerårsintervall — första planerade år. */
   startAr?: number;
+  /**
+   * Första år återkommande möten/händelser ska läggas in.
+   * T.ex. styrelsemöte bara innevarande år.
+   */
+  planerasFranAr?: number;
+  /**
+   * Sista år återkommande möten/händelser ska läggas in.
+   * Saknas för månads-/veckomöten → samma år som planerasFranAr.
+   */
+  planerasTillAr?: number;
+  /**
+   * Koppla besiktning/åtgärd till en mötes-serie (styrelse- eller byggmöte).
+   * Påminnelse visas på möten även om besiktningsdatum är nästa år,
+   * och även innan konkreta mötesdatum är inlagda.
+   */
+  koppladTillHandelseId?: string;
+  /** År då åtgärden ska tas upp på kopplade möten (ofta innevarande år). */
+  kopplaTillMotesAr?: number;
   /** Synkas från intervall (3/6/10) för kompatibilitet. */
   intervallAr?: number;
   /** Månadsvis vecka + veckodag — t.ex. 2:a veckan, måndag. */
@@ -175,6 +222,8 @@ export type ArshjulTillfalle = {
   installd?: boolean;
   arKlar?: boolean;
   oppnaPunkter?: number;
+  /** Titlar på besiktningar/åtgärder kopplade till detta möte. */
+  koppladeAtgarder?: string[];
 };
 
 export type ArshjulPaminnelse = {
@@ -382,7 +431,158 @@ export function normaliseraHandelse(
     klarDatum,
     datumAndringar,
     motesPunkter,
+    planerasFranAr:
+      typeof raw.planerasFranAr === "number" && raw.planerasFranAr >= 1990
+        ? raw.planerasFranAr
+        : undefined,
+    planerasTillAr:
+      typeof raw.planerasTillAr === "number" && raw.planerasTillAr >= 1990
+        ? raw.planerasTillAr
+        : undefined,
+    koppladTillHandelseId:
+      typeof raw.koppladTillHandelseId === "string" &&
+      raw.koppladTillHandelseId.trim()
+        ? raw.koppladTillHandelseId.trim()
+        : undefined,
+    kopplaTillMotesAr:
+      typeof raw.kopplaTillMotesAr === "number" && raw.kopplaTillMotesAr >= 1990
+        ? raw.kopplaTillMotesAr
+        : undefined,
   };
+}
+
+/** Planeringsfönster — månads-/veckomöten begränsas till valt slutår. */
+export function effektivPlanering(
+  h: ArshjulHandelse,
+  fallbackAr: number,
+): { fran: number; till: number | null } {
+  const fran = h.planerasFranAr ?? h.startAr ?? fallbackAr;
+  if (behoverPlaneringsperiod(h.intervall)) {
+    // Saknas slutår → innevarande + kommande år (inte oändligt framåt).
+    const till = h.planerasTillAr ?? fran + STANDARD_PLANERING_AR_FRAM;
+    return { fran, till: Math.max(fran, till) };
+  }
+  if (h.planerasTillAr != null) {
+    return { fran, till: Math.max(fran, h.planerasTillAr) };
+  }
+  return { fran: h.planerasFranAr ?? fran, till: null };
+}
+
+/** Kort översikt för styrelsens planering ett givet år. */
+export function sammanfattaArsPlanering(
+  handelser: ArshjulHandelse[],
+  ar: number,
+): ArsPlaneringSammanfattning {
+  const tillfallen = expanderaTillfallen(handelser, ar, ar);
+  const installda = tillfallen.filter((t) => t.installd).length;
+  const klara = tillfallen.filter((t) => t.arKlar && !t.installd).length;
+  const aktiva = tillfallen.filter((t) => !t.installd && !t.arKlar);
+  const oppnaPunkter = aktiva.reduce((sum, t) => {
+    const h = handelser.find((x) => x.id === t.handelseId);
+    const punkter = (h?.motesPunkter ?? []).filter((p) => !p.klar).length;
+    return sum + punkter;
+  }, 0);
+  const koppladeAtgarder = handelser.filter(
+    (h) =>
+      Boolean(h.koppladTillHandelseId) &&
+      !h.klar &&
+      (h.kopplaTillMotesAr == null || h.kopplaTillMotesAr === ar),
+  ).length;
+  const besiktningar = aktiva.filter((t) => t.kategori === "besiktning").length;
+  return {
+    ar,
+    tillfallen: aktiva.length,
+    installda,
+    klara,
+    oppnaPunkter,
+    koppladeAtgarder,
+    besiktningar,
+  };
+}
+
+function arInomPlanering(h: ArshjulHandelse, ar: number, fallbackAr: number): boolean {
+  const { fran, till } = effektivPlanering(h, fallbackAr);
+  if (ar < fran) return false;
+  if (till != null && ar > till) return false;
+  return true;
+}
+
+/** Besiktningar/åtgärder kopplade till en mötes-serie för givet år. */
+export function hamtaKoppladeAtgarderForMote(
+  handelser: ArshjulHandelse[],
+  motesHandelseId: string,
+  ar: number,
+): ArshjulHandelse[] {
+  return handelser.filter(
+    (h) =>
+      h.koppladTillHandelseId === motesHandelseId &&
+      !h.klar &&
+      (h.kopplaTillMotesAr == null || h.kopplaTillMotesAr === ar),
+  );
+}
+
+export function berikaTillfallenMedKopplingar(
+  tillfallen: ArshjulTillfalle[],
+  handelser: ArshjulHandelse[],
+): ArshjulTillfalle[] {
+  return tillfallen.map((t) => {
+    if (!arMotesKategori(t.kategori)) return t;
+    const kopplade = hamtaKoppladeAtgarderForMote(
+      handelser,
+      t.handelseId,
+      t.ar,
+    ).map((h) => h.titel);
+    if (kopplade.length === 0) return t;
+    return {
+      ...t,
+      koppladeAtgarder: kopplade,
+      oppnaPunkter: (t.oppnaPunkter ?? 0) + kopplade.length,
+    };
+  });
+}
+
+/** Skapa två OVK-händelser: verksamheter (3 år) + bostäder (6 år). */
+export function skapaOvkDubbelHandelser(opts: {
+  startArVerksamhet: number;
+  startArBostader: number;
+  manad?: number;
+  dag?: number;
+  koppladTillHandelseId?: string;
+  kopplaTillMotesAr?: number;
+}): ArshjulHandelse[] {
+  const manad = opts.manad ?? 6;
+  const dag = opts.dag ?? 15;
+  const gemensamt = {
+    kategori: "besiktning" as const,
+    manad,
+    dag,
+    paminnelseDagar: [365, 180, 90, 30],
+    klar: false,
+    skapad: new Date().toLocaleDateString("sv-SE"),
+    externKalla: "manuell" as const,
+    koppladTillHandelseId: opts.koppladTillHandelseId,
+    kopplaTillMotesAr: opts.kopplaTillMotesAr,
+  };
+  return [
+    skapaTomHandelse({
+      ...gemensamt,
+      titel: "OVK verksamheter",
+      underkategori: "OVK verksamheter",
+      beskrivning:
+        "Obligatorisk ventilationskontroll för verksamheter — intervall oftast vart 3:e år.",
+      intervall: "vart_3_ar",
+      startAr: opts.startArVerksamhet,
+    }),
+    skapaTomHandelse({
+      ...gemensamt,
+      titel: "OVK bostäder",
+      underkategori: "OVK bostäder",
+      beskrivning:
+        "Obligatorisk ventilationskontroll för bostäder — intervall oftast vart 6:e år.",
+      intervall: "vart_6_ar",
+      startAr: opts.startArBostader,
+    }),
+  ];
 }
 
 function parseDatum(iso: string): Date | null {
@@ -586,26 +786,32 @@ export function handelseIntervallText(h: ArshjulHandelse): string {
     h.undantagnaManader && h.undantagnaManader.length > 0
       ? ` (ej ${h.undantagnaManader.map((m) => manadsnamn[m - 1].slice(0, 3)).join(", ")})`
       : "";
+  const period =
+    h.planerasFranAr != null || h.planerasTillAr != null
+      ? ` · ${h.planerasFranAr ?? "…"}–${h.planerasTillAr ?? "…"}`
+      : behoverPlaneringsperiod(h.intervall)
+        ? ` · ${effektivPlanering(h, new Date().getFullYear()).fran}`
+        : "";
   switch (h.intervall) {
     case "engang":
       return h.datum ? formatDatumKort(h.datum) : "Engång";
     case "veckovis":
       return h.datum
-        ? `Veckovis från ${formatDatumKort(h.datum)}`
-        : "Veckovis";
+        ? `Veckovis från ${formatDatumKort(h.datum)}${period}`
+        : `Veckovis${period}`;
     case "manadsvis":
-      return `Månadsvis (dag ${h.dag ?? 1})${undantag}`;
+      return `Månadsvis (dag ${h.dag ?? 1})${undantag}${period}`;
     case "manadsvis_veckodag": {
       const ord =
         veckodagOrdningEtiketter[String(h.veckodagOrdning ?? 1)] ?? "1:a veckan";
       const dag =
         h.veckodag != null ? veckodagEtiketter[h.veckodag] : "måndag";
-      return `${ord.toLowerCase()}, ${dag.toLowerCase()} varje månad${undantag}`;
+      return `${ord.toLowerCase()}, ${dag.toLowerCase()} varje månad${undantag}${period}`;
     }
     case "kvartalsvis":
-      return `Kvartalsvis från ${manadsnamn[(h.manad ?? 1) - 1]}${undantag}`;
+      return `Kvartalsvis från ${manadsnamn[(h.manad ?? 1) - 1]}${undantag}${period}`;
     case "arlig":
-      return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`;
+      return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}${period}`;
     case "vart_3_ar":
     case "vart_6_ar":
     case "vart_10_ar":
@@ -622,15 +828,21 @@ export function expanderaTillfallen(
   tillAr: number,
 ): ArshjulTillfalle[] {
   const lista: ArshjulTillfalle[] = [];
+  const fallbackAr = franAr;
 
   for (const h of handelser) {
     if (h.klar && h.intervall === "engang") continue;
+    const plan = effektivPlanering(h, fallbackAr);
+    const effektivFran = Math.max(franAr, plan.fran);
+    const effektivTill =
+      plan.till != null ? Math.min(tillAr, plan.till) : tillAr;
+    if (effektivFran > effektivTill) continue;
 
     if (h.intervall === "engang" && h.datum) {
       const d = parseDatum(h.datum);
       if (!d) continue;
       const ar = d.getFullYear();
-      if (ar >= franAr && ar <= tillAr) {
+      if (ar >= effektivFran && ar <= effektivTill) {
         pushTillfalle(
           lista,
           h,
@@ -646,14 +858,16 @@ export function expanderaTillfallen(
     if (h.intervall === "veckovis" && h.datum) {
       const start = parseDatum(h.datum);
       if (!start) continue;
-      const slut = new Date(tillAr, 11, 31, 12, 0, 0);
+      const slut = new Date(effektivTill, 11, 31, 12, 0, 0);
       let cursor = new Date(start);
-      // Hoppa fram till fönstret om start ligger före
-      while (cursor.getFullYear() < franAr) {
+      while (cursor.getFullYear() < effektivFran) {
         cursor.setDate(cursor.getDate() + 7);
       }
-      while (cursor <= slut && cursor.getFullYear() <= tillAr) {
-        if (cursor.getFullYear() >= franAr) {
+      while (cursor <= slut && cursor.getFullYear() <= effektivTill) {
+        if (
+          cursor.getFullYear() >= effektivFran &&
+          arInomPlanering(h, cursor.getFullYear(), fallbackAr)
+        ) {
           pushTillfalle(
             lista,
             h,
@@ -671,7 +885,7 @@ export function expanderaTillfallen(
 
     if (h.intervall === "manadsvis") {
       const dag = h.dag && h.dag >= 1 && h.dag <= 28 ? h.dag : 1;
-      for (let ar = franAr; ar <= tillAr; ar++) {
+      for (let ar = effektivFran; ar <= effektivTill; ar++) {
         for (let manad = 1; manad <= 12; manad++) {
           pushTillfalle(lista, h, ar, manad, dag, true);
         }
@@ -681,7 +895,7 @@ export function expanderaTillfallen(
 
     if (h.intervall === "manadsvis_veckodag" && h.veckodag) {
       const ordning = h.veckodagOrdning ?? 1;
-      for (let ar = franAr; ar <= tillAr; ar++) {
+      for (let ar = effektivFran; ar <= effektivTill; ar++) {
         for (let manad = 1; manad <= 12; manad++) {
           const dag = nthVeckodagIManad(ar, manad, h.veckodag, ordning);
           if (dag == null) continue;
@@ -695,7 +909,7 @@ export function expanderaTillfallen(
       const startManad = h.manad ?? 1;
       const dag = h.dag && h.dag >= 1 && h.dag <= 28 ? h.dag : 1;
       const sedda = new Set<string>();
-      for (let ar = franAr; ar <= tillAr; ar++) {
+      for (let ar = effektivFran; ar <= effektivTill; ar++) {
         for (let q = 0; q < 4; q++) {
           let manad = startManad + q * 3;
           let tillfalleAr = ar;
@@ -703,7 +917,7 @@ export function expanderaTillfallen(
             manad -= 12;
             tillfalleAr += 1;
           }
-          if (tillfalleAr < franAr || tillfalleAr > tillAr) continue;
+          if (tillfalleAr < effektivFran || tillfalleAr > effektivTill) continue;
           const nyckel = datumIso(tillfalleAr, manad, dag);
           if (sedda.has(nyckel)) continue;
           sedda.add(nyckel);
@@ -715,7 +929,7 @@ export function expanderaTillfallen(
 
     if (h.intervall === "arlig" && h.manad) {
       const dag = h.dag && h.dag >= 1 && h.dag <= 28 ? h.dag : 1;
-      for (let ar = franAr; ar <= tillAr; ar++) {
+      for (let ar = effektivFran; ar <= effektivTill; ar++) {
         pushTillfalle(lista, h, ar, h.manad, dag, true);
       }
       continue;
@@ -723,12 +937,12 @@ export function expanderaTillfallen(
 
     if (arFlerarsIntervall(h.intervall)) {
       const steg = intervallTillAr(h.intervall) ?? 1;
-      let ar = h.startAr ?? franAr;
+      let ar = h.startAr ?? effektivFran;
       if (h.senastKlarAr != null) {
         ar = h.senastKlarAr + steg;
       }
-      while (ar <= tillAr) {
-        if (ar >= franAr) {
+      while (ar <= effektivTill) {
+        if (ar >= effektivFran && arInomPlanering(h, ar, fallbackAr)) {
           const manad = h.manad ?? 6;
           const dag = h.dag ?? 15;
           pushTillfalle(lista, h, ar, manad, dag, false);
@@ -738,7 +952,10 @@ export function expanderaTillfallen(
     }
   }
 
-  return lista.sort((a, b) => a.datumIso.localeCompare(b.datumIso));
+  return berikaTillfallenMedKopplingar(
+    lista.sort((a, b) => a.datumIso.localeCompare(b.datumIso)),
+    handelser,
+  );
 }
 
 export function hamtaPaminnelser(
@@ -762,9 +979,10 @@ export function hamtaPaminnelser(
     if (mål < franDatum || mål > tillDatum) continue;
 
     const dagarKvar = dagarMellan(idag, mål);
-    const agenda = (h.motesPunkter ?? [])
-      .filter((p) => !p.klar)
-      .map((p) => p.text);
+    const agenda = [
+      ...(h.motesPunkter ?? []).filter((p) => !p.klar).map((p) => p.text),
+      ...(t.koppladeAtgarder ?? []),
+    ];
     const agendaText =
       agenda.length > 0
         ? ` På mötet: ${agenda.join(", ")}.`
@@ -809,6 +1027,39 @@ export function hamtaPaminnelser(
         break;
       }
     }
+  }
+
+  // Kopplade åtgärder utan mötesdatum ännu — påminnelse ändå.
+  for (const h of handelser) {
+    if (!h.koppladTillHandelseId || h.klar) continue;
+    const mote = handelser.find((x) => x.id === h.koppladTillHandelseId);
+    if (!mote || mote.klar) continue;
+    const motesAr = h.kopplaTillMotesAr ?? idag.getFullYear();
+    const harMotesDatum = tillfallen.some(
+      (t) =>
+        t.handelseId === mote.id &&
+        t.ar === motesAr &&
+        !t.installd &&
+        !t.arKlar,
+    );
+    if (harMotesDatum) continue;
+    const redan = poster.some(
+      (p) => p.handelseId === h.id && p.rubrik.includes("kopplad till"),
+    );
+    if (redan) continue;
+    poster.push({
+      handelseId: h.id,
+      tillfalleDatum: `${motesAr}-01-01`,
+      titel: h.titel,
+      kategori: h.kategori,
+      dagarKvar: Math.max(
+        0,
+        dagarMellan(idag, new Date(motesAr, 0, 1, 12, 0, 0)),
+      ),
+      rubrik: `${h.titel} — kopplad till ${mote.titel}`,
+      text: `Åtgärden ska tas upp på ${kategoriEtiketter[mote.kategori].toLowerCase()} under ${motesAr}. Mötesdatum är inte inlagda ännu — lägg in möten för året så dyker punkten upp där automatiskt.`,
+      nivå: "info",
+    });
   }
 
   return poster.sort((a, b) => a.dagarKvar - b.dagarKvar);

@@ -6,12 +6,15 @@ import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
   andraTillfalleDatum,
   arFlerarsIntervall,
+  arMotesKategori,
   arshjulStorageKey,
   aterstallTillfalle,
+  behoverPlaneringsperiod,
   expanderaTillfallen,
   foreslagnMotesPunkter,
   foreslagnUnderkategorier,
   formatDatumKort,
+  hamtaKoppladeAtgarderForMote,
   hamtaPaminnelser,
   handelseIntervallText,
   intervallAlternativ,
@@ -23,10 +26,13 @@ import {
   normaliseraHandelse,
   nthVeckodagIManad,
   paminnelseDagarAlternativ,
+  sammanfattaArsPlanering,
   skapaHandelseId,
   skapaMotesPunktId,
+  skapaOvkDubbelHandelser,
   skapaTomHandelse,
   STANDARD_PAMINNELSE_DAGAR,
+  STANDARD_PLANERING_AR_FRAM,
   stallInTillfalle,
   taBortTillfallePermanent,
   toggleMotesPunkt,
@@ -64,34 +70,60 @@ function sparaHandelser(lista: ArshjulHandelse[]): void {
   safeSetLocalStorage(arshjulStorageKey(), JSON.stringify(lista));
 }
 
-const exempelHandelser: ArshjulHandelse[] = [
-  normaliseraHandelse({
-    id: "ex-stamma",
-    titel: "Årsstämma",
-    beskrivning: "Kallelse, underlag och protokoll.",
-    kategori: "stamma",
-    intervall: "arlig",
-    manad: 4,
-    dag: 15,
-    paminnelseDagar: [90, 60, 30, 14],
-    klar: false,
-    skapad: "demo",
-    externKalla: "manuell",
-  }),
-  normaliseraHandelse({
-    id: "ex-bokslut",
-    titel: "Bokslut & budget",
-    beskrivning: "Ekonomisk plan och budget inför nästa år.",
-    kategori: "ekonomi",
-    intervall: "arlig",
-    manad: 11,
-    dag: 30,
-    paminnelseDagar: [60, 30, 14],
-    klar: false,
-    skapad: "demo",
-    externKalla: "manuell",
-  }),
-];
+function skapaExempelHandelser(ar: number): ArshjulHandelse[] {
+  return [
+    normaliseraHandelse({
+      id: "ex-styrelse",
+      titel: "Styrelsemöte",
+      beskrivning: "Ordinarie styrelsemöte — planerat för i år och kommande år.",
+      kategori: "styrelsemote",
+      intervall: "manadsvis_veckodag",
+      veckodag: 1,
+      veckodagOrdning: 2,
+      undantagnaManader: [7, 8],
+      planerasFranAr: ar,
+      planerasTillAr: ar + STANDARD_PLANERING_AR_FRAM,
+      motesPunkter: [
+        { id: "ex-p1", text: "Budget inför kommande år", klar: false },
+        { id: "ex-p2", text: "Underhållsplan — uppföljning", klar: false },
+      ],
+      paminnelseDagar: [14, 7],
+      klar: false,
+      skapad: "demo",
+      externKalla: "manuell",
+    }),
+    normaliseraHandelse({
+      id: "ex-stamma",
+      titel: "Årsstämma",
+      beskrivning: "Kallelse, underlag och protokoll.",
+      kategori: "stamma",
+      intervall: "arlig",
+      manad: 4,
+      dag: 15,
+      planerasFranAr: ar,
+      planerasTillAr: ar + STANDARD_PLANERING_AR_FRAM,
+      paminnelseDagar: [90, 60, 30, 14],
+      klar: false,
+      skapad: "demo",
+      externKalla: "manuell",
+    }),
+    normaliseraHandelse({
+      id: "ex-bokslut",
+      titel: "Bokslut & budget",
+      beskrivning: "Ekonomisk plan och budget inför nästa år.",
+      kategori: "ekonomi",
+      intervall: "arlig",
+      manad: 11,
+      dag: 30,
+      planerasFranAr: ar,
+      planerasTillAr: ar + STANDARD_PLANERING_AR_FRAM,
+      paminnelseDagar: [60, 30, 14],
+      klar: false,
+      skapad: "demo",
+      externKalla: "manuell",
+    }),
+  ];
+}
 
 export function ArshjulModul() {
   const innevarandeAr = new Date().getFullYear();
@@ -99,7 +131,8 @@ export function ArshjulModul() {
   const [hydrated, setHydrated] = useState(false);
   const [vy, setVy] = useState<Vy>("arshjul");
   const [valtAr, setValtAr] = useState(innevarandeAr);
-  const [tidslinjeSlutAr, setTidslinjeSlutAr] = useState(innevarandeAr + 15);
+  const kommandeAr = innevarandeAr + STANDARD_PLANERING_AR_FRAM;
+  const [tidslinjeSlutAr, setTidslinjeSlutAr] = useState(kommandeAr);
   const [skapaOppen, setSkapaOppen] = useState(false);
   const [redigeraId, setRedigeraId] = useState<string | null>(null);
   const [form, setForm] = useState(skapaTomHandelse());
@@ -107,14 +140,25 @@ export function ArshjulModul() {
   const [nyPunktText, setNyPunktText] = useState("");
   const [egenPunktLage, setEgenPunktLage] = useState(false);
   const [andrarDatumFor, setAndrarDatumFor] = useState<string | null>(null);
+  const [ovkVerksamhetAr, setOvkVerksamhetAr] = useState(innevarandeAr);
+  const [ovkBostadAr, setOvkBostadAr] = useState(innevarandeAr + 3);
+  const [ovkKopplaTillId, setOvkKopplaTillId] = useState("");
   const skipFirstSave = useRef(true);
+
+  const motesSerier = useMemo(
+    () =>
+      handelser.filter(
+        (h) => arMotesKategori(h.kategori) && h.id !== redigeraId,
+      ),
+    [handelser, redigeraId],
+  );
 
   useEffect(() => {
     const sparade = lasHandelser();
     if (sparade.length > 0) {
       setHandelser(sparade);
     } else if (arGrundmallForening(lasAktivForeningId())) {
-      setHandelser(exempelHandelser);
+      setHandelser(skapaExempelHandelser(new Date().getFullYear()));
     } else {
       setHandelser([]);
     }
@@ -155,6 +199,15 @@ export function ArshjulModul() {
     }
     return map;
   }, [tillfallenAr]);
+
+  const planIAr = useMemo(
+    () => sammanfattaArsPlanering(handelser, innevarandeAr),
+    [handelser, innevarandeAr],
+  );
+  const planNastaAr = useMemo(
+    () => sammanfattaArsPlanering(handelser, kommandeAr),
+    [handelser, kommandeAr],
+  );
 
   const perArTidslinje = useMemo(() => {
     const map = new Map<number, ArshjulTillfalle[]>();
@@ -309,10 +362,23 @@ export function ArshjulModul() {
   function sparaForm(event: React.FormEvent) {
     event.preventDefault();
     if (!form.titel.trim()) return;
+    let planFran = form.planerasFranAr;
+    let planTill = form.planerasTillAr;
+    if (behoverPlaneringsperiod(form.intervall) || arMotesKategori(form.kategori)) {
+      planFran = planFran ?? innevarandeAr;
+      planTill = planTill ?? planFran + STANDARD_PLANERING_AR_FRAM;
+      if (planTill < planFran) planTill = planFran;
+    }
     const sparad = normaliseraHandelse({
       ...form,
       titel: form.titel.trim(),
       id: redigeraId ?? form.id ?? skapaHandelseId(),
+      planerasFranAr: planFran,
+      planerasTillAr: planTill,
+      koppladTillHandelseId: form.koppladTillHandelseId || undefined,
+      kopplaTillMotesAr: form.koppladTillHandelseId
+        ? (form.kopplaTillMotesAr ?? innevarandeAr)
+        : undefined,
     });
     if (redigeraId) {
       setHandelser((current) =>
@@ -324,6 +390,21 @@ export function ArshjulModul() {
     }
     setForm(skapaTomHandelse());
     setSkapaOppen(false);
+  }
+
+  function skapaOvkDubbel() {
+    const nya = skapaOvkDubbelHandelser({
+      startArVerksamhet: ovkVerksamhetAr,
+      startArBostader: ovkBostadAr,
+      koppladTillHandelseId: ovkKopplaTillId || undefined,
+      kopplaTillMotesAr: ovkKopplaTillId ? innevarandeAr : undefined,
+    });
+    setHandelser((current) => [...current, ...nya]);
+    setImportMeddelande(
+      ovkKopplaTillId
+        ? "OVK verksamheter (3 år) och OVK bostäder (6 år) tillagda och kopplade till valt möte."
+        : "OVK verksamheter (3 år) och OVK bostäder (6 år) tillagda. Koppla dem till styrelse-/byggmöte via Redigera om ni vill.",
+    );
   }
 
   function startaRedigera(h: ArshjulHandelse) {
@@ -403,7 +484,12 @@ export function ArshjulModul() {
           {flyttat ? " · ändrat" : ""}
           {t.arKlar ? " · klart" : ""}
         </p>
-        {(t.oppnaPunkter ?? 0) > 0 && (
+        {(t.koppladeAtgarder ?? []).length > 0 && (
+          <p className="mt-0.5 opacity-90">
+            Kopplat: {t.koppladeAtgarder!.join(", ")}
+          </p>
+        )}
+        {(t.oppnaPunkter ?? 0) > 0 && (t.koppladeAtgarder ?? []).length === 0 && (
           <p className="mt-0.5 font-medium opacity-90">
             {t.oppnaPunkter} punkt{(t.oppnaPunkter ?? 0) === 1 ? "" : "er"} kvar
           </p>
@@ -462,16 +548,87 @@ export function ArshjulModul() {
     return <p className="text-sm text-muted">Laddar årshjul…</p>;
   }
 
+  function PlanKort({
+    ar,
+    etikett,
+    plan,
+    aktiv,
+  }: {
+    ar: number;
+    etikett: string;
+    plan: ReturnType<typeof sammanfattaArsPlanering>;
+    aktiv: boolean;
+  }) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setValtAr(ar);
+          setVy("arshjul");
+        }}
+        className={`rounded-2xl border p-4 text-left transition ${
+          aktiv
+            ? "border-primary bg-[#eef6f0] shadow-sm"
+            : "border-border bg-white hover:border-primary/40"
+        }`}
+      >
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">
+          {etikett}
+        </p>
+        <p className="mt-1 text-2xl font-bold text-primary-dark">{ar}</p>
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-foreground">
+          <div>
+            <dt className="text-muted">Möten/händelser</dt>
+            <dd className="font-semibold">{plan.tillfallen}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Öppna punkter</dt>
+            <dd className="font-semibold">{plan.oppnaPunkter}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Kopplade åtgärder</dt>
+            <dd className="font-semibold">{plan.koppladeAtgarder}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Besiktningar</dt>
+            <dd className="font-semibold">{plan.besiktningar}</dd>
+          </div>
+        </dl>
+        {(plan.installda > 0 || plan.klara > 0) && (
+          <p className="mt-2 text-[11px] text-muted">
+            {plan.klara > 0 ? `${plan.klara} klara` : ""}
+            {plan.klara > 0 && plan.installda > 0 ? " · " : ""}
+            {plan.installda > 0 ? `${plan.installda} inställda` : ""}
+          </p>
+        )}
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Lägg in årets möten och ärenden redan i januari — t.ex. styrelsemöte
-          2:a veckan varje månad på måndag (hoppa över semester). Ställ in ett
-          möte tillfälligt (kan återställas) eller ta bort det permanent. Lägg
-          punkter via rullgardin och markera klart när det är gjort.
+          Planera styrelsens arbete för <strong>i år</strong> och{" "}
+          <strong>kommande år</strong>. Lägg in möten, punkter och besiktningar
+          — koppla åtgärder till möten även innan datum är klara.
         </p>
         <DemoFilSparningNotis />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PlanKort
+          ar={innevarandeAr}
+          etikett="Aktuellt år"
+          plan={planIAr}
+          aktiv={valtAr === innevarandeAr && vy === "arshjul"}
+        />
+        <PlanKort
+          ar={kommandeAr}
+          etikett="Kommande år"
+          plan={planNastaAr}
+          aktiv={valtAr === kommandeAr && vy === "arshjul"}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -497,22 +654,87 @@ export function ArshjulModul() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={importeraUnderhallsplan}
-          className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-        >
-          Importera besiktningar (underhållsplan)
-        </button>
-        <button
-          type="button"
-          onClick={importeraProjekt}
-          className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-primary/50"
-        >
-          Importera från projekt (garanti + tidsplaner)
-        </button>
-      </div>
+      <details className="rounded-xl border border-border bg-white">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
+          Importera och snabbval (OVK m.m.)
+        </summary>
+        <div className="space-y-4 border-t border-border px-4 pb-4 pt-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={importeraUnderhallsplan}
+              className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+            >
+              Importera besiktningar (underhållsplan)
+            </button>
+            <button
+              type="button"
+              onClick={importeraProjekt}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-primary/50"
+            >
+              Importera från projekt
+            </button>
+          </div>
+          <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3">
+            <p className="text-sm font-semibold text-sky-950">
+              OVK med två intervaller
+            </p>
+            <p className="mt-1 text-xs text-sky-900/80">
+              Verksamheter oftast vart 3:e år, bostäder vart 6:e år. Koppla till
+              styrelsemöte för uppföljning i år eller nästa år.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="block text-xs font-medium text-sky-950">
+                Verksamheter — år
+                <input
+                  type="number"
+                  min={innevarandeAr - 2}
+                  max={innevarandeAr + 30}
+                  value={ovkVerksamhetAr}
+                  onChange={(e) => setOvkVerksamhetAr(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-medium text-sky-950">
+                Bostäder — år
+                <input
+                  type="number"
+                  min={innevarandeAr - 2}
+                  max={innevarandeAr + 30}
+                  value={ovkBostadAr}
+                  onChange={(e) => setOvkBostadAr(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-medium text-sky-950 sm:col-span-2 lg:col-span-1">
+                Koppla till möte
+                <select
+                  value={ovkKopplaTillId}
+                  onChange={(e) => setOvkKopplaTillId(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-sm"
+                >
+                  <option value="">Ingen koppling ännu</option>
+                  {motesSerier.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.titel} ({kategoriEtiketter[m.kategori]})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={skapaOvkDubbel}
+                  className="w-full rounded-lg bg-sky-800 px-3 py-2 text-sm font-medium text-white hover:bg-sky-900"
+                >
+                  Lägg till båda OVK
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
       {importMeddelande && (
         <p className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
           {importMeddelande}
@@ -526,7 +748,9 @@ export function ArshjulModul() {
       >
         <summary className="cursor-pointer list-none px-5 py-4 [&::-webkit-details-marker]:hidden">
           <span className="font-semibold text-primary-dark">
-            {redigeraId ? "Redigera händelse" : "+ Lägg till påminnelse / händelse"}
+            {redigeraId
+              ? "Redigera händelse"
+              : "+ Lägg till möte, besiktning eller punkt"}
           </span>
         </summary>
         <form onSubmit={sparaForm} className="space-y-4 border-t border-primary/20 px-5 pb-5 pt-2">
@@ -555,9 +779,26 @@ export function ArshjulModul() {
               <span className="text-sm font-medium">Kategori</span>
               <select
                 value={form.kategori}
-                onChange={(e) =>
-                  setForm({ ...form, kategori: e.target.value as ArshjulKategori })
-                }
+                onChange={(e) => {
+                  const kategori = e.target.value as ArshjulKategori;
+                  if (arMotesKategori(kategori)) {
+                    setForm({
+                      ...form,
+                      kategori,
+                      intervall: behoverPlaneringsperiod(form.intervall)
+                        ? form.intervall
+                        : "manadsvis_veckodag",
+                      planerasFranAr: form.planerasFranAr ?? innevarandeAr,
+                      planerasTillAr:
+                        form.planerasTillAr ??
+                        innevarandeAr + STANDARD_PLANERING_AR_FRAM,
+                      veckodag: form.veckodag ?? 1,
+                      veckodagOrdning: form.veckodagOrdning ?? 1,
+                    });
+                    return;
+                  }
+                  setForm({ ...form, kategori });
+                }}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 {(Object.keys(kategoriEtiketter) as ArshjulKategori[]).map((k) => (
@@ -610,6 +851,14 @@ export function ArshjulModul() {
                       : {}),
                     ...(arFlerarsIntervall(intervall)
                       ? { startAr: form.startAr ?? innevarandeAr }
+                      : {}),
+                    ...(behoverPlaneringsperiod(intervall)
+                      ? {
+                          planerasFranAr: form.planerasFranAr ?? innevarandeAr,
+                          planerasTillAr:
+                            form.planerasTillAr ??
+                            innevarandeAr + STANDARD_PLANERING_AR_FRAM,
+                        }
                       : {}),
                   });
                 }}
@@ -796,11 +1045,170 @@ export function ArshjulModul() {
                   className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                 />
                 <span className="mt-1 block text-xs text-muted">
-                  {intervallEtiketter[form.intervall]} — t.ex. OVK vart 6:e år,
-                  radon vart 10:e år
+                  {intervallEtiketter[form.intervall]} — t.ex. OVK verksamheter
+                  vart 3:e år, OVK bostäder / radon vart 6–10:e år
                 </span>
               </label>
             )}
+
+            {(behoverPlaneringsperiod(form.intervall) ||
+              form.intervall === "arlig" ||
+              arMotesKategori(form.kategori)) && (
+              <fieldset className="sm:col-span-2 rounded-xl border border-border bg-white p-3">
+                <legend className="px-1 text-sm font-medium">
+                  Planera för vilka år?
+                </legend>
+                <p className="text-xs text-muted">
+                  Standard är i år + kommande år. Då får styrelsen en enkel
+                  arbetsplan utan att möten fyller många år framåt.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(
+                    [
+                      ["i-ar-nasta", "I år + kommande", STANDARD_PLANERING_AR_FRAM],
+                      ["bara-i-ar", "Bara i år", 0],
+                      ["3-ar", "3 år", 2],
+                    ] as const
+                  ).map(([id, label, extra]) => {
+                    const till = innevarandeAr + extra;
+                    const vald =
+                      (form.planerasFranAr ?? innevarandeAr) === innevarandeAr &&
+                      (form.planerasTillAr ??
+                        innevarandeAr + STANDARD_PLANERING_AR_FRAM) === till;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            planerasFranAr: innevarandeAr,
+                            planerasTillAr: till,
+                          })
+                        }
+                        className={`rounded-full border px-3 py-1 text-xs ${
+                          vald
+                            ? "border-primary bg-[#eef6f0] font-medium text-primary-dark"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-sm font-medium">Från år</span>
+                    <input
+                      type="number"
+                      min={innevarandeAr - 2}
+                      max={innevarandeAr + 30}
+                      value={form.planerasFranAr ?? innevarandeAr}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          planerasFranAr: Number(e.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-medium">Till och med år</span>
+                    <input
+                      type="number"
+                      min={innevarandeAr - 2}
+                      max={innevarandeAr + 30}
+                      value={
+                        form.planerasTillAr ??
+                        (form.planerasFranAr ?? innevarandeAr) +
+                          STANDARD_PLANERING_AR_FRAM
+                      }
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          planerasTillAr: Number(e.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              </fieldset>
+            )}
+
+            <div className="sm:col-span-2 rounded-xl border border-primary/25 bg-[#eef6f0]/60 p-3">
+              <p className="text-sm font-medium text-foreground">
+                Koppla till styrelse- eller byggmöte
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Lägg in besiktning/åtgärd i början av året och koppla till möte —
+                även om besiktningen är nästa år och mötesdatum ännu inte är
+                fastställda. Punkten blir påminnelse på mötena när de läggs in.
+              </p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-medium">Mötes-serie</span>
+                  <select
+                    value={form.koppladTillHandelseId ?? ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        koppladTillHandelseId: e.target.value || undefined,
+                        kopplaTillMotesAr: e.target.value
+                          ? (form.kopplaTillMotesAr ?? innevarandeAr)
+                          : undefined,
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="">Ingen koppling</option>
+                    {motesSerier.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.titel} ({kategoriEtiketter[m.kategori]})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {form.koppladTillHandelseId && (
+                  <div className="block">
+                    <span className="text-sm font-medium">
+                      Tas upp på möten under
+                    </span>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {(
+                        [
+                          [innevarandeAr, "I år"],
+                          [kommandeAr, "Kommande år"],
+                        ] as const
+                      ).map(([ar, label]) => (
+                        <button
+                          key={ar}
+                          type="button"
+                          onClick={() =>
+                            setForm({ ...form, kopplaTillMotesAr: ar })
+                          }
+                          className={`rounded-full border px-3 py-1.5 text-xs ${
+                            (form.kopplaTillMotesAr ?? innevarandeAr) === ar
+                              ? "border-primary bg-[#eef6f0] font-medium text-primary-dark"
+                              : "border-border"
+                          }`}
+                        >
+                          {label} ({ar})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {motesSerier.length === 0 && (
+                <p className="mt-2 text-xs text-amber-800">
+                  Skapa först ett styrelse- eller byggmöte, sedan kan ni koppla
+                  åtgärder hit.
+                </p>
+              )}
+            </div>
 
             <div className="sm:col-span-2 rounded-xl border border-border bg-surface/40 p-3">
               <p className="text-sm font-medium text-foreground">
@@ -992,28 +1400,54 @@ export function ArshjulModul() {
 
       {vy === "arshjul" && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium text-foreground">
-              Visa år
-              <select
-                value={valtAr}
-                onChange={(e) => setValtAr(Number(e.target.value))}
-                className="ml-2 rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-foreground">Visa år:</span>
+            {(
+              [
+                [innevarandeAr, "I år"],
+                [kommandeAr, "Kommande"],
+              ] as const
+            ).map(([ar, label]) => (
+              <button
+                key={ar}
+                type="button"
+                onClick={() => setValtAr(ar)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                  valtAr === ar
+                    ? "bg-primary text-white"
+                    : "border border-border bg-white text-muted"
+                }`}
               >
-                {Array.from({ length: 21 }, (_, i) => innevarandeAr - 2 + i).map((ar) => (
+                {label} ({ar})
+              </button>
+            ))}
+            <select
+              value={valtAr}
+              onChange={(e) => setValtAr(Number(e.target.value))}
+              className="rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+              aria-label="Annat år"
+            >
+              {Array.from({ length: 8 }, (_, i) => innevarandeAr - 1 + i).map(
+                (ar) => (
                   <option key={ar} value={ar}>
                     {ar}
                   </option>
-                ))}
-              </select>
-            </label>
+                ),
+              )}
+            </select>
           </div>
 
           <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/50 p-4 sm:p-6">
             <div className="mb-4 text-center">
               <p className="text-3xl font-bold text-primary-dark">{valtAr}</p>
               <p className="text-sm text-muted">
-                Årshjul — {tillfallenAr.length} händelser detta år
+                {valtAr === innevarandeAr
+                  ? "Aktuellt år"
+                  : valtAr === kommandeAr
+                    ? "Kommande år"
+                    : "Årshjul"}{" "}
+                — {tillfallenAr.filter((t) => !t.installd).length} planerade
+                händelser
               </p>
             </div>
             <div
@@ -1112,6 +1546,38 @@ export function ArshjulModul() {
                     ))}
                   </ul>
                 )}
+                {arMotesKategori(h.kategori) &&
+                  hamtaKoppladeAtgarderForMote(handelser, h.id, valtAr).length >
+                    0 && (
+                    <div className="mt-2 space-y-1 border-t border-primary/20 pt-2">
+                      <p className="text-xs font-medium text-primary-dark">
+                        Kopplade åtgärder {valtAr} (även utan mötesdatum)
+                      </p>
+                      <ul className="space-y-0.5 text-xs text-muted">
+                        {hamtaKoppladeAtgarderForMote(
+                          handelser,
+                          h.id,
+                          valtAr,
+                        ).map((a) => (
+                          <li key={a.id}>
+                            {a.titel}
+                            {a.underkategori ? ` · ${a.underkategori}` : ""}
+                            {a.startAr ? ` · besiktning ${a.startAr}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {h.koppladTillHandelseId && (
+                  <p className="mt-1.5 text-xs text-primary-dark">
+                    Kopplad till möte:{" "}
+                    {handelser.find((x) => x.id === h.koppladTillHandelseId)
+                      ?.titel ?? "okänt"}
+                    {h.kopplaTillMotesAr
+                      ? ` · tas upp ${h.kopplaTillMotesAr}`
+                      : ""}
+                  </p>
+                )}
                 {(h.installdaDatum ?? []).length > 0 && (
                   <div className="mt-2 space-y-1.5 border-t border-amber-200/80 pt-2">
                     <p className="text-xs font-medium text-amber-900">
@@ -1159,17 +1625,40 @@ export function ArshjulModul() {
 
       {vy === "tidslinje" && (
         <div className="space-y-4">
-          <label className="text-sm font-medium">
-            Visa fram till år
-            <input
-              type="number"
-              min={innevarandeAr}
-              max={innevarandeAr + 50}
-              value={tidslinjeSlutAr}
-              onChange={(e) => setTidslinjeSlutAr(Number(e.target.value))}
-              className="ml-2 w-24 rounded-lg border border-border px-2 py-1 text-sm"
-            />
-          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">Visa:</span>
+            {(
+              [
+                [kommandeAr, "I år + kommande"],
+                [innevarandeAr + 5, "5 år"],
+                [innevarandeAr + 15, "15 år (besiktningar)"],
+              ] as const
+            ).map(([slut, label]) => (
+              <button
+                key={slut}
+                type="button"
+                onClick={() => setTidslinjeSlutAr(slut)}
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  tidslinjeSlutAr === slut
+                    ? "border-primary bg-[#eef6f0] font-medium text-primary-dark"
+                    : "border-border"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <label className="text-sm text-muted">
+              Till år
+              <input
+                type="number"
+                min={innevarandeAr}
+                max={innevarandeAr + 50}
+                value={tidslinjeSlutAr}
+                onChange={(e) => setTidslinjeSlutAr(Number(e.target.value))}
+                className="ml-2 w-24 rounded-lg border border-border px-2 py-1 text-sm"
+              />
+            </label>
+          </div>
           <div className="space-y-4">
             {perArTidslinje.map(([ar, poster]) => (
               <div key={ar} className="rounded-xl border border-border bg-white p-4">
