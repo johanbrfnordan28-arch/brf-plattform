@@ -7,6 +7,7 @@ import {
   andraTillfalleDatum,
   arFlerarsIntervall,
   arshjulStorageKey,
+  aterstallTillfalle,
   expanderaTillfallen,
   foreslagnMotesPunkter,
   foreslagnUnderkategorier,
@@ -27,6 +28,7 @@ import {
   skapaTomHandelse,
   STANDARD_PAMINNELSE_DAGAR,
   stallInTillfalle,
+  taBortTillfallePermanent,
   toggleMotesPunkt,
   veckodagEtiketter,
   veckodagOrdningEtiketter,
@@ -192,12 +194,35 @@ export function ArshjulModul() {
   function stallInMote(id: string, datumIso: string, planeratIso?: string) {
     const h = handelser.find((x) => x.id === id);
     if (!h) return;
-    // Ställ in både aktuellt och planerat så tillfället försvinner.
-    let nasta = stallInTillfalle(h, datumIso);
+    // Spara planerat (och aktuellt om flyttat) så återställning fungerar.
+    let nasta = stallInTillfalle(h, planeratIso ?? datumIso);
     if (planeratIso && planeratIso !== datumIso) {
-      nasta = stallInTillfalle(nasta, planeratIso);
+      nasta = stallInTillfalle(nasta, datumIso);
     }
     uppdateraHandelse(id, nasta);
+  }
+
+  function aterstallMote(id: string, ...datumIsoLista: string[]) {
+    const h = handelser.find((x) => x.id === id);
+    if (!h) return;
+    uppdateraHandelse(id, aterstallTillfalle(h, ...datumIsoLista));
+  }
+
+  function taBortMotePermanent(
+    id: string,
+    planeratIso: string,
+    aktuelltIso?: string,
+  ) {
+    const h = handelser.find((x) => x.id === id);
+    if (!h) return;
+    const ok = window.confirm(
+      "Ta bort mötet permanent? Det syns inte igen och kan inte återställas. Använd hellre ”Ställ in” om ni vill kunna öppna upp det igen.",
+    );
+    if (!ok) return;
+    uppdateraHandelse(
+      id,
+      taBortTillfallePermanent(h, planeratIso, aktuelltIso),
+    );
   }
 
   function flyttaMote(id: string, planeratIso: string, nyttIso: string) {
@@ -337,6 +362,34 @@ export function ArshjulModul() {
     const chipNyckel = `${t.handelseId}-${planerat}`;
     const visarAndraDatum = andrarDatumFor === chipNyckel;
     const flyttat = Boolean(t.planeratDatumIso && t.planeratDatumIso !== t.datumIso);
+    if (t.installd) {
+      return (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-950">
+          <p className="font-medium line-through opacity-80">{t.titel}</p>
+          <p className="opacity-80">
+            {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)} · inställt
+          </p>
+          {h && (
+            <div className="mt-1 flex flex-col gap-0.5">
+              <button
+                type="button"
+                onClick={() => aterstallMote(h.id, planerat, t.datumIso)}
+                className="text-left font-medium underline-offset-2 hover:underline"
+              >
+                Återställ som planerat
+              </button>
+              <button
+                type="button"
+                onClick={() => taBortMotePermanent(h.id, planerat, t.datumIso)}
+                className="text-left text-red-800 underline-offset-2 hover:underline"
+              >
+                Ta bort permanent
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
     return (
       <div
         className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]} ${
@@ -390,7 +443,14 @@ export function ArshjulModul() {
               onClick={() => stallInMote(h.id, t.datumIso, planerat)}
               className="text-left underline-offset-2 hover:underline"
             >
-              Ställ in / ta bort möte
+              Ställ in möte
+            </button>
+            <button
+              type="button"
+              onClick={() => taBortMotePermanent(h.id, planerat, t.datumIso)}
+              className="text-left text-red-800 underline-offset-2 hover:underline"
+            >
+              Ta bort permanent
             </button>
           </div>
         )}
@@ -407,9 +467,9 @@ export function ArshjulModul() {
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
           Lägg in årets möten och ärenden redan i januari — t.ex. styrelsemöte
-          2:a veckan varje månad på måndag (hoppa över semester). Välj vecka och
-          veckodag, ändra enskilda datum vid behov, lägg punkter via rullgardin
-          och markera klart när det är gjort.
+          2:a veckan varje månad på måndag (hoppa över semester). Ställ in ett
+          möte tillfälligt (kan återställas) eller ta bort det permanent. Lägg
+          punkter via rullgardin och markera klart när det är gjort.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -1053,8 +1113,42 @@ export function ArshjulModul() {
                   </ul>
                 )}
                 {(h.installdaDatum ?? []).length > 0 && (
-                  <p className="mt-1.5 text-xs text-amber-800">
-                    Inställda tillfällen: {h.installdaDatum!.length}
+                  <div className="mt-2 space-y-1.5 border-t border-amber-200/80 pt-2">
+                    <p className="text-xs font-medium text-amber-900">
+                      Inställda tillfällen (kan återställas)
+                    </p>
+                    <ul className="space-y-1">
+                      {h.installdaDatum!.map((iso) => (
+                        <li
+                          key={iso}
+                          className="flex flex-wrap items-center justify-between gap-2 text-xs text-amber-950"
+                        >
+                          <span>{formatDatumKort(iso)}</span>
+                          <span className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => aterstallMote(h.id, iso)}
+                              className="font-medium text-primary-dark underline-offset-2 hover:underline"
+                            >
+                              Återställ som planerat
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => taBortMotePermanent(h.id, iso)}
+                              className="text-red-800 underline-offset-2 hover:underline"
+                            >
+                              Ta bort permanent
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(h.permanentBorttagnaDatum ?? []).length > 0 && (
+                  <p className="mt-1.5 text-xs text-muted">
+                    Permanent borttagna tillfällen:{" "}
+                    {h.permanentBorttagnaDatum!.length}
                   </p>
                 )}
               </li>

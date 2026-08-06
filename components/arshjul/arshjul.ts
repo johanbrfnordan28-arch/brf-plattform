@@ -137,8 +137,10 @@ export type ArshjulHandelse = {
   veckodagOrdning?: ArshjulVeckodagOrdning;
   /** Hoppa över dessa månader (t.ex. 7–8 under semester). */
   undantagnaManader?: number[];
-  /** Enskilda tillfällen som ställts in manuellt (YYYY-MM-DD). */
+  /** Enskilda tillfällen som ställts in tillfälligt (kan återställas). YYYY-MM-DD. */
   installdaDatum?: string[];
+  /** Tillfällen som tagits bort permanent (kan inte återställas). YYYY-MM-DD. */
+  permanentBorttagnaDatum?: string[];
   /** Tillfällen markerade som genomförda (YYYY-MM-DD). */
   klarDatum?: string[];
   /**
@@ -314,6 +316,9 @@ export function normaliseraHandelse(
   const installda = Array.isArray(raw.installdaDatum)
     ? raw.installdaDatum.filter((d) => typeof d === "string")
     : [];
+  const permanente = Array.isArray(raw.permanentBorttagnaDatum)
+    ? raw.permanentBorttagnaDatum.filter((d) => typeof d === "string")
+    : [];
   const klarDatum = Array.isArray(raw.klarDatum)
     ? raw.klarDatum.filter((d) => typeof d === "string")
     : [];
@@ -373,6 +378,7 @@ export function normaliseraHandelse(
         : undefined,
     undantagnaManader: undantagna,
     installdaDatum: installda,
+    permanentBorttagnaDatum: permanente,
     klarDatum,
     datumAndringar,
     motesPunkter,
@@ -420,9 +426,15 @@ function pushTillfalle(
       iso = andrat;
     }
   }
-  if (h.installdaDatum?.includes(planerat) || h.installdaDatum?.includes(iso)) {
+  if (
+    h.permanentBorttagnaDatum?.includes(planerat) ||
+    h.permanentBorttagnaDatum?.includes(iso)
+  ) {
     return;
   }
+  const installd = Boolean(
+    h.installdaDatum?.includes(planerat) || h.installdaDatum?.includes(iso),
+  );
   const oppnaPunkter = (h.motesPunkter ?? []).filter((p) => !p.klar).length;
   lista.push({
     handelseId: h.id,
@@ -435,6 +447,7 @@ function pushTillfalle(
     planeratDatumIso: planerat,
     beskrivning: h.beskrivning,
     arManatlig,
+    installd,
     arKlar: Boolean(
       h.klar ||
         h.klarDatum?.includes(iso) ||
@@ -495,6 +508,42 @@ export function stallInTillfalle(
   const installda = [...(h.installdaDatum ?? [])];
   if (!installda.includes(datumIsoStr)) installda.push(datumIsoStr);
   return normaliseraHandelse({ ...h, installdaDatum: installda });
+}
+
+/** Återställ ett tillfälligt inställt möte så det körs som planerat igen. */
+export function aterstallTillfalle(
+  h: ArshjulHandelse,
+  ...datumIsoLista: string[]
+): ArshjulHandelse {
+  const taBort = new Set(datumIsoLista.filter(Boolean));
+  const installda = (h.installdaDatum ?? []).filter((d) => !taBort.has(d));
+  return normaliseraHandelse({ ...h, installdaDatum: installda });
+}
+
+/**
+ * Ta bort ett enskilt tillfälle permanent — syns inte igen och kan inte
+ * återställas (till skillnad från "ställ in").
+ */
+export function taBortTillfallePermanent(
+  h: ArshjulHandelse,
+  planeratIso: string,
+  aktuelltIso?: string,
+): ArshjulHandelse {
+  const permanente = [...(h.permanentBorttagnaDatum ?? [])];
+  if (!permanente.includes(planeratIso)) permanente.push(planeratIso);
+  if (aktuelltIso && aktuelltIso !== planeratIso && !permanente.includes(aktuelltIso)) {
+    permanente.push(aktuelltIso);
+  }
+  const taBort = new Set([planeratIso, aktuelltIso].filter(Boolean) as string[]);
+  const installda = (h.installdaDatum ?? []).filter((d) => !taBort.has(d));
+  const andringar = { ...(h.datumAndringar ?? {}) };
+  delete andringar[planeratIso];
+  return normaliseraHandelse({
+    ...h,
+    permanentBorttagnaDatum: permanente,
+    installdaDatum: installda,
+    datumAndringar: andringar,
+  });
 }
 
 export function markeraTillfalleKlar(
@@ -706,7 +755,7 @@ export function hamtaPaminnelser(
 
   for (const t of tillfallen) {
     const h = handelser.find((x) => x.id === t.handelseId);
-    if (!h || h.klar || t.arKlar) continue;
+    if (!h || h.klar || t.arKlar || t.installd) continue;
 
     const mål = parseDatum(t.datumIso);
     if (!mål) continue;
