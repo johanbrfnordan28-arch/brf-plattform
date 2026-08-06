@@ -4,26 +4,35 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
+  arFlerarsIntervall,
   arshjulStorageKey,
   expanderaTillfallen,
+  foreslagnMotesPunkter,
   foreslagnUnderkategorier,
   formatDatumKort,
   hamtaPaminnelser,
+  handelseIntervallText,
+  intervallAlternativ,
+  intervallEtiketter,
   kategoriEtiketter,
   kategoriFarger,
   manadsnamn,
+  markeraTillfalleKlar,
   normaliseraHandelse,
   skapaHandelseId,
+  skapaMotesPunktId,
   skapaTomHandelse,
   STANDARD_PAMINNELSE_DAGAR,
+  stallInTillfalle,
+  toggleMotesPunkt,
+  veckodagEtiketter,
+  veckodagOrdningEtiketter,
   type ArshjulHandelse,
   type ArshjulIntervall,
   type ArshjulKategori,
   type ArshjulTillfalle,
-  arFlerarsIntervall,
-  handelseIntervallText,
-  intervallAlternativ,
-  intervallEtiketter,
+  type ArshjulVeckodag,
+  type ArshjulVeckodagOrdning,
 } from "@/components/arshjul/arshjul";
 import {
   importeraFranProjekt,
@@ -90,6 +99,7 @@ export function ArshjulModul() {
   const [redigeraId, setRedigeraId] = useState<string | null>(null);
   const [form, setForm] = useState(skapaTomHandelse());
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
+  const [nyPunktText, setNyPunktText] = useState("");
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
@@ -160,14 +170,59 @@ export function ArshjulModul() {
     if (redigeraId === id) setRedigeraId(null);
   }
 
-  function markeraKlar(id: string, ar?: number) {
+  function markeraKlar(id: string, ar?: number, datumIso?: string) {
     const h = handelser.find((x) => x.id === id);
     if (!h) return;
+    if (datumIso) {
+      uppdateraHandelse(id, markeraTillfalleKlar(h, datumIso));
+      return;
+    }
     if (arFlerarsIntervall(h.intervall) && ar != null) {
       uppdateraHandelse(id, { senastKlarAr: ar, klar: false });
     } else {
       uppdateraHandelse(id, { klar: true });
     }
+  }
+
+  function stallInMote(id: string, datumIso: string) {
+    const h = handelser.find((x) => x.id === id);
+    if (!h) return;
+    uppdateraHandelse(id, stallInTillfalle(h, datumIso));
+  }
+
+  function vaxlaPunkt(handelseId: string, punktId: string) {
+    const h = handelser.find((x) => x.id === handelseId);
+    if (!h) return;
+    uppdateraHandelse(handelseId, toggleMotesPunkt(h, punktId));
+  }
+
+  function laggTillPunkt(text: string) {
+    const t = text.trim();
+    if (!t) return;
+    setForm({
+      ...form,
+      motesPunkter: [
+        ...(form.motesPunkter ?? []),
+        { id: skapaMotesPunktId(), text: t, klar: false },
+      ],
+    });
+  }
+
+  function taBortPunktFranForm(punktId: string) {
+    setForm({
+      ...form,
+      motesPunkter: (form.motesPunkter ?? []).filter((p) => p.id !== punktId),
+    });
+  }
+
+  function toggleUndantagenManad(manad: number) {
+    const nu = form.undantagnaManader ?? [];
+    setForm({
+      ...form,
+      undantagnaManader: nu.includes(manad)
+        ? nu.filter((m) => m !== manad)
+        : [...nu, manad].sort((a, b) => a - b),
+    });
   }
 
   function sparaForm(event: React.FormEvent) {
@@ -224,25 +279,38 @@ export function ArshjulModul() {
     const h = handelser.find((x) => x.id === t.handelseId);
     return (
       <div
-        className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]}`}
+        className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]} ${
+          t.arKlar ? "opacity-60" : ""
+        }`}
       >
         <p className="font-medium">{t.titel}</p>
-        {h?.underkategori && (
-          <p className="opacity-75">{h.underkategori}</p>
-        )}
-        {t.dag > 1 && (
-          <p className="opacity-80">
-            {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
+        {h?.underkategori && <p className="opacity-75">{h.underkategori}</p>}
+        <p className="opacity-80">
+          {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
+          {t.arKlar ? " · klart" : ""}
+        </p>
+        {(t.oppnaPunkter ?? 0) > 0 && (
+          <p className="mt-0.5 font-medium opacity-90">
+            {t.oppnaPunkter} punkt{(t.oppnaPunkter ?? 0) === 1 ? "" : "er"} kvar
           </p>
         )}
-        {h && !h.klar && (
-          <button
-            type="button"
-            onClick={() => markeraKlar(h.id, t.ar)}
-            className="mt-1 underline-offset-2 hover:underline"
-          >
-            Markera klar
-          </button>
+        {h && !t.arKlar && (
+          <div className="mt-1 flex flex-col gap-0.5">
+            <button
+              type="button"
+              onClick={() => markeraKlar(h.id, t.ar, t.datumIso)}
+              className="text-left underline-offset-2 hover:underline"
+            >
+              Markera klart
+            </button>
+            <button
+              type="button"
+              onClick={() => stallInMote(h.id, t.datumIso)}
+              className="text-left underline-offset-2 hover:underline"
+            >
+              Ställ in / ta bort möte
+            </button>
+          </div>
         )}
       </div>
     );
@@ -256,9 +324,10 @@ export function ArshjulModul() {
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Samla styrelsens årshjul och långsiktiga kalender på ett ställe. Lägg in
-          egna påminnelser eller importera besiktningar från underhållsplanen — OVK
-          och andra kontroller kan ligga flera år fram i tiden.
+          Lägg in årets möten och ärenden redan i januari — t.ex. styrelsemöte
+          första måndagen varje månad (hoppa över semester). Lägg punkter som OVK,
+          SBA eller budget på mötet, ställ in enskilda tillfällen manuellt och
+          markera klart när det är gjort. Uppföljning kan ni lägga in senare.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -391,6 +460,12 @@ export function ArshjulModul() {
                           manad: form.manad ?? 1,
                           dag: form.dag ?? 1,
                         }),
+                    ...(intervall === "manadsvis_veckodag"
+                      ? {
+                          veckodag: form.veckodag ?? 1,
+                          veckodagOrdning: form.veckodagOrdning ?? 1,
+                        }
+                      : {}),
                     ...(arFlerarsIntervall(intervall)
                       ? { startAr: form.startAr ?? innevarandeAr }
                       : {}),
@@ -424,11 +499,13 @@ export function ArshjulModul() {
             )}
 
             {(form.intervall === "manadsvis" ||
+              form.intervall === "manadsvis_veckodag" ||
               form.intervall === "kvartalsvis" ||
               form.intervall === "arlig" ||
               arFlerarsIntervall(form.intervall)) && (
               <>
-                {form.intervall !== "manadsvis" && (
+                {form.intervall !== "manadsvis" &&
+                  form.intervall !== "manadsvis_veckodag" && (
                   <label className="block">
                     <span className="text-sm font-medium">
                       {form.intervall === "kvartalsvis"
@@ -450,20 +527,106 @@ export function ArshjulModul() {
                     </select>
                   </label>
                 )}
+                {form.intervall !== "manadsvis_veckodag" && (
+                  <label className="block">
+                    <span className="text-sm font-medium">Dag i månaden</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={form.dag ?? 1}
+                      onChange={(e) =>
+                        setForm({ ...form, dag: Number(e.target.value) || 1 })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                )}
+              </>
+            )}
+
+            {form.intervall === "manadsvis_veckodag" && (
+              <>
                 <label className="block">
-                  <span className="text-sm font-medium">Dag i månaden</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={28}
-                    value={form.dag ?? 1}
+                  <span className="text-sm font-medium">Vilken i månaden</span>
+                  <select
+                    value={form.veckodagOrdning ?? 1}
                     onChange={(e) =>
-                      setForm({ ...form, dag: Number(e.target.value) || 1 })
+                      setForm({
+                        ...form,
+                        veckodagOrdning: Number(
+                          e.target.value,
+                        ) as ArshjulVeckodagOrdning,
+                      })
                     }
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
+                  >
+                    {Object.entries(veckodagOrdningEtiketter).map(([v, etikett]) => (
+                      <option key={v} value={v}>
+                        {etikett}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium">Veckodag</span>
+                  <select
+                    value={form.veckodag ?? 1}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        veckodag: Number(e.target.value) as ArshjulVeckodag,
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    {(
+                      [1, 2, 3, 4, 5, 6, 7] as ArshjulVeckodag[]
+                    ).map((d) => (
+                        <option key={d} value={d}>
+                          {veckodagEtiketter[d]}
+                        </option>
+                      ))}
+                  </select>
+                  <span className="mt-1 block text-xs text-muted">
+                    T.ex. första måndagen i varje månad
+                  </span>
                 </label>
               </>
+            )}
+
+            {(form.intervall === "manadsvis" ||
+              form.intervall === "manadsvis_veckodag" ||
+              form.intervall === "kvartalsvis") && (
+              <fieldset className="sm:col-span-2">
+                <legend className="text-sm font-medium">
+                  Hoppa över månader (semester m.m.)
+                </legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {manadsnamn.map((namn, i) => {
+                    const manad = i + 1;
+                    const vald = (form.undantagnaManader ?? []).includes(manad);
+                    return (
+                      <button
+                        key={namn}
+                        type="button"
+                        onClick={() => toggleUndantagenManad(manad)}
+                        className={`rounded-full border px-2.5 py-1 text-xs ${
+                          vald
+                            ? "border-amber-300 bg-amber-50 text-amber-900"
+                            : "border-border bg-white text-muted"
+                        }`}
+                      >
+                        {namn.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 text-xs text-muted">
+                  Markera t.ex. juli och augusti om möten inte hålls under semestern.
+                  Enskilda möten kan ni också ställa in manuellt i årshjulet.
+                </p>
+              </fieldset>
             )}
 
             {arFlerarsIntervall(form.intervall) && (
@@ -486,6 +649,87 @@ export function ArshjulModul() {
               </label>
             )}
 
+            <div className="sm:col-span-2 rounded-xl border border-border bg-surface/40 p-3">
+              <p className="text-sm font-medium text-foreground">
+                Punkter på mötet / ärenden under året
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Lägg in t.ex. OVK, SBA eller budget redan i januari. Markera
+                punkter som klara när de är hanterade — uppföljning kan läggas in
+                senare.
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {(form.motesPunkter ?? []).map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm"
+                  >
+                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={p.klar}
+                        onChange={() => {
+                          setForm({
+                            ...form,
+                            motesPunkter: (form.motesPunkter ?? []).map((x) =>
+                              x.id === p.id ? { ...x, klar: !x.klar } : x,
+                            ),
+                          });
+                        }}
+                        className="h-4 w-4 rounded border-border text-primary"
+                      />
+                      <span
+                        className={
+                          p.klar
+                            ? "text-muted line-through"
+                            : "text-foreground"
+                        }
+                      >
+                        {p.text}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => taBortPunktFranForm(p.id)}
+                      className="text-xs text-muted hover:text-red-700"
+                    >
+                      Ta bort
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <input
+                  value={nyPunktText}
+                  onChange={(e) => setNyPunktText(e.target.value)}
+                  list="motespunkt-lista"
+                  placeholder="t.ex. Budget inför kommande år"
+                  className="min-w-[12rem] flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+                <datalist id="motespunkt-lista">
+                  {foreslagnMotesPunkter.map((u) => (
+                    <option key={u} value={u} />
+                  ))}
+                </datalist>
+                <button
+                  type="button"
+                  onClick={() => {
+                    laggTillPunkt(nyPunktText);
+                    setNyPunktText("");
+                  }}
+                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium hover:border-primary/40"
+                >
+                  Lägg till punkt
+                </button>
+              </div>
+              {redigeraId && (form.motesPunkter ?? []).length > 0 && (
+                <p className="mt-2 text-xs text-muted">
+                  Tip: ni kan också bocka av punkter direkt i listan nedan efter
+                  sparning.
+                </p>
+              )}
+            </div>
+
             <label className="block sm:col-span-2">
               <span className="text-sm font-medium">
                 Påminnelse (dagar före) — kommaseparerat
@@ -506,7 +750,8 @@ export function ArshjulModul() {
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
               <span className="mt-1 block text-xs text-muted">
-                Standard: {STANDARD_PAMINNELSE_DAGAR.join(", ")} dagar
+                Standard: {STANDARD_PAMINNELSE_DAGAR.join(", ")} dagar. Öppna
+                mötespunkter visas i påminnelsen.
               </span>
             </label>
           </div>
@@ -579,7 +824,10 @@ export function ArshjulModul() {
                         <span className="text-[10px] text-muted/50">Inget inlagt</span>
                       ) : (
                         poster.map((t) => (
-                          <TillfalleChip key={`${t.handelseId}-${t.ar}`} t={t} />
+                          <TillfalleChip
+                            key={`${t.handelseId}-${t.datumIso}`}
+                            t={t}
+                          />
                         ))
                       )}
                     </div>
@@ -589,38 +837,75 @@ export function ArshjulModul() {
             </div>
           </div>
 
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {handelser.map((h) => (
               <li
                 key={h.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                className="rounded-lg border border-border bg-white px-3 py-3 text-sm"
               >
-                <span className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}>
-                  {kategoriEtiketter[h.kategori]}
-                </span>
-                {h.underkategori && (
-                  <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-muted">
-                    {h.underkategori}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}
+                  >
+                    {kategoriEtiketter[h.kategori]}
                   </span>
+                  {h.underkategori && (
+                    <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs text-muted">
+                      {h.underkategori}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
+                  <span className="text-xs text-muted">
+                    {handelseIntervallText(h)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => startaRedigera(h)}
+                    className="text-xs text-primary-dark hover:underline"
+                  >
+                    Redigera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => taBortHandelse(h.id)}
+                    className="text-xs text-muted hover:text-red-700"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+                {(h.motesPunkter ?? []).length > 0 && (
+                  <ul className="mt-2 space-y-1 border-t border-border/60 pt-2">
+                    {(h.motesPunkter ?? []).map((p) => (
+                      <li key={p.id}>
+                        <label className="flex cursor-pointer items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={p.klar}
+                            onChange={() => vaxlaPunkt(h.id, p.id)}
+                            className="h-3.5 w-3.5 rounded border-border text-primary"
+                          />
+                          <span
+                            className={
+                              p.klar
+                                ? "text-muted line-through"
+                                : "text-foreground"
+                            }
+                          >
+                            {p.text}
+                          </span>
+                          <span className="text-muted">
+                            {p.klar ? "— klart" : "— att hantera"}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-                <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
-                <span className="text-xs text-muted">
-                  {handelseIntervallText(h)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => startaRedigera(h)}
-                  className="text-xs text-primary-dark hover:underline"
-                >
-                  Redigera
-                </button>
-                <button
-                  type="button"
-                  onClick={() => taBortHandelse(h.id)}
-                  className="text-xs text-muted hover:text-red-700"
-                >
-                  Ta bort
-                </button>
+                {(h.installdaDatum ?? []).length > 0 && (
+                  <p className="mt-1.5 text-xs text-amber-800">
+                    Inställda tillfällen: {h.installdaDatum!.length}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

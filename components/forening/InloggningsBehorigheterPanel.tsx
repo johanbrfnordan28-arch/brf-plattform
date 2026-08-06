@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   FORENING_AKTIV_EVENT,
+  GRUNDMALL_FORENING_ID,
   hamtaAktivForeningId,
 } from "@/lib/forening-registry";
-import { arStandardTestForening } from "@/lib/forening-konstanter";
 import {
   formateraPersonnummer,
   laggTillInloggningsBehorig,
@@ -17,6 +17,7 @@ import {
   type InloggningsBehorig,
   type InloggningsRoll,
 } from "@/lib/kund-inloggning";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 
 const ROLLER: { value: InloggningsRoll; label: string }[] = [
   { value: "ordforande", label: "Ordförande" },
@@ -49,15 +50,13 @@ export function InloggningsBehorigheterPanel() {
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
   }, [ladda]);
 
-  if (!foreningId || arStandardTestForening(foreningId)) {
+  if (!foreningId || foreningId === GRUNDMALL_FORENING_ID) {
     return (
       <div className="rounded-xl border border-border bg-surface/50 p-5">
-        <h2 className="text-lg font-bold text-foreground">
-          Inloggningsbehörigheter
-        </h2>
+        <h2 className="text-lg font-bold text-foreground">Aktuell styrelse</h2>
         <p className="mt-2 text-sm text-muted">
-          I testföreningar används Pröva gratis-inloggning. För betalande
-          kunder styr styrelsen här vilka som får logga in med BankID.
+          Styrelsens inloggningsbehörigheter hanteras per förening. Välj en
+          förening för att lägga till eller ta bort personer.
         </p>
       </div>
     );
@@ -77,27 +76,30 @@ export function InloggningsBehorigheterPanel() {
     }
     setNamn("");
     setPersonnummer("");
-    setOk("Personen kan nu logga in med BankID.");
+    setOk("Personen är tillagd och kan logga in med BankID.");
     ladda();
   }
 
   function taBort(id: string) {
     taBortInloggningsBehorig(foreningId, id);
-    setOk("Behörigheten är borttagen.");
+    setOk("Personen är borttagen och kan inte längre logga in.");
     ladda();
   }
 
   return (
     <div className="rounded-xl border border-border bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="text-lg font-bold text-foreground">
-        Inloggningsbehörigheter
-      </h2>
+      <h2 className="text-lg font-bold text-foreground">Aktuell styrelse</h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Bestäm vilka i styrelsen som får logga in till föreningens sida med
-        BankID. Personerna syns bara här — inte på den publika inloggningssidan.
+        Lägg till personer som ska kunna logga in till föreningens sida med
+        BankID. Ta bort personer som lämnat styrelsen — de kan då inte längre
+        logga in. Listan syns bara här, inte publikt.
+      </p>
+      <p className="mt-2 rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-3 py-2 text-xs leading-relaxed text-primary-dark">
+        Personal från {BRF_NAVET_NAMN} kan alltid logga in för att hjälpa er —
+        oavsett vilka som står i listan nedan.
         {supportLage ? (
-          <span className="mt-1 block font-medium text-primary-dark">
-            Ni är inloggade som support och kan hjälpa till att justera listan.
+          <span className="mt-1 block font-semibold">
+            Ni är inloggade som support och kan justera listan.
           </span>
         ) : null}
       </p>
@@ -105,8 +107,7 @@ export function InloggningsBehorigheterPanel() {
       <ul className="mt-5 divide-y divide-border rounded-xl border border-border">
         {poster.length === 0 ? (
           <li className="px-4 py-3 text-sm text-muted">
-            Ingen har behörighet ännu. Lägg till minst en person så styrelsen
-            kommer in.
+            Ingen i styrelsen har behörighet ännu. Lägg till minst en person.
           </li>
         ) : (
           poster.map((p) => (
@@ -125,7 +126,7 @@ export function InloggningsBehorigheterPanel() {
                 onClick={() => taBort(p.id)}
                 className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 hover:bg-red-100"
               >
-                Ta bort
+                Ta bort person
               </button>
             </li>
           ))
@@ -152,7 +153,7 @@ export function InloggningsBehorigheterPanel() {
           />
         </label>
         <label className="block text-xs font-medium text-foreground">
-          Roll
+          Roll i styrelsen
           <select
             value={roll}
             onChange={(e) => setRoll(e.target.value as InloggningsRoll)}
@@ -172,7 +173,7 @@ export function InloggningsBehorigheterPanel() {
         onClick={laggTill}
         className="brf-knapp-gron mt-4 px-5 py-2.5 text-sm"
       >
-        Ge behörighet att logga in
+        Lägg till person
       </button>
 
       {fel && (
@@ -190,8 +191,8 @@ export function InloggningsBehorigheterPanel() {
       )}
 
       <p className="mt-4 text-xs text-muted">
-        Tips: för demo, lägg till personnummer som {formateraPersonnummer("198003151234")}{" "}
-        (Anna) för att testa kundinloggningen.
+        Demo: lägg till personnummer {formateraPersonnummer("198003151234")}{" "}
+        (Anna) för att testa kundinloggning.
       </p>
     </div>
   );

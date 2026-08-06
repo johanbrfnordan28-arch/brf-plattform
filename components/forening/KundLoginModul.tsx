@@ -277,7 +277,9 @@ export function KundLoginModul() {
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           Identifiera dig med BankID. Du kommer bara in i föreningar där
-          styrelsen har gett dig behörighet. Vi visar aldrig en lista över våra
+          styrelsen har gett dig behörighet. Styrelsen lägger till och tar bort
+          personer under Uppgifter. Personal från {BRF_NAVET_NAMN} kan alltid
+          logga in för att hjälpa till. Vi visar aldrig en lista över våra
           kunder.
         </p>
 

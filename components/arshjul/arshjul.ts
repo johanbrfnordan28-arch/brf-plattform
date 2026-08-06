@@ -17,6 +17,7 @@ export type ArshjulIntervall =
   | "engang"
   | "veckovis"
   | "manadsvis"
+  | "manadsvis_veckodag"
   | "kvartalsvis"
   | "arlig"
   | "vart_3_ar"
@@ -26,10 +27,23 @@ export type ArshjulIntervall =
 /** Äldre typ — migreras till intervall. */
 export type ArshjulHandelseTyp = "engang" | "arlig" | "intervall";
 
+/** 1 = måndag … 7 = söndag. */
+export type ArshjulVeckodag = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/** 1–4 = första–fjärde, -1 = sista i månaden. */
+export type ArshjulVeckodagOrdning = 1 | 2 | 3 | 4 | -1;
+
+export type ArshjulMotesPunkt = {
+  id: string;
+  text: string;
+  klar: boolean;
+};
+
 export const intervallEtiketter: Record<ArshjulIntervall, string> = {
   engang: "Engång",
   veckovis: "Veckovis",
-  manadsvis: "Månadsvis",
+  manadsvis: "Månadsvis (datum)",
+  manadsvis_veckodag: "Månadsvis (veckodag)",
   kvartalsvis: "Kvartalsvis",
   arlig: "Årligen",
   vart_3_ar: "Vart 3:e år",
@@ -41,11 +55,40 @@ export const intervallAlternativ: ArshjulIntervall[] = [
   "engang",
   "veckovis",
   "manadsvis",
+  "manadsvis_veckodag",
   "kvartalsvis",
   "arlig",
   "vart_3_ar",
   "vart_6_ar",
   "vart_10_ar",
+];
+
+export const veckodagEtiketter: Record<ArshjulVeckodag, string> = {
+  1: "Måndag",
+  2: "Tisdag",
+  3: "Onsdag",
+  4: "Torsdag",
+  5: "Fredag",
+  6: "Lördag",
+  7: "Söndag",
+};
+
+export const veckodagOrdningEtiketter: Record<string, string> = {
+  "1": "Första",
+  "2": "Andra",
+  "3": "Tredje",
+  "4": "Fjärde",
+  "-1": "Sista",
+};
+
+export const foreslagnMotesPunkter: string[] = [
+  "OVK",
+  "SBA",
+  "Budget inför kommande år",
+  "Årsstämma — förberedelse",
+  "Underhållsplan — uppföljning",
+  "Upphandling",
+  "Fastighetsskador — status",
 ];
 
 /** Föreslagna underkategorier som visas som snabbval i formuläret. */
@@ -80,6 +123,17 @@ export type ArshjulHandelse = {
   startAr?: number;
   /** Synkas från intervall (3/6/10) för kompatibilitet. */
   intervallAr?: number;
+  /** Månadsvis veckodag — t.ex. första måndagen. */
+  veckodag?: ArshjulVeckodag;
+  veckodagOrdning?: ArshjulVeckodagOrdning;
+  /** Hoppa över dessa månader (t.ex. 7–8 under semester). */
+  undantagnaManader?: number[];
+  /** Enskilda tillfällen som ställts in manuellt (YYYY-MM-DD). */
+  installdaDatum?: string[];
+  /** Tillfällen markerade som genomförda (YYYY-MM-DD). */
+  klarDatum?: string[];
+  /** Ärenden/punkter att hantera på mötet (OVK, SBA, budget …). */
+  motesPunkter?: ArshjulMotesPunkt[];
   /** Senast markerad som genomförd (kalenderår) — nästa tillfälle räknas därifrån. */
   senastKlarAr?: number;
   /** Dagar före händelsen att visa påminnelse (t.ex. 365, 90, 30). */
@@ -100,6 +154,9 @@ export type ArshjulTillfalle = {
   datumIso: string;
   beskrivning: string;
   arManatlig: boolean;
+  installd?: boolean;
+  arKlar?: boolean;
+  oppnaPunkter?: number;
 };
 
 export type ArshjulPaminnelse = {
@@ -235,6 +292,25 @@ export function normaliseraHandelse(
 
   const intervall = migreraTillIntervall(raw);
   const synkAr = intervallTillAr(intervall);
+  const undantagna = Array.isArray(raw.undantagnaManader)
+    ? raw.undantagnaManader.filter((m) => m >= 1 && m <= 12)
+    : [];
+  const installda = Array.isArray(raw.installdaDatum)
+    ? raw.installdaDatum.filter((d) => typeof d === "string")
+    : [];
+  const klarDatum = Array.isArray(raw.klarDatum)
+    ? raw.klarDatum.filter((d) => typeof d === "string")
+    : [];
+  const motesPunkter = Array.isArray(raw.motesPunkter)
+    ? raw.motesPunkter
+        .filter((p) => p && typeof p.text === "string")
+        .map((p) => ({
+          id: p.id || `punkt-${Math.random().toString(36).slice(2, 7)}`,
+          text: p.text.trim(),
+          klar: Boolean(p.klar),
+        }))
+        .filter((p) => p.text)
+    : [];
 
   return {
     ...raw,
@@ -254,6 +330,22 @@ export function normaliseraHandelse(
         ? raw.manad
         : undefined,
     intervallAr: synkAr ?? undefined,
+    veckodag:
+      raw.veckodag != null && raw.veckodag >= 1 && raw.veckodag <= 7
+        ? (raw.veckodag as ArshjulVeckodag)
+        : undefined,
+    veckodagOrdning:
+      raw.veckodagOrdning === -1 ||
+      raw.veckodagOrdning === 1 ||
+      raw.veckodagOrdning === 2 ||
+      raw.veckodagOrdning === 3 ||
+      raw.veckodagOrdning === 4
+        ? raw.veckodagOrdning
+        : undefined,
+    undantagnaManader: undantagna,
+    installdaDatum: installda,
+    klarDatum,
+    motesPunkter,
   };
 }
 
@@ -280,6 +372,10 @@ function pushTillfalle(
   dag: number,
   arManatlig: boolean,
 ) {
+  if (h.undantagnaManader?.includes(manad)) return;
+  const iso = datumIso(ar, manad, dag);
+  if (h.installdaDatum?.includes(iso)) return;
+  const oppnaPunkter = (h.motesPunkter ?? []).filter((p) => !p.klar).length;
   lista.push({
     handelseId: h.id,
     titel: h.titel,
@@ -287,10 +383,69 @@ function pushTillfalle(
     ar,
     manad,
     dag,
-    datumIso: datumIso(ar, manad, dag),
+    datumIso: iso,
     beskrivning: h.beskrivning,
     arManatlig,
+    arKlar: Boolean(h.klar || h.klarDatum?.includes(iso)),
+    oppnaPunkter,
   });
+}
+
+/** Hitta n:te (eller sista) veckodagen i en månad. Veckodag 1=mån … 7=sön. */
+export function nthVeckodagIManad(
+  ar: number,
+  manad: number,
+  veckodag: ArshjulVeckodag,
+  ordning: ArshjulVeckodagOrdning,
+): number | null {
+  const jsDay = veckodag === 7 ? 0 : veckodag; // JS: 0=sön
+  if (ordning === -1) {
+    const sista = new Date(ar, manad, 0, 12, 0, 0);
+    const d = new Date(sista);
+    while (d.getDay() !== jsDay) d.setDate(d.getDate() - 1);
+    return d.getMonth() + 1 === manad ? d.getDate() : null;
+  }
+  const forsta = new Date(ar, manad - 1, 1, 12, 0, 0);
+  let dag = 1 + ((jsDay - forsta.getDay() + 7) % 7);
+  dag += (ordning - 1) * 7;
+  const test = new Date(ar, manad - 1, dag, 12, 0, 0);
+  if (test.getMonth() + 1 !== manad) return null;
+  return dag;
+}
+
+export function stallInTillfalle(
+  h: ArshjulHandelse,
+  datumIsoStr: string,
+): ArshjulHandelse {
+  const installda = [...(h.installdaDatum ?? [])];
+  if (!installda.includes(datumIsoStr)) installda.push(datumIsoStr);
+  return normaliseraHandelse({ ...h, installdaDatum: installda });
+}
+
+export function markeraTillfalleKlar(
+  h: ArshjulHandelse,
+  datumIsoStr: string,
+): ArshjulHandelse {
+  if (h.intervall === "engang") {
+    return normaliseraHandelse({ ...h, klar: true });
+  }
+  const klarDatum = [...(h.klarDatum ?? [])];
+  if (!klarDatum.includes(datumIsoStr)) klarDatum.push(datumIsoStr);
+  return normaliseraHandelse({ ...h, klarDatum });
+}
+
+export function toggleMotesPunkt(
+  h: ArshjulHandelse,
+  punktId: string,
+): ArshjulHandelse {
+  const punkter = (h.motesPunkter ?? []).map((p) =>
+    p.id === punktId ? { ...p, klar: !p.klar } : p,
+  );
+  return normaliseraHandelse({ ...h, motesPunkter: punkter });
+}
+
+export function skapaMotesPunktId(): string {
+  return `mp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
 export function nastaIntervallAr(h: ArshjulHandelse): number | null {
@@ -303,6 +458,10 @@ export function nastaIntervallAr(h: ArshjulHandelse): number | null {
 }
 
 export function handelseIntervallText(h: ArshjulHandelse): string {
+  const undantag =
+    h.undantagnaManader && h.undantagnaManader.length > 0
+      ? ` (ej ${h.undantagnaManader.map((m) => manadsnamn[m - 1].slice(0, 3)).join(", ")})`
+      : "";
   switch (h.intervall) {
     case "engang":
       return h.datum ? formatDatumKort(h.datum) : "Engång";
@@ -311,9 +470,16 @@ export function handelseIntervallText(h: ArshjulHandelse): string {
         ? `Veckovis från ${formatDatumKort(h.datum)}`
         : "Veckovis";
     case "manadsvis":
-      return `Månadsvis (dag ${h.dag ?? 1})`;
+      return `Månadsvis (dag ${h.dag ?? 1})${undantag}`;
+    case "manadsvis_veckodag": {
+      const ord =
+        veckodagOrdningEtiketter[String(h.veckodagOrdning ?? 1)] ?? "Första";
+      const dag =
+        h.veckodag != null ? veckodagEtiketter[h.veckodag] : "måndag";
+      return `${ord.toLowerCase()} ${dag.toLowerCase()} varje månad${undantag}`;
+    }
     case "kvartalsvis":
-      return `Kvartalsvis från ${manadsnamn[(h.manad ?? 1) - 1]}`;
+      return `Kvartalsvis från ${manadsnamn[(h.manad ?? 1) - 1]}${undantag}`;
     case "arlig":
       return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`;
     case "vart_3_ar":
@@ -389,6 +555,18 @@ export function expanderaTillfallen(
       continue;
     }
 
+    if (h.intervall === "manadsvis_veckodag" && h.veckodag) {
+      const ordning = h.veckodagOrdning ?? 1;
+      for (let ar = franAr; ar <= tillAr; ar++) {
+        for (let manad = 1; manad <= 12; manad++) {
+          const dag = nthVeckodagIManad(ar, manad, h.veckodag, ordning);
+          if (dag == null) continue;
+          pushTillfalle(lista, h, ar, manad, dag, true);
+        }
+      }
+      continue;
+    }
+
     if (h.intervall === "kvartalsvis") {
       const startManad = h.manad ?? 1;
       const dag = h.dag && h.dag >= 1 && h.dag <= 28 ? h.dag : 1;
@@ -453,13 +631,21 @@ export function hamtaPaminnelser(
 
   for (const t of tillfallen) {
     const h = handelser.find((x) => x.id === t.handelseId);
-    if (!h || h.klar) continue;
+    if (!h || h.klar || t.arKlar) continue;
 
     const mål = parseDatum(t.datumIso);
     if (!mål) continue;
     if (mål < franDatum || mål > tillDatum) continue;
 
     const dagarKvar = dagarMellan(idag, mål);
+    const agenda = (h.motesPunkter ?? [])
+      .filter((p) => !p.klar)
+      .map((p) => p.text);
+    const agendaText =
+      agenda.length > 0
+        ? ` På mötet: ${agenda.join(", ")}.`
+        : "";
+
     if (dagarKvar < 0) {
       poster.push({
         handelseId: h.id,
@@ -468,7 +654,9 @@ export function hamtaPaminnelser(
         kategori: h.kategori,
         dagarKvar,
         rubrik: `${h.titel} — försenad`,
-        text: h.beskrivning || `Planerat ${formatDatumKort(t.datumIso)}.`,
+        text:
+          (h.beskrivning || `Planerat ${formatDatumKort(t.datumIso)}.`) +
+          agendaText,
         nivå: "kritisk",
       });
       continue;
@@ -489,8 +677,9 @@ export function hamtaPaminnelser(
               ? `${h.titel} — idag`
               : `${h.titel} — om ${dagarKvar} dagar`,
           text:
-            h.beskrivning ||
-            `Planerat ${formatDatumKort(t.datumIso)}. Börja förbereda i god tid.`,
+            (h.beskrivning ||
+              `Planerat ${formatDatumKort(t.datumIso)}. Börja förbereda i god tid.`) +
+            agendaText,
           nivå,
         });
         break;

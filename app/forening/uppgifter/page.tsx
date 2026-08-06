@@ -18,7 +18,7 @@ export default function ForeningUppgifterPage() {
     <ModulePage
       title="Föreningsuppgifter"
       icon="🏠"
-      intro="Här fyller styrelsen i kontaktuppgifter. De används automatiskt i dokument, städschema, egenkontroller, upphandlingsunderlag och underhållsplanen."
+      intro="Här fyller styrelsen i kontaktuppgifter och vilka som får logga in. Uppgifterna används i dokument, upphandling och underhållsplanen."
     >
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-5">
         <p className="text-sm font-semibold text-primary-dark">
