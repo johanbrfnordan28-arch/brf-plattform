@@ -37,7 +37,58 @@ export type ArshjulMotesPunkt = {
   id: string;
   text: string;
   klar: boolean;
+  /**
+   * Månader (1–12) då punkten ska tas upp på möten.
+   * Saknas eller tom lista = varje möte tills punkten är klar.
+   * Exempel ekonomi: [1,3,5,7,8,9,10,11,12] = varannan mån först, sedan varje.
+   */
+  manader?: number[];
 };
+
+/** Förval för ojämna intervaller på mötespunkter/uppföljning. */
+export const punkterManadsForval: {
+  id: string;
+  etikett: string;
+  manader: number[];
+  beskrivning: string;
+}[] = [
+  {
+    id: "varje",
+    etikett: "Varje möte",
+    manader: [],
+    beskrivning: "Visas på alla möten tills klart",
+  },
+  {
+    id: "varannan",
+    etikett: "Varannan månad",
+    manader: [1, 3, 5, 7, 9, 11],
+    beskrivning: "Jan, mar, maj, jul, sep, nov",
+  },
+  {
+    id: "varannan_var",
+    etikett: "Varannan månad (jämna)",
+    manader: [2, 4, 6, 8, 10, 12],
+    beskrivning: "Feb, apr, jun, aug, okt, dec",
+  },
+  {
+    id: "ekonomi_ojamnt",
+    etikett: "Ekonomi (ojämnt)",
+    manader: [1, 3, 5, 7, 8, 9, 10, 11, 12],
+    beskrivning: "Varannan i början, varje månad från juli",
+  },
+  {
+    id: "kvartal",
+    etikett: "Kvartalsvis",
+    manader: [3, 6, 9, 12],
+    beskrivning: "Mar, jun, sep, dec",
+  },
+  {
+    id: "var_terminen",
+    etikett: "Några gånger per år",
+    manader: [2, 5, 9, 11],
+    beskrivning: "Feb, maj, sep, nov",
+  },
+];
 
 export const intervallEtiketter: Record<ArshjulIntervall, string> = {
   engang: "Engång",
@@ -222,6 +273,8 @@ export type ArshjulTillfalle = {
   installd?: boolean;
   arKlar?: boolean;
   oppnaPunkter?: number;
+  /** Öppna punkter som gäller just detta möte (efter månadsfilter). */
+  punkterPaTillfalle?: string[];
   /** Titlar på besiktningar/åtgärder kopplade till detta möte. */
   koppladeAtgarder?: string[];
 };
@@ -285,6 +338,37 @@ export const manadsnamn = [
   "November",
   "December",
 ] as const;
+
+/** Om punkten ska tas upp på möte i given månad. */
+export function punktGallerManad(
+  p: ArshjulMotesPunkt,
+  manad: number,
+): boolean {
+  if (!p.manader || p.manader.length === 0) return true;
+  return p.manader.includes(manad);
+}
+
+export function oppnaPunkterForManad(
+  h: ArshjulHandelse,
+  manad: number,
+): ArshjulMotesPunkt[] {
+  return (h.motesPunkter ?? []).filter(
+    (p) => !p.klar && punktGallerManad(p, manad),
+  );
+}
+
+export function manaderEtikettKort(manader?: number[]): string {
+  if (!manader || manader.length === 0) return "Varje möte";
+  if (manader.length === 12) return "Varje möte";
+  const sorterad = [...manader].sort((a, b) => a - b);
+  const forval = punkterManadsForval.find(
+    (f) =>
+      f.manader.length === sorterad.length &&
+      f.manader.every((m, i) => m === sorterad[i]),
+  );
+  if (forval) return forval.etikett;
+  return sorterad.map((m) => manadsnamn[m - 1]?.slice(0, 3) ?? String(m)).join(", ");
+}
 
 export function skapaHandelseId(): string {
   return `arshjul-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -387,11 +471,22 @@ export function normaliseraHandelse(
   const motesPunkter = Array.isArray(raw.motesPunkter)
     ? raw.motesPunkter
         .filter((p) => p && typeof p.text === "string")
-        .map((p) => ({
-          id: p.id || `punkt-${Math.random().toString(36).slice(2, 7)}`,
-          text: p.text.trim(),
-          klar: Boolean(p.klar),
-        }))
+        .map((p) => {
+          const manader = Array.isArray(p.manader)
+            ? [...new Set(p.manader.filter((m) => m >= 1 && m <= 12))].sort(
+                (a, b) => a - b,
+              )
+            : undefined;
+          return {
+            id: p.id || `punkt-${Math.random().toString(36).slice(2, 7)}`,
+            text: p.text.trim(),
+            klar: Boolean(p.klar),
+            manader:
+              manader && manader.length > 0 && manader.length < 12
+                ? manader
+                : undefined,
+          };
+        })
         .filter((p) => p.text)
     : [];
 
@@ -635,7 +730,7 @@ function pushTillfalle(
   const installd = Boolean(
     h.installdaDatum?.includes(planerat) || h.installdaDatum?.includes(iso),
   );
-  const oppnaPunkter = (h.motesPunkter ?? []).filter((p) => !p.klar).length;
+  const punkterNu = oppnaPunkterForManad(h, slutManad);
   lista.push({
     handelseId: h.id,
     titel: h.titel,
@@ -653,7 +748,8 @@ function pushTillfalle(
         h.klarDatum?.includes(iso) ||
         h.klarDatum?.includes(planerat),
     ),
-    oppnaPunkter,
+    oppnaPunkter: punkterNu.length,
+    punkterPaTillfalle: punkterNu.map((p) => p.text),
   });
 }
 
@@ -758,12 +854,44 @@ export function markeraTillfalleKlar(
   return normaliseraHandelse({ ...h, klarDatum });
 }
 
+/** Återställ ett tillfälle som markerats klart (t.ex. av misstag). */
+export function aterstallTillfalleKlar(
+  h: ArshjulHandelse,
+  ...datumIsoLista: string[]
+): ArshjulHandelse {
+  if (h.intervall === "engang") {
+    return normaliseraHandelse({ ...h, klar: false });
+  }
+  const taBort = new Set(datumIsoLista.filter(Boolean));
+  const klarDatum = (h.klarDatum ?? []).filter((d) => !taBort.has(d));
+  return normaliseraHandelse({ ...h, klarDatum, klar: false });
+}
+
 export function toggleMotesPunkt(
   h: ArshjulHandelse,
   punktId: string,
 ): ArshjulHandelse {
   const punkter = (h.motesPunkter ?? []).map((p) =>
     p.id === punktId ? { ...p, klar: !p.klar } : p,
+  );
+  return normaliseraHandelse({ ...h, motesPunkter: punkter });
+}
+
+export function uppdateraMotesPunktManader(
+  h: ArshjulHandelse,
+  punktId: string,
+  manader: number[] | undefined,
+): ArshjulHandelse {
+  const punkter = (h.motesPunkter ?? []).map((p) =>
+    p.id === punktId
+      ? {
+          ...p,
+          manader:
+            manader && manader.length > 0 && manader.length < 12
+              ? [...new Set(manader)].sort((a, b) => a - b)
+              : undefined,
+        }
+      : p,
   );
   return normaliseraHandelse({ ...h, motesPunkter: punkter });
 }
@@ -980,7 +1108,8 @@ export function hamtaPaminnelser(
 
     const dagarKvar = dagarMellan(idag, mål);
     const agenda = [
-      ...(h.motesPunkter ?? []).filter((p) => !p.klar).map((p) => p.text),
+      ...(t.punkterPaTillfalle ??
+        oppnaPunkterForManad(h, t.manad).map((p) => p.text)),
       ...(t.koppladeAtgarder ?? []),
     ];
     const agendaText =

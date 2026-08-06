@@ -9,6 +9,7 @@ import {
   arMotesKategori,
   arshjulStorageKey,
   aterstallTillfalle,
+  aterstallTillfalleKlar,
   behoverPlaneringsperiod,
   expanderaTillfallen,
   foreslagnMotesPunkter,
@@ -21,11 +22,13 @@ import {
   intervallEtiketter,
   kategoriEtiketter,
   kategoriFarger,
+  manaderEtikettKort,
   manadsnamn,
   markeraTillfalleKlar,
   normaliseraHandelse,
   nthVeckodagIManad,
   paminnelseDagarAlternativ,
+  punkterManadsForval,
   sammanfattaArsPlanering,
   skapaHandelseId,
   skapaMotesPunktId,
@@ -84,8 +87,18 @@ function skapaExempelHandelser(ar: number): ArshjulHandelse[] {
       planerasFranAr: ar,
       planerasTillAr: ar + STANDARD_PLANERING_AR_FRAM,
       motesPunkter: [
-        { id: "ex-p1", text: "Budget inför kommande år", klar: false },
-        { id: "ex-p2", text: "Underhållsplan — uppföljning", klar: false },
+        {
+          id: "ex-p1",
+          text: "Ekonomi / budgetuppföljning",
+          klar: false,
+          manader: [1, 3, 5, 7, 8, 9, 10, 11, 12],
+        },
+        {
+          id: "ex-p2",
+          text: "Underhållsplan — uppföljning",
+          klar: false,
+          manader: [3, 6, 9, 12],
+        },
       ],
       paminnelseDagar: [14, 7],
       klar: false,
@@ -139,6 +152,7 @@ export function ArshjulModul() {
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
   const [nyPunktText, setNyPunktText] = useState("");
   const [egenPunktLage, setEgenPunktLage] = useState(false);
+  const [nyPunktManader, setNyPunktManader] = useState<number[]>([]);
   const [andrarDatumFor, setAndrarDatumFor] = useState<string | null>(null);
   const [ovkVerksamhetAr, setOvkVerksamhetAr] = useState(innevarandeAr);
   const [ovkBostadAr, setOvkBostadAr] = useState(innevarandeAr + 3);
@@ -244,6 +258,23 @@ export function ArshjulModul() {
     }
   }
 
+  function aterstallKlar(
+    id: string,
+    datumIso?: string,
+    planeratIso?: string,
+  ) {
+    const h = handelser.find((x) => x.id === id);
+    if (!h) return;
+    if (datumIso) {
+      uppdateraHandelse(
+        id,
+        aterstallTillfalleKlar(h, datumIso, planeratIso ?? datumIso),
+      );
+      return;
+    }
+    uppdateraHandelse(id, { klar: false, senastKlarAr: undefined });
+  }
+
   function stallInMote(id: string, datumIso: string, planeratIso?: string) {
     const h = handelser.find((x) => x.id === id);
     if (!h) return;
@@ -295,15 +326,42 @@ export function ArshjulModul() {
     const t = text.trim();
     if (!t) return;
     if ((form.motesPunkter ?? []).some((p) => p.text === t)) return;
+    const manader =
+      nyPunktManader.length > 0 && nyPunktManader.length < 12
+        ? [...nyPunktManader].sort((a, b) => a - b)
+        : undefined;
     setForm({
       ...form,
       motesPunkter: [
         ...(form.motesPunkter ?? []),
-        { id: skapaMotesPunktId(), text: t, klar: false },
+        { id: skapaMotesPunktId(), text: t, klar: false, manader },
       ],
     });
     setNyPunktText("");
     setEgenPunktLage(false);
+  }
+
+  function setPunktManaderIForm(punktId: string, manader: number[]) {
+    setForm({
+      ...form,
+      motesPunkter: (form.motesPunkter ?? []).map((p) =>
+        p.id === punktId
+          ? {
+              ...p,
+              manader:
+                manader.length > 0 && manader.length < 12
+                  ? [...manader].sort((a, b) => a - b)
+                  : undefined,
+            }
+          : p,
+      ),
+    });
+  }
+
+  function toggleNyPunktManad(manad: number) {
+    setNyPunktManader((nu) =>
+      nu.includes(manad) ? nu.filter((m) => m !== manad) : [...nu, manad].sort((a, b) => a - b),
+    );
   }
 
   function laggTillPaminnelseDag(dagar: number) {
@@ -484,15 +542,26 @@ export function ArshjulModul() {
           {flyttat ? " · ändrat" : ""}
           {t.arKlar ? " · klart" : ""}
         </p>
+        {(t.punkterPaTillfalle ?? []).length > 0 && (
+          <p className="mt-0.5 opacity-90">
+            Punkter: {t.punkterPaTillfalle!.join(", ")}
+          </p>
+        )}
         {(t.koppladeAtgarder ?? []).length > 0 && (
           <p className="mt-0.5 opacity-90">
             Kopplat: {t.koppladeAtgarder!.join(", ")}
           </p>
         )}
-        {(t.oppnaPunkter ?? 0) > 0 && (t.koppladeAtgarder ?? []).length === 0 && (
-          <p className="mt-0.5 font-medium opacity-90">
-            {t.oppnaPunkter} punkt{(t.oppnaPunkter ?? 0) === 1 ? "" : "er"} kvar
-          </p>
+        {h && t.arKlar && (
+          <div className="mt-1 flex flex-col gap-0.5">
+            <button
+              type="button"
+              onClick={() => aterstallKlar(h.id, t.datumIso, planerat)}
+              className="text-left font-medium underline-offset-2 hover:underline"
+            >
+              Återställ (öppna igen)
+            </button>
+          </div>
         )}
         {h && !t.arKlar && (
           <div className="mt-1 flex flex-col gap-0.5">
@@ -1212,54 +1281,177 @@ export function ArshjulModul() {
 
             <div className="sm:col-span-2 rounded-xl border border-border bg-surface/40 p-3">
               <p className="text-sm font-medium text-foreground">
-                Punkter på mötet / ärenden under året
+                Punkter / uppföljning — vilka möten?
               </p>
               <p className="mt-1 text-xs text-muted">
-                Lägg in t.ex. OVK, SBA eller budget redan i januari. Markera
-                punkter som klara när de är hanterade — uppföljning kan läggas in
-                senare.
+                Välj vilka månader en punkt ska tas upp. Exempel ekonomi: varannan
+                månad i början, varje månad mot slutet. Tomt = varje möte tills
+                klart.
               </p>
-              <ul className="mt-2 space-y-1.5">
+              <ul className="mt-2 space-y-2">
                 {(form.motesPunkter ?? []).map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm"
+                    className="rounded-lg border border-border bg-white px-2.5 py-2 text-sm"
                   >
-                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={p.klar}
-                        onChange={() => {
-                          setForm({
-                            ...form,
-                            motesPunkter: (form.motesPunkter ?? []).map((x) =>
-                              x.id === p.id ? { ...x, klar: !x.klar } : x,
-                            ),
-                          });
-                        }}
-                        className="h-4 w-4 rounded border-border text-primary"
-                      />
-                      <span
-                        className={
-                          p.klar
-                            ? "text-muted line-through"
-                            : "text-foreground"
-                        }
-                      >
-                        {p.text}
-                      </span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => taBortPunktFranForm(p.id)}
-                      className="text-xs text-muted hover:text-red-700"
-                    >
-                      Ta bort
-                    </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={p.klar}
+                          onChange={() => {
+                            setForm({
+                              ...form,
+                              motesPunkter: (form.motesPunkter ?? []).map((x) =>
+                                x.id === p.id ? { ...x, klar: !x.klar } : x,
+                              ),
+                            });
+                          }}
+                          className="h-4 w-4 rounded border-border text-primary"
+                        />
+                        <span
+                          className={
+                            p.klar
+                              ? "text-muted line-through"
+                              : "text-foreground"
+                          }
+                        >
+                          {p.text}
+                        </span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {p.klar && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                motesPunkter: (form.motesPunkter ?? []).map(
+                                  (x) =>
+                                    x.id === p.id ? { ...x, klar: false } : x,
+                                ),
+                              });
+                            }}
+                            className="text-xs font-medium text-primary-dark hover:underline"
+                          >
+                            Återställ
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => taBortPunktFranForm(p.id)}
+                          className="text-xs text-muted hover:text-red-700"
+                        >
+                          Ta bort
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted">
+                      {manaderEtikettKort(p.manader)}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {punkterManadsForval.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setPunktManaderIForm(p.id, f.manader)}
+                          className="rounded-full border border-border px-2 py-0.5 text-[10px] hover:border-primary/40"
+                          title={f.beskrivning}
+                        >
+                          {f.etikett}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {manadsnamn.map((namn, i) => {
+                        const manad = i + 1;
+                        const vald =
+                          !p.manader || p.manader.length === 0
+                            ? true
+                            : p.manader.includes(manad);
+                        return (
+                          <button
+                            key={namn}
+                            type="button"
+                            onClick={() => {
+                              const bas =
+                                !p.manader || p.manader.length === 0
+                                  ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                                  : [...p.manader];
+                              const nasta = bas.includes(manad)
+                                ? bas.filter((m) => m !== manad)
+                                : [...bas, manad];
+                              setPunktManaderIForm(p.id, nasta);
+                            }}
+                            className={`rounded border px-1.5 py-0.5 text-[10px] ${
+                              vald
+                                ? "border-primary/40 bg-[#eef6f0] text-primary-dark"
+                                : "border-border text-muted"
+                            }`}
+                          >
+                            {namn.slice(0, 3)}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 space-y-2">
+              <div className="mt-3 space-y-2 rounded-lg border border-dashed border-border bg-white/70 p-2.5">
+                <p className="text-xs font-medium text-foreground">
+                  När ska nya punkter tas upp?
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {punkterManadsForval.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setNyPunktManader(f.manader)}
+                      className={`rounded-full border px-2 py-0.5 text-[10px] ${
+                        (nyPunktManader.length === 0 && f.manader.length === 0) ||
+                        (nyPunktManader.length === f.manader.length &&
+                          f.manader.every((m) => nyPunktManader.includes(m)))
+                          ? "border-primary bg-[#eef6f0] text-primary-dark"
+                          : "border-border"
+                      }`}
+                      title={f.beskrivning}
+                    >
+                      {f.etikett}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {manadsnamn.map((namn, i) => {
+                    const manad = i + 1;
+                    const vald =
+                      nyPunktManader.length === 0 ||
+                      nyPunktManader.includes(manad);
+                    return (
+                      <button
+                        key={namn}
+                        type="button"
+                        onClick={() => {
+                          if (nyPunktManader.length === 0) {
+                            setNyPunktManader(
+                              [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(
+                                (m) => m !== manad,
+                              ),
+                            );
+                            return;
+                          }
+                          toggleNyPunktManad(manad);
+                        }}
+                        className={`rounded border px-1.5 py-0.5 text-[10px] ${
+                          vald
+                            ? "border-primary/40 bg-[#eef6f0] text-primary-dark"
+                            : "border-border text-muted"
+                        }`}
+                      >
+                        {namn.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
                 <label className="block">
                   <span className="sr-only">Välj punkt</span>
                   <select
@@ -1318,12 +1510,6 @@ export function ArshjulModul() {
                   </div>
                 )}
               </div>
-              {redigeraId && (form.motesPunkter ?? []).length > 0 && (
-                <p className="mt-2 text-xs text-muted">
-                  Tip: ni kan också bocka av punkter direkt i listan nedan efter
-                  sparning.
-                </p>
-              )}
             </div>
 
             <div className="sm:col-span-2 rounded-xl border border-border bg-surface/40 p-3">
@@ -1519,29 +1705,41 @@ export function ArshjulModul() {
                   </button>
                 </div>
                 {(h.motesPunkter ?? []).length > 0 && (
-                  <ul className="mt-2 space-y-1 border-t border-border/60 pt-2">
+                  <ul className="mt-2 space-y-1.5 border-t border-border/60 pt-2">
                     {(h.motesPunkter ?? []).map((p) => (
-                      <li key={p.id}>
-                        <label className="flex cursor-pointer items-center gap-2 text-xs">
-                          <input
-                            type="checkbox"
-                            checked={p.klar}
-                            onChange={() => vaxlaPunkt(h.id, p.id)}
-                            className="h-3.5 w-3.5 rounded border-border text-primary"
-                          />
-                          <span
-                            className={
-                              p.klar
-                                ? "text-muted line-through"
-                                : "text-foreground"
-                            }
-                          >
-                            {p.text}
-                          </span>
-                          <span className="text-muted">
-                            {p.klar ? "— klart" : "— att hantera"}
-                          </span>
-                        </label>
+                      <li key={p.id} className="text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={p.klar}
+                              onChange={() => vaxlaPunkt(h.id, p.id)}
+                              className="h-3.5 w-3.5 rounded border-border text-primary"
+                            />
+                            <span
+                              className={
+                                p.klar
+                                  ? "text-muted line-through"
+                                  : "text-foreground"
+                              }
+                            >
+                              {p.text}
+                            </span>
+                          </label>
+                          {p.klar ? (
+                            <button
+                              type="button"
+                              onClick={() => vaxlaPunkt(h.id, p.id)}
+                              className="font-medium text-primary-dark underline-offset-2 hover:underline"
+                            >
+                              Återställ
+                            </button>
+                          ) : (
+                            <span className="text-muted">
+                              {manaderEtikettKort(p.manader)}
+                            </span>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>
