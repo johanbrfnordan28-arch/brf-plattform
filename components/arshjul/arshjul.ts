@@ -511,6 +511,81 @@ export type SparatProtokoll = {
   sparadAt: string;
 };
 
+/** Uppladdad befintlig dagordning (PDF m.m.) kopplad till möte + månad. */
+export type UppladdadDagordningFil = {
+  id: string;
+  moteId: string;
+  ar: number;
+  manad: number;
+  filnamn: string;
+  mimeTyp: string;
+  storlek: number;
+  dataUrl: string;
+  uppladdadAt: string;
+};
+
+const DAGORDNING_FIL_STORAGE_BASE = "brf-arshjul-dagordning-filer";
+/** Ungefärlig gräns så localStorage inte fylls (demo). */
+export const MAX_DAGORDNING_FIL_BYTES = 1_500_000;
+
+export function dagordningFilStorageKey(): string {
+  return foreningStorageKey(DAGORDNING_FIL_STORAGE_BASE);
+}
+
+export function lasUppladdadeDagordningar(): UppladdadDagordningFil[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(dagordningFilStorageKey());
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as UppladdadDagordningFil[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function sparaUppladdadeDagordningar(
+  lista: UppladdadDagordningFil[],
+): void {
+  if (typeof window === "undefined") return;
+  safeSetLocalStorage(dagordningFilStorageKey(), JSON.stringify(lista));
+}
+
+export function hittaUppladdadDagordning(
+  lista: UppladdadDagordningFil[],
+  moteId: string,
+  ar: number,
+  manad: number,
+): UppladdadDagordningFil | undefined {
+  return lista.find(
+    (f) => f.moteId === moteId && f.ar === ar && f.manad === manad,
+  );
+}
+
+/**
+ * Synkar protokollpunkter mot aktuell dagordning: samma rubriker/ordning,
+ * behåller anteckning/beslut där id eller rubrik matchar.
+ */
+export function speglaProtokollMotDagordning(
+  dagordning: MotesDokumentPunkt[],
+  protokollPunkter: MotesDokumentPunkt[],
+): MotesDokumentPunkt[] {
+  const byId = new Map(protokollPunkter.map((p) => [p.id, p]));
+  const byRubrik = new Map(
+    protokollPunkter.map((p) => [p.rubrik.trim().toLowerCase(), p]),
+  );
+  return dagordning.map((d) => {
+    const match =
+      byId.get(d.id) ?? byRubrik.get(d.rubrik.trim().toLowerCase());
+    return {
+      id: d.id,
+      rubrik: d.rubrik,
+      anteckning: match?.anteckning ?? d.anteckning ?? "",
+      beslut: match?.beslut ?? d.beslut ?? "",
+    };
+  });
+}
+
 export const STANDARD_DAGORDNING_MALL: DagordningMall = {
   punkter: [
     { id: "mall-1", rubrik: "Öppnande" },

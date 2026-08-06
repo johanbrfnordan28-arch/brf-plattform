@@ -1033,25 +1033,6 @@ export function ArshjulModul() {
         </p>
       )}
 
-      {moten.length > 0 && vy === "arshjul" && (
-        <MotesDokumentPanel
-          moten={moten}
-          valtAr={valtAr}
-          aktuellManad={aktuellManad}
-          innevarandeAr={innevarandeAr}
-          moteId={agendaMoteId}
-          manad={agendaManad}
-          onMoteIdChange={setAgendaMoteId}
-          onManadChange={setAgendaManad}
-          onMeddelande={setMeddelande}
-          onLaggTillManadsPunkt={(moteId, text, manad) => {
-            const h = handelser.find((x) => x.id === moteId);
-            if (!h) return;
-            uppdatera(moteId, laggTillPunktForManad(h, text, manad));
-          }}
-        />
-      )}
-
       {vy === "arshjul" && (
         <div className="space-y-4">
           <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/40 p-4">
@@ -1207,6 +1188,25 @@ export function ArshjulModul() {
               </li>
             )}
           </ul>
+
+          {moten.length > 0 && (
+            <MotesDokumentPanel
+              moten={moten}
+              valtAr={valtAr}
+              aktuellManad={aktuellManad}
+              innevarandeAr={innevarandeAr}
+              moteId={agendaMoteId}
+              manad={agendaManad}
+              onMoteIdChange={setAgendaMoteId}
+              onManadChange={setAgendaManad}
+              onMeddelande={setMeddelande}
+              onLaggTillManadsPunkt={(moteId, text, manad) => {
+                const h = handelser.find((x) => x.id === moteId);
+                if (!h) return;
+                uppdatera(moteId, laggTillPunktForManad(h, text, manad));
+              }}
+            />
+          )}
         </div>
       )}
 

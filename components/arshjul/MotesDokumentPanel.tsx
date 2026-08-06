@@ -1,19 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import {
   byggMotesDokumentPunkter,
   foreslagnMotesPunkter,
   hittaProtokoll,
+  hittaUppladdadDagordning,
   lasDagordningMall,
   lasSparadeProtokoll,
+  lasUppladdadeDagordningar,
   manadsnamn,
+  MAX_DAGORDNING_FIL_BYTES,
   sparaDagordningMall,
   sparaSparadeProtokoll,
+  sparaUppladdadeDagordningar,
+  speglaProtokollMotDagordning,
   skapaDokumentPunktId,
   type ArshjulHandelse,
   type MotesDokumentPunkt,
   type SparatProtokoll,
+  type UppladdadDagordningFil,
 } from "@/components/arshjul/arshjul";
 
 type Props = {
@@ -26,11 +33,10 @@ type Props = {
   onMoteIdChange: (id: string) => void;
   onManadChange: (manad: number) => void;
   onMeddelande: (text: string) => void;
-  /** Synka månadspunkt till händelsen (årshjulet). */
   onLaggTillManadsPunkt: (moteId: string, text: string, manad: number) => void;
 };
 
-type Flik = "dagordning" | "protokoll" | "grundmall";
+type Flik = "dagordning" | "protokoll" | "mall";
 
 export function MotesDokumentPanel({
   moten,
@@ -44,22 +50,24 @@ export function MotesDokumentPanel({
   onMeddelande,
   onLaggTillManadsPunkt,
 }: Props) {
+  const [oppen, setOppen] = useState(false);
   const [flik, setFlik] = useState<Flik>("dagordning");
   const [punkter, setPunkter] = useState<MotesDokumentPunkt[]>([]);
   const [mallPunkter, setMallPunkter] = useState(
     () => lasDagordningMall().punkter,
   );
   const [protokoll, setProtokoll] = useState<SparatProtokoll[]>([]);
+  const [filer, setFiler] = useState<UppladdadDagordningFil[]>([]);
   const [nyRubrik, setNyRubrik] = useState("");
   const [nyMallRubrik, setNyMallRubrik] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
-  const aktivMote =
-    moten.find((m) => m.id === moteId) ?? moten[0] ?? null;
+  const aktivMote = moten.find((m) => m.id === moteId) ?? moten[0] ?? null;
   const aktivMoteId = aktivMote?.id ?? null;
 
   useEffect(() => {
     setProtokoll(lasSparadeProtokoll());
+    setFiler(lasUppladdadeDagordningar());
     setMallPunkter(lasDagordningMall().punkter);
     setHydrated(true);
   }, []);
@@ -69,20 +77,32 @@ export function MotesDokumentPanel({
     return hittaProtokoll(protokoll, aktivMoteId, valtAr, manad);
   }, [protokoll, aktivMoteId, valtAr, manad]);
 
+  const uppladdadFil = useMemo(() => {
+    if (!aktivMoteId) return undefined;
+    return hittaUppladdadDagordning(filer, aktivMoteId, valtAr, manad);
+  }, [filer, aktivMoteId, valtAr, manad]);
+
   useEffect(() => {
     if (!hydrated) return;
-    const mall = { punkter: mallPunkter };
     setPunkter(
-      byggMotesDokumentPunkter(mall, aktivMote, manad, sparatForMote),
+      byggMotesDokumentPunkter(
+        { punkter: mallPunkter },
+        aktivMote,
+        manad,
+        sparatForMote,
+      ),
     );
-    // Endast när möte/månad/år eller sparat protokoll byts — inte vid varje mall-edit
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, aktivMoteId, manad, valtAr, sparatForMote?.id, sparatForMote?.sparadAt]);
+  }, [
+    hydrated,
+    aktivMoteId,
+    manad,
+    valtAr,
+    sparatForMote?.id,
+    sparatForMote?.sparadAt,
+  ]);
 
-  function uppdateraPunkt(
-    id: string,
-    patch: Partial<MotesDokumentPunkt>,
-  ) {
+  function uppdateraPunkt(id: string, patch: Partial<MotesDokumentPunkt>) {
     setPunkter((cur) =>
       cur.map((p) => (p.id === id ? { ...p, ...patch } : p)),
     );
@@ -110,17 +130,17 @@ export function MotesDokumentPanel({
 
   function sparaMall() {
     const kalla =
-      flik === "grundmall"
+      flik === "mall"
         ? mallPunkter
         : punkter.map((p) => ({ id: p.id, rubrik: p.rubrik }));
     const rensad = kalla.filter((p) => p.rubrik.trim());
     if (rensad.length === 0) {
-      onMeddelande("Lägg till minst en punkt innan du sparar grundmallen.");
+      onMeddelande("Lägg till minst en punkt innan du sparar mallen.");
       return;
     }
     sparaDagordningMall({ punkter: rensad });
     setMallPunkter(rensad);
-    onMeddelande("Grundmall sparad.");
+    onMeddelande("Er mall sparad.");
   }
 
   function sparaProtokollNu() {
@@ -128,9 +148,11 @@ export function MotesDokumentPanel({
       onMeddelande("Välj ett möte först.");
       return;
     }
-    const rensad = punkter.filter((p) => p.rubrik.trim());
-    if (rensad.length === 0) {
-      onMeddelande("Dokumentet är tomt — lägg till punkter först.");
+    const speglad = speglaProtokollMotDagordning(punkter, punkter).filter(
+      (p) => p.rubrik.trim(),
+    );
+    if (speglad.length === 0) {
+      onMeddelande("Dagordningen är tom — lägg till punkter först.");
       return;
     }
     const nu: SparatProtokoll = {
@@ -139,7 +161,7 @@ export function MotesDokumentPanel({
       moteTitel: aktivMote.titel,
       ar: valtAr,
       manad,
-      punkter: rensad.map((p) => ({
+      punkter: speglad.map((p) => ({
         id: p.id,
         rubrik: p.rubrik.trim(),
         anteckning: p.anteckning.trim(),
@@ -157,7 +179,7 @@ export function MotesDokumentPanel({
     sparaSparadeProtokoll(nasta);
     setProtokoll(nasta);
     onMeddelande(
-      `Protokoll sparat för ${aktivMote.titel} · ${manadsnamn[manad - 1]} ${valtAr}.`,
+      `Protokoll sparat · ${manadsnamn[manad - 1]} ${valtAr} (följer dagordningen).`,
     );
   }
 
@@ -170,307 +192,440 @@ export function MotesDokumentPanel({
         undefined,
       ),
     );
-    onMeddelande("Dokument återställt från grundmall.");
+    onMeddelande("Dagordning laddad från er mall.");
+  }
+
+  function bytTillProtokoll() {
+    setPunkter((cur) => speglaProtokollMotDagordning(cur, cur));
+    setFlik("protokoll");
+  }
+
+  function laddaUppFil(fil: File | null) {
+    if (!fil || !aktivMoteId) return;
+    if (fil.size > MAX_DAGORDNING_FIL_BYTES) {
+      onMeddelande(
+        "Filen är för stor (max ca 1,5 MB i demot). Komprimera eller använd en mindre PDF.",
+      );
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? "");
+      if (!dataUrl) {
+        onMeddelande("Kunde inte läsa filen.");
+        return;
+      }
+      const post: UppladdadDagordningFil = {
+        id: `dof-${Date.now()}`,
+        moteId: aktivMoteId,
+        ar: valtAr,
+        manad,
+        filnamn: fil.name,
+        mimeTyp: fil.type || "application/octet-stream",
+        storlek: fil.size,
+        dataUrl,
+        uppladdadAt: new Date().toISOString(),
+      };
+      const nasta = [
+        post,
+        ...filer.filter(
+          (f) =>
+            !(f.moteId === aktivMoteId && f.ar === valtAr && f.manad === manad),
+        ),
+      ];
+      sparaUppladdadeDagordningar(nasta);
+      setFiler(nasta);
+      onMeddelande(`Dagordning uppladdad: ${fil.name}`);
+    };
+    reader.onerror = () => onMeddelande("Kunde inte läsa filen.");
+    reader.readAsDataURL(fil);
+  }
+
+  function taBortUppladdning() {
+    if (!aktivMoteId || !uppladdadFil) return;
+    const nasta = filer.filter((f) => f.id !== uppladdadFil.id);
+    sparaUppladdadeDagordningar(nasta);
+    setFiler(nasta);
+    onMeddelande("Uppladdad dagordning borttagen.");
   }
 
   if (moten.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3">
-        {moten.length > 1 && (
-          <label className="block text-sm">
-            Möte
-            <select
-              value={aktivMoteId ?? ""}
-              onChange={(e) => onMoteIdChange(e.target.value)}
-              className="mt-1 block w-full min-w-[12rem] rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            >
-              {moten.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.titel}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="block text-sm">
-          Månad
-          <select
-            value={manad}
-            onChange={(e) => onManadChange(Number(e.target.value))}
-            className="mt-1 block w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-          >
-            {manadsnamn.map((n, i) => (
-              <option key={n} value={i + 1}>
-                {n}
-                {i + 1 === aktuellManad && valtAr === innevarandeAr
-                  ? " (aktuell)"
-                  : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ["dagordning", "Dagordning"],
-              ["protokoll", "Protokoll"],
-              ["grundmall", "Grundmall"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setFlik(id)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                flik === id
-                  ? "bg-primary text-white"
-                  : "border border-border bg-white text-muted"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+    <div className="rounded-xl border border-dashed border-border bg-white/80">
+      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={() => setOppen((v) => !v)}
+          className="min-w-0 flex-1 text-left"
+        >
+          <p className="text-sm font-medium text-foreground">
+            Dagordning & protokoll
+            <span className="ml-1.5 font-normal text-muted">(valfritt)</span>
+          </p>
+          <p className="truncate text-xs text-muted">
+            Anpassa mall, ladda upp egen dagordning eller skriv protokoll —
+            speglar punkterna i dagordningen.
+          </p>
+        </button>
+        <OppnaStangKnapp
+          oppen={oppen}
+          onClick={() => setOppen((v) => !v)}
+          storlek="sm"
+          ariaLabel={
+            oppen ? "Stäng dagordning och protokoll" : "Öppna dagordning och protokoll"
+          }
+        />
       </div>
 
-      {flik === "grundmall" ? (
-        <div className="rounded-2xl border border-border bg-[#faf9f6] p-5 shadow-sm sm:p-8">
-          <header className="border-b border-border/80 pb-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Grundmall
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-foreground sm:text-3xl">
-              Dagordning — mall
-            </h2>
-            <p className="mt-2 text-base text-muted">
-              Styrelsen redigerar mallen själva. Den används som start för nya
-              dagordningar och protokoll.
-            </p>
-          </header>
-          <ol className="mt-6 space-y-4">
-            {mallPunkter.map((p, i) => (
-              <li
-                key={p.id}
-                className="flex items-start gap-3 border-b border-border/60 pb-4"
-              >
-                <span className="mt-2 w-8 shrink-0 text-lg font-semibold text-muted">
-                  {i + 1}.
-                </span>
-                <input
-                  value={p.rubrik}
-                  onChange={(e) =>
-                    setMallPunkter((cur) =>
-                      cur.map((x) =>
-                        x.id === p.id ? { ...x, rubrik: e.target.value } : x,
-                      ),
-                    )
-                  }
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2.5 text-lg text-foreground"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setMallPunkter((cur) => cur.filter((x) => x.id !== p.id))
-                  }
-                  className="mt-1 shrink-0 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-50"
+      {oppen && (
+        <div className="space-y-3 border-t border-border px-3 pb-3 pt-3">
+          <div className="flex flex-wrap items-end gap-2">
+            {moten.length > 1 && (
+              <label className="block text-xs text-muted">
+                Möte
+                <select
+                  value={aktivMoteId ?? ""}
+                  onChange={(e) => onMoteIdChange(e.target.value)}
+                  className="mt-0.5 block w-full min-w-[10rem] rounded-md border border-border bg-white px-2 py-1.5 text-sm"
                 >
-                  Ta bort
-                </button>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <input
-              value={nyMallRubrik}
-              onChange={(e) => setNyMallRubrik(e.target.value)}
-              placeholder="Ny punkt i mallen"
-              className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2.5 text-base"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  const t = nyMallRubrik.trim();
-                  if (!t) return;
-                  setMallPunkter((cur) => [
-                    ...cur,
-                    { id: skapaDokumentPunktId(), rubrik: t },
-                  ]);
-                  setNyMallRubrik("");
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const t = nyMallRubrik.trim();
-                if (!t) return;
-                setMallPunkter((cur) => [
-                  ...cur,
-                  { id: skapaDokumentPunktId(), rubrik: t },
-                ]);
-                setNyMallRubrik("");
-              }}
-              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
-            >
-              Lägg till
-            </button>
-            <button
-              type="button"
-              onClick={sparaMall}
-              className="rounded-lg bg-primary-dark px-4 py-2.5 text-sm font-medium text-white hover:bg-primary"
-            >
-              Spara grundmall
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-border bg-[#faf9f6] p-5 shadow-sm sm:p-8">
-          <header className="border-b border-border/80 pb-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              {flik === "dagordning" ? "Dagordning" : "Protokoll"} ·{" "}
-              {manadsnamn[manad - 1]} {valtAr}
-            </p>
-            <h2 className="mt-1 text-2xl font-semibold text-foreground sm:text-3xl">
-              {aktivMote?.titel ?? "Möte"}
-            </h2>
-            <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">
-              {flik === "dagordning"
-                ? "Punkter som ska tas upp på aktuellt möte. Lägg till och ta bort fritt — spara som grundmall eller som protokoll när mötet är klart."
-                : "Fyll i anteckningar och beslut under respektive punkt. Spara aktuellt protokoll när ni är klara."}
-            </p>
-            {sparatForMote && (
-              <p className="mt-2 text-sm text-primary-dark">
-                Sparat protokoll finns ·{" "}
-                {new Date(sparatForMote.sparadAt).toLocaleString("sv-SE")}
-              </p>
+                  {moten.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.titel}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
-          </header>
-
-          <ol className="mt-6 space-y-6">
-            {punkter.map((p, i) => (
-              <li key={p.id} className="border-b border-border/70 pb-6">
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 w-10 shrink-0 text-xl font-semibold text-muted">
-                    §{i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <input
-                      value={p.rubrik}
-                      onChange={(e) =>
-                        uppdateraPunkt(p.id, { rubrik: e.target.value })
-                      }
-                      className="w-full rounded-lg border border-transparent bg-transparent px-1 py-1 text-xl font-medium text-foreground hover:border-border focus:border-border focus:bg-white"
-                    />
-                    {flik === "protokoll" && (
-                      <>
-                        <label className="block text-sm text-muted">
-                          Anteckning
-                          <textarea
-                            value={p.anteckning}
-                            onChange={(e) =>
-                              uppdateraPunkt(p.id, {
-                                anteckning: e.target.value,
-                              })
-                            }
-                            rows={3}
-                            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-base leading-relaxed text-foreground"
-                            placeholder="Vad diskuterades…"
-                          />
-                        </label>
-                        <label className="block text-sm text-muted">
-                          Beslut / åtgärd
-                          <textarea
-                            value={p.beslut}
-                            onChange={(e) =>
-                              uppdateraPunkt(p.id, { beslut: e.target.value })
-                            }
-                            rows={2}
-                            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-base leading-relaxed text-foreground"
-                            placeholder="Beslut eller uppföljning…"
-                          />
-                        </label>
-                      </>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => taBortPunkt(p.id)}
-                    className="shrink-0 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-50"
-                  >
-                    Ta bort
-                  </button>
-                </div>
-              </li>
-            ))}
-            {punkter.length === 0 && (
-              <li className="text-base text-muted">
-                Inga punkter ännu. Lägg till nedan eller ladda från grundmall.
-              </li>
-            )}
-          </ol>
-
-          <div className="mt-6 space-y-3 border-t border-border/80 pt-5">
-            <div className="flex flex-wrap gap-2">
+            <label className="block text-xs text-muted">
+              Månad
               <select
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) setNyRubrik(e.target.value);
-                }}
-                className="rounded-lg border border-border bg-white px-3 py-2.5 text-sm"
+                value={manad}
+                onChange={(e) => onManadChange(Number(e.target.value))}
+                className="mt-0.5 block w-full rounded-md border border-border bg-white px-2 py-1.5 text-sm"
               >
-                <option value="">Förslag …</option>
-                {foreslagnMotesPunkter.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
+                {manadsnamn.map((n, i) => (
+                  <option key={n} value={i + 1}>
+                    {n}
+                    {i + 1 === aktuellManad && valtAr === innevarandeAr
+                      ? " (aktuell)"
+                      : ""}
                   </option>
                 ))}
               </select>
-              <input
-                value={nyRubrik}
-                onChange={(e) => setNyRubrik(e.target.value)}
-                placeholder="Ny punkt"
-                className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2.5 text-base"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    laggTillPunkt();
-                  }
-                }}
-              />
+            </label>
+            <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
-                onClick={laggTillPunkt}
-                disabled={!nyRubrik.trim()}
-                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-40"
+                onClick={() => setFlik("dagordning")}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  flik === "dagordning"
+                    ? "bg-primary text-white"
+                    : "border border-border text-muted"
+                }`}
               >
-                Lägg till
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={laddaFranMall}
-                className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-[#f0eeea]"
-              >
-                Ladda från grundmall
+                Dagordning
               </button>
               <button
                 type="button"
-                onClick={sparaMall}
-                className="rounded-lg border border-primary/40 bg-white px-4 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+                onClick={bytTillProtokoll}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  flik === "protokoll"
+                    ? "bg-primary text-white"
+                    : "border border-border text-muted"
+                }`}
               >
-                Spara som grundmall
+                Protokoll
               </button>
               <button
                 type="button"
-                onClick={sparaProtokollNu}
-                className="rounded-lg bg-primary-dark px-4 py-2.5 text-sm font-medium text-white hover:bg-primary"
+                onClick={() => setFlik("mall")}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                  flik === "mall"
+                    ? "bg-primary text-white"
+                    : "border border-border text-muted"
+                }`}
               >
-                Spara aktuellt protokoll
+                Er mall
               </button>
             </div>
           </div>
+
+          {/* Uppladdning — många föreningar har redan en dagordning */}
+          {flik !== "mall" && (
+            <div className="rounded-lg border border-dashed border-border bg-[#fafafa] px-3 py-2">
+              <p className="text-xs text-muted">
+                Har ni redan en dagordning? Ladda upp PDF eller Word — den sparas
+                till valt möte och månad.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer rounded-md border border-border bg-white px-2.5 py-1 text-xs font-medium text-foreground hover:bg-[#f0eeea]">
+                  Ladda upp
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt,application/pdf"
+                    className="sr-only"
+                    onChange={(e) => {
+                      laddaUppFil(e.target.files?.[0] ?? null);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {uppladdadFil && (
+                  <>
+                    <a
+                      href={uppladdadFil.dataUrl}
+                      download={uppladdadFil.filnamn}
+                      className="text-xs font-medium text-primary-dark underline"
+                    >
+                      {uppladdadFil.filnamn}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={taBortUppladdning}
+                      className="text-xs text-red-800 underline"
+                    >
+                      Ta bort fil
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {flik === "mall" && (
+            <div className="space-y-2 rounded-lg border border-border bg-[#fafafa] p-3">
+              <p className="text-xs text-muted">
+                Styrelsen anpassar mallen själva. Den används som start när ni
+                skapar ny dagordning.
+              </p>
+              <ul className="space-y-1.5">
+                {mallPunkter.map((p, i) => (
+                  <li key={p.id} className="flex items-center gap-2">
+                    <span className="w-5 shrink-0 text-xs text-muted">
+                      {i + 1}.
+                    </span>
+                    <input
+                      value={p.rubrik}
+                      onChange={(e) =>
+                        setMallPunkter((cur) =>
+                          cur.map((x) =>
+                            x.id === p.id
+                              ? { ...x, rubrik: e.target.value }
+                              : x,
+                          ),
+                        )
+                      }
+                      className="min-w-0 flex-1 rounded-md border border-border bg-white px-2 py-1 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMallPunkter((cur) =>
+                          cur.filter((x) => x.id !== p.id),
+                        )
+                      }
+                      className="text-xs text-red-800 underline"
+                    >
+                      Ta bort
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <input
+                  value={nyMallRubrik}
+                  onChange={(e) => setNyMallRubrik(e.target.value)}
+                  placeholder="Ny punkt"
+                  className="min-w-0 flex-1 rounded-md border border-border bg-white px-2 py-1.5 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    const t = nyMallRubrik.trim();
+                    if (!t) return;
+                    setMallPunkter((cur) => [
+                      ...cur,
+                      { id: skapaDokumentPunktId(), rubrik: t },
+                    ]);
+                    setNyMallRubrik("");
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const t = nyMallRubrik.trim();
+                    if (!t) return;
+                    setMallPunkter((cur) => [
+                      ...cur,
+                      { id: skapaDokumentPunktId(), rubrik: t },
+                    ]);
+                    setNyMallRubrik("");
+                  }}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white"
+                >
+                  Lägg till
+                </button>
+                <button
+                  type="button"
+                  onClick={sparaMall}
+                  className="rounded-md bg-primary-dark px-3 py-1.5 text-xs font-medium text-white"
+                >
+                  Spara mall
+                </button>
+              </div>
+            </div>
+          )}
+
+          {flik !== "mall" && (
+            <div className="space-y-2 rounded-lg border border-border bg-[#fafafa] p-3">
+              <p className="text-xs text-muted">
+                {aktivMote?.titel} · {manadsnamn[manad - 1]} {valtAr}
+                {flik === "protokoll"
+                  ? " — protokollet speglar dagordningens punkter."
+                  : " — redigera punkter här; samma lista används i protokollet."}
+                {sparatForMote
+                  ? ` Sparat ${new Date(sparatForMote.sparadAt).toLocaleDateString("sv-SE")}.`
+                  : ""}
+              </p>
+
+              <ol className="space-y-2">
+                {punkter.map((p, i) => (
+                  <li
+                    key={p.id}
+                    className="rounded-md border border-border/70 bg-white px-2.5 py-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="mt-1.5 w-6 shrink-0 text-xs font-semibold text-muted">
+                        §{i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        {flik === "dagordning" ? (
+                          <input
+                            value={p.rubrik}
+                            onChange={(e) =>
+                              uppdateraPunkt(p.id, { rubrik: e.target.value })
+                            }
+                            className="w-full rounded-md border border-border px-2 py-1 text-sm font-medium"
+                          />
+                        ) : (
+                          <p className="text-sm font-medium text-foreground">
+                            {p.rubrik}
+                          </p>
+                        )}
+                        {flik === "protokoll" && (
+                          <>
+                            <textarea
+                              value={p.anteckning}
+                              onChange={(e) =>
+                                uppdateraPunkt(p.id, {
+                                  anteckning: e.target.value,
+                                })
+                              }
+                              rows={2}
+                              placeholder="Anteckning…"
+                              className="w-full rounded-md border border-border px-2 py-1.5 text-sm"
+                            />
+                            <textarea
+                              value={p.beslut}
+                              onChange={(e) =>
+                                uppdateraPunkt(p.id, {
+                                  beslut: e.target.value,
+                                })
+                              }
+                              rows={1}
+                              placeholder="Beslut / åtgärd…"
+                              className="w-full rounded-md border border-border px-2 py-1.5 text-sm"
+                            />
+                          </>
+                        )}
+                      </div>
+                      {flik === "dagordning" && (
+                        <button
+                          type="button"
+                          onClick={() => taBortPunkt(p.id)}
+                          className="mt-1 shrink-0 text-xs text-red-800 underline"
+                        >
+                          Ta bort
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+                {punkter.length === 0 && (
+                  <li className="text-xs text-muted">
+                    Inga punkter. Ladda från mall eller lägg till nedan.
+                  </li>
+                )}
+              </ol>
+
+              {flik === "dagordning" && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) setNyRubrik(e.target.value);
+                    }}
+                    className="rounded-md border border-border bg-white px-2 py-1.5 text-xs"
+                  >
+                    <option value="">Förslag …</option>
+                    {foreslagnMotesPunkter.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={nyRubrik}
+                    onChange={(e) => setNyRubrik(e.target.value)}
+                    placeholder="Ny punkt"
+                    className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        laggTillPunkt();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={laggTillPunkt}
+                    disabled={!nyRubrik.trim()}
+                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                  >
+                    Lägg till
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 border-t border-border/60 pt-2">
+                {flik === "dagordning" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={laddaFranMall}
+                      className="rounded-md border border-border bg-white px-2.5 py-1.5 text-xs"
+                    >
+                      Från mall
+                    </button>
+                    <button
+                      type="button"
+                      onClick={sparaMall}
+                      className="rounded-md border border-border bg-white px-2.5 py-1.5 text-xs"
+                    >
+                      Spara som mall
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={sparaProtokollNu}
+                  className="rounded-md bg-primary-dark px-2.5 py-1.5 text-xs font-medium text-white"
+                >
+                  Spara protokoll
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
