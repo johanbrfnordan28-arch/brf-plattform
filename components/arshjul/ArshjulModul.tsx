@@ -41,6 +41,7 @@ import {
 } from "@/components/arshjul/arshjul";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { MotesDokumentPanel } from "@/components/arshjul/MotesDokumentPanel";
+import { HandelseRedigeraPanel } from "@/components/arshjul/HandelseRedigeraPanel";
 
 type Vy = "arshjul" | "paminnelser";
 type SnabbTyp = "mote" | "myndighetskrav" | "ovrigt";
@@ -135,6 +136,7 @@ export function ArshjulModul() {
   // Agenda på möte/månad
   const [agendaMoteId, setAgendaMoteId] = useState<string | null>(null);
   const [agendaManad, setAgendaManad] = useState(aktuellManad);
+  const [redigerarId, setRedigerarId] = useState<string | null>(null);
 
   const skipFirstSave = useRef(true);
 
@@ -245,11 +247,28 @@ export function ArshjulModul() {
   function taBort(id: string) {
     setHandelser((cur) => cur.filter((h) => h.id !== id));
     if (agendaMoteId === id) setAgendaMoteId(null);
+    if (redigerarId === id) setRedigerarId(null);
   }
 
   function taBortGrupp(poster: ArshjulHandelse[]) {
     const ids = new Set(poster.map((p) => p.id));
     setHandelser((cur) => cur.filter((h) => !ids.has(h.id)));
+    if (redigerarId && ids.has(redigerarId)) setRedigerarId(null);
+  }
+
+  function borjaRedigera(id: string) {
+    setRedigerarId(id);
+    setSkapaOppen(false);
+    setVy("arshjul");
+  }
+
+  function sparaRedigering(
+    id: string,
+    patch: Partial<ArshjulHandelse>,
+  ) {
+    uppdatera(id, patch);
+    setRedigerarId(null);
+    setMeddelande("Ändringar sparade.");
   }
 
   function skapaMote() {
@@ -1098,13 +1117,47 @@ export function ArshjulModul() {
                         <p className="font-semibold text-sky-950">
                           Myndighetskrav
                         </p>
-                        <ul className="mt-1 space-y-0.5 text-xs text-sky-900">
+                        <ul className="mt-1 space-y-1.5 text-xs text-sky-900">
                           {poster.map((p) => (
                             <li key={p.id}>
-                              {p.titel}
-                              {" · "}
-                              {handelseIntervallText(p)}
-                              {p.startAr ? ` · nästa ${p.startAr}` : ""}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="flex-1">
+                                  {p.titel}
+                                  {" · "}
+                                  {handelseIntervallText(p)}
+                                  {p.startAr ? ` · nästa ${p.startAr}` : ""}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setRedigerarId(
+                                      redigerarId === p.id ? null : p.id,
+                                    )
+                                  }
+                                  className="font-medium text-primary-dark underline"
+                                >
+                                  {redigerarId === p.id ? "Stäng" : "Ändra"}
+                                </button>
+                                {poster.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => taBort(p.id)}
+                                    className="text-muted hover:text-red-700"
+                                  >
+                                    Ta bort
+                                  </button>
+                                )}
+                              </div>
+                              {redigerarId === p.id && (
+                                <HandelseRedigeraPanel
+                                  handelse={p}
+                                  innevarandeAr={innevarandeAr}
+                                  onSpara={(patch) =>
+                                    sparaRedigering(p.id, patch)
+                                  }
+                                  onAvbryt={() => setRedigerarId(null)}
+                                />
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -1164,12 +1217,29 @@ export function ArshjulModul() {
                     )}
                     <button
                       type="button"
+                      onClick={() =>
+                        setRedigerarId(redigerarId === h.id ? null : h.id)
+                      }
+                      className="text-xs font-medium text-primary-dark underline"
+                    >
+                      {redigerarId === h.id ? "Stäng" : "Ändra"}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => taBort(h.id)}
                       className="text-xs text-muted hover:text-red-700"
                     >
                       Ta bort
                     </button>
                   </div>
+                  {redigerarId === h.id && (
+                    <HandelseRedigeraPanel
+                      handelse={h}
+                      innevarandeAr={innevarandeAr}
+                      onSpara={(patch) => sparaRedigering(h.id, patch)}
+                      onAvbryt={() => setRedigerarId(null)}
+                    />
+                  )}
                   {(h.motesPunkter ?? []).filter((p) => !p.klar).length > 0 && (
                     <p className="mt-1.5 text-xs text-muted">
                       Öppna punkter:{" "}
@@ -1234,6 +1304,13 @@ export function ArshjulModul() {
                   {formatDatumKort(p.tillfalleDatum)} ·{" "}
                   {kategoriEtiketter[p.kategori]}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => borjaRedigera(p.handelseId)}
+                  className="mt-2 text-sm font-medium text-primary-dark underline"
+                >
+                  Ändra intervall / datum
+                </button>
               </div>
             ))
           )}
