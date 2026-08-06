@@ -256,6 +256,8 @@ export type ArshjulHandelse = {
   skapad: string;
   externKalla?: "underhallsplan" | "projekt" | "manuell";
   externId?: string;
+  /** Binder ihop t.ex. OVK verksamheter + bostäder som en enhet i UI. */
+  gruppNyckel?: string;
 };
 
 export type ArshjulTillfalle = {
@@ -543,7 +545,33 @@ export function normaliseraHandelse(
       typeof raw.kopplaTillMotesAr === "number" && raw.kopplaTillMotesAr >= 1990
         ? raw.kopplaTillMotesAr
         : undefined,
+    gruppNyckel:
+      typeof raw.gruppNyckel === "string" && raw.gruppNyckel.trim()
+        ? raw.gruppNyckel.trim()
+        : undefined,
   };
+}
+
+/** Gruppera händelser (t.ex. OVK) så UI kan visa dem som en enhet. */
+export function grupperaHandelser(handelser: ArshjulHandelse[]): {
+  nyckel: string;
+  poster: ArshjulHandelse[];
+}[] {
+  const sedda = new Set<string>();
+  const grupper: { nyckel: string; poster: ArshjulHandelse[] }[] = [];
+  for (const h of handelser) {
+    if (h.gruppNyckel) {
+      if (sedda.has(h.gruppNyckel)) continue;
+      sedda.add(h.gruppNyckel);
+      grupper.push({
+        nyckel: h.gruppNyckel,
+        poster: handelser.filter((x) => x.gruppNyckel === h.gruppNyckel),
+      });
+      continue;
+    }
+    grupper.push({ nyckel: h.id, poster: [h] });
+  }
+  return grupper;
 }
 
 /** Planeringsfönster — månads-/veckomöten begränsas till valt slutår. */
@@ -636,7 +664,7 @@ export function berikaTillfallenMedKopplingar(
   });
 }
 
-/** Skapa två OVK-händelser: verksamheter (3 år) + bostäder (6 år). */
+/** Skapa två OVK-händelser som en enhet: verksamheter (3 år) + bostäder (6 år). */
 export function skapaOvkDubbelHandelser(opts: {
   startArVerksamhet: number;
   startArBostader: number;
@@ -647,6 +675,7 @@ export function skapaOvkDubbelHandelser(opts: {
 }): ArshjulHandelse[] {
   const manad = opts.manad ?? 6;
   const dag = opts.dag ?? 15;
+  const gruppNyckel = `ovk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const gemensamt = {
     kategori: "besiktning" as const,
     manad,
@@ -657,14 +686,14 @@ export function skapaOvkDubbelHandelser(opts: {
     externKalla: "manuell" as const,
     koppladTillHandelseId: opts.koppladTillHandelseId,
     kopplaTillMotesAr: opts.kopplaTillMotesAr,
+    gruppNyckel,
   };
   return [
     skapaTomHandelse({
       ...gemensamt,
       titel: "OVK verksamheter",
       underkategori: "OVK verksamheter",
-      beskrivning:
-        "Obligatorisk ventilationskontroll för verksamheter — intervall oftast vart 3:e år.",
+      beskrivning: "OVK verksamheter — vart 3:e år.",
       intervall: "vart_3_ar",
       startAr: opts.startArVerksamhet,
     }),
@@ -672,12 +701,42 @@ export function skapaOvkDubbelHandelser(opts: {
       ...gemensamt,
       titel: "OVK bostäder",
       underkategori: "OVK bostäder",
-      beskrivning:
-        "Obligatorisk ventilationskontroll för bostäder — intervall oftast vart 6:e år.",
+      beskrivning: "OVK bostäder — vart 6:e år.",
       intervall: "vart_6_ar",
       startAr: opts.startArBostader,
     }),
   ];
+}
+
+/** Lägg till punkt på ett möte för en enda månad. */
+export function laggTillPunktForManad(
+  h: ArshjulHandelse,
+  text: string,
+  manad: number,
+): ArshjulHandelse {
+  const t = text.trim();
+  if (!t || manad < 1 || manad > 12) return h;
+  const finns = (h.motesPunkter ?? []).some(
+    (p) =>
+      p.text === t &&
+      !p.klar &&
+      Array.isArray(p.manader) &&
+      p.manader.length === 1 &&
+      p.manader[0] === manad,
+  );
+  if (finns) return h;
+  return normaliseraHandelse({
+    ...h,
+    motesPunkter: [
+      ...(h.motesPunkter ?? []),
+      {
+        id: skapaMotesPunktId(),
+        text: t,
+        klar: false,
+        manader: [manad],
+      },
+    ],
+  });
 }
 
 function parseDatum(iso: string): Date | null {
