@@ -11,7 +11,6 @@ import {
   aterstallTillfalleKlar,
   behoverPlaneringsperiod,
   expanderaTillfallen,
-  foreslagnMotesPunkter,
   formatDatumKort,
   grupperaHandelser,
   hamtaPaminnelser,
@@ -31,7 +30,6 @@ import {
   STANDARD_PLANERING_AR_FRAM,
   stallInTillfalle,
   taBortTillfallePermanent,
-  toggleMotesPunkt,
   veckodagEtiketter,
   veckodagOrdningEtiketter,
   type ArshjulHandelse,
@@ -42,6 +40,7 @@ import {
   type ArshjulVeckodagOrdning,
 } from "@/components/arshjul/arshjul";
 import { safeSetLocalStorage } from "@/lib/localStorage";
+import { MotesDokumentPanel } from "@/components/arshjul/MotesDokumentPanel";
 
 type Vy = "arshjul" | "paminnelser";
 type SnabbTyp = "mote" | "myndighetskrav" | "ovrigt";
@@ -136,7 +135,6 @@ export function ArshjulModul() {
   // Agenda på möte/månad
   const [agendaMoteId, setAgendaMoteId] = useState<string | null>(null);
   const [agendaManad, setAgendaManad] = useState(aktuellManad);
-  const [agendaText, setAgendaText] = useState("");
 
   const skipFirstSave = useRef(true);
 
@@ -369,17 +367,6 @@ export function ArshjulModul() {
     setMeddelande(`${titel} tillagt.`);
   }
 
-  function laggTillAgenda() {
-    if (!agendaMoteId || !agendaText.trim()) return;
-    const h = handelser.find((x) => x.id === agendaMoteId);
-    if (!h) return;
-    uppdatera(agendaMoteId, laggTillPunktForManad(h, agendaText, agendaManad));
-    setAgendaText("");
-    setMeddelande(
-      `Punkt tillagd på ${manadsnamn[agendaManad - 1]} ${valtAr}.`,
-    );
-  }
-
   function TillfalleChip({ t }: { t: ArshjulTillfalle }) {
     const h = handelser.find((x) => x.id === t.handelseId);
     const planerat = t.planeratDatumIso ?? t.datumIso;
@@ -495,9 +482,6 @@ export function ArshjulModul() {
     return <p className="text-sm text-muted">Laddar årshjul…</p>;
   }
 
-  const aktivAgendaMote =
-    handelser.find((h) => h.id === agendaMoteId) ?? moten[0] ?? null;
-
   return (
     <div className="space-y-5">
       <div className="max-w-2xl space-y-2">
@@ -545,15 +529,27 @@ export function ArshjulModul() {
         </button>
       </div>
 
-      <details
-        className="rounded-xl border border-primary/40 bg-[#eef6f0]"
-        open={skapaOppen || undefined}
-        onToggle={(e) => setSkapaOppen((e.target as HTMLDetailsElement).open)}
-      >
-        <summary className="cursor-pointer list-none px-4 py-3 font-semibold text-primary-dark [&::-webkit-details-marker]:hidden">
+      {!skapaOppen ? (
+        <button
+          type="button"
+          onClick={() => setSkapaOppen(true)}
+          className="rounded-xl border border-primary/40 bg-[#eef6f0] px-4 py-3 font-semibold text-primary-dark hover:bg-[#e4f0e8]"
+        >
           + Lägg till
-        </summary>
-        <div className="space-y-4 border-t border-primary/20 px-4 pb-4 pt-3">
+        </button>
+      ) : (
+        <div className="rounded-xl border border-primary/40 bg-[#eef6f0]">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <p className="font-semibold text-primary-dark">Lägg till</p>
+            <button
+              type="button"
+              onClick={() => setSkapaOppen(false)}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Stäng
+            </button>
+          </div>
+          <div className="space-y-4 border-t border-primary/20 px-4 pb-4 pt-3">
           <div className="flex flex-wrap gap-2">
             {(
               [
@@ -1027,8 +1023,9 @@ export function ArshjulModul() {
               </button>
             </div>
           )}
+          </div>
         </div>
-      </details>
+      )}
 
       {meddelande && (
         <p className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
@@ -1036,154 +1033,23 @@ export function ArshjulModul() {
         </p>
       )}
 
-      {/* Agenda per månad på styrelsemöte */}
       {moten.length > 0 && vy === "arshjul" && (
-        <div className="rounded-xl border border-border bg-white p-4">
-          <p className="text-sm font-semibold text-foreground">
-            Punkter på möte
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Välj möte och månad — lägg till det som ska tas upp just då.
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {moten.length > 1 && (
-              <label className="block text-sm sm:col-span-1">
-                Möte
-                <select
-                  value={aktivAgendaMote?.id ?? ""}
-                  onChange={(e) => setAgendaMoteId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-                >
-                  {moten.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.titel}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <label className="block text-sm">
-              Månad
-              <select
-                value={agendaManad}
-                onChange={(e) => setAgendaManad(Number(e.target.value))}
-                className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-              >
-                {manadsnamn.map((n, i) => (
-                  <option key={n} value={i + 1}>
-                    {n}
-                    {i + 1 === aktuellManad && valtAr === innevarandeAr
-                      ? " (aktuell)"
-                      : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm sm:col-span-2">
-              Punkt att ta upp
-              <div className="mt-1 flex gap-2">
-                <select
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) setAgendaText(e.target.value);
-                  }}
-                  className="w-40 rounded-lg border border-border px-2 py-2 text-sm"
-                >
-                  <option value="">Välj …</option>
-                  {foreslagnMotesPunkter.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  value={agendaText}
-                  onChange={(e) => setAgendaText(e.target.value)}
-                  placeholder="eller skriv egen"
-                  className="min-w-0 flex-1 rounded-lg border border-border px-3 py-2 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={laggTillAgenda}
-                  disabled={!aktivAgendaMote || !agendaText.trim()}
-                  className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
-                >
-                  Lägg till
-                </button>
-              </div>
-            </label>
-          </div>
-          {aktivAgendaMote && (
-            <ul className="mt-3 space-y-1 border-t border-border pt-3 text-xs">
-              {(aktivAgendaMote.motesPunkter ?? [])
-                .filter(
-                  (p) =>
-                    !p.manader ||
-                    p.manader.length === 0 ||
-                    p.manader.includes(agendaManad),
-                )
-                .map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={p.klar}
-                        onChange={() => {
-                          const fresh = handelser.find(
-                            (x) => x.id === aktivAgendaMote.id,
-                          );
-                          if (fresh) {
-                            uppdatera(
-                              fresh.id,
-                              toggleMotesPunkt(fresh, p.id),
-                            );
-                          }
-                        }}
-                      />
-                      <span className={p.klar ? "text-muted line-through" : ""}>
-                        {p.text}
-                      </span>
-                      <span className="text-muted">
-                        · {manadsnamn[agendaManad - 1]}
-                      </span>
-                    </label>
-                    {p.klar && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const fresh = handelser.find(
-                            (x) => x.id === aktivAgendaMote.id,
-                          );
-                          if (fresh) {
-                            uppdatera(
-                              fresh.id,
-                              toggleMotesPunkt(fresh, p.id),
-                            );
-                          }
-                        }}
-                        className="text-primary-dark underline"
-                      >
-                        Återställ
-                      </button>
-                    )}
-                  </li>
-                ))}
-              {(aktivAgendaMote.motesPunkter ?? []).filter(
-                (p) =>
-                  !p.manader ||
-                  p.manader.length === 0 ||
-                  p.manader.includes(agendaManad),
-              ).length === 0 && (
-                <li className="text-muted">
-                  Inga punkter för {manadsnamn[agendaManad - 1]} ännu.
-                </li>
-              )}
-            </ul>
-          )}
-        </div>
+        <MotesDokumentPanel
+          moten={moten}
+          valtAr={valtAr}
+          aktuellManad={aktuellManad}
+          innevarandeAr={innevarandeAr}
+          moteId={agendaMoteId}
+          manad={agendaManad}
+          onMoteIdChange={setAgendaMoteId}
+          onManadChange={setAgendaManad}
+          onMeddelande={setMeddelande}
+          onLaggTillManadsPunkt={(moteId, text, manad) => {
+            const h = handelser.find((x) => x.id === moteId);
+            if (!h) return;
+            uppdatera(moteId, laggTillPunktForManad(h, text, manad));
+          }}
+        />
       )}
 
       {vy === "arshjul" && (

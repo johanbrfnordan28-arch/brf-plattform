@@ -1,4 +1,5 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import { safeSetLocalStorage } from "@/lib/localStorage";
 
 export type ArshjulKategori =
   | "besiktning"
@@ -471,9 +472,164 @@ export type ArshjulPaminnelse = {
 };
 
 const ARSHJUL_STORAGE_BASE = "brf-arshjul-handelser";
+const DAGORDNING_MALL_STORAGE_BASE = "brf-arshjul-dagordning-mall";
+const PROTOKOLL_STORAGE_BASE = "brf-arshjul-protokoll";
 
 export function arshjulStorageKey(): string {
   return foreningStorageKey(ARSHJUL_STORAGE_BASE);
+}
+
+export function dagordningMallStorageKey(): string {
+  return foreningStorageKey(DAGORDNING_MALL_STORAGE_BASE);
+}
+
+export function protokollStorageKey(): string {
+  return foreningStorageKey(PROTOKOLL_STORAGE_BASE);
+}
+
+/** Punkt i grundmall / arbetskopior för dagordning och protokoll. */
+export type MotesDokumentPunkt = {
+  id: string;
+  rubrik: string;
+  /** Anteckning under mötet / i protokollet. */
+  anteckning: string;
+  /** Beslut eller åtgärd. */
+  beslut: string;
+};
+
+export type DagordningMall = {
+  punkter: Array<{ id: string; rubrik: string }>;
+};
+
+export type SparatProtokoll = {
+  id: string;
+  moteId: string;
+  moteTitel: string;
+  ar: number;
+  manad: number;
+  punkter: MotesDokumentPunkt[];
+  sparadAt: string;
+};
+
+export const STANDARD_DAGORDNING_MALL: DagordningMall = {
+  punkter: [
+    { id: "mall-1", rubrik: "Öppnande" },
+    { id: "mall-2", rubrik: "Närvarande" },
+    { id: "mall-3", rubrik: "Fastställande av dagordning" },
+    { id: "mall-4", rubrik: "Föregående protokoll" },
+    { id: "mall-5", rubrik: "Ekonomi" },
+    { id: "mall-6", rubrik: "Ärenden" },
+    { id: "mall-7", rubrik: "Övriga frågor" },
+    { id: "mall-8", rubrik: "Nästa möte" },
+    { id: "mall-9", rubrik: "Avslutning" },
+  ],
+};
+
+export function skapaDokumentPunktId(): string {
+  return `dp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+export function lasDagordningMall(): DagordningMall {
+  if (typeof window === "undefined") return STANDARD_DAGORDNING_MALL;
+  try {
+    const raw = localStorage.getItem(dagordningMallStorageKey());
+    if (!raw) return STANDARD_DAGORDNING_MALL;
+    const parsed = JSON.parse(raw) as DagordningMall;
+    if (!Array.isArray(parsed.punkter) || parsed.punkter.length === 0) {
+      return STANDARD_DAGORDNING_MALL;
+    }
+    return {
+      punkter: parsed.punkter
+        .filter((p) => p && typeof p.rubrik === "string" && p.rubrik.trim())
+        .map((p) => ({
+          id: typeof p.id === "string" ? p.id : skapaDokumentPunktId(),
+          rubrik: p.rubrik.trim(),
+        })),
+    };
+  } catch {
+    return STANDARD_DAGORDNING_MALL;
+  }
+}
+
+export function sparaDagordningMall(mall: DagordningMall): void {
+  if (typeof window === "undefined") return;
+  const rensad: DagordningMall = {
+    punkter: mall.punkter
+      .filter((p) => p.rubrik.trim())
+      .map((p) => ({
+        id: p.id || skapaDokumentPunktId(),
+        rubrik: p.rubrik.trim(),
+      })),
+  };
+  safeSetLocalStorage(dagordningMallStorageKey(), JSON.stringify(rensad));
+}
+
+export function lasSparadeProtokoll(): SparatProtokoll[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(protokollStorageKey());
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as SparatProtokoll[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function sparaSparadeProtokoll(lista: SparatProtokoll[]): void {
+  if (typeof window === "undefined") return;
+  safeSetLocalStorage(protokollStorageKey(), JSON.stringify(lista));
+}
+
+export function hittaProtokoll(
+  lista: SparatProtokoll[],
+  moteId: string,
+  ar: number,
+  manad: number,
+): SparatProtokoll | undefined {
+  return lista.find(
+    (p) => p.moteId === moteId && p.ar === ar && p.manad === manad,
+  );
+}
+
+/** Bygger arbetskopia: sparat protokoll, annars mall + månadens mötespunkter. */
+export function byggMotesDokumentPunkter(
+  mall: DagordningMall,
+  mote: ArshjulHandelse | null,
+  manad: number,
+  sparat?: SparatProtokoll,
+): MotesDokumentPunkt[] {
+  if (sparat?.punkter?.length) {
+    return sparat.punkter.map((p) => ({
+      id: p.id || skapaDokumentPunktId(),
+      rubrik: p.rubrik,
+      anteckning: p.anteckning ?? "",
+      beslut: p.beslut ?? "",
+    }));
+  }
+  const bas: MotesDokumentPunkt[] = mall.punkter.map((p) => ({
+    id: skapaDokumentPunktId(),
+    rubrik: p.rubrik,
+    anteckning: "",
+    beslut: "",
+  }));
+  const extra = (mote?.motesPunkter ?? []).filter(
+    (p) =>
+      !p.klar &&
+      (!p.manader || p.manader.length === 0 || p.manader.includes(manad)),
+  );
+  const rubriker = new Set(bas.map((p) => p.rubrik.toLowerCase()));
+  for (const p of extra) {
+    if (rubriker.has(p.text.toLowerCase())) continue;
+    bas.push({
+      id: skapaDokumentPunktId(),
+      rubrik: p.text,
+      anteckning: "",
+      beslut: "",
+    });
+    rubriker.add(p.text.toLowerCase());
+  }
+  return bas;
 }
 
 export const STANDARD_PAMINNELSE_DAGAR = [365, 180, 90, 30, 14, 7];
@@ -1117,6 +1273,14 @@ export function toggleMotesPunkt(
   const punkter = (h.motesPunkter ?? []).map((p) =>
     p.id === punktId ? { ...p, klar: !p.klar } : p,
   );
+  return normaliseraHandelse({ ...h, motesPunkter: punkter });
+}
+
+export function taBortMotesPunkt(
+  h: ArshjulHandelse,
+  punktId: string,
+): ArshjulHandelse {
+  const punkter = (h.motesPunkter ?? []).filter((p) => p.id !== punktId);
   return normaliseraHandelse({ ...h, motesPunkter: punkter });
 }
 
