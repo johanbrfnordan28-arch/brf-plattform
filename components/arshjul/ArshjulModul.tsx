@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
+  andraTillfalleDatum,
   arFlerarsIntervall,
   arshjulStorageKey,
   expanderaTillfallen,
@@ -19,6 +20,8 @@ import {
   manadsnamn,
   markeraTillfalleKlar,
   normaliseraHandelse,
+  nthVeckodagIManad,
+  paminnelseDagarAlternativ,
   skapaHandelseId,
   skapaMotesPunktId,
   skapaTomHandelse,
@@ -100,6 +103,8 @@ export function ArshjulModul() {
   const [form, setForm] = useState(skapaTomHandelse());
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
   const [nyPunktText, setNyPunktText] = useState("");
+  const [egenPunktLage, setEgenPunktLage] = useState(false);
+  const [andrarDatumFor, setAndrarDatumFor] = useState<string | null>(null);
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
@@ -184,10 +189,22 @@ export function ArshjulModul() {
     }
   }
 
-  function stallInMote(id: string, datumIso: string) {
+  function stallInMote(id: string, datumIso: string, planeratIso?: string) {
     const h = handelser.find((x) => x.id === id);
     if (!h) return;
-    uppdateraHandelse(id, stallInTillfalle(h, datumIso));
+    // Ställ in både aktuellt och planerat så tillfället försvinner.
+    let nasta = stallInTillfalle(h, datumIso);
+    if (planeratIso && planeratIso !== datumIso) {
+      nasta = stallInTillfalle(nasta, planeratIso);
+    }
+    uppdateraHandelse(id, nasta);
+  }
+
+  function flyttaMote(id: string, planeratIso: string, nyttIso: string) {
+    const h = handelser.find((x) => x.id === id);
+    if (!h) return;
+    uppdateraHandelse(id, andraTillfalleDatum(h, planeratIso, nyttIso));
+    setAndrarDatumFor(null);
   }
 
   function vaxlaPunkt(handelseId: string, punktId: string) {
@@ -199,12 +216,31 @@ export function ArshjulModul() {
   function laggTillPunkt(text: string) {
     const t = text.trim();
     if (!t) return;
+    if ((form.motesPunkter ?? []).some((p) => p.text === t)) return;
     setForm({
       ...form,
       motesPunkter: [
         ...(form.motesPunkter ?? []),
         { id: skapaMotesPunktId(), text: t, klar: false },
       ],
+    });
+    setNyPunktText("");
+    setEgenPunktLage(false);
+  }
+
+  function laggTillPaminnelseDag(dagar: number) {
+    if (!dagar || form.paminnelseDagar.includes(dagar)) return;
+    setForm({
+      ...form,
+      paminnelseDagar: [...form.paminnelseDagar, dagar].sort((a, b) => b - a),
+    });
+  }
+
+  function taBortPaminnelseDag(dagar: number) {
+    const kvar = form.paminnelseDagar.filter((d) => d !== dagar);
+    setForm({
+      ...form,
+      paminnelseDagar: kvar.length > 0 ? kvar : [...STANDARD_PAMINNELSE_DAGAR],
     });
   }
 
@@ -224,6 +260,26 @@ export function ArshjulModul() {
         : [...nu, manad].sort((a, b) => a - b),
     });
   }
+
+  const forhandsDatumManadsvis = useMemo(() => {
+    if (form.intervall !== "manadsvis_veckodag" || !form.veckodag) return [];
+    const ordning = form.veckodagOrdning ?? 1;
+    const undantagna = new Set(form.undantagnaManader ?? []);
+    const rader: string[] = [];
+    for (let manad = 1; manad <= 12; manad++) {
+      if (undantagna.has(manad)) continue;
+      const dag = nthVeckodagIManad(valtAr, manad, form.veckodag, ordning);
+      if (dag == null) continue;
+      rader.push(`${manadsnamn[manad - 1]} ${dag}`);
+    }
+    return rader;
+  }, [
+    form.intervall,
+    form.veckodag,
+    form.veckodagOrdning,
+    form.undantagnaManader,
+    valtAr,
+  ]);
 
   function sparaForm(event: React.FormEvent) {
     event.preventDefault();
@@ -277,6 +333,10 @@ export function ArshjulModul() {
 
   function TillfalleChip({ t }: { t: ArshjulTillfalle }) {
     const h = handelser.find((x) => x.id === t.handelseId);
+    const planerat = t.planeratDatumIso ?? t.datumIso;
+    const chipNyckel = `${t.handelseId}-${planerat}`;
+    const visarAndraDatum = andrarDatumFor === chipNyckel;
+    const flyttat = Boolean(t.planeratDatumIso && t.planeratDatumIso !== t.datumIso);
     return (
       <div
         className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]} ${
@@ -287,6 +347,7 @@ export function ArshjulModul() {
         {h?.underkategori && <p className="opacity-75">{h.underkategori}</p>}
         <p className="opacity-80">
           {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
+          {flyttat ? " · ändrat" : ""}
           {t.arKlar ? " · klart" : ""}
         </p>
         {(t.oppnaPunkter ?? 0) > 0 && (
@@ -305,7 +366,28 @@ export function ArshjulModul() {
             </button>
             <button
               type="button"
-              onClick={() => stallInMote(h.id, t.datumIso)}
+              onClick={() =>
+                setAndrarDatumFor(visarAndraDatum ? null : chipNyckel)
+              }
+              className="text-left underline-offset-2 hover:underline"
+            >
+              Ändra datum
+            </button>
+            {visarAndraDatum && (
+              <input
+                type="date"
+                defaultValue={t.datumIso}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    flyttaMote(h.id, planerat, e.target.value);
+                  }
+                }}
+                className="mt-0.5 w-full rounded border border-border bg-white px-1 py-0.5 text-[11px] text-foreground"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => stallInMote(h.id, t.datumIso, planerat)}
               className="text-left underline-offset-2 hover:underline"
             >
               Ställ in / ta bort möte
@@ -325,9 +407,9 @@ export function ArshjulModul() {
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
           Lägg in årets möten och ärenden redan i januari — t.ex. styrelsemöte
-          första måndagen varje månad (hoppa över semester). Lägg punkter som OVK,
-          SBA eller budget på mötet, ställ in enskilda tillfällen manuellt och
-          markera klart när det är gjort. Uppföljning kan ni lägga in senare.
+          2:a veckan varje månad på måndag (hoppa över semester). Välj vecka och
+          veckodag, ändra enskilda datum vid behov, lägg punkter via rullgardin
+          och markera klart när det är gjort.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -548,7 +630,7 @@ export function ArshjulModul() {
             {form.intervall === "manadsvis_veckodag" && (
               <>
                 <label className="block">
-                  <span className="text-sm font-medium">Vilken i månaden</span>
+                  <span className="text-sm font-medium">Vecka i månaden</span>
                   <select
                     value={form.veckodagOrdning ?? 1}
                     onChange={(e) =>
@@ -589,9 +671,20 @@ export function ArshjulModul() {
                       ))}
                   </select>
                   <span className="mt-1 block text-xs text-muted">
-                    T.ex. första måndagen i varje månad
+                    Exempel: 2:a veckan + måndag. Ändra här när mönstret ska
+                    uppdateras — sparade tillfällen följer med.
                   </span>
                 </label>
+                {forhandsDatumManadsvis.length > 0 && (
+                  <div className="sm:col-span-2 rounded-lg border border-border bg-white px-3 py-2 text-xs text-muted">
+                    <p className="font-medium text-foreground">
+                      Datum {valtAr} (kan ändras per möte i årshjulet)
+                    </p>
+                    <p className="mt-1 leading-relaxed">
+                      {forhandsDatumManadsvis.join(" · ")}
+                    </p>
+                  </div>
+                )}
               </>
             )}
 
@@ -698,29 +791,64 @@ export function ArshjulModul() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <input
-                  value={nyPunktText}
-                  onChange={(e) => setNyPunktText(e.target.value)}
-                  list="motespunkt-lista"
-                  placeholder="t.ex. Budget inför kommande år"
-                  className="min-w-[12rem] flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-                <datalist id="motespunkt-lista">
-                  {foreslagnMotesPunkter.map((u) => (
-                    <option key={u} value={u} />
-                  ))}
-                </datalist>
-                <button
-                  type="button"
-                  onClick={() => {
-                    laggTillPunkt(nyPunktText);
-                    setNyPunktText("");
-                  }}
-                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium hover:border-primary/40"
-                >
-                  Lägg till punkt
-                </button>
+              <div className="mt-2 space-y-2">
+                <label className="block">
+                  <span className="sr-only">Välj punkt</span>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v) return;
+                      if (v === "__egen") {
+                        setEgenPunktLage(true);
+                        return;
+                      }
+                      laggTillPunkt(v);
+                    }}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="">Välj punkt att lägga till …</option>
+                    {foreslagnMotesPunkter.map((u) => (
+                      <option
+                        key={u}
+                        value={u}
+                        disabled={(form.motesPunkter ?? []).some(
+                          (p) => p.text === u,
+                        )}
+                      >
+                        {u}
+                      </option>
+                    ))}
+                    <option value="__egen">Annan punkt (skriv själv) …</option>
+                  </select>
+                </label>
+                {egenPunktLage && (
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      value={nyPunktText}
+                      onChange={(e) => setNyPunktText(e.target.value)}
+                      placeholder="Skriv egen punkt …"
+                      className="min-w-[12rem] flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => laggTillPunkt(nyPunktText)}
+                      className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium hover:border-primary/40"
+                    >
+                      Lägg till
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEgenPunktLage(false);
+                        setNyPunktText("");
+                      }}
+                      className="rounded-lg px-3 py-2 text-sm text-muted hover:text-foreground"
+                    >
+                      Avbryt
+                    </button>
+                  </div>
+                )}
               </div>
               {redigeraId && (form.motesPunkter ?? []).length > 0 && (
                 <p className="mt-2 text-xs text-muted">
@@ -730,30 +858,53 @@ export function ArshjulModul() {
               )}
             </div>
 
-            <label className="block sm:col-span-2">
-              <span className="text-sm font-medium">
-                Påminnelse (dagar före) — kommaseparerat
-              </span>
-              <input
-                value={form.paminnelseDagar.join(", ")}
-                onChange={(e) => {
-                  const dagar = e.target.value
-                    .split(",")
-                    .map((s) => Number.parseInt(s.trim(), 10))
-                    .filter((n) => !Number.isNaN(n) && n > 0);
-                  setForm({
-                    ...form,
-                    paminnelseDagar:
-                      dagar.length > 0 ? dagar : [...STANDARD_PAMINNELSE_DAGAR],
-                  });
-                }}
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-              <span className="mt-1 block text-xs text-muted">
-                Standard: {STANDARD_PAMINNELSE_DAGAR.join(", ")} dagar. Öppna
-                mötespunkter visas i påminnelsen.
-              </span>
-            </label>
+            <div className="sm:col-span-2 rounded-xl border border-border bg-surface/40 p-3">
+              <p className="text-sm font-medium text-foreground">Påminnelser</p>
+              <p className="mt-1 text-xs text-muted">
+                Välj hur många dagar före mötet/händelsen ni vill bli påminda.
+                Öppna mötespunkter visas i påminnelsen.
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {form.paminnelseDagar.map((d) => (
+                  <li
+                    key={d}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-2.5 py-1 text-xs"
+                  >
+                    <span>{d} dagar före</span>
+                    <button
+                      type="button"
+                      onClick={() => taBortPaminnelseDag(d)}
+                      className="text-muted hover:text-red-700"
+                      aria-label={`Ta bort påminnelse ${d} dagar`}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <label className="mt-2 block">
+                <span className="sr-only">Lägg till påminnelse</span>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (n > 0) laggTillPaminnelseDag(n);
+                  }}
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Lägg till påminnelse …</option>
+                  {paminnelseDagarAlternativ.map((d) => (
+                    <option
+                      key={d}
+                      value={d}
+                      disabled={form.paminnelseDagar.includes(d)}
+                    >
+                      {d} dagar före
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
           <div className="flex gap-2">
             <button

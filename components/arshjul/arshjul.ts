@@ -30,7 +30,7 @@ export type ArshjulHandelseTyp = "engang" | "arlig" | "intervall";
 /** 1 = måndag … 7 = söndag. */
 export type ArshjulVeckodag = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-/** 1–4 = första–fjärde, -1 = sista i månaden. */
+/** 1–4 = 1:a–4:e veckan i månaden, -1 = sista veckan. */
 export type ArshjulVeckodagOrdning = 1 | 2 | 3 | 4 | -1;
 
 export type ArshjulMotesPunkt = {
@@ -42,8 +42,8 @@ export type ArshjulMotesPunkt = {
 export const intervallEtiketter: Record<ArshjulIntervall, string> = {
   engang: "Engång",
   veckovis: "Veckovis",
-  manadsvis: "Månadsvis (datum)",
-  manadsvis_veckodag: "Månadsvis (veckodag)",
+  manadsvis: "Månadsvis (fast dag)",
+  manadsvis_veckodag: "Månadsvis (vecka + veckodag)",
   kvartalsvis: "Kvartalsvis",
   arlig: "Årligen",
   vart_3_ar: "Vart 3:e år",
@@ -74,12 +74,17 @@ export const veckodagEtiketter: Record<ArshjulVeckodag, string> = {
 };
 
 export const veckodagOrdningEtiketter: Record<string, string> = {
-  "1": "Första",
-  "2": "Andra",
-  "3": "Tredje",
-  "4": "Fjärde",
-  "-1": "Sista",
+  "1": "1:a veckan",
+  "2": "2:a veckan",
+  "3": "3:e veckan",
+  "4": "4:e veckan",
+  "-1": "Sista veckan",
 };
+
+/** Föreslagna dagar före händelse för påminnelser (rullgardin). */
+export const paminnelseDagarAlternativ: number[] = [
+  365, 180, 90, 60, 30, 14, 7, 3, 1,
+];
 
 export const foreslagnMotesPunkter: string[] = [
   "OVK",
@@ -89,6 +94,9 @@ export const foreslagnMotesPunkter: string[] = [
   "Underhållsplan — uppföljning",
   "Upphandling",
   "Fastighetsskador — status",
+  "Brandskydd / SBA-uppföljning",
+  "Ekonomisk uppföljning",
+  "Medlemsärenden",
 ];
 
 /** Föreslagna underkategorier som visas som snabbval i formuläret. */
@@ -123,8 +131,9 @@ export type ArshjulHandelse = {
   startAr?: number;
   /** Synkas från intervall (3/6/10) för kompatibilitet. */
   intervallAr?: number;
-  /** Månadsvis veckodag — t.ex. första måndagen. */
+  /** Månadsvis vecka + veckodag — t.ex. 2:a veckan, måndag. */
   veckodag?: ArshjulVeckodag;
+  /** Vilken vecka i månaden (1–4 eller -1 = sista). */
   veckodagOrdning?: ArshjulVeckodagOrdning;
   /** Hoppa över dessa månader (t.ex. 7–8 under semester). */
   undantagnaManader?: number[];
@@ -132,6 +141,11 @@ export type ArshjulHandelse = {
   installdaDatum?: string[];
   /** Tillfällen markerade som genomförda (YYYY-MM-DD). */
   klarDatum?: string[];
+  /**
+   * Manuellt ändrade datum för enskilda tillfällen.
+   * Nyckel = ursprungligt planerat datum (YYYY-MM-DD), värde = nytt datum.
+   */
+  datumAndringar?: Record<string, string>;
   /** Ärenden/punkter att hantera på mötet (OVK, SBA, budget …). */
   motesPunkter?: ArshjulMotesPunkt[];
   /** Senast markerad som genomförd (kalenderår) — nästa tillfälle räknas därifrån. */
@@ -152,6 +166,8 @@ export type ArshjulTillfalle = {
   manad: number;
   dag: number;
   datumIso: string;
+  /** Ursprungligt planerat datum innan manuell flytt (YYYY-MM-DD). */
+  planeratDatumIso?: string;
   beskrivning: string;
   arManatlig: boolean;
   installd?: boolean;
@@ -301,6 +317,19 @@ export function normaliseraHandelse(
   const klarDatum = Array.isArray(raw.klarDatum)
     ? raw.klarDatum.filter((d) => typeof d === "string")
     : [];
+  const datumAndringar: Record<string, string> = {};
+  if (raw.datumAndringar && typeof raw.datumAndringar === "object") {
+    for (const [fran, till] of Object.entries(raw.datumAndringar)) {
+      if (
+        typeof fran === "string" &&
+        typeof till === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(fran) &&
+        /^\d{4}-\d{2}-\d{2}$/.test(till)
+      ) {
+        datumAndringar[fran] = till;
+      }
+    }
+  }
   const motesPunkter = Array.isArray(raw.motesPunkter)
     ? raw.motesPunkter
         .filter((p) => p && typeof p.text === "string")
@@ -345,6 +374,7 @@ export function normaliseraHandelse(
     undantagnaManader: undantagna,
     installdaDatum: installda,
     klarDatum,
+    datumAndringar,
     motesPunkter,
   };
 }
@@ -355,8 +385,10 @@ function parseDatum(iso: string): Date | null {
 }
 
 function datumIso(ar: number, manad: number, dag: number): string {
+  const sista = new Date(ar, manad, 0).getDate();
+  const safeDag = Math.min(Math.max(dag, 1), sista);
   const m = String(manad).padStart(2, "0");
-  const d = String(Math.min(Math.max(dag, 1), 28)).padStart(2, "0");
+  const d = String(safeDag).padStart(2, "0");
   return `${ar}-${m}-${d}`;
 }
 
@@ -373,25 +405,50 @@ function pushTillfalle(
   arManatlig: boolean,
 ) {
   if (h.undantagnaManader?.includes(manad)) return;
-  const iso = datumIso(ar, manad, dag);
-  if (h.installdaDatum?.includes(iso)) return;
+  const planerat = datumIso(ar, manad, dag);
+  const andrat = h.datumAndringar?.[planerat];
+  let slutAr = ar;
+  let slutManad = manad;
+  let slutDag = dag;
+  let iso = planerat;
+  if (andrat) {
+    const parsad = parseDatum(andrat);
+    if (parsad) {
+      slutAr = parsad.getFullYear();
+      slutManad = parsad.getMonth() + 1;
+      slutDag = parsad.getDate();
+      iso = andrat;
+    }
+  }
+  if (h.installdaDatum?.includes(planerat) || h.installdaDatum?.includes(iso)) {
+    return;
+  }
   const oppnaPunkter = (h.motesPunkter ?? []).filter((p) => !p.klar).length;
   lista.push({
     handelseId: h.id,
     titel: h.titel,
     kategori: h.kategori,
-    ar,
-    manad,
-    dag,
+    ar: slutAr,
+    manad: slutManad,
+    dag: slutDag,
     datumIso: iso,
+    planeratDatumIso: planerat,
     beskrivning: h.beskrivning,
     arManatlig,
-    arKlar: Boolean(h.klar || h.klarDatum?.includes(iso)),
+    arKlar: Boolean(
+      h.klar ||
+        h.klarDatum?.includes(iso) ||
+        h.klarDatum?.includes(planerat),
+    ),
     oppnaPunkter,
   });
 }
 
-/** Hitta n:te (eller sista) veckodagen i en månad. Veckodag 1=mån … 7=sön. */
+/**
+ * Hitta given veckodag inom vald vecka i månaden.
+ * Vecka 1 = dag 1–7, vecka 2 = 8–14, osv. -1 = sista 7 dagarna.
+ * Exempel: 2:a veckan + måndag.
+ */
 export function nthVeckodagIManad(
   ar: number,
   manad: number,
@@ -399,18 +456,36 @@ export function nthVeckodagIManad(
   ordning: ArshjulVeckodagOrdning,
 ): number | null {
   const jsDay = veckodag === 7 ? 0 : veckodag; // JS: 0=sön
+  const sistaDag = new Date(ar, manad, 0).getDate();
+  let start: number;
+  let end: number;
   if (ordning === -1) {
-    const sista = new Date(ar, manad, 0, 12, 0, 0);
-    const d = new Date(sista);
-    while (d.getDay() !== jsDay) d.setDate(d.getDate() - 1);
-    return d.getMonth() + 1 === manad ? d.getDate() : null;
+    start = Math.max(1, sistaDag - 6);
+    end = sistaDag;
+  } else {
+    start = (ordning - 1) * 7 + 1;
+    end = Math.min(ordning * 7, sistaDag);
   }
-  const forsta = new Date(ar, manad - 1, 1, 12, 0, 0);
-  let dag = 1 + ((jsDay - forsta.getDay() + 7) % 7);
-  dag += (ordning - 1) * 7;
-  const test = new Date(ar, manad - 1, dag, 12, 0, 0);
-  if (test.getMonth() + 1 !== manad) return null;
-  return dag;
+  if (start > end) return null;
+  for (let d = start; d <= end; d++) {
+    const date = new Date(ar, manad - 1, d, 12, 0, 0);
+    if (date.getDay() === jsDay) return d;
+  }
+  return null;
+}
+
+export function andraTillfalleDatum(
+  h: ArshjulHandelse,
+  planeratIso: string,
+  nyttIso: string,
+): ArshjulHandelse {
+  const andringar = { ...(h.datumAndringar ?? {}) };
+  if (!nyttIso || nyttIso === planeratIso) {
+    delete andringar[planeratIso];
+  } else {
+    andringar[planeratIso] = nyttIso;
+  }
+  return normaliseraHandelse({ ...h, datumAndringar: andringar });
 }
 
 export function stallInTillfalle(
@@ -473,10 +548,10 @@ export function handelseIntervallText(h: ArshjulHandelse): string {
       return `Månadsvis (dag ${h.dag ?? 1})${undantag}`;
     case "manadsvis_veckodag": {
       const ord =
-        veckodagOrdningEtiketter[String(h.veckodagOrdning ?? 1)] ?? "Första";
+        veckodagOrdningEtiketter[String(h.veckodagOrdning ?? 1)] ?? "1:a veckan";
       const dag =
         h.veckodag != null ? veckodagEtiketter[h.veckodag] : "måndag";
-      return `${ord.toLowerCase()} ${dag.toLowerCase()} varje månad${undantag}`;
+      return `${ord.toLowerCase()}, ${dag.toLowerCase()} varje månad${undantag}`;
     }
     case "kvartalsvis":
       return `Kvartalsvis från ${manadsnamn[(h.manad ?? 1) - 1]}${undantag}`;
