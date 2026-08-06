@@ -3,9 +3,12 @@ import { foreningStorageKey } from "@/lib/foreningStorage";
 export type ArshjulKategori =
   | "besiktning"
   | "ekonomi"
+  | "ekonomimote"
   | "stamma"
   | "styrelsemote"
   | "byggmote"
+  | "projekteringsmote"
+  | "upphandlingsmote"
   | "deklaration"
   | "underhall"
   | "juridik"
@@ -179,8 +182,65 @@ export function behoverPlaneringsperiod(intervall: ArshjulIntervall): boolean {
 }
 
 export function arMotesKategori(kategori: ArshjulKategori): boolean {
-  return kategori === "styrelsemote" || kategori === "byggmote";
+  return (
+    kategori === "styrelsemote" ||
+    kategori === "byggmote" ||
+    kategori === "ekonomimote" ||
+    kategori === "stamma" ||
+    kategori === "projekteringsmote" ||
+    kategori === "upphandlingsmote"
+  );
 }
+
+/** Fördefinierade möten som kan läggas till med påminnelser. */
+export const motesTypAlternativ: {
+  id: ArshjulKategori | "eget";
+  etikett: string;
+  standardIntervall: ArshjulIntervall;
+  standardManad?: number;
+  hoppaSemester?: boolean;
+}[] = [
+  {
+    id: "styrelsemote",
+    etikett: "Styrelsemöte",
+    standardIntervall: "manadsvis_veckodag",
+    hoppaSemester: true,
+  },
+  {
+    id: "byggmote",
+    etikett: "Byggmöte",
+    standardIntervall: "manadsvis_veckodag",
+    hoppaSemester: true,
+  },
+  {
+    id: "ekonomimote",
+    etikett: "Ekonomimöte",
+    standardIntervall: "manadsvis_veckodag",
+    hoppaSemester: true,
+  },
+  {
+    id: "stamma",
+    etikett: "Årsstämma",
+    standardIntervall: "arlig",
+    standardManad: 4,
+  },
+  {
+    id: "projekteringsmote",
+    etikett: "Projekteringsmöte",
+    standardIntervall: "engang",
+  },
+  {
+    id: "upphandlingsmote",
+    etikett: "Upphandlingsmöte",
+    standardIntervall: "engang",
+  },
+  {
+    id: "eget",
+    etikett: "Lägg till möte",
+    standardIntervall: "manadsvis_veckodag",
+    hoppaSemester: true,
+  },
+];
 
 export type ArsPlaneringSammanfattning = {
   ar: number;
@@ -260,6 +320,11 @@ export type ArshjulHandelse = {
   gruppNyckel?: string;
 };
 
+/** Styrelse-/bygg-/ekonomi-möten m.m. inklusive egna möten. */
+export function arMotesHandelse(h: ArshjulHandelse): boolean {
+  return arMotesKategori(h.kategori) || h.underkategori === "Möte";
+}
+
 export type ArshjulTillfalle = {
   handelseId: string;
   titel: string;
@@ -303,9 +368,12 @@ export const STANDARD_PAMINNELSE_DAGAR = [365, 180, 90, 30, 14, 7];
 export const kategoriEtiketter: Record<ArshjulKategori, string> = {
   besiktning: "Besiktning",
   ekonomi: "Ekonomi",
-  stamma: "Stämma",
+  ekonomimote: "Ekonomimöte",
+  stamma: "Årsstämma",
   styrelsemote: "Styrelsemöte",
   byggmote: "Byggmöte",
+  projekteringsmote: "Projekteringsmöte",
+  upphandlingsmote: "Upphandlingsmöte",
   deklaration: "Deklaration",
   underhall: "Underhåll",
   juridik: "Juridik",
@@ -316,9 +384,12 @@ export const kategoriEtiketter: Record<ArshjulKategori, string> = {
 export const kategoriFarger: Record<ArshjulKategori, string> = {
   besiktning: "bg-sky-100 text-sky-950 border-sky-200",
   ekonomi: "bg-emerald-100 text-emerald-950 border-emerald-200",
+  ekonomimote: "bg-emerald-100 text-emerald-950 border-emerald-200",
   stamma: "bg-violet-100 text-violet-950 border-violet-200",
   styrelsemote: "bg-indigo-100 text-indigo-950 border-indigo-200",
   byggmote: "bg-orange-100 text-orange-950 border-orange-200",
+  projekteringsmote: "bg-orange-50 text-orange-950 border-orange-200",
+  upphandlingsmote: "bg-amber-100 text-amber-950 border-amber-200",
   deklaration: "bg-teal-100 text-teal-950 border-teal-200",
   underhall: "bg-amber-100 text-amber-950 border-amber-200",
   juridik: "bg-slate-100 text-slate-900 border-slate-200",

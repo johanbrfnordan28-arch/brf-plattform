@@ -4,21 +4,26 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
-  arMotesKategori,
+  arFlerarsIntervall,
+  arMotesHandelse,
   arshjulStorageKey,
   aterstallTillfalle,
   aterstallTillfalleKlar,
+  behoverPlaneringsperiod,
   expanderaTillfallen,
   foreslagnMotesPunkter,
   formatDatumKort,
   grupperaHandelser,
   hamtaPaminnelser,
   handelseIntervallText,
+  intervallAlternativ,
+  intervallEtiketter,
   kategoriEtiketter,
   kategoriFarger,
   laggTillPunktForManad,
   manadsnamn,
   markeraTillfalleKlar,
+  motesTypAlternativ,
   normaliseraHandelse,
   skapaOvkDubbelHandelser,
   skapaTomHandelse,
@@ -30,6 +35,8 @@ import {
   veckodagEtiketter,
   veckodagOrdningEtiketter,
   type ArshjulHandelse,
+  type ArshjulIntervall,
+  type ArshjulKategori,
   type ArshjulTillfalle,
   type ArshjulVeckodag,
   type ArshjulVeckodagOrdning,
@@ -37,7 +44,7 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 type Vy = "arshjul" | "paminnelser";
-type SnabbTyp = "styrelsemote" | "ovk" | "ovrigt";
+type SnabbTyp = "mote" | "ovk" | "atgard";
 
 function lasHandelser(): ArshjulHandelse[] {
   if (typeof window === "undefined") return [];
@@ -95,18 +102,30 @@ export function ArshjulModul() {
   const [vy, setVy] = useState<Vy>("arshjul");
   const [valtAr, setValtAr] = useState(innevarandeAr);
   const [skapaOppen, setSkapaOppen] = useState(false);
-  const [snabbTyp, setSnabbTyp] = useState<SnabbTyp>("styrelsemote");
+  const [snabbTyp, setSnabbTyp] = useState<SnabbTyp>("mote");
   const [meddelande, setMeddelande] = useState<string | null>(null);
 
-  // Styrelsemöte
+  // Mötesformulär
+  const [motesTypId, setMotesTypId] = useState<string>("styrelsemote");
+  const [motesTitel, setMotesTitel] = useState("Styrelsemöte");
+  const [intervall, setIntervall] = useState<ArshjulIntervall>("manadsvis_veckodag");
   const [veckodag, setVeckodag] = useState<ArshjulVeckodag>(1);
   const [vecka, setVecka] = useState<ArshjulVeckodagOrdning>(2);
+  const [manad, setManad] = useState(aktuellManad);
+  const [dag, setDag] = useState(15);
+  const [datum, setDatum] = useState(
+    `${innevarandeAr}-${String(aktuellManad).padStart(2, "0")}-15`,
+  );
+  const [startAr, setStartAr] = useState(innevarandeAr);
+  const [planFran, setPlanFran] = useState(innevarandeAr);
+  const [planTill, setPlanTill] = useState(kommandeAr);
+  const [hoppaSemester, setHoppaSemester] = useState(true);
 
   // OVK (en enhet)
   const [ovkVerksamhetAr, setOvkVerksamhetAr] = useState(innevarandeAr);
   const [ovkBostadAr, setOvkBostadAr] = useState(innevarandeAr + 3);
 
-  // Övrigt
+  // Övrig åtgärd
   const [ovrigtTitel, setOvrigtTitel] = useState("");
   const [ovrigtManad, setOvrigtManad] = useState(aktuellManad);
 
@@ -155,9 +174,22 @@ export function ArshjulModul() {
   }, [tillfallenAr]);
 
   const moten = useMemo(
-    () => handelser.filter((h) => arMotesKategori(h.kategori)),
+    () => handelser.filter((h) => arMotesHandelse(h)),
     [handelser],
   );
+
+  function valjMotesTyp(id: string) {
+    setMotesTypId(id);
+    const typ = motesTypAlternativ.find((t) => t.id === id);
+    if (!typ) return;
+    if (id !== "eget") setMotesTitel(typ.etikett);
+    else if (!motesTitel || motesTypAlternativ.some((t) => t.etikett === motesTitel)) {
+      setMotesTitel("");
+    }
+    setIntervall(typ.standardIntervall);
+    if (typ.standardManad) setManad(typ.standardManad);
+    setHoppaSemester(Boolean(typ.hoppaSemester));
+  }
 
   const grupper = useMemo(() => grupperaHandelser(handelser), [handelser]);
 
@@ -179,24 +211,55 @@ export function ArshjulModul() {
     setHandelser((cur) => cur.filter((h) => !ids.has(h.id)));
   }
 
-  function skapaStyrelsemote() {
-    const h = skapaTomHandelse({
-      titel: "Styrelsemöte",
-      kategori: "styrelsemote",
-      intervall: "manadsvis_veckodag",
-      veckodag,
-      veckodagOrdning: vecka,
-      undantagnaManader: [7, 8],
-      planerasFranAr: innevarandeAr,
-      planerasTillAr: kommandeAr,
-      paminnelseDagar: [14, 7],
-    });
+  function skapaMote() {
+    const typ = motesTypAlternativ.find((t) => t.id === motesTypId);
+    const titel =
+      motesTypId === "eget"
+        ? motesTitel.trim()
+        : motesTitel.trim() || typ?.etikett || "Möte";
+    if (!titel) {
+      setMeddelande("Ange ett namn på mötet.");
+      return;
+    }
+    const kategori: ArshjulKategori =
+      motesTypId === "eget" ? "ovrigt" : (motesTypId as ArshjulKategori);
+
+    const bas: Partial<ArshjulHandelse> = {
+      titel,
+      kategori,
+      underkategori: motesTypId === "eget" ? "Möte" : undefined,
+      intervall,
+      paminnelseDagar: [90, 30, 14, 7],
+      planerasFranAr: planFran,
+      planerasTillAr: planTill,
+      undantagnaManader:
+        hoppaSemester && behoverPlaneringsperiod(intervall) ? [7, 8] : [],
+    };
+
+    if (intervall === "engang" || intervall === "veckovis") {
+      bas.datum = datum;
+    } else if (intervall === "manadsvis_veckodag") {
+      bas.veckodag = veckodag;
+      bas.veckodagOrdning = vecka;
+    } else if (intervall === "manadsvis" || intervall === "kvartalsvis") {
+      bas.manad = manad;
+      bas.dag = dag;
+    } else if (intervall === "arlig") {
+      bas.manad = manad;
+      bas.dag = dag;
+    } else if (arFlerarsIntervall(intervall)) {
+      bas.manad = manad;
+      bas.dag = dag;
+      bas.startAr = startAr;
+    }
+
+    const h = skapaTomHandelse(bas);
     setHandelser((cur) => [...cur, h]);
     setAgendaMoteId(h.id);
     setAgendaManad(aktuellManad);
     setSkapaOppen(false);
     setMeddelande(
-      "Styrelsemöte tillagt för i år och kommande år. Välj månad nedan och lägg till punkter.",
+      `${titel} tillagt med påminnelser. Välj månad och lägg till punkter vid behov.`,
     );
   }
 
@@ -298,7 +361,7 @@ export function ArshjulModul() {
         )}
         {h && !t.arKlar && (
           <div className="mt-1 flex flex-col gap-0.5">
-            {arMotesKategori(h.kategori) && (
+            {arMotesHandelse(h) && (
               <button
                 type="button"
                 onClick={() => {
@@ -366,9 +429,8 @@ export function ArshjulModul() {
     <div className="space-y-5">
       <div className="max-w-2xl space-y-2">
         <p className="text-sm text-muted">
-          Planera <strong>i år</strong> och <strong>kommande år</strong>. Lägg
-          till styrelsemöte, välj månad och lägg in punkter. OVK läggs som en
-          enhet (verksamheter 3 år + bostäder 6 år).
+          Lägg till möten med intervall och påminnelser — styrelse, bygg,
+          ekonomi, årsstämma m.m. Välj månad för punkter. OVK läggs som en enhet.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -421,9 +483,9 @@ export function ArshjulModul() {
           <div className="flex flex-wrap gap-2">
             {(
               [
-                ["styrelsemote", "Styrelsemöte"],
+                ["mote", "Möte"],
                 ["ovk", "OVK"],
-                ["ovrigt", "Övrigt"],
+                ["atgard", "Åtgärd"],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -441,52 +503,215 @@ export function ArshjulModul() {
             ))}
           </div>
 
-          {snabbTyp === "styrelsemote" && (
+          {snabbTyp === "mote" && (
             <div className="space-y-3">
+              <label className="block text-sm">
+                Typ av möte
+                <select
+                  value={motesTypId}
+                  onChange={(e) => valjMotesTyp(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {motesTypAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {(motesTypId === "eget" ||
+                motesTypId === "projekteringsmote" ||
+                motesTypId === "upphandlingsmote") && (
+                <label className="block text-sm">
+                  Namn
+                  <input
+                    value={motesTitel}
+                    onChange={(e) => setMotesTitel(e.target.value)}
+                    placeholder="t.ex. Upphandlingsmöte fasad"
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+
+              <label className="block text-sm">
+                Intervall
+                <select
+                  value={intervall}
+                  onChange={(e) =>
+                    setIntervall(e.target.value as ArshjulIntervall)
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {intervallAlternativ.map((i) => (
+                    <option key={i} value={i}>
+                      {intervallEtiketter[i]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {(intervall === "engang" || intervall === "veckovis") && (
+                <label className="block text-sm">
+                  {intervall === "veckovis" ? "Startdatum" : "Datum"}
+                  <input
+                    type="date"
+                    value={datum}
+                    onChange={(e) => setDatum(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+
+              {intervall === "manadsvis_veckodag" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Vecka i månaden
+                    <select
+                      value={vecka}
+                      onChange={(e) =>
+                        setVecka(
+                          Number(e.target.value) as ArshjulVeckodagOrdning,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {Object.entries(veckodagOrdningEtiketter).map(
+                        ([v, etikett]) => (
+                          <option key={v} value={v}>
+                            {etikett}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Veckodag
+                    <select
+                      value={veckodag}
+                      onChange={(e) =>
+                        setVeckodag(Number(e.target.value) as ArshjulVeckodag)
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {([1, 2, 3, 4, 5, 6, 7] as ArshjulVeckodag[]).map((d) => (
+                        <option key={d} value={d}>
+                          {veckodagEtiketter[d]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {(intervall === "manadsvis" ||
+                intervall === "kvartalsvis" ||
+                intervall === "arlig" ||
+                arFlerarsIntervall(intervall)) && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Månad
+                    <select
+                      value={manad}
+                      onChange={(e) => setManad(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((n, i) => (
+                        <option key={n} value={i + 1}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Dag
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={dag}
+                      onChange={(e) => setDag(Number(e.target.value) || 1)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {arFlerarsIntervall(intervall) && (
+                <label className="block text-sm">
+                  Första / nästa år
+                  <input
+                    type="number"
+                    value={startAr}
+                    onChange={(e) => setStartAr(Number(e.target.value))}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+
+              {behoverPlaneringsperiod(intervall) && (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["i-nasta", "I år + kommande", 1],
+                        ["bara", "Bara i år", 0],
+                        ["3", "3 år", 2],
+                      ] as const
+                    ).map(([id, label, extra]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setPlanFran(innevarandeAr);
+                          setPlanTill(innevarandeAr + extra);
+                        }}
+                        className="rounded-full border border-border px-3 py-1 text-xs hover:border-primary/50"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-sm">
+                      Från år
+                      <input
+                        type="number"
+                        value={planFran}
+                        onChange={(e) => setPlanFran(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      Till och med år
+                      <input
+                        type="number"
+                        value={planTill}
+                        onChange={(e) => setPlanTill(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={hoppaSemester}
+                      onChange={(e) => setHoppaSemester(e.target.checked)}
+                    />
+                    Hoppa över juli och augusti
+                  </label>
+                </>
+              )}
+
               <p className="text-xs text-muted">
-                Planeras för {innevarandeAr}–{kommandeAr}. Hoppar över juli och
-                augusti. Punkter lägger ni per månad efteråt.
+                Påminnelser skapas automatiskt (90, 30, 14 och 7 dagar före).
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm">
-                  Vecka i månaden
-                  <select
-                    value={vecka}
-                    onChange={(e) =>
-                      setVecka(Number(e.target.value) as ArshjulVeckodagOrdning)
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  >
-                    {Object.entries(veckodagOrdningEtiketter).map(([v, e]) => (
-                      <option key={v} value={v}>
-                        {e}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-sm">
-                  Veckodag
-                  <select
-                    value={veckodag}
-                    onChange={(e) =>
-                      setVeckodag(Number(e.target.value) as ArshjulVeckodag)
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  >
-                    {([1, 2, 3, 4, 5, 6, 7] as ArshjulVeckodag[]).map((d) => (
-                      <option key={d} value={d}>
-                        {veckodagEtiketter[d]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
               <button
                 type="button"
-                onClick={skapaStyrelsemote}
+                onClick={skapaMote}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               >
-                Lägg till styrelsemöte
+                Lägg till möte
               </button>
             </div>
           )}
@@ -494,8 +719,7 @@ export function ArshjulModul() {
           {snabbTyp === "ovk" && (
             <div className="space-y-3">
               <p className="text-xs text-muted">
-                En OVK-post med två intervaller: verksamheter (3 år) och
-                bostäder (6 år). Visas ihop.
+                OVK som en enhet: verksamheter (3 år) och bostäder (6 år).
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm">
@@ -527,14 +751,14 @@ export function ArshjulModul() {
             </div>
           )}
 
-          {snabbTyp === "ovrigt" && (
+          {snabbTyp === "atgard" && (
             <div className="space-y-3">
               <label className="block text-sm">
                 Titel
                 <input
                   value={ovrigtTitel}
                   onChange={(e) => setOvrigtTitel(e.target.value)}
-                  placeholder="t.ex. SBA, budgetgenomgång"
+                  placeholder="t.ex. SBA, radon"
                   className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                 />
               </label>
@@ -557,7 +781,7 @@ export function ArshjulModul() {
                 onClick={skapaOvrigt}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               >
-                Lägg till
+                Lägg till åtgärd
               </button>
             </div>
           )}
@@ -574,11 +798,10 @@ export function ArshjulModul() {
       {moten.length > 0 && vy === "arshjul" && (
         <div className="rounded-xl border border-border bg-white p-4">
           <p className="text-sm font-semibold text-foreground">
-            Punkter på styrelsemöte
+            Punkter på möte
           </p>
           <p className="mt-1 text-xs text-muted">
-            Välj månad och lägg till det som ska tas upp just då — inte på alla
-            möten.
+            Välj möte och månad — lägg till det som ska tas upp just då.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {moten.length > 1 && (
@@ -824,7 +1047,7 @@ export function ArshjulModul() {
                     <span className="text-xs text-muted">
                       {handelseIntervallText(h)}
                     </span>
-                    {arMotesKategori(h.kategori) && (
+                    {arMotesHandelse(h) && (
                       <button
                         type="button"
                         onClick={() => {
