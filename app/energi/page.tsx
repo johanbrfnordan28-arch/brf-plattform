@@ -8,6 +8,7 @@ import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 
 const energiFilm = guideFilmer.find((f) => f.id === "energi")!;
 
+const fokusomraden = [
   {
     emoji: "🌡️",
     titel: "Värmesystem",
