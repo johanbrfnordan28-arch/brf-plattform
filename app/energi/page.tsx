@@ -8,7 +8,6 @@ import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 
 const energiFilm = guideFilmer.find((f) => f.id === "energi")!;
 
-const fokusomraden = [
   {
     emoji: "🌡️",
     titel: "Värmesystem",
@@ -20,6 +19,16 @@ const fokusomraden = [
     text: "LED, tider och rörelsevakter i trapphus och gemensamma ytor — elräkningen sjunker märkbart.",
   },
   {
+    emoji: "🏠",
+    titel: "Tak",
+    text: "Material (papp, plåt, tegel), avvattning och skötsel — rätt underhåll skyddar tak och fasad och påverkar när omläggning behövs.",
+  },
+  {
+    emoji: "🪟",
+    titel: "Fönster",
+    text: "Trä, PVC och aluminiumbeklätt — underhåll kontra byte. Nya fönster har betydligt bättre energivärden än äldre.",
+  },
+  {
     emoji: "📊",
     titel: "Payback time",
     text: "Hur lång tid tar det innan investeringen betalar sig? Central fråga för varje energiåtgärd styrelsen överväger.",
@@ -28,16 +37,6 @@ const fokusomraden = [
     emoji: "📉",
     titel: "Före och efter",
     text: "Jämför driftkostnad, el och värme innan och efter — annars vet ni inte om åtgärden faktiskt lönade sig.",
-  },
-  {
-    emoji: "🔗",
-    titel: "Koppling till underhållsplan",
-    text: "Stora byten följer teknisk livslängd i planen — energiåtgärder kan ge effekt redan i år.",
-  },
-  {
-    emoji: "🔄",
-    titel: "Utveckling pågår",
-    text: "Tips och råd fylls på löpande — energi och drift är ett ständigt pågående arbete, inte en engångslista.",
   },
 ] as const;
 
