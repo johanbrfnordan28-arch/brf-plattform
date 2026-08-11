@@ -70,6 +70,8 @@ type UnderhallsplanSlutsidaProps = {
     tillfalleId: string,
     nyKostnadKr: number,
   ) => void;
+  /** Visar central grundmall-rubrik (även när förening tittar skrivskyddat). */
+  visaSomCentralGrundmall?: boolean;
 };
 
 function formatKrStor(value: number): string {
@@ -119,6 +121,7 @@ export function UnderhallsplanSlutsida({
   renoveringarLista = [],
   planKostnader,
   onKostnadJustering,
+  visaSomCentralGrundmall = false,
 }: UnderhallsplanSlutsidaProps) {
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const grundNorm = normaliseraGrund(grund);
@@ -173,7 +176,8 @@ export function UnderhallsplanSlutsida({
     ? Math.round(summaArsbudget / utgiftsRader.length)
     : 0;
 
-  const arCentralGrundmall = arGrundmallForening();
+  const arCentralGrundmall =
+    visaSomCentralGrundmall || arGrundmallForening();
   const titel = hamtaPlanVisningstitel(
     planNamn,
     grundNorm,

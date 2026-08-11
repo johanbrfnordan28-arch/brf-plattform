@@ -45,10 +45,7 @@ import {
   synkaPlaninstallningarIndex,
 } from "@/components/underhallsplan/PlanKostnadsparametrarPanel";
 import { normaliseraPlanKostnader } from "@/components/underhallsplan/plan-kostnader";
-import {
-  arTillatenTestplanForForening,
-  hamtaTillgangligaTestplaner,
-} from "@/components/underhallsplan/testplan-for-forening";
+import { arTillatenTestplanForForening, hamtaTillgangligaTestplaner } from "@/components/underhallsplan/testplan-for-forening";
 import {
   hamtaTestplan,
   type TestplanDefinition,
@@ -61,7 +58,14 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
-import { importeraSaknadeKomponenterFranGrundmall } from "@/components/underhallsplan/importera-fran-grundmall";
+import {
+  importeraSaknadeKomponenterFranGrundmall,
+  lasGrundmallUnderhallsplanState,
+} from "@/components/underhallsplan/importera-fran-grundmall";
+import {
+  ForeningPlanLagePanel,
+  type ForeningPlanLage,
+} from "@/components/underhallsplan/ForeningPlanLagePanel";
 import { sattTillfalleTotalKostnad } from "@/components/underhallsplan/plan-underhall-tidslista";
 import {
   maxPlanLangdAr,
@@ -315,6 +319,7 @@ function StegPanel({
   visaStangOchBytKnapp = false,
   blockerarAndra = false,
   hideInPrint = false,
+  skrivskyddad = false,
   onToggle,
   onStangOchOppna,
   children,
@@ -330,6 +335,8 @@ function StegPanel({
   visaStangOchBytKnapp?: boolean;
   blockerarAndra?: boolean;
   hideInPrint?: boolean;
+  /** Tillåter öppna/stäng steg men blockerar redigering i innehållet. */
+  skrivskyddad?: boolean;
   onToggle: (id: WizardStegId) => void;
   onStangOchOppna?: (id: WizardStegId) => void;
   children: React.ReactNode;
@@ -351,6 +358,7 @@ function StegPanel({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-primary-dark">
             Steg {stegNummer}
+            {skrivskyddad ? " · Skrivskyddad" : ""}
           </p>
           <h2 className="mt-1 text-xl font-semibold text-foreground">{titel}</h2>
           {!open && summary && (
@@ -403,7 +411,11 @@ function StegPanel({
       )}
 
       {open && (
-        <div id={`${id}-innehall`} className="mt-6">
+        <div
+          id={`${id}-innehall`}
+          className="mt-6"
+          {...(skrivskyddad ? { inert: true } : {})}
+        >
           {children}
         </div>
       )}
@@ -539,6 +551,8 @@ export function UnderhallsplanWizard() {
     TestplanDefinition[]
   >([]);
   const [demoVarning, setDemoVarning] = useState<string | null>(null);
+  const [planLage, setPlanLage] = useState<ForeningPlanLage>("forening");
+  const [grundmallTom, setGrundmallTom] = useState(false);
   const skipAutosparRef = useRef(true);
   const renoveringarListaRef = useRef(renoveringarLista);
   renoveringarListaRef.current = renoveringarLista;
@@ -585,13 +599,12 @@ export function UnderhallsplanWizard() {
         sparad.aktivTestplan &&
         !arTillatenTestplanForForening(sparad.aktivTestplan, foreningId)
       ) {
-        const plan = hamtaTestplan(sparad.aktivTestplan);
-        setDemoVarning(
-          `Er underhållsplan innehåller demo-data från ${plan.namn}. Rensa för att börja med ${
-            profil?.namn ?? "er förening"
-          }.`,
-        );
-        appliceraLagratState({ ...sparad, aktivTestplan: null });
+        // Epokmall-id ska inte sitta kvar på föreningsplaner — innehållet är deras plan.
+        const rensad = { ...sparad, aktivTestplan: null as TestplanId | null };
+        appliceraLagratState(rensad);
+        if (!arGrundmallForening(foreningId)) {
+          sparaUnderhallsplanState(rensad, foreningId);
+        }
       } else {
         appliceraLagratState(sparad);
       }
@@ -690,6 +703,9 @@ export function UnderhallsplanWizard() {
   }
 
   function sparaUppdateringar(): boolean {
+    if (planLage === "grundmall" && !arGrundmallForening()) {
+      return false;
+    }
     const state = byggLagratState();
     const result = sparaUnderhallsplanState(state);
     if (result.ok) {
@@ -704,6 +720,7 @@ export function UnderhallsplanWizard() {
 
   useEffect(() => {
     if (!laddatFranLager) return;
+    if (planLage === "grundmall" && !arGrundmallForening()) return;
     if (skipAutosparRef.current) {
       skipAutosparRef.current = false;
       return;
@@ -716,6 +733,7 @@ export function UnderhallsplanWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced autospar av hela wizarden
   }, [
     laddatFranLager,
+    planLage,
     grund,
     planinstallningar,
     grundSaved,
@@ -858,7 +876,60 @@ export function UnderhallsplanWizard() {
     setSparadTid(null);
   }
 
+  function visaForeningsplan() {
+    if (planLage === "forening") return;
+    skipAutosparRef.current = true;
+    setGrundmallTom(false);
+    const sparad = lasUnderhallsplanState();
+    if (sparad) {
+      appliceraLagratState(sparad);
+    }
+    setPlanLage("forening");
+    setHarOsparadeAndringar(false);
+  }
+
+  function visaGrundmallSkrivskyddad() {
+    if (arGrundmallForening()) return;
+    // Spara föreningens arbete innan vi byter till mallvisning
+    if (planLage === "forening") {
+      sparaUppdateringar();
+    }
+    skipAutosparRef.current = true;
+    const mall = lasGrundmallUnderhallsplanState();
+    if (mall) {
+      setGrundmallTom(false);
+      appliceraLagratState(mall);
+    } else {
+      setGrundmallTom(true);
+      setGrund(empty);
+      setPlaninstallningar(standardPlaninstallningar());
+      setGrundSaved(false);
+      setRenoveringarSaved(false);
+      setKomponenterSaved(false);
+      setBesiktningarSaved(false);
+      appliceraKomponentSynk(allaForeslagnaKomponenter, {});
+      setBesiktningar(skapaStandardBesiktningar());
+      setSamfallighetsavgift(skapaStandardSamfallighetsavgift());
+      setKrPerKvmAr(defaultKrPerKvmAr);
+      setPlanNamn("Central grundmall");
+      setPlanNotering(
+        "Grundmallen har ännu ingen sparad underhållsplan centralt. När den sparats kan ni öppna den här.",
+      );
+      setRenoveringSammanfattning(null);
+      setRenoveringarLista([]);
+      setAktivTestplan(null);
+      setSenastTillagdKomponent(null);
+      setSparadTid(null);
+    }
+    setPlanLage("grundmall");
+    setHarOsparadeAndringar(false);
+    setOpenSteg("grund");
+  }
+
   function gotoSlutsida() {
+    if (planLage === "grundmall" && !arGrundmallForening()) {
+      visaForeningsplan();
+    }
     stangOchOppnaSteg("slutsida");
   }
 
@@ -955,6 +1026,7 @@ export function UnderhallsplanWizard() {
 
   function importeraFranGrundmall() {
     if (!renoveringarSaved || arGrundmallForening()) return;
+    if (planLage === "grundmall") return;
     const foreningId = lasAktivForeningId();
     const { activeComponents: next, komponentDetaljer: detaljer, resultat } =
       importeraSaknadeKomponenterFranGrundmall(
@@ -977,6 +1049,7 @@ export function UnderhallsplanWizard() {
     tillfalleId: string,
     nyKostnadKr: number,
   ) {
+    if (planLage === "grundmall" && !arGrundmallForening()) return;
     const nasta = sattTillfalleTotalKostnad(
       komponentDetaljer,
       komponent,
@@ -1052,6 +1125,8 @@ export function UnderhallsplanWizard() {
   const grundNorm = normaliseraGrund(grund);
   const avsattningsYtaM2 = hamtaAvsattningsYtaM2(grundNorm);
   const antalLagenheter = hamtaAntalLagenheterFranGrund(grundNorm);
+  const skrivskyddad = planLage === "grundmall" && !arGrundmallForening();
+  const arCentralGrundmall = arGrundmallForening();
 
   const autoAvsattningKrPerKvm = useMemo(() => {
     if (!laddatFranLager || avsattningsYtaM2 <= 0 || planLangdAr <= 0) {
@@ -1084,19 +1159,28 @@ export function UnderhallsplanWizard() {
 
   useEffect(() => {
     if (!laddatFranLager || autoAvsattningKrPerKvm == null) return;
+    if (planLage === "grundmall" && !arGrundmallForening()) return;
     setKrPerKvmAr((prev) =>
       autoAvsattningKrPerKvm > prev ? autoAvsattningKrPerKvm : prev,
     );
-  }, [laddatFranLager, autoAvsattningKrPerKvm]);
+  }, [laddatFranLager, autoAvsattningKrPerKvm, planLage]);
   const [openSteg, setOpenSteg] = useState<WizardStegId | null>(null);
   const [stegNavFel, setStegNavFel] = useState<StegNavFel | null>(null);
 
-  const stegLasStatus: StegLasStatus = {
-    grundSaved,
-    renoveringarSaved,
-    komponenterSaved,
-    besiktningarSaved,
-  };
+  const stegLasStatus: StegLasStatus =
+    planLage === "grundmall" && !arGrundmallForening()
+      ? {
+          grundSaved: true,
+          renoveringarSaved: true,
+          komponenterSaved: true,
+          besiktningarSaved: true,
+        }
+      : {
+          grundSaved,
+          renoveringarSaved,
+          komponenterSaved,
+          besiktningarSaved,
+        };
 
   function scrollTillSteg(id: WizardStegId) {
     window.setTimeout(() => {
@@ -1152,6 +1236,7 @@ export function UnderhallsplanWizard() {
       visaStangOchBytKnapp:
         stegNavFel?.typ === "annat-oppet" && stegNavFel.targetId === id,
       blockerarAndra: openSteg === id,
+      skrivskyddad,
       onStangOchOppna: stangOchOppnaSteg,
     };
   }
@@ -1162,107 +1247,137 @@ export function UnderhallsplanWizard() {
         <div>
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-foreground">
-              Spara dina uppdateringar
+              {skrivskyddad
+                ? "Grundmallen (skrivskyddad)"
+                : "Spara dina uppdateringar"}
             </p>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                harOsparadeAndringar
-                  ? "bg-amber-100 text-amber-900"
-                  : sparadTid
-                    ? "bg-[#dcefe2] text-primary-dark"
-                    : "bg-border/50 text-muted"
-              }`}
-              role="status"
-              aria-live="polite"
-            >
+            {!skrivskyddad && (
               <span
-                aria-hidden
-                className={`h-1.5 w-1.5 rounded-full ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   harOsparadeAndringar
-                    ? "bg-amber-500"
+                    ? "bg-amber-100 text-amber-900"
                     : sparadTid
-                      ? "bg-primary"
-                      : "bg-muted"
+                      ? "bg-[#dcefe2] text-primary-dark"
+                      : "bg-border/50 text-muted"
                 }`}
-              />
-              {harOsparadeAndringar
-                ? "Sparar…"
-                : sparadTid
-                  ? "Sparat"
-                  : "Autosparas"}
-            </span>
+                role="status"
+                aria-live="polite"
+              >
+                <span
+                  aria-hidden
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    harOsparadeAndringar
+                      ? "bg-amber-500"
+                      : sparadTid
+                        ? "bg-primary"
+                        : "bg-muted"
+                  }`}
+                />
+                {harOsparadeAndringar
+                  ? "Sparar…"
+                  : sparadTid
+                    ? "Sparat"
+                    : "Autosparas"}
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-xs text-muted">
-            {sparadTid
-              ? `Senast sparad ${new Date(sparadTid).toLocaleString("sv-SE")}. Ändringar sparas automatiskt i webbläsaren.`
-              : "Sparas automatiskt lokalt i webbläsaren när du redigerar."}
+            {skrivskyddad
+              ? "Ni kan bläddra i stegen men inte ändra. Stäng grundmallen för att fortsätta i er plan."
+              : sparadTid
+                ? `Senast sparad ${new Date(sparadTid).toLocaleString("sv-SE")}. Ändringar sparas automatiskt i webbläsaren.`
+                : "Sparas automatiskt lokalt i webbläsaren när du redigerar."}
           </p>
-          {sparFel && (
+          {sparFel && !skrivskyddad && (
             <p className="mt-1 text-xs font-medium text-red-700" role="alert">
               {sparFel}
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={sparaUppdateringar}
-          className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-        >
-          Spara nu
-        </button>
+        {skrivskyddad ? (
+          <button
+            type="button"
+            onClick={visaForeningsplan}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+          >
+            Tillbaka till er plan
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={sparaUppdateringar}
+            className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+          >
+            Spara nu
+          </button>
+        )}
       </div>
 
       <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/60 px-4 py-4">
         <p className="text-sm font-semibold text-primary-dark">
-          {arGrundmallForening()
-            ? "Central grundmall — underhållsplan"
-            : "Föreningens underhållsplan"}
+          {skrivskyddad
+            ? "Central grundmall — skrivskyddad"
+            : arCentralGrundmall
+              ? "Central grundmall — underhållsplan"
+              : "Föreningens underhållsplan"}
         </p>
         <p className="mt-1 text-sm text-muted">
-          {arGrundmallForening() ? (
+          {skrivskyddad ? (
+            <>
+              Ni tittar på den centrala grunden. Ändringar görs bara centralt.
+              Stäng grundmallen när ni vill fortsätta bygga{" "}
+              <strong>er egen</strong> underhållsplan.
+              {grundmallTom
+                ? " Grundmallen har ännu ingen sparad plan — öppna den igen när den fyllts i centralt."
+                : null}
+            </>
+          ) : arCentralGrundmall ? (
             <>
               Ni arbetar i den centrala grunden. Ändringar här ska bara göras av
-              er centralt. Föreningar får egen plan och kan importera saknade
-              delar från er — deras sparade plan skrivs inte över automatiskt.
+              er centralt. Föreningar får egen plan och kan öppna grundmallen
+              skrivskyddat samt importera saknade delar — deras sparade plan
+              skrivs inte över automatiskt.
             </>
           ) : (
             <>
               Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan.
-              Den ska bli enkel och anpassad för just er förening. Grundmallen
-              uppdateras bara centralt; ni kan importera saknade komponenter från
-              den i steg 3.
+              Den ska bli enkel och anpassad för just er förening. Öppna
+              grundmallen för att se den centrala mallen; importera saknade
+              komponenter i steg 3.
             </>
           )}
         </p>
-        <ul className="mt-3 space-y-1.5 text-sm text-muted">
-          <li className="flex gap-2">
-            <span className="text-primary" aria-hidden>
-              1.
-            </span>
-            <span>
-              Börja med <strong>Steg 1 — Grunduppgifter</strong> (adresser först,
-              fasader när byggnader finns). Det låser upp beräkningar och AI-stöd.
-            </span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-primary" aria-hidden>
-              2.
-            </span>
-            <span>
-              Därefter kan ni fylla i <strong>steg 2–6 i valfri ordning</strong> —
-              ett steg i taget. Allt sparas automatiskt i er plan.
-            </span>
-          </li>
-          <li className="flex gap-2">
-            <span className="text-primary" aria-hidden>
-              3.
-            </span>
-            <span>
-              <strong>Steg 7 — Summering</strong> visar utkast av 50-årsbudgeten.
-              Justera kostnader där så planen blir överskådlig.
-            </span>
-          </li>
-        </ul>
+        {!skrivskyddad && (
+          <ul className="mt-3 space-y-1.5 text-sm text-muted">
+            <li className="flex gap-2">
+              <span className="text-primary" aria-hidden>
+                1.
+              </span>
+              <span>
+                Börja med <strong>Steg 1 — Grunduppgifter</strong> (adresser först,
+                fasader när byggnader finns). Det låser upp beräkningar och AI-stöd.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary" aria-hidden>
+                2.
+              </span>
+              <span>
+                Därefter kan ni fylla i <strong>steg 2–6 i valfri ordning</strong> —
+                ett steg i taget. Allt sparas automatiskt i er plan.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary" aria-hidden>
+                3.
+              </span>
+              <span>
+                <strong>Steg 7 — Summering</strong> visar utkast av 50-årsbudgeten.
+                Justera kostnader där så planen blir överskådlig.
+              </span>
+            </li>
+          </ul>
+        )}
         <p className="mt-3 text-xs text-muted">
           Vill ni bara ha en enkel åtgärds- och kostnadslista? Använd{" "}
           <Link
@@ -1291,19 +1406,27 @@ export function UnderhallsplanWizard() {
         </div>
       )}
 
-      <TestplanValjare
-        planer={tillgangligaTestplaner}
-        visaGrundmallDemo={arGrundmallForening()}
-        aktivPlan={aktivTestplan}
-        onLadda={laddaTestplan}
-        onRensa={rensaTestplan}
-        onGotoSlutsida={gotoSlutsida}
-      />
+      {arCentralGrundmall ? (
+        <TestplanValjare
+          planer={tillgangligaTestplaner}
+          aktivPlan={aktivTestplan}
+          onLadda={laddaTestplan}
+          onRensa={rensaTestplan}
+          onGotoSlutsida={gotoSlutsida}
+        />
+      ) : (
+        <ForeningPlanLagePanel
+          lage={planLage}
+          onVisaForeningsplan={visaForeningsplan}
+          onVisaGrundmall={visaGrundmallSkrivskyddad}
+          onGotoSlutsida={gotoSlutsida}
+        />
+      )}
 
-      {grundSaved && (
+      {grundSaved && !skrivskyddad && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-[#eef6f0]/60 px-4 py-3">
           <p className="text-sm text-foreground">
-            Snabbnavigering — öppna summeringen när som helst under arbetet.
+            Snabbnavigering — öppna summeringen av er plan när som helst.
           </p>
           <button
             type="button"
@@ -1543,7 +1666,13 @@ export function UnderhallsplanWizard() {
         }
       >
         <p className="text-sm leading-relaxed text-muted">
-          {arGrundmallForening() ? (
+          {skrivskyddad ? (
+            <>
+              Ni tittar på grundmallens kommande underhåll. Innehållet kan inte
+              ändras här — stäng grundmallen och importera saknade delar till er
+              plan när ni är tillbaka.
+            </>
+          ) : arCentralGrundmall ? (
             <>
               Här underhåller ni den centrala grunden. Stäng av eller justera det
               som ska ingå i mallen. Föreningar får egen plan och importerar
@@ -1630,7 +1759,7 @@ export function UnderhallsplanWizard() {
             ))}
         </div>
 
-        {!arGrundmallForening() && (
+        {!arCentralGrundmall && !skrivskyddad && (
           <div
             className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
           >
@@ -1829,7 +1958,7 @@ export function UnderhallsplanWizard() {
         summary="Presentation, planerade tider och erfarenhetsbaserade råd — utskriftsvänlig."
       >
         <UnderhallsplanSlutsida
-          unlocked={grundSaved}
+          unlocked={grundSaved || skrivskyddad}
           planKomplett={besiktningarSaved}
           planNamn={planNamn}
           planNotering={planNotering}
@@ -1844,19 +1973,35 @@ export function UnderhallsplanWizard() {
           renoveringar={renoveringSammanfattning}
           renoveringarLista={renoveringarLista}
           planKostnader={planKostnader}
-          onKostnadJustering={justeraTillfalleKostnad}
+          onKostnadJustering={skrivskyddad ? undefined : justeraTillfalleKostnad}
+          visaSomCentralGrundmall={skrivskyddad || arCentralGrundmall}
         />
         <div className="mt-6 print:hidden">
-          <button
-            type="button"
-            onClick={() => stangOchOppnaSteg("kommandeProjekt")}
-            className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
-          >
-            Öppna steg 8 (kommande projekt)
-          </button>
-          <p className="mt-2 text-xs text-muted">
-            Styrelseinternt — ingår inte i PDF eller utskrift.
-          </p>
+          {skrivskyddad ? (
+            <button
+              type="button"
+              onClick={() => {
+                visaForeningsplan();
+                stangOchOppnaSteg("slutsida");
+              }}
+              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
+            >
+              Tillbaka till föreningens slutsida
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => stangOchOppnaSteg("kommandeProjekt")}
+              className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
+            >
+              Öppna steg 8 (kommande projekt)
+            </button>
+          )}
+          {!skrivskyddad && (
+            <p className="mt-2 text-xs text-muted">
+              Styrelseinternt — ingår inte i PDF eller utskrift.
+            </p>
+          )}
         </div>
       </StegPanel>
 

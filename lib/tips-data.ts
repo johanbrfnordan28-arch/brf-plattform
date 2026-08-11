@@ -14,7 +14,7 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "📥",
       titel: "Er plan, er kontroll",
-      text: "Styrelsen ändrar fritt i föreningens underhållsplan. Saknas något kan ni importera från den centrala grundmallen (steg 3) — utan att er sparade plan skrivs över automatiskt.",
+      text: "Styrelsen ändrar fritt i föreningens underhållsplan. Öppna grundmallen skrivskyddat för att se den, och importera saknade delar i steg 3 — utan att er sparade plan skrivs över automatiskt.",
     },
     {
       ikon: "📋",

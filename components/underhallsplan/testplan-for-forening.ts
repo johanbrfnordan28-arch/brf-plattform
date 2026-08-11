@@ -2,9 +2,7 @@ import {
   arGrundmallForening,
   lasAktivForeningId,
 } from "@/lib/forening-registry";
-import { hamtaStandardTestForeningTestplan } from "@/lib/testforeningar";
 import {
-  hamtaTestplan,
   testplaner,
   type TestplanDefinition,
   type TestplanId,
@@ -18,18 +16,16 @@ export const GENERISKA_DEMO_TESTPLANER: TestplanId[] = [
   "test-90",
 ];
 
+/**
+ * Epokmallar (90-tal m.m.) visas bara i central grundmall.
+ * Föreningar öppnar grundmallen skrivskyddat via ForeningPlanLagePanel —
+ * de ska inte ladda epok-/startunderlag in i sin egen plan.
+ */
 export function hamtaTillgangligaTestplaner(
   foreningId?: string,
 ): TestplanDefinition[] {
   const id = foreningId ?? lasAktivForeningId();
   if (arGrundmallForening(id)) return testplaner;
-
-  const standardPlan = hamtaStandardTestForeningTestplan(id);
-  if (standardPlan) {
-    const plan = hamtaTestplan(standardPlan);
-    return plan ? [plan] : [];
-  }
-
   return [];
 }
 
