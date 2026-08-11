@@ -39,6 +39,7 @@ import {
 import type { Besiktning } from "@/components/underhallsplan/besiktningar";
 import type { Samfallighetsavgift } from "@/components/underhallsplan/samfallighetsavgift";
 import { samlaPlanUnderhallTidslista } from "@/components/underhallsplan/plan-underhall-tidslista";
+import { KostnadPrisVarning } from "@/components/underhallsplan/KostnadPrisVarning";
 import {
   PLAN_SLUTSIDA_CHECKLISTA,
   PLAN_SLUTSIDA_ERFARENHET,
@@ -62,6 +63,13 @@ type UnderhallsplanSlutsidaProps = {
   renoveringar: RenoveringSammanfattning | null;
   renoveringarLista?: UtfördRenovering[];
   planKostnader?: PlanKostnaderNormaliserade;
+  /** Justera kostnad för ett tillfälle (sparas i registret). */
+  onKostnadJustering?: (
+    komponent: string,
+    underkomponentId: string,
+    tillfalleId: string,
+    nyKostnadKr: number,
+  ) => void;
 };
 
 function formatKrStor(value: number): string {
@@ -110,6 +118,7 @@ export function UnderhallsplanSlutsida({
   renoveringar,
   renoveringarLista = [],
   planKostnader,
+  onKostnadJustering,
 }: UnderhallsplanSlutsidaProps) {
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const grundNorm = normaliseraGrund(grund);
@@ -610,59 +619,100 @@ export function UnderhallsplanSlutsida({
 
         <PrintSida sidnummer={5} titel="Planerade underhållstider">
           <p className="text-sm leading-relaxed text-muted">
-            Tiderna bygger på underhållstillfällen i registret (steg 3). Löpande
-            underhåll — t.ex. målning — förlänger livslängden och kan skjuta upp
-            större ingrepp. Justera år och intervall där det inte är rimligt för
-            er fastighet.
+            Tiderna bygger på underhållstillfällen i registret (steg 3). Justera
+            varje kostnad här om riktpriserna blivit för höga eller låga — ändringen
+            sparas i er förenings plan.
           </p>
 
+          <div className="mt-3 print:hidden">
+            <KostnadPrisVarning />
+          </div>
+
           {underhallTidslista.length > 0 ? (
-            <div className="mt-4 overflow-auto rounded-xl border border-border">
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead className="bg-background text-xs uppercase text-muted">
-                  <tr>
-                    <th className="px-3 py-2">År</th>
-                    <th className="px-3 py-2">Komponent / del</th>
-                    <th className="px-3 py-2">Åtgärd</th>
-                    <th className="px-3 py-2 text-right">Intervall</th>
-                    <th className="px-3 py-2 text-right">Planerad kostnad</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {underhallTidslista.map((rad, i) => (
-                    <tr
-                      key={`${rad.ar}-${rad.komponent}-${rad.underkomponentEtikett}-${rad.tillfalleTitel}-${i}`}
-                      className="border-t border-border"
-                    >
-                      <td className="px-3 py-2 font-semibold tabular-nums">
-                        {rad.ar}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span className="font-medium text-foreground">
-                          {rad.komponent}
-                        </span>
-                        <span className="mt-0.5 block text-xs text-muted">
-                          {rad.underkomponentEtikett}
-                          {rad.tillfalleTitel &&
-                            rad.tillfalleTitel !== rad.atgardEtiketter.join(" · ") && (
-                              <> · {rad.tillfalleTitel}</>
-                            )}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-foreground">
-                        {rad.atgardEtiketter.join(" · ")}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted">
-                        {rad.intervallAr > 0 ? `${rad.intervallAr} år` : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {rad.kostnadKr > 0 ? formatKr(rad.kostnadKr) : "—"}
-                      </td>
+            <>
+              <p className="mt-3 text-sm font-medium text-foreground print:hidden">
+                Summa i listan:{" "}
+                {formatKrStor(
+                  underhallTidslista.reduce((s, r) => s + r.kostnadKr, 0),
+                )}
+              </p>
+              <div className="mt-4 overflow-auto rounded-xl border border-border">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead className="bg-background text-xs uppercase text-muted">
+                    <tr>
+                      <th className="px-3 py-2">År</th>
+                      <th className="px-3 py-2">Komponent / del</th>
+                      <th className="px-3 py-2">Åtgärd</th>
+                      <th className="px-3 py-2 text-right">Intervall</th>
+                      <th className="px-3 py-2 text-right">Planerad kostnad</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {underhallTidslista.map((rad, i) => (
+                      <tr
+                        key={`${rad.ar}-${rad.komponent}-${rad.underkomponentId}-${rad.tillfalleId}-${i}`}
+                        className="border-t border-border"
+                      >
+                        <td className="px-3 py-2 font-semibold tabular-nums">
+                          {rad.ar}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="font-medium text-foreground">
+                            {rad.komponent}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-muted">
+                            {rad.underkomponentEtikett}
+                            {rad.tillfalleTitel &&
+                              rad.tillfalleTitel !==
+                                rad.atgardEtiketter.join(" · ") && (
+                                <> · {rad.tillfalleTitel}</>
+                              )}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-foreground">
+                          {rad.atgardEtiketter.join(" · ")}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-muted">
+                          {rad.intervallAr > 0 ? `${rad.intervallAr} år` : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {onKostnadJustering ? (
+                            <>
+                              <label className="sr-only">
+                                Kostnad {rad.komponent} {rad.ar}
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                step={1000}
+                                value={rad.kostnadKr > 0 ? rad.kostnadKr : ""}
+                                onChange={(e) => {
+                                  const v = Number.parseInt(e.target.value, 10);
+                                  onKostnadJustering(
+                                    rad.komponent,
+                                    rad.underkomponentId,
+                                    rad.tillfalleId,
+                                    Number.isFinite(v) && v >= 0 ? v : 0,
+                                  );
+                                }}
+                                className="ml-auto w-28 rounded border border-border bg-white px-2 py-1 text-right text-sm tabular-nums print:hidden"
+                              />
+                              <span className="hidden print:inline">
+                                {rad.kostnadKr > 0 ? formatKr(rad.kostnadKr) : "—"}
+                              </span>
+                            </>
+                          ) : rad.kostnadKr > 0 ? (
+                            formatKr(rad.kostnadKr)
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
               Inga tillfällen med år och intervall är inlagda ännu. Gå till steg 3

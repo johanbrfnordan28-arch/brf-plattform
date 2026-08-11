@@ -61,6 +61,8 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import { importeraSaknadeKomponenterFranGrundmall } from "@/components/underhallsplan/importera-fran-grundmall";
+import { sattTillfalleTotalKostnad } from "@/components/underhallsplan/plan-underhall-tidslista";
 import {
   maxPlanLangdAr,
   minPlanLangdAr,
@@ -931,6 +933,61 @@ export function UnderhallsplanWizard() {
     toggleKomponentAktiv(name);
   }
 
+  /** Tar bort komponent helt från föreningens plan (inte bara avstängd). */
+  function taBortKomponent(name: string) {
+    if (!renoveringarSaved) return;
+    if (
+      !window.confirm(
+        `Ta bort «${name}» från er plan? Tillfällen och priser för komponenten raderas i denna förenings plan. Grundmallen påverkas inte.`,
+      )
+    ) {
+      return;
+    }
+    setKomponenterSaved(false);
+    setBesiktningarSaved(false);
+    const next = activeComponents.filter((item) => item !== name);
+    const { [name]: _bort, ...rest } = komponentDetaljer;
+    appliceraKomponentSynk(next, rest);
+    if (senastTillagdKomponent === name) {
+      setSenastTillagdKomponent(next[0] ?? null);
+    }
+  }
+
+  function importeraFranGrundmall() {
+    if (!renoveringarSaved || arGrundmallForening()) return;
+    const foreningId = lasAktivForeningId();
+    const { activeComponents: next, komponentDetaljer: detaljer, resultat } =
+      importeraSaknadeKomponenterFranGrundmall(
+        activeComponents,
+        komponentDetaljer,
+        foreningId,
+      );
+    if (resultat.tillagdaKomponenter.length > 0) {
+      setKomponenterSaved(false);
+      setBesiktningarSaved(false);
+      appliceraKomponentSynk(next, detaljer);
+      setSenastTillagdKomponent(resultat.tillagdaKomponenter[0] ?? null);
+    }
+    window.alert(resultat.meddelande);
+  }
+
+  function justeraTillfalleKostnad(
+    komponent: string,
+    underkomponentId: string,
+    tillfalleId: string,
+    nyKostnadKr: number,
+  ) {
+    const nasta = sattTillfalleTotalKostnad(
+      komponentDetaljer,
+      komponent,
+      underkomponentId,
+      tillfalleId,
+      nyKostnadKr,
+    );
+    setKomponentDetaljer(nasta);
+    setKomponenterSaved(false);
+  }
+
   function addCustomComponent() {
     const trimmed = customComponent.trim();
     if (!trimmed || !renoveringarSaved || activeComponents.includes(trimmed)) return;
@@ -1469,9 +1526,9 @@ export function UnderhallsplanWizard() {
         }
       >
         <p className="text-sm leading-relaxed text-muted">
-          Stäng av det som inte ingår. Utfört arbete och besiktning ligger i steg 2 — här
-          fyller du i väggar/golv/tak för soprum och förråd samt justerar kommande åtgärd,
-          intervall och kostnad.
+          Stäng av eller ta bort det som inte ingår. Er förenings plan är egen —
+          uppdateringar i grundmallen påverkar inte det ni redan sparat. Saknas
+          något kan ni importera från grundmallen.
         </p>
 
         {renoveringarSaved && (
@@ -1491,27 +1548,77 @@ export function UnderhallsplanWizard() {
         )}
 
         <div
-          className={`mt-6 flex flex-wrap gap-2 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
+          className={`mt-6 space-y-2 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
         >
           {foreslagnaKomponenter.map((name) => {
             const isActive = activeComponents.includes(name);
             return (
-              <button
+              <div
                 key={name}
-                type="button"
-                onClick={() => toggleComponent(name)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "border-primary bg-[#e2f0e6] text-primary-dark"
-                    : "border-border bg-background text-foreground hover:border-primary/50"
-                }`}
+                className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
               >
-                {isActive ? "✓ " : ""}
-                {name}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => toggleComponent(name)}
+                  className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-primary bg-[#e2f0e6] text-primary-dark"
+                      : "border-border bg-background text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {isActive ? "✓ Aktiv" : "Inaktiv"} · {name}
+                </button>
+                {isActive && (
+                  <button
+                    type="button"
+                    onClick={() => taBortKomponent(name)}
+                    className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+                  >
+                    Ta bort
+                  </button>
+                )}
+              </div>
             );
           })}
+          {activeComponents
+            .filter((n) => !(foreslagnaKomponenter as readonly string[]).includes(n))
+            .map((name) => (
+              <div
+                key={name}
+                className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
+              >
+                <span className="rounded-full border border-primary bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
+                  ✓ Aktiv · {name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => taBortKomponent(name)}
+                  className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+                >
+                  Ta bort
+                </button>
+              </div>
+            ))}
         </div>
+
+        {!arGrundmallForening() && (
+          <div
+            className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
+          >
+            <p className="text-xs text-muted">
+              Centrala uppdateringar görs i grundmallen. Här kan ni bara hämta in
+              komponenter som saknas i er plan — befintliga priser och tillfällen
+              behålls.
+            </p>
+            <button
+              type="button"
+              onClick={importeraFranGrundmall}
+              className="mt-2 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+            >
+              Importera saknade från grundmall
+            </button>
+          </div>
+        )}
 
         <div
           className={`mt-6 flex flex-col gap-2 sm:flex-row ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
@@ -1708,6 +1815,7 @@ export function UnderhallsplanWizard() {
           renoveringar={renoveringSammanfattning}
           renoveringarLista={renoveringarLista}
           planKostnader={planKostnader}
+          onKostnadJustering={justeraTillfalleKostnad}
         />
         <div className="mt-6 print:hidden">
           <button
