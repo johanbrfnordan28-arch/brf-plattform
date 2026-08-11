@@ -4,6 +4,7 @@ import type { TestplanDefinition, TestplanId } from "@/components/underhallsplan
 
 type TestplanValjareProps = {
   planer: TestplanDefinition[];
+  /** Visas i central grundmall — epokmallar för vårt arbete. */
   visaGrundmallDemo?: boolean;
   aktivPlan: TestplanId | null;
   onLadda: (id: TestplanId) => void;
@@ -24,23 +25,33 @@ export function TestplanValjare({
   return (
     <div className="rounded-2xl border border-dashed border-primary/50 bg-[#eef6f0] p-5 sm:p-6">
       <p className="text-sm font-semibold text-primary-dark">
-        {visaGrundmallDemo ? "Testföreningar" : "Exempeluppgifter"}
+        {visaGrundmallDemo
+          ? "Central grundmall för underhållsplanen"
+          : "Föreningens underhållsplan"}
       </p>
       <p className="mt-2 text-sm leading-relaxed text-foreground">
         {visaGrundmallDemo ? (
           <>
-            Tidstypiska grundmallar från olika epoker — sekelskifte, 50-, 70- och
-            90-tal. Varje grundmall har ifylld boarea, tomtstorlek och
-            komponentregister; antal lägenheter anpassas vid registreringen.
-            Renoveringshistorik fyller du i manuellt i steg 2.
+            Det här är grunden som nya föreningsplaner utgår från. Epokmallarna
+            (sekelskifte, 50-, 70- och 90-tal) är centrala arbetsverktyg — inte
+            färdiga föreningsplaner. Endast ni centralt ska ändra här;
+            styrelserna bygger och ändrar i sin egen plan och kan importera
+            saknade delar från er.
           </>
         ) : (
           <>
-            Ladda förifyllda grunduppgifter och komponentregister för er fastighet.
-            Renoveringshistorik fyller ni i manuellt i steg 2.
+            Här arbetar styrelsen i <strong>er egen</strong> underhållsplan —
+            den ska bli enkel, överskådlig och anpassad för er. Den centrala
+            grundmallen ändras bara centralt; ni kan importera saknade delar till
+            er plan i steg 3.
           </>
         )}
       </p>
+      {!visaGrundmallDemo && (
+        <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted">
+          Startunderlag (valfritt)
+        </p>
+      )}
       {visaGrundmallDemo && (
         <div className="mt-4 rounded-xl border border-amber-300/70 bg-amber-50/80 px-4 py-3">
           <p className="text-sm font-semibold text-amber-950">
@@ -74,7 +85,7 @@ export function TestplanValjare({
           </div>
         </div>
       )}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className={`${visaGrundmallDemo ? "mt-4" : "mt-2"} flex flex-wrap gap-2`}>
         {planer.map((plan) => (
           <button
             key={plan.id}
@@ -86,7 +97,9 @@ export function TestplanValjare({
                 : "border border-primary bg-white text-primary-dark hover:bg-[#e2f0e6]"
             }`}
           >
-            {plan.kortNamn}
+            {visaGrundmallDemo
+              ? `Epokmall · ${plan.kortNamn}`
+              : `Ladda startunderlag · ${plan.kortNamn}`}
           </button>
         ))}
         {aktivPlan && (
@@ -103,15 +116,17 @@ export function TestplanValjare({
               onClick={onRensa}
               className="rounded-lg border border-border px-3 py-2 text-sm text-muted hover:text-foreground"
             >
-              Rensa testdata
+              {visaGrundmallDemo ? "Rensa malldata" : "Rensa startunderlag"}
             </button>
           </>
         )}
       </div>
       {aktivPlan && (
         <p className="mt-3 text-xs text-muted">
-          Aktiv: {planer.find((p) => p.id === aktivPlan)?.namn}. Grunddata och
-          komponentregister är förifyllda — renoveringar lägger du in i steg 2.
+          Aktiv: {planer.find((p) => p.id === aktivPlan)?.namn}.
+          {visaGrundmallDemo
+            ? " Detta är central malldata — inte en förenings färdiga plan."
+            : " Startunderlaget kan ni anpassa fritt; det blir er förenings plan."}
         </p>
       )}
     </div>

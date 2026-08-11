@@ -1214,16 +1214,34 @@ export function UnderhallsplanWizard() {
 
       <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/60 px-4 py-4">
         <p className="text-sm font-semibold text-primary-dark">
-          Så här arbetar du i planen
+          {arGrundmallForening()
+            ? "Central grundmall — underhållsplan"
+            : "Föreningens underhållsplan"}
         </p>
-        <ul className="mt-2 space-y-1.5 text-sm text-muted">
+        <p className="mt-1 text-sm text-muted">
+          {arGrundmallForening() ? (
+            <>
+              Ni arbetar i den centrala grunden. Ändringar här ska bara göras av
+              er centralt. Föreningar får egen plan och kan importera saknade
+              delar från er — deras sparade plan skrivs inte över automatiskt.
+            </>
+          ) : (
+            <>
+              Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan.
+              Den ska bli enkel och anpassad för just er förening. Grundmallen
+              uppdateras bara centralt; ni kan importera saknade komponenter från
+              den i steg 3.
+            </>
+          )}
+        </p>
+        <ul className="mt-3 space-y-1.5 text-sm text-muted">
           <li className="flex gap-2">
             <span className="text-primary" aria-hidden>
               1.
             </span>
             <span>
-              Börja med <strong>Steg 1 — Grunduppgifter</strong>. Det låser upp
-              beräkningar och AI-stöd i övriga steg.
+              Börja med <strong>Steg 1 — Grunduppgifter</strong> (adresser först,
+              fasader när byggnader finns). Det låser upp beräkningar och AI-stöd.
             </span>
           </li>
           <li className="flex gap-2">
@@ -1231,8 +1249,8 @@ export function UnderhallsplanWizard() {
               2.
             </span>
             <span>
-              Därefter kan du fylla i <strong>steg 2–6 i valfri ordning</strong> —
-              ett steg i taget. Allt sparas automatiskt.
+              Därefter kan ni fylla i <strong>steg 2–6 i valfri ordning</strong> —
+              ett steg i taget. Allt sparas automatiskt i er plan.
             </span>
           </li>
           <li className="flex gap-2">
@@ -1240,14 +1258,13 @@ export function UnderhallsplanWizard() {
               3.
             </span>
             <span>
-              <strong>Steg 7 — Summering</strong> visar ett löpande utkast av
-              50-årsbudgeten. Öppna den när som helst för att se hur planen växer
-              fram.
+              <strong>Steg 7 — Summering</strong> visar utkast av 50-årsbudgeten.
+              Justera kostnader där så planen blir överskådlig.
             </span>
           </li>
         </ul>
         <p className="mt-3 text-xs text-muted">
-          Vill du bara ha en enkel åtgärds- och kostnadslista? Använd{" "}
+          Vill ni bara ha en enkel åtgärds- och kostnadslista? Använd{" "}
           <Link
             href="/forening/plan"
             className="font-medium text-primary-dark underline hover:no-underline"
@@ -1307,16 +1324,14 @@ export function UnderhallsplanWizard() {
         {...stegPanelNavProps("grund")}
         summary={
           grundSaved
-            ? "Sparat — öppna igen för att ändra fasader, byggnader eller planinställningar."
-            : "Fyll i grunduppgifter — glöm inte fasader (gata, gård, väderstreck) under adresserna."
+            ? "Sparat — öppna igen för att ändra adresser, fasader eller planinställningar."
+            : "Börja med planinställningar, uppgifter och adresser — fasader öppnas när byggnader lagts in."
         }
       >
         <form onSubmit={(e) => {
           saveGrund(e);
           setOpenSteg(null);
         }}>
-
-        <GrundFasaderPaminnelse grund={grund} />
 
         <div className="mt-6 space-y-4">
           <div className="rounded-xl border border-[#d4e8da] bg-[#eef6f0]/30 p-4 sm:p-5">
@@ -1418,6 +1433,8 @@ export function UnderhallsplanWizard() {
             setGrundSaved(false);
           }}
         />
+
+        <GrundFasaderPaminnelse grund={grund} />
 
         <GrundFasaderPanel
           grund={grund}
@@ -1526,9 +1543,21 @@ export function UnderhallsplanWizard() {
         }
       >
         <p className="text-sm leading-relaxed text-muted">
-          Stäng av eller ta bort det som inte ingår. Er förenings plan är egen —
-          uppdateringar i grundmallen påverkar inte det ni redan sparat. Saknas
-          något kan ni importera från grundmallen.
+          {arGrundmallForening() ? (
+            <>
+              Här underhåller ni den centrala grunden. Stäng av eller justera det
+              som ska ingå i mallen. Föreningar får egen plan och importerar
+              saknade delar därifrån — deras sparade innehåll skrivs inte över
+              automatiskt.
+            </>
+          ) : (
+            <>
+              Stäng av eller ta bort det som inte ingår så planen blir enkel och
+              anpassad för er. Er förenings plan är egen — uppdateringar i
+              grundmallen påverkar inte det ni redan sparat. Saknas något kan ni
+              importera från grundmallen nedan.
+            </>
+          )}
         </p>
 
         {renoveringarSaved && (

@@ -18,7 +18,7 @@ export default function ForeningUnderhallsplanPage() {
     <ModulePage
       title="Underhållsplan"
       icon="🔧"
-      intro="Bygg er underhållsplan steg för steg. Börja med grunduppgifter — boarea, lägenheter och adresser låser upp alla beräkningar och AI-stöd. Slutsidan genererar en 50-årsbudget klar för stämman."
+      intro="Här skapar ni föreningens egen underhållsplan — enkel, överskådlig och anpassad för er. Börja med adresser och grunduppgifter (fasader kommer när byggnader lagts in). Styrelsen ändrar fritt i er plan; den centrala grundmallen uppdateras bara centralt, och ni kan importera saknade delar till er plan. Slutsidan ger en 50-årsbudget klar för stämman."
     >
       <TipsPanel tips={tips.underhallsplan} />
       <UnderhallsplanWizard />

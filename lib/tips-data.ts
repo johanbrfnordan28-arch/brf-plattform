@@ -8,18 +8,18 @@ export const tips: Record<string, TipsPunkt[]> = {
   underhallsplan: [
     {
       ikon: "💡",
-      titel: "Börja med grunduppgifter",
-      text: "Fyll i steg 1 (boarea, lägenheter, adress) — det låser upp AI-stöd för ytuppskattning och aktiverar alla beräkningar i de efterföljande stegen.",
+      titel: "Adresser före fasader",
+      text: "I steg 1: planinställningar, uppgifter och adresser först. Fasader per byggnad öppnas först när byggnader lagts in — då blir planen mer överskådlig.",
     },
     {
-      ikon: "📅",
-      titel: "Planera 50 år framåt",
-      text: "Stambyte, takbyte och fönsterbyte kostar hundratusentals kronor. Fördela kostnaderna rätt i tid och undvik chockade stämmoprotokoll.",
+      ikon: "📥",
+      titel: "Er plan, er kontroll",
+      text: "Styrelsen ändrar fritt i föreningens underhållsplan. Saknas något kan ni importera från den centrala grundmallen (steg 3) — utan att er sparade plan skrivs över automatiskt.",
     },
     {
       ikon: "📋",
       titel: "Redo för stämman",
-      text: "Slutsidan genererar en komplett 50-årsbudget med avsättningsförslag — klistra in i stämmounderlaget på några sekunder.",
+      text: "Slutsidan genererar en 50-årsbudget med avsättningsförslag — enkel att skriva ut eller spara som PDF till stämmounderlaget.",
     },
   ],
 

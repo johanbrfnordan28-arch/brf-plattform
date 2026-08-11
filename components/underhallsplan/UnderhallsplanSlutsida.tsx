@@ -173,12 +173,14 @@ export function UnderhallsplanSlutsida({
     ? Math.round(summaArsbudget / utgiftsRader.length)
     : 0;
 
+  const arCentralGrundmall = arGrundmallForening();
   const titel = hamtaPlanVisningstitel(
     planNamn,
     grundNorm,
-    arGrundmallForening()
+    arCentralGrundmall
       ? null
       : hamtaStyrelseKontakt()?.foreningsnamn || hamtaAktivForeningsNamn(),
+    { arCentralGrundmall },
   );
   const kontakt = hamtaStyrelseKontakt();
 
@@ -202,12 +204,17 @@ export function UnderhallsplanSlutsida({
   return (
     <section className="rounded-2xl border-2 border-primary bg-surface shadow-md print:border-0 print:shadow-none">
       <div className="rounded-t-2xl bg-primary px-6 py-8 text-white sm:px-10 print:rounded-none">
-        <p className="text-sm font-medium text-white/80">Steg 7 · Slutsida</p>
+        <p className="text-sm font-medium text-white/80">
+          Steg 7 ·{" "}
+          {arCentralGrundmall
+            ? "Central grundmall"
+            : "Föreningens underhållsplan"}
+        </p>
         <h2 className="mt-1 text-2xl font-bold sm:text-3xl">{titel}</h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/90">
-          Sammanfattning av underhållsplanen: avsättning, utgifter och planerade
-          tider. Avslutas med erfarenhetsbaserade tips — lämpligt att skriva ut
-          eller spara som PDF.
+          {arCentralGrundmall
+            ? "Sammanfattning av den centrala grunden. Ändringar här görs bara centralt — föreningar bygger egen plan och kan importera saknade delar."
+            : "Sammanfattning av föreningens egen underhållsplan: avsättning, utgifter och planerade tider. Anpassad för er — lämpligt att skriva ut eller spara som PDF."}
         </p>
         {planNotering && (
           <p className="mt-4 max-w-2xl rounded-lg bg-white/10 px-4 py-3 text-sm leading-relaxed text-white/95">
