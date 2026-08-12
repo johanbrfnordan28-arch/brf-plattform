@@ -753,7 +753,8 @@ export function UnderhallsplanSlutsida({
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-background text-xs uppercase tracking-wide text-muted">
                   <tr>
-                    <th className="px-3 py-2 font-medium">Komponent / del</th>
+                    <th className="px-3 py-2 font-medium">FAR-komponent</th>
+                    <th className="px-3 py-2 font-medium">Andel</th>
                     <th className="px-3 py-2 font-medium">Avskrivning (år)</th>
                     <th className="px-3 py-2 font-medium">Anm.</th>
                   </tr>
@@ -776,6 +777,9 @@ export function UnderhallsplanSlutsida({
                               ? " · i registret"
                               : ""}
                         </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-muted">
+                        {rad.andelText ?? "—"}
                       </td>
                       <td className="px-3 py-2.5 font-medium text-foreground">
                         {rad.avskrivningAr > 0 ? `${rad.avskrivningAr} år` : "—"}

@@ -1,14 +1,12 @@
 /**
  * Rekommenderade avskrivningstider (nyttjandeperioder) för K3-komponentavskrivning.
+ * Baserat på FAR:s vägledning Tabell 1–2 (komponentindelning i BRF).
  * Separata från underhållsintervall — kortcykliskt underhåll är inte K3-komponenter.
- *
- * Typiska intervall enligt branschpraxis / FAR-vägledning för BRF (orienterande).
- * Föreningen och ekonomisk förvaltare bedömer slutlig nyttjandeperiod.
  */
 
 export type AvskrivningRekommendation = {
   rekommenderadAvskrivningAr: number;
-  /** Betydande byggnadskomponent med egen nyttjandeperiod enligt K3. */
+  /** Betydande byggnadskomponent med egen nyttjandeperiod enligt FAR/K3. */
   arK3Komponent: boolean;
   hint: string;
 };
@@ -17,77 +15,90 @@ const rekommendationer: Record<
   string,
   Record<string, AvskrivningRekommendation>
 > = {
+  Stomme: {
+    stomme: {
+      rekommenderadAvskrivningAr: 120,
+      arK3Komponent: true,
+      hint: "FAR: betongstomme 120 år; trästomme på betonggrund 75 år.",
+    },
+  },
   Fasad: {
     fasadmaterial: {
-      rekommenderadAvskrivningAr: 50,
-      arK3Komponent: true,
-      hint: "Fasad — ofta 40–60 år beroende på material och klimat.",
-    },
-    fonster: {
-      rekommenderadAvskrivningAr: 35,
-      arK3Komponent: true,
-      hint: "Fönster — ofta 30–40 år.",
-    },
-    dorrar: {
-      rekommenderadAvskrivningAr: 30,
-      arK3Komponent: true,
-      hint: "Ytterdörrar — ofta 25–40 år.",
-    },
-    balkonger: {
       rekommenderadAvskrivningAr: 40,
       arK3Komponent: true,
-      hint: "Balkongstomme/platta — ofta 30–50 år (tätskikt kortare).",
+      hint: "FAR: trä/puts/betongelement ~40 år; murtegel 100 år.",
     },
-    sockel: {
+    fonster: {
+      rekommenderadAvskrivningAr: 40,
+      arK3Komponent: true,
+      hint: "FAR: trä/plast 40 år; trä beklädd/aluminium 60 år.",
+    },
+    dorrar: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Ytterdörrar — normalt underhåll; FAR lyfter inte dörrar som egen väsentlig komponent.",
+    },
+    balkonger: {
       rekommenderadAvskrivningAr: 50,
       arK3Komponent: true,
-      hint: "Sockel — ofta i linje med fasad.",
+      hint: "FAR: balkong betong 50 år; trä 30 år; inglasning 25 år.",
+    },
+    sockel: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Sockel — normalt del av fasad/stomme, inte egen FAR-komponent.",
+    },
+  },
+  Fönster: {
+    fonster: {
+      rekommenderadAvskrivningAr: 40,
+      arK3Komponent: true,
+      hint: "FAR: trä/plast 40 år; trä beklädd/aluminium 60 år.",
     },
   },
   Tak: {
     takyta: {
       rekommenderadAvskrivningAr: 40,
       arK3Komponent: true,
-      hint: "Takbeläggning — ofta 30–50 år (papp kortare, plåt längre).",
+      hint: "FAR yttertak: papp 30 år; tegel 40 år; plåt/skiffer 60 år.",
     },
     takfonster: {
-      rekommenderadAvskrivningAr: 35,
-      arK3Komponent: true,
-      hint: "Takfönster — ofta 30–40 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Takfönster — underhåll/del av yttertak; inte egen FAR Tabell 1-komponent.",
     },
     takterrass: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Tätskikt takterrass — ofta 15–30 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Takterrass — underhåll; inte egen FAR Tabell 1-komponent.",
     },
     medlemstakterrass: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Som gemensam takterrass — kortare än stomme/undertak.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Medlemstakterrass — underhåll; inte egen FAR Tabell 1-komponent.",
     },
     skorsten: {
-      rekommenderadAvskrivningAr: 40,
-      arK3Komponent: true,
-      hint: "Skorstenar — ofta 30–50 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Skorsten — normalt underhåll, inte egen FAR Tabell 1-komponent.",
     },
     ventilationshuv: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Ventilationshuvor — ofta 20–30 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Ventilationshuv — underhåll.",
     },
     takkupa: {
-      rekommenderadAvskrivningAr: 40,
-      arK3Komponent: true,
-      hint: "Takkupor — ofta i linje med takstomme/beläggning.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Takkupa — del av yttertak/stomme.",
     },
   },
   Trapphus: {
     hiss: {
-      rekommenderadAvskrivningAr: 30,
+      rekommenderadAvskrivningAr: 40,
       arK3Komponent: true,
-      hint: "Hiss — ofta 25–35 år.",
+      hint: "FAR: linhiss 40 år; hydraul 30 år; plattformshiss 20 år.",
     },
-    // Målning m.m. är löpande underhåll — inte egen K3-komponent
     lagenhetsdorrar: {
       rekommenderadAvskrivningAr: 0,
       arK3Komponent: false,
@@ -104,21 +115,21 @@ const rekommendationer: Record<
       hint: "Målning — löpande underhåll.",
     },
     ledstang: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Ledstång — ofta 20–30 år vid byte.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Ledstång — underhåll; FAR lyfter inte trapphusdetaljer som egen komponent.",
     },
     golv: {
-      rekommenderadAvskrivningAr: 20,
-      arK3Komponent: true,
-      hint: "Trapphusgolv vid större byte — oftast 15–25 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Trapphusgolv — underhåll.",
     },
   },
   VVS: {
     stambyte: {
       rekommenderadAvskrivningAr: 50,
       arK3Komponent: true,
-      hint: "Stammar (vatten/avlopp) — ofta 40–60 år.",
+      hint: "FAR: stamledning VA 50 år.",
     },
     "spolning-avlopp": {
       rekommenderadAvskrivningAr: 0,
@@ -133,89 +144,101 @@ const rekommendationer: Record<
   },
   Värmecentral: {
     undercentral: {
-      rekommenderadAvskrivningAr: 30,
-      arK3Komponent: true,
-      hint: "Undercentral / värmeväxlare — ofta 25–40 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Undercentral — underhåll; FAR Tabell 1 lyfter stamledning värme.",
     },
     radiatorer: {
-      rekommenderadAvskrivningAr: 40,
-      arK3Komponent: true,
-      hint: "Radiatorer — ofta 30–50 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Radiatorer — underhåll; FAR Tabell 1 lyfter stamledning värme.",
     },
     varmestammar: {
-      rekommenderadAvskrivningAr: 50,
+      rekommenderadAvskrivningAr: 80,
       arK3Komponent: true,
-      hint: "Värmestammar — ofta 40–60 år.",
+      hint: "FAR: stamledning värme 80 år.",
     },
     stamventiler: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Stamventiler — ofta 20–30 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Stamventiler — underhåll/del av värmesystem.",
     },
   },
   Ventilation: {
     aggregat: {
-      rekommenderadAvskrivningAr: 25,
+      rekommenderadAvskrivningAr: 20,
       arK3Komponent: true,
-      hint: "Ventilationsaggregat — ofta 20–30 år.",
+      hint: "FAR: från-/tilluft 20 år; självdrag 100 år.",
     },
     kanaler: {
-      rekommenderadAvskrivningAr: 40,
-      arK3Komponent: true,
-      hint: "Kanaler — ofta 30–50 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Kanaler — normalt del av ventilationssystemet, inte egen FAR Tabell 1-rad.",
     },
     don: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Don/ventiler — ofta 20–30 år vid byte.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Don — underhåll.",
+    },
+    "extra-flaktar": {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Övriga fläktar — underhåll.",
     },
   },
   Balkonger: {
     balkonger: {
-      rekommenderadAvskrivningAr: 40,
+      rekommenderadAvskrivningAr: 50,
       arK3Komponent: true,
-      hint: "Balkonger (stomme/platta/räcke) — ofta 30–50 år; tätskikt kortare.",
+      hint: "FAR: balkong betong 50 år; trä 30 år; inglasning 25 år.",
     },
   },
   Elcentral: {
     central: {
-      rekommenderadAvskrivningAr: 30,
+      rekommenderadAvskrivningAr: 50,
       arK3Komponent: true,
-      hint: "Elcentraler — ofta 25–40 år.",
+      hint: "FAR: el 50 år.",
     },
     grupper: {
-      rekommenderadAvskrivningAr: 30,
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Gruppcentraler — normalt del av el; FAR lyfter el som en komponent.",
+    },
+  },
+  "Styr och övervakning": {
+    system: {
+      rekommenderadAvskrivningAr: 25,
       arK3Komponent: true,
-      hint: "Gruppcentraler — ofta 25–40 år.",
+      hint: "FAR: styr och övervakning 25 år.",
     },
   },
   "Mark och gård": {
     gard: {
-      rekommenderadAvskrivningAr: 30,
-      arK3Komponent: true,
-      hint: "Hårdgjord gårdyta vid större omläggning — ofta 20–40 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Gårdyta — underhåll; ingår inte i FAR:s väsentliga byggnadskomponenter.",
     },
     ledning: {
-      rekommenderadAvskrivningAr: 40,
-      arK3Komponent: true,
-      hint: "Markledningar — ofta 30–50 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Markledningar — underhåll; FAR fokuserar på stammar i byggnaden.",
     },
     plantering: {
       rekommenderadAvskrivningAr: 0,
       arK3Komponent: false,
-      hint: "Plantering — normalt inte egen K3-byggnadskomponent.",
+      hint: "Plantering — inte K3-byggnadskomponent.",
     },
   },
   Källare: {
     forrad: {
-      rekommenderadAvskrivningAr: 40,
-      arK3Komponent: true,
-      hint: "Förrådsinredning vid större investering — bedöms per fall.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Förråd — underhåll; inte FAR Tabell 1-komponent.",
     },
     belysning: {
-      rekommenderadAvskrivningAr: 20,
-      arK3Komponent: true,
-      hint: "Belysningsinstallation — ofta 15–25 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Belysning — underhåll.",
     },
     ytskikt: {
       rekommenderadAvskrivningAr: 0,
@@ -223,9 +246,9 @@ const rekommendationer: Record<
       hint: "Ytskikt/målning — löpande underhåll.",
     },
     golv: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Källargolv vid större byte — ofta 20–30 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Källargolv — underhåll.",
     },
   },
   Brandskydd: {
@@ -235,35 +258,35 @@ const rekommendationer: Record<
       hint: "SBA — organisatoriskt, inte komponentavskrivning.",
     },
     branddorrar: {
-      rekommenderadAvskrivningAr: 30,
-      arK3Komponent: true,
-      hint: "Branddörrar — ofta 25–40 år vid byte.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Branddörrar — underhåll; inte FAR Tabell 1-komponent.",
     },
     utrymningsvag: {
       rekommenderadAvskrivningAr: 0,
       arK3Komponent: false,
-      hint: "Utrymningsväg/skyltning — oftast underhåll, inte stomkomponent.",
+      hint: "Utrymningsväg/skyltning — underhåll.",
     },
     rokgasevakuering: {
-      rekommenderadAvskrivningAr: 25,
-      arK3Komponent: true,
-      hint: "Rökgasevakuering — ofta 20–30 år.",
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Rökgasevakuering — underhåll.",
     },
   },
 };
 
-/** Stomme ingår normalt i K3 men saknas som egen rad i registret — vägledning. */
+/** @deprecated Använd FAR-komponenten Stomme i registret. Behålls för äldre planer. */
 export const K3_STOMME_VAGLEDNING = {
   etikett: "Stomme och grund",
-  rekommenderadAvskrivningAr: 100,
-  hint: "Stomme/grund — ofta 80–100 år. Sätts vanligen av ekonomisk förvaltare i anläggningsregistret; underhållsplanen vägleder övriga komponenter.",
+  rekommenderadAvskrivningAr: 120,
+  hint: "FAR: betongstomme 120 år; trästomme på betonggrund 75 år.",
 } as const;
 
 export const K3_FORKLARING = {
-  rubrik: "K3 — komponentavskrivning från 2026",
-  kort: "Från räkenskapsår som börjar 2026 ska bostadsrättsföreningar tillämpa K3 (BFNAR 2012:1). Byggnaden delas upp i betydande komponenter med olika nyttjandeperioder och skrivs av separat.",
+  rubrik: "K3 — komponentavskrivning enligt FAR",
+  kort: "Från räkenskapsår som börjar 2026 ska bostadsrättsföreningar tillämpa K3 (BFNAR 2012:1). FAR rekommenderar cirka 8–11 väsentliga komponenter med olika nyttjandeperioder.",
   underlag:
-    "Underhållsplanens komponentregister med avskrivningstider är vägledande underlag till anläggningsregistret och årsredovisningen. Slutlig komponentindelning och värden beslutas tillsammans med ekonomisk förvaltare/revisor.",
+    "Underlaget följer FAR:s Tabell 1 (väsentliga komponenter) och Tabell 2 (exempel på nyttjandeperioder). Slutlig indelning och värden beslutas tillsammans med ekonomisk förvaltare/revisor.",
   skillnad:
     "Underhållsintervall (när ni planerar åtgärd) är inte samma sak som avskrivningstid (nyttjandeperiod i bokföringen). Kort underhåll — t.ex. spolning eller målning — är normalt inte egna K3-komponenter.",
 } as const;
@@ -290,7 +313,8 @@ export function arK3AvskrivningsKomponent(
   underkomponentId: string,
 ): boolean {
   return Boolean(
-    hamtaAvskrivningRekommendation(komponentNamn, underkomponentId)?.arK3Komponent,
+    hamtaAvskrivningRekommendation(komponentNamn, underkomponentId)
+      ?.arK3Komponent,
   );
 }
 

@@ -22,6 +22,7 @@ import {
   synkaKomponentRegister,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
 import {
   standardPlaninstallningar,
   type Planinstallningar,
@@ -366,24 +367,50 @@ export const testplan50: TestplanDefinition = {
     fastighetsbeteckning: "Göteborg Tallvinden 1:7",
   },
   activeComponents: [
+    "Stomme",
     "Fasad",
+    "Fönster",
     "Tak",
     "Trapphus",
     "Källare",
     "VVS",
     "Värmecentral",
     "Ventilation",
+    "Elcentral",
+    "Balkonger",
+    "Styr och övervakning",
     "Mark och gård",
   ],
-  komponentDetaljer: synkaKomponentRegister(
+  komponentDetaljer: appliceraFarK3PaPlan(
     [
+      "Stomme",
       "Fasad",
+      "Fönster",
       "Tak",
       "Trapphus",
       "Källare",
       "VVS",
       "Värmecentral",
       "Ventilation",
+      "Elcentral",
+      "Balkonger",
+      "Styr och övervakning",
+      "Mark och gård",
+    ],
+    synkaKomponentRegister(
+    [
+      "Stomme",
+      "Fasad",
+      "Fönster",
+      "Tak",
+      "Trapphus",
+      "Källare",
+      "VVS",
+      "Värmecentral",
+      "Ventilation",
+      "Elcentral",
+      "Balkonger",
+      "Styr och övervakning",
       "Mark och gård",
     ],
     {
@@ -537,6 +564,8 @@ export const testplan50: TestplanDefinition = {
       },
     },
   ),
+    { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
+  ).komponentDetaljer,
   besiktningar: besiktningarFor({ lgh: 25, sotning: true, eldstader: 1 }),
   krPerKvmAr: 48,
   planinstallningar: testplaninstallningar(),

@@ -62,6 +62,7 @@ import {
   appliceraSailorGrund,
   arSailorForening,
 } from "@/lib/sailor-forening";
+import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
 import {
   importeraSaknadeKomponenterFranGrundmall,
   lasGrundmallUnderhallsplanState,
@@ -603,6 +604,15 @@ export function UnderhallsplanWizard() {
     if (sparad && arSailorForening(foreningId)) {
       const grund = normaliseraGrund(appliceraSailorGrund(sparad.grund));
       const lgh = hamtaAntalLagenheterFranGrund(grund);
+      const far = appliceraFarK3PaPlan(
+        sparad.activeComponents,
+        sparad.komponentDetaljer,
+        { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
+      );
+      const synced = synkaUnderhallsplanState(
+        far.activeComponents,
+        far.komponentDetaljer,
+      );
       sparad = {
         ...sparad,
         grund,
@@ -611,6 +621,8 @@ export function UnderhallsplanWizard() {
             "Bostadsrättsföreningen Sailor",
             lgh,
           ) ?? sparad.planNamn,
+        activeComponents: synced.activeComponents,
+        komponentDetaljer: synced.register,
         grundSaved: true,
       };
       sparaUnderhallsplanState(sparad, foreningId);

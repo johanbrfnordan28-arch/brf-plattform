@@ -27,6 +27,8 @@ import {
   SAILOR_FORENING_ID,
   SAILOR_PROFIL,
 } from "@/lib/sailor-forening";
+import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
+import { synkaUnderhallsplanState } from "@/components/underhallsplan/komponentregister";
 
 export { arStandardTestForening };
 export { SAILOR_FORENING_ID };
@@ -118,7 +120,7 @@ function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void
 
 const UNDERHALLSPLAN_KEY_BASE = "brf-underhallsplan-state";
 
-/** Uppdaterar Sailors grunduppgifter även om planen redan sparats. */
+/** Uppdaterar Sailors grunduppgifter och FAR-komponenter även om planen redan sparats. */
 function synkaSailorUnderhallsplanGrund(): void {
   if (typeof window === "undefined") return;
   const key = foreningStorageKey(UNDERHALLSPLAN_KEY_BASE, SAILOR_FORENING_ID);
@@ -133,11 +135,22 @@ function synkaSailorUnderhallsplanGrund(): void {
       parsed.planNamn?.trim() || "Bostadsrättsföreningen Sailor",
       lgh,
     );
+    const far = appliceraFarK3PaPlan(
+      parsed.activeComponents ?? [],
+      parsed.komponentDetaljer ?? {},
+      { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
+    );
+    const synced = synkaUnderhallsplanState(
+      far.activeComponents,
+      far.komponentDetaljer,
+    );
     sparaUnderhallsplanState(
       {
         ...parsed,
         grund,
         planNamn,
+        activeComponents: synced.activeComponents,
+        komponentDetaljer: synced.register,
         grundSaved: true,
         sparad: new Date().toISOString(),
       },

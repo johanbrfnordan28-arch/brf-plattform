@@ -514,17 +514,19 @@ export const måttenhetEtiketter: Record<Måttenhet, { etikett: string; enhet: s
 };
 
 export const foreslagnaKomponenter = [
+  "Stomme",
   "Fasad",
   "Fönster",
   "Tak",
   "Trapphus",
+  "VVS",
+  "Värmecentral",
+  "Ventilation",
+  "Elcentral",
+  "Balkonger",
+  "Styr och övervakning",
   "Brandskydd",
   "Källare",
-  "VVS",
-  "Ventilation",
-  "Värmecentral",
-  "Balkonger",
-  "Elcentral",
   "Mark och gård",
   "Komplement byggnad och P-platser",
 ] as const;
@@ -533,6 +535,42 @@ export const GAMLA_GARAGE_CARPORT_NAMN = "Garage / carport";
 export const KOMPLEMENT_BYGGNAD_NAMN = "Komplement byggnad och P-platser";
 
 const komponentMallar: Record<string, KomponentMall> = {
+  Stomme: {
+    namn: "Stomme",
+    deltypSektionTitel: "Stomme / grund",
+    deltyper: [
+      { id: "betong", etikett: "Betongstomme" },
+      { id: "tra-betonggrund", etikett: "Trästomme på betonggrund" },
+      { id: "blandat", etikett: "Blandat" },
+    ],
+    underkomponenter: [
+      {
+        id: "stomme",
+        etikett: "Stomme och grund",
+        defaultMåttenhet: "kvm",
+        måttHint:
+          "FAR: stomme och grund är den största komponenten (ca 60–70 % av anskaffningsvärdet). Ange boarea eller bruttoarea som underlag.",
+      },
+    ],
+  },
+  "Styr och övervakning": {
+    namn: "Styr och övervakning",
+    deltypSektionTitel: "Systemtyp",
+    deltyper: [
+      { id: "fastighetsautomation", etikett: "Fastighetsautomation" },
+      { id: "varme-styr", etikett: "Värme-/ventilationsstyrning" },
+      { id: "blandat", etikett: "Blandat" },
+    ],
+    underkomponenter: [
+      {
+        id: "system",
+        etikett: "Styr- och övervakningssystem",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "FAR: styr och övervakning (ca 1–2 %). Ange antal system eller 1 som klumpsumma.",
+      },
+    ],
+  },
   Fasad: {
     namn: "Fasad",
     deltypSektionTitel: "Fasadtyp / material",

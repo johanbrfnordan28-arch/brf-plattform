@@ -19,6 +19,7 @@ import {
   appliceraSailorGrund,
   arSailorForening,
 } from "@/lib/sailor-forening";
+import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
 
 export function byggLagratStateFranTestplan(
   id: TestplanId,
@@ -33,13 +34,24 @@ export function byggLagratStateFranTestplan(
   if (arSailorForening(options?.foreningId)) {
     grund = normaliseraGrund(appliceraSailorGrund(grund));
   }
-  const synced = synkaUnderhallsplanState(
+  let synced = synkaUnderhallsplanState(
     plan.activeComponents,
     synkaUnderhallsplanState(
       plan.activeComponents,
       plan.komponentDetaljer ?? {},
     ).register,
   );
+  if (arSailorForening(options?.foreningId)) {
+    const far = appliceraFarK3PaPlan(
+      synced.activeComponents,
+      synced.register,
+      { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
+    );
+    synced = synkaUnderhallsplanState(
+      far.activeComponents,
+      far.komponentDetaljer,
+    );
+  }
   const antalLgh = hamtaAntalLagenheterFranGrund(grund);
   const titelBas = foreningsnamn?.trim() || plan.namn;
 
