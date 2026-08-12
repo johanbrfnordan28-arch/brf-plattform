@@ -18,8 +18,9 @@ import type { Grunduppgifter } from "@/components/underhallsplan/types";
 import {
   appliceraSailorGrund,
   arSailorForening,
+  SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
-import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
+import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
 
 export function byggLagratStateFranTestplan(
   id: TestplanId,
@@ -41,16 +42,23 @@ export function byggLagratStateFranTestplan(
       plan.komponentDetaljer ?? {},
     ).register,
   );
+  let varderingsUnderlag = undefined as
+    | typeof SAILOR_VARDERING_UNDERLAG
+    | undefined;
+  let planNotering = plan.planNotering ?? null;
+  let samfallighetsavgift = skapaStandardSamfallighetsavgift();
+  let krPerKvmAr = plan.krPerKvmAr;
+  let activeComponents = synced.activeComponents;
+  let komponentDetaljer = synced.register;
+
   if (arSailorForening(options?.foreningId)) {
-    const far = appliceraFarK3PaPlan(
-      synced.activeComponents,
-      synced.register,
-      { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
-    );
-    synced = synkaUnderhallsplanState(
-      far.activeComponents,
-      far.komponentDetaljer,
-    );
+    const utkast = byggSailorKomponentUtkast();
+    varderingsUnderlag = SAILOR_VARDERING_UNDERLAG;
+    planNotering = utkast.planNotering;
+    samfallighetsavgift = utkast.samfallighetsavgift;
+    krPerKvmAr = utkast.krPerKvmAr;
+    activeComponents = utkast.activeComponents;
+    komponentDetaljer = utkast.komponentDetaljer;
   }
   const antalLgh = hamtaAntalLagenheterFranGrund(grund);
   const titelBas = foreningsnamn?.trim() || plan.namn;
@@ -60,20 +68,21 @@ export function byggLagratStateFranTestplan(
     sparad: new Date().toISOString(),
     aktivTestplan: id,
     planNamn: uppdateraPlanTitelMedLagenheter(titelBas, antalLgh),
-    planNotering: plan.planNotering ?? null,
+    planNotering,
     grund,
     planinstallningar: normaliseraPlaninstallningar(plan.planinstallningar),
     grundSaved: true,
     renoveringarSaved: false,
-    komponenterSaved: false,
+    komponenterSaved: Boolean(arSailorForening(options?.foreningId)),
     besiktningarSaved: false,
-    activeComponents: synced.activeComponents,
-    komponentDetaljer: synced.register,
+    activeComponents,
+    komponentDetaljer,
     besiktningar: plan.besiktningar,
-    samfallighetsavgift: skapaStandardSamfallighetsavgift(),
+    samfallighetsavgift,
     renoveringarLista: [],
     renoveringSammanfattning: null,
-    krPerKvmAr: plan.krPerKvmAr,
+    krPerKvmAr,
+    varderingsUnderlag,
   };
 }
 

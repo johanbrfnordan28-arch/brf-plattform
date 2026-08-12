@@ -114,10 +114,25 @@ export function KommandeUnderhallFalt({
           intervall och pris per tillfälle.
         </p>
         {visaK3Avskrivning && (
-          <div className="mt-3 max-w-xs">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
               <span className="text-xs font-medium text-muted">
-                Avskrivning K3 (år)
+                Installationsvärde (kr)
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={rad.installationskostnadKr ?? ""}
+                onChange={(e) =>
+                  onChange({ installationskostnadKr: e.target.value })
+                }
+                placeholder="Uppskattat vid byggår"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs font-medium text-muted">
+                Avskrivning (år)
               </span>
               <input
                 type="number"
@@ -133,9 +148,6 @@ export function KommandeUnderhallFalt({
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
-            {avskrRek?.hint && (
-              <p className="mt-1 text-[10px] text-muted">{avskrRek.hint}</p>
-            )}
           </div>
         )}
         <p className="mt-2 text-xs text-primary-dark">
@@ -198,7 +210,7 @@ export function KommandeUnderhallFalt({
         </p>
       )}
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block text-sm">
           <span className="text-xs font-medium text-muted">Nästa åtgärd (år)</span>
           <input
@@ -230,42 +242,56 @@ export function KommandeUnderhallFalt({
           </select>
         </label>
         {visaK3Avskrivning && (
-          <label className="block text-sm">
-            <span className="text-xs font-medium text-muted">
-              Avskrivning K3 (år)
-            </span>
-            <input
-              type="number"
-              min={1}
-              max={120}
-              value={avskrivningVal}
-              onChange={(e) => onChange({ avskrivningAr: e.target.value })}
-              placeholder={
-                avskrRek
-                  ? String(avskrRek.rekommenderadAvskrivningAr)
-                  : "t.ex. 40"
-              }
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            />
-          </label>
+          <>
+            <label className="block text-sm">
+              <span className="text-xs font-medium text-muted">
+                Installationsvärde (kr)
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={rad.installationskostnadKr ?? ""}
+                onChange={(e) =>
+                  onChange({ installationskostnadKr: e.target.value })
+                }
+                placeholder="Uppskattat vid byggår"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs font-medium text-muted">
+                Avskrivning (år)
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={120}
+                value={avskrivningVal}
+                onChange={(e) => onChange({ avskrivningAr: e.target.value })}
+                placeholder={
+                  avskrRek
+                    ? String(avskrRek.rekommenderadAvskrivningAr)
+                    : "t.ex. 40"
+                }
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+          </>
         )}
       </div>
 
-      {visaK3Avskrivning && avskrRek?.arK3Komponent && (
+      {visaK3Avskrivning && (
         <p className="mt-2 text-xs text-muted">
-          K3-nyttjandeperiod (avskrivningstid) — skilt från underhållsintervall.{" "}
-          {avskrRek.hint}
+          Installationsvärde och avskrivningstid för K3 — skilt från underhållskostnad
+          nedan.{" "}
           {standardAvskrivningAr(komponentNamn, underkomponentId) && (
-            <>
-              {" "}
-              <button
-                type="button"
-                onClick={aterstallRekommenderadAvskrivning}
-                className="font-medium text-primary hover:underline"
-              >
-                Återställ rekommenderad
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={aterstallRekommenderadAvskrivning}
+              className="font-medium text-primary hover:underline"
+            >
+              Återställ avskrivning
+            </button>
           )}
         </p>
       )}

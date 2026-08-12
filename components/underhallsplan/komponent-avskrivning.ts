@@ -283,12 +283,12 @@ export const K3_STOMME_VAGLEDNING = {
 } as const;
 
 export const K3_FORKLARING = {
-  rubrik: "K3 — komponentavskrivning enligt FAR",
-  kort: "Från räkenskapsår som börjar 2026 ska bostadsrättsföreningar tillämpa K3 (BFNAR 2012:1). FAR rekommenderar cirka 8–11 väsentliga komponenter med olika nyttjandeperioder.",
+  rubrik: "Komponentvärden (K3)",
+  kort: "Från 2026 ska BRF:er tillämpa K3. Här visas uppskattade installationsvärden per komponent — utan detaljerade andelsberäkningar.",
   underlag:
-    "Underlaget följer FAR:s Tabell 1 (väsentliga komponenter) och Tabell 2 (exempel på nyttjandeperioder). Slutlig indelning och värden beslutas tillsammans med ekonomisk förvaltare/revisor.",
+    "Värdena är uppskattningar för underhållsplanen och vägledning till anläggningsregistret. Slutlig indelning beslutas med ekonomisk förvaltare. Justera eller ta bort komponenter i steg 3.",
   skillnad:
-    "Underhållsintervall (när ni planerar åtgärd) är inte samma sak som avskrivningstid (nyttjandeperiod i bokföringen). Kort underhåll — t.ex. spolning eller målning — är normalt inte egna K3-komponenter.",
+    "Installationsvärde (byggår) är skilt från planerat underhåll (när ni åtgärdar).",
 } as const;
 
 export function hamtaAvskrivningRekommendation(

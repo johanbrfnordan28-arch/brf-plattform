@@ -19,6 +19,7 @@ import {
 } from "@/components/underhallsplan/plan-terminologi";
 import { samlaK3Underlag } from "@/components/underhallsplan/k3-underlag";
 import { K3_FORKLARING } from "@/components/underhallsplan/komponent-avskrivning";
+import type { FastighetsVarderingsUnderlag } from "@/components/underhallsplan/fastighets-vardering";
 import { summeraKomponentBeloppFranTidslista } from "@/components/underhallsplan/komponent-belopp-summering";
 import {
   TYPISK_AVSATTNING_KR_PER_KVM,
@@ -70,6 +71,11 @@ type UnderhallsplanSlutsidaProps = {
   renoveringar: RenoveringSammanfattning | null;
   renoveringarLista?: UtfördRenovering[];
   planKostnader?: PlanKostnaderNormaliserade;
+  /**
+   * Internt underlag för beräkning av komponentvärden.
+   * Får aldrig renderas (taxering/mark/anskaffning).
+   */
+  varderingsUnderlag?: FastighetsVarderingsUnderlag | null;
   /** Justera kostnad för ett tillfälle (sparas i registret). */
   onKostnadJustering?: (
     komponent: string,
@@ -127,6 +133,7 @@ export function UnderhallsplanSlutsida({
   renoveringar,
   renoveringarLista = [],
   planKostnader,
+  varderingsUnderlag = null,
   onKostnadJustering,
   visaSomCentralGrundmall = false,
 }: UnderhallsplanSlutsidaProps) {
@@ -207,8 +214,19 @@ export function UnderhallsplanSlutsida({
   );
 
   const k3Underlag = useMemo(
-    () => samlaK3Underlag(activeComponents, komponentDetaljer),
-    [activeComponents, komponentDetaljer],
+    () =>
+      samlaK3Underlag(
+        activeComponents,
+        komponentDetaljer,
+        varderingsUnderlag,
+      ),
+    [activeComponents, komponentDetaljer, varderingsUnderlag],
+  );
+
+  const komponentInstallationsSumma = useMemo(
+    () =>
+      k3Underlag.reduce((s, r) => s + (r.installationskostnadKr || 0), 0),
+    [k3Underlag],
   );
 
   const komponentBelopp = useMemo(
@@ -351,13 +369,61 @@ export function UnderhallsplanSlutsida({
 
           <div className="mt-6 rounded-xl border border-border bg-background/80 p-5">
             <h3 className="font-semibold text-foreground">
-              Komponenter och belopp i planen
+              Uppskattade komponentvärden
             </h3>
             <p className="mt-1 text-xs text-muted">
-              Summering av planerade kostnader per komponent (från underhållstillfällen
-              i registret). Justera enskilda belopp på sidan «Planerade underhållstider».
+              Ungefärliga installationsvärden från byggåret för er fastighets
+              komponenter. Saknas uppgifter kompletteras med uppskattningar.
+              Ta bort komponenter som inte är aktuella i steg 3.
             </p>
-            {komponentBelopp.length > 0 ? (
+            {k3Underlag.length > 0 ? (
+              <ul className="mt-4 space-y-2">
+                {k3Underlag.map((k) => (
+                  <li
+                    key={`${k.komponent}-${k.underkomponentId}`}
+                    className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border bg-white px-3 py-2.5"
+                  >
+                    <div>
+                      <span className="font-medium text-foreground">
+                        {k.etikett}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted">
+                        {k.kallaEtikett}
+                        {k.avskrivningAr > 0
+                          ? ` · avskrivning ${k.avskrivningAr} år`
+                          : ""}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums text-primary-dark">
+                      {k.installationskostnadKr > 0
+                        ? formatKr(k.installationskostnadKr)
+                        : "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-muted">
+                Aktivera komponenter i steg 3 för att se uppskattade värden.
+              </p>
+            )}
+            {komponentInstallationsSumma > 0 && (
+              <p className="mt-3 text-sm font-medium text-foreground">
+                Summa uppskattade komponentvärden:{" "}
+                {formatKrStor(komponentInstallationsSumma)}
+              </p>
+            )}
+          </div>
+
+          {komponentBelopp.length > 0 && (
+            <div className="mt-6 rounded-xl border border-border bg-background/80 p-5">
+              <h3 className="font-semibold text-foreground">
+                Planerade underhållsbelopp
+              </h3>
+              <p className="mt-1 text-xs text-muted">
+                Kostnader för kommande åtgärder (skilt från installationsvärden
+                ovan). Justera på sidan «Planerade underhållstider».
+              </p>
               <ul className="mt-4 space-y-3">
                 {komponentBelopp.map((k) => (
                   <li
@@ -372,37 +438,11 @@ export function UnderhallsplanSlutsida({
                         {formatKr(k.summaKr)}
                       </span>
                     </div>
-                    <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
-                      {k.delar.map((d) => (
-                        <li
-                          key={d.etikett}
-                          className="flex justify-between gap-3"
-                        >
-                          <span>{d.etikett}</span>
-                          <span className="shrink-0 tabular-nums">
-                            {formatKr(d.summaKr)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-3 text-sm text-muted">
-                Inga planerade kostnader med belopp ännu — fyll i tillfällen och
-                priser i steg 3.
-              </p>
-            )}
-            {komponentBelopp.length > 0 && (
-              <p className="mt-3 text-sm font-medium text-foreground">
-                Totalt i listan:{" "}
-                {formatKrStor(
-                  komponentBelopp.reduce((s, k) => s + k.summaKr, 0),
-                )}
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-border bg-background p-4">
@@ -737,15 +777,12 @@ export function UnderhallsplanSlutsida({
           </div>
         </PrintSida>
 
-        <PrintSida sidnummer={5} titel="K3 — komponenter och avskrivningstider">
+        <PrintSida sidnummer={5} titel="Komponentvärden och avskrivning">
           <p className="text-sm font-semibold text-foreground">
             {K3_FORKLARING.rubrik}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             {FORKLARING_K3}
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            {K3_FORKLARING.skillnad}
           </p>
 
           {k3Underlag.length > 0 ? (
@@ -753,10 +790,11 @@ export function UnderhallsplanSlutsida({
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-background text-xs uppercase tracking-wide text-muted">
                   <tr>
-                    <th className="px-3 py-2 font-medium">FAR-komponent</th>
-                    <th className="px-3 py-2 font-medium">Andel</th>
-                    <th className="px-3 py-2 font-medium">Avskrivning (år)</th>
-                    <th className="px-3 py-2 font-medium">Anm.</th>
+                    <th className="px-3 py-2 font-medium">Komponent</th>
+                    <th className="px-3 py-2 font-medium">
+                      Installationsvärde
+                    </th>
+                    <th className="px-3 py-2 font-medium">Avskrivning</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -770,22 +808,18 @@ export function UnderhallsplanSlutsida({
                           {rad.etikett}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted">
-                          {rad.komponent}
-                          {rad.vagledning
-                            ? " · vägledning"
-                            : rad.iRegistret
-                              ? " · i registret"
-                              : ""}
+                          {rad.kallaEtikett}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-muted">
-                        {rad.andelText ?? "—"}
+                      <td className="px-3 py-2.5 font-medium tabular-nums text-foreground">
+                        {rad.installationskostnadKr > 0
+                          ? formatKr(rad.installationskostnadKr)
+                          : "—"}
                       </td>
                       <td className="px-3 py-2.5 font-medium text-foreground">
-                        {rad.avskrivningAr > 0 ? `${rad.avskrivningAr} år` : "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-muted">
-                        {rad.hint}
+                        {rad.avskrivningAr > 0
+                          ? `${rad.avskrivningAr} år`
+                          : "—"}
                       </td>
                     </tr>
                   ))}
@@ -794,14 +828,19 @@ export function UnderhallsplanSlutsida({
             </div>
           ) : (
             <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-              Aktivera komponenter i steg 3 för att få K3-underlag med
-              avskrivningstider.
+              Aktivera komponenter i steg 3. Ta bort sådant som inte är aktuellt
+              för er förening.
+            </p>
+          )}
+
+          {komponentInstallationsSumma > 0 && (
+            <p className="mt-3 text-sm font-medium text-foreground">
+              Summa: {formatKrStor(komponentInstallationsSumma)}
             </p>
           )}
 
           <p className="mt-4 rounded-lg border border-primary/15 bg-[#fafcfa] px-3 py-2 text-xs leading-relaxed text-foreground">
-            {K3_FORKLARING.underlag} Justera avskrivningstiderna i steg 3 per
-            underkomponent.
+            {K3_FORKLARING.underlag}
           </p>
         </PrintSida>
 

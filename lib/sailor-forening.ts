@@ -1,3 +1,4 @@
+import type { FastighetsVarderingsUnderlag } from "@/components/underhallsplan/fastighets-vardering";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
 /** Bostadsrättsföreningen Sailor — fast testförenings-id. */
@@ -21,12 +22,32 @@ export const SAILOR_GRUND: Pick<
   | "antalVaningar"
   | "antalByggnader"
   | "adresser"
+  | "byggar"
+  | "uppvarmning"
+  | "ventilationssystem"
+  | "fastighetsbeteckning"
 > = {
   boarea: "2 756",
   antalLagenheter: "40",
   antalVaningar: "4",
   antalByggnader: "3",
+  byggar: "2013",
+  uppvarmning: "Fjärrvärme",
+  ventilationssystem: "FTX — från- och tilluft med värmeåtervinning",
+  fastighetsbeteckning: "Gustavsberg (Publikvägen 25–29) — JM 2013",
   adresser: ["Publikvägen 25", "Publikvägen 27", "Publikvägen 29"],
+};
+
+/**
+ * Internt värderingsunderlag för Sailor — får ALDRIG visas för föreningen.
+ * Skalat till 2 756 m² utifrån typiska kr/m² i årsredovisning 2025
+ * (taxering / anskaffning / mark) för jämförbar Gustavsbergsfastighet.
+ */
+export const SAILOR_VARDERING_UNDERLAG: FastighetsVarderingsUnderlag = {
+  taxeringsvardeByggnadKr: 66_367_000,
+  taxeringsvardeMarkKr: 12_776_000,
+  anskaffningsvardeTotaltKr: 142_422_000,
+  markAnskaffningsvardeKr: 29_398_000,
 };
 
 export function arSailorForening(foreningId?: string | null): boolean {

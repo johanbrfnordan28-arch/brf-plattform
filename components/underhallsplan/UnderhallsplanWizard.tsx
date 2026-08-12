@@ -61,8 +61,9 @@ import {
 import {
   appliceraSailorGrund,
   arSailorForening,
+  SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
-import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
+import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
 import {
   importeraSaknadeKomponenterFranGrundmall,
   lasGrundmallUnderhallsplanState,
@@ -560,6 +561,9 @@ export function UnderhallsplanWizard() {
   const [demoVarning, setDemoVarning] = useState<string | null>(null);
   const [planLage, setPlanLage] = useState<ForeningPlanLage>("forening");
   const [grundmallTom, setGrundmallTom] = useState(false);
+  const [varderingsUnderlag, setVarderingsUnderlag] = useState<
+    import("@/components/underhallsplan/fastighets-vardering").FastighetsVarderingsUnderlag | null
+  >(null);
   const skipAutosparRef = useRef(true);
   const renoveringarListaRef = useRef(renoveringarLista);
   renoveringarListaRef.current = renoveringarLista;
@@ -583,6 +587,7 @@ export function UnderhallsplanWizard() {
     setPlanNotering(state.planNotering);
     setSparadTid(state.sparad);
     setSenastTillagdKomponent(state.activeComponents[0] ?? null);
+    setVarderingsUnderlag(state.varderingsUnderlag ?? null);
   }
 
   function uppdateraTillgangligaTestplaner() {
@@ -604,15 +609,7 @@ export function UnderhallsplanWizard() {
     if (sparad && arSailorForening(foreningId)) {
       const grund = normaliseraGrund(appliceraSailorGrund(sparad.grund));
       const lgh = hamtaAntalLagenheterFranGrund(grund);
-      const far = appliceraFarK3PaPlan(
-        sparad.activeComponents,
-        sparad.komponentDetaljer,
-        { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
-      );
-      const synced = synkaUnderhallsplanState(
-        far.activeComponents,
-        far.komponentDetaljer,
-      );
+      const utkast = byggSailorKomponentUtkast();
       sparad = {
         ...sparad,
         grund,
@@ -621,9 +618,14 @@ export function UnderhallsplanWizard() {
             "Bostadsrättsföreningen Sailor",
             lgh,
           ) ?? sparad.planNamn,
-        activeComponents: synced.activeComponents,
-        komponentDetaljer: synced.register,
+        planNotering: utkast.planNotering,
+        activeComponents: utkast.activeComponents,
+        komponentDetaljer: utkast.komponentDetaljer,
+        samfallighetsavgift: utkast.samfallighetsavgift,
+        krPerKvmAr: utkast.krPerKvmAr,
+        varderingsUnderlag: SAILOR_VARDERING_UNDERLAG,
         grundSaved: true,
+        komponenterSaved: true,
       };
       sparaUnderhallsplanState(sparad, foreningId);
     }
@@ -737,6 +739,8 @@ export function UnderhallsplanWizard() {
       renoveringarLista,
       renoveringSammanfattning,
       krPerKvmAr: begransaAvsattningKrPerKvmAr(krPerKvmAr),
+      // Behåll underlaget i lagring men visa det aldrig i UI/PDF
+      varderingsUnderlag: varderingsUnderlag ?? undefined,
     };
   }
 
@@ -788,6 +792,7 @@ export function UnderhallsplanWizard() {
     aktivTestplan,
     planNamn,
     planNotering,
+    varderingsUnderlag,
   ]);
 
   useEffect(() => {
@@ -2030,6 +2035,7 @@ export function UnderhallsplanWizard() {
           renoveringar={renoveringSammanfattning}
           renoveringarLista={renoveringarLista}
           planKostnader={planKostnader}
+          varderingsUnderlag={varderingsUnderlag}
           onKostnadJustering={skrivskyddad ? undefined : justeraTillfalleKostnad}
           visaSomCentralGrundmall={skrivskyddad || arCentralGrundmall}
         />

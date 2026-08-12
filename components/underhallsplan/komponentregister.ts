@@ -383,6 +383,11 @@ export type UnderkomponentRad = {
    * Skiljt från underhållsintervall.
    */
   avskrivningAr?: string;
+  /**
+   * Uppskattad installationskostnad / komponentvärde vid byggår (kr).
+   * Visas för föreningen — härleds ofta från internt värderingsunderlag.
+   */
+  installationskostnadKr?: string;
   underhallKostnadKr?: string;
   /** total | kvm | styck | blandad — styr hur kostnaden räknas ut. */
   underhallPrisEnhet?: string;
@@ -1668,6 +1673,8 @@ function slåIhopVarmecentralUnderkomponent(
     underhallIntervallAr: källa.underhallIntervallAr || mallRad.underhallIntervallAr,
     avskrivningAr: källa.avskrivningAr || mallRad.avskrivningAr,
     underhallNastaAr: källa.underhallNastaAr || mallRad.underhallNastaAr,
+    installationskostnadKr:
+      källa.installationskostnadKr || mallRad.installationskostnadKr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
     underhallEnhetsprisKr: källa.underhallEnhetsprisKr || mallRad.underhallEnhetsprisKr,
@@ -1915,6 +1922,7 @@ function skapaUnderkomponentRadFranDef(
     underhallIntervallAr,
     avskrivningAr: avskrivningAr || undefined,
     underhallNastaAr: "",
+    installationskostnadKr: "",
     underhallKostnadKr: "",
     underhallGarantiAr: "2",
     underhallAnsvarAr: "10",
@@ -1949,6 +1957,8 @@ function slåIhopFasadmaterialRad(
     underhallIntervallAr: källa.underhallIntervallAr || mallRad.underhallIntervallAr,
     avskrivningAr: källa.avskrivningAr || mallRad.avskrivningAr,
     underhallNastaAr: källa.underhallNastaAr || mallRad.underhallNastaAr,
+    installationskostnadKr:
+      källa.installationskostnadKr || mallRad.installationskostnadKr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
     underhallEnhetsprisKr: källa.underhallEnhetsprisKr || mallRad.underhallEnhetsprisKr,

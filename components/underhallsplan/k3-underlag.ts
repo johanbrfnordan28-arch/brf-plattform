@@ -1,12 +1,10 @@
-import {
-  effektivAvskrivningAr,
-  standardAvskrivningAr,
-} from "@/components/underhallsplan/komponent-avskrivning";
-import {
-  FAR_K3_KOMPONENTER,
-  farAndelText,
-  type FarK3Komponent,
-} from "@/components/underhallsplan/far-k3-komponenter";
+/**
+ * Samlar föreningsvänligt K3-underlag: komponent + uppskattat installationsvärde + år.
+ * Visar inte taxering/mark/anskaffning.
+ */
+
+import { beraknaKomponentInstallationsvarden } from "@/components/underhallsplan/fastighets-vardering";
+import type { FastighetsVarderingsUnderlag } from "@/components/underhallsplan/fastighets-vardering";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
 
 export type K3UnderlagRad = {
@@ -14,103 +12,45 @@ export type K3UnderlagRad = {
   underkomponentId: string;
   etikett: string;
   avskrivningAr: number;
-  hint: string;
-  /** true = raden finns i föreningens aktiva register */
+  installationskostnadKr: number;
+  /** Kort källa — inte känsliga totalsummor */
+  kallaEtikett: string;
   iRegistret: boolean;
-  /** Orientering utanför registret (t.ex. saknad FAR-komponent) */
-  vagledning?: boolean;
-  /** FAR andel av anskaffningsvärdet */
-  andelText?: string;
 };
 
-function hittaRegisterRad(
-  far: FarK3Komponent,
-  activeComponents: string[],
-  komponentDetaljer: Record<string, KomponentDetaljData>,
-): {
-  komponentNamn: string;
-  underkomponentId: string;
-  etikett: string;
-  avskrivningAr: number;
-} | null {
-  for (const koppling of far.registerKopplingar) {
-    if (!activeComponents.includes(koppling.komponentNamn)) continue;
-    const data = komponentDetaljer[koppling.komponentNamn];
-    if (!data) continue;
-    const rad = data.underkomponenter.find(
-      (r) => r.id === koppling.underkomponentId,
-    );
-    if (!rad) continue;
-    if (!rad.aktiv && !rad.ärEgen) continue;
-
-    const ar = effektivAvskrivningAr(
-      koppling.komponentNamn,
-      koppling.underkomponentId,
-      rad.avskrivningAr,
-    );
-    return {
-      komponentNamn: koppling.komponentNamn,
-      underkomponentId: koppling.underkomponentId,
-      etikett: rad.etikett || far.namn,
-      avskrivningAr:
-        ar > 0
-          ? ar
-          : far.standardNyttjandeperiodAr,
-    };
+function kallaEtikett(
+  kalla: "far-andel" | "register-uppskattning" | "manuellt",
+): string {
+  switch (kalla) {
+    case "manuellt":
+      return "Angivet i planen";
+    case "register-uppskattning":
+      return "Uppskattat från register";
+    default:
+      return "Uppskattat installationsvärde";
   }
-  return null;
 }
 
 /**
- * Samlar K3-underlag enligt FAR Tabell 1 (ca 8–11 väsentliga komponenter).
- * Visar alltid de komponenter FAR säger finns i typiska BRF:er;
- * villkorliga (balkong, hiss, styr) bara om de är aktiva i registret.
+ * Endast komponenter som finns aktiva i föreningens register
+ * (sådant som inte är aktuellt kan tas bort i steg 3).
  */
 export function samlaK3Underlag(
   activeComponents: string[],
   komponentDetaljer: Record<string, KomponentDetaljData>,
+  varderingsUnderlag?: FastighetsVarderingsUnderlag | null,
 ): K3UnderlagRad[] {
-  const rader: K3UnderlagRad[] = [];
-
-  for (const far of FAR_K3_KOMPONENTER) {
-    const hittad = hittaRegisterRad(far, activeComponents, komponentDetaljer);
-
-    if (hittad) {
-      rader.push({
-        komponent: hittad.komponentNamn,
-        underkomponentId: hittad.underkomponentId,
-        etikett: far.namn,
-        avskrivningAr: hittad.avskrivningAr,
-        hint: `FAR ${farAndelText(far)} av anskaffningsvärdet · ${far.periodAlternativ?.map((p) => `${p.etikett} ${p.ar} år`).join("; ") ?? `${far.standardNyttjandeperiodAr} år`}`,
-        iRegistret: true,
-        andelText: farAndelText(far),
-      });
-      continue;
-    }
-
-    if (far.ejAlltid) continue;
-
-    // Saknas i registret — visa vägledning så antalet FAR-komponenter blir korrekt
-    const standardAr =
-      Number.parseInt(
-        standardAvskrivningAr(
-          far.registerKopplingar[0]?.komponentNamn ?? "",
-          far.registerKopplingar[0]?.underkomponentId ?? "",
-        ),
-        10,
-      ) || far.standardNyttjandeperiodAr;
-
-    rader.push({
-      komponent: far.registerKopplingar[0]?.komponentNamn ?? "FAR",
-      underkomponentId: far.id,
-      etikett: far.namn,
-      avskrivningAr: standardAr,
-      hint: `FAR ${farAndelText(far)} · aktivera i registret för att knyta till underhållsplanen`,
-      iRegistret: false,
-      vagledning: true,
-      andelText: farAndelText(far),
-    });
-  }
-
-  return rader;
+  return beraknaKomponentInstallationsvarden(
+    varderingsUnderlag,
+    activeComponents,
+    komponentDetaljer,
+  ).map((rad) => ({
+    komponent: rad.komponent,
+    underkomponentId: rad.underkomponentId,
+    etikett: rad.etikett,
+    avskrivningAr: rad.avskrivningAr,
+    installationskostnadKr: rad.installationskostnadKr,
+    kallaEtikett: kallaEtikett(rad.kalla),
+    iRegistret: rad.iRegistret,
+  }));
 }

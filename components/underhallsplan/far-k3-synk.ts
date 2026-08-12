@@ -4,6 +4,10 @@ import {
 } from "@/components/underhallsplan/far-k3-komponenter";
 import { standardAvskrivningAr } from "@/components/underhallsplan/komponent-avskrivning";
 import {
+  appliceraInstallationsvardenPaRegister,
+  type FastighetsVarderingsUnderlag,
+} from "@/components/underhallsplan/fastighets-vardering";
+import {
   synkaUnderhallsplanState,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
@@ -13,11 +17,15 @@ export type FarK3SynkOptions = {
   aktiveraVillkorliga?: boolean;
   /** Skriv över sparade avskrivningstider med FAR-standard. */
   skrivOverAvskrivning?: boolean;
+  /** Internt underlag — används bara för att fylla installationsvärden. */
+  varderingsUnderlag?: FastighetsVarderingsUnderlag | null;
+  /** Skriv över sparade installationskostnader. */
+  skrivOverInstallationskostnad?: boolean;
 };
 
 /**
- * Säkerställer FAR:s väsentliga komponenter i registret och sätter
- * nyttjandeperioder enligt Tabell 2.
+ * Säkerställer FAR:s väsentliga komponenter, nyttjandeperioder och
+ * uppskattade installationsvärden (när värderingsunderlag finns).
  */
 export function appliceraFarK3PaPlan(
   activeComponents: string[],
@@ -35,7 +43,7 @@ export function appliceraFarK3PaPlan(
   ];
 
   const synced = synkaUnderhallsplanState(mergedActive, komponentDetaljer);
-  const nextRegister: Record<string, KomponentDetaljData> = {
+  let nextRegister: Record<string, KomponentDetaljData> = {
     ...synced.register,
   };
 
@@ -66,8 +74,17 @@ export function appliceraFarK3PaPlan(
           };
         }),
       };
-      break; // första tillgängliga koppling räcker
+      break;
     }
+  }
+
+  if (options.varderingsUnderlag) {
+    nextRegister = appliceraInstallationsvardenPaRegister(
+      options.varderingsUnderlag,
+      synced.activeComponents,
+      nextRegister,
+      { skrivOver: options.skrivOverInstallationskostnad ?? true },
+    );
   }
 
   return {

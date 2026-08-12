@@ -18,6 +18,7 @@ import type {
   Grunduppgifter,
   RenoveringSammanfattning,
 } from "@/components/underhallsplan/types";
+import type { FastighetsVarderingsUnderlag } from "@/components/underhallsplan/fastighets-vardering";
 
 export const UNDERHALLSPLAN_STATE_EVENT = "underhallsplan-state-uppdaterad";
 
@@ -48,6 +49,11 @@ export type UnderhallsplanLagratState = {
   renoveringarLista: UtfördRenovering[];
   renoveringSammanfattning: RenoveringSammanfattning | null;
   krPerKvmAr: number;
+  /**
+   * Internt värderingsunderlag (taxering/mark/anskaffning).
+   * Får aldrig visas för föreningen — används bara för att beräkna komponentvärden.
+   */
+  varderingsUnderlag?: FastighetsVarderingsUnderlag;
 };
 
 export function harUnderhallsplanSparat(foreningId?: string): boolean {
@@ -92,6 +98,7 @@ function uppgraderaUnderhallsplanState(
     renoveringarLista: parsed.renoveringarLista ?? [],
     renoveringSammanfattning: parsed.renoveringSammanfattning ?? null,
     krPerKvmAr: parsed.krPerKvmAr ?? 0,
+    varderingsUnderlag: parsed.varderingsUnderlag,
   };
 }
 
