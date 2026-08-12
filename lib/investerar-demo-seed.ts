@@ -14,13 +14,25 @@ import {
 import { normaliseraPlaninstallningar } from "@/components/underhallsplan/planinstallningar";
 import { synkaUnderhallsplanState } from "@/components/underhallsplan/komponentregister";
 import { skapaStandardSamfallighetsavgift } from "@/components/underhallsplan/samfallighetsavgift";
+import type { Grunduppgifter } from "@/components/underhallsplan/types";
+import {
+  appliceraSailorGrund,
+  arSailorForening,
+} from "@/lib/sailor-forening";
 
 export function byggLagratStateFranTestplan(
   id: TestplanId,
   foreningsnamn?: string,
+  options?: { foreningId?: string; grundPatch?: Partial<Grunduppgifter> },
 ): UnderhallsplanLagratState {
   const plan = hamtaTestplan(id);
-  const grund = normaliseraGrund(plan.grund);
+  let grund = normaliseraGrund(plan.grund);
+  if (options?.grundPatch) {
+    grund = normaliseraGrund({ ...grund, ...options.grundPatch });
+  }
+  if (arSailorForening(options?.foreningId)) {
+    grund = normaliseraGrund(appliceraSailorGrund(grund));
+  }
   const synced = synkaUnderhallsplanState(
     plan.activeComponents,
     synkaUnderhallsplanState(

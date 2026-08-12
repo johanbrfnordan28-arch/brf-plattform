@@ -59,6 +59,10 @@ import {
   lasForeningProfil,
 } from "@/lib/forening-registry";
 import {
+  appliceraSailorGrund,
+  arSailorForening,
+} from "@/lib/sailor-forening";
+import {
   importeraSaknadeKomponenterFranGrundmall,
   lasGrundmallUnderhallsplanState,
 } from "@/components/underhallsplan/importera-fran-grundmall";
@@ -595,7 +599,22 @@ export function UnderhallsplanWizard() {
   useEffect(() => {
     const foreningId = lasAktivForeningId();
     const profil = lasForeningProfil(foreningId);
-    const sparad = lasUnderhallsplanState();
+    let sparad = lasUnderhallsplanState();
+    if (sparad && arSailorForening(foreningId)) {
+      const grund = normaliseraGrund(appliceraSailorGrund(sparad.grund));
+      const lgh = hamtaAntalLagenheterFranGrund(grund);
+      sparad = {
+        ...sparad,
+        grund,
+        planNamn:
+          planNamnFranForeningsnamn(
+            "Bostadsrättsföreningen Sailor",
+            lgh,
+          ) ?? sparad.planNamn,
+        grundSaved: true,
+      };
+      sparaUnderhallsplanState(sparad, foreningId);
+    }
     if (sparad) {
       if (
         sparad.aktivTestplan &&
@@ -630,7 +649,12 @@ export function UnderhallsplanWizard() {
     } else {
       const kontakt = hamtaStyrelseKontakt();
       if (kontakt) {
-        setGrund((current) => appliceraKontaktPaGrund(current, kontakt));
+        setGrund((current) => {
+          const medKontakt = appliceraKontaktPaGrund(current, kontakt);
+          return arSailorForening(foreningId)
+            ? appliceraSailorGrund(medKontakt)
+            : medKontakt;
+        });
         setPlanNamn(planNamnFranKontakt(kontakt));
       }
     }

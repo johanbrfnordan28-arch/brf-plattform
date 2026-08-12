@@ -10,9 +10,26 @@ import {
 } from "@/lib/forening-registry";
 import { forberedNyForening } from "@/lib/kopiera-grundmall-data";
 import type { TestplanId } from "@/components/underhallsplan/testplaner";
-import { harUnderhallsplanSparat, sparaUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
+import {
+  hamtaAntalLagenheterFranGrund,
+  normaliseraGrund,
+  uppdateraPlanTitelMedLagenheter,
+} from "@/components/underhallsplan/grund-synk";
+import {
+  harUnderhallsplanSparat,
+  sparaUnderhallsplanState,
+  type UnderhallsplanLagratState,
+} from "@/components/underhallsplan/underhallsplan-lager";
+import { foreningStorageKey } from "@/lib/foreningStorage";
+import {
+  appliceraSailorGrund,
+  arSailorForening,
+  SAILOR_FORENING_ID,
+  SAILOR_PROFIL,
+} from "@/lib/sailor-forening";
 
 export { arStandardTestForening };
+export { SAILOR_FORENING_ID };
 
 /** Fem fasta testföreningar — alltid synliga vid inloggning, data isoleras per id. */
 export const STANDARD_TESTFORENINGAR = [
@@ -37,7 +54,7 @@ export const STANDARD_TESTFORENINGAR = [
     testplanId: "test-90" satisfies TestplanId,
   },
   {
-    id: "test-forening-5",
+    id: SAILOR_FORENING_ID,
     namn: "Bostadsrättsföreningen Sailor",
     testplanId: "test-50" satisfies TestplanId,
   },
@@ -64,7 +81,7 @@ export function hamtaStandardTestForeningTestplan(
 }
 
 function tomStandardProfil(id: string, namn: string): ForeningProfil {
-  return {
+  const bas: ForeningProfil = {
     id,
     namn,
     skapadTidpunkt: new Date().toISOString(),
@@ -75,6 +92,18 @@ function tomStandardProfil(id: string, namn: string): ForeningProfil {
     kontaktperson: "",
     grundinfoPaborjad: false,
   };
+  if (arSailorForening(id)) {
+    return { ...bas, ...SAILOR_PROFIL };
+  }
+  return bas;
+}
+
+function appliceraSailorProfil(profil: ForeningProfil): ForeningProfil {
+  return {
+    ...profil,
+    namn: "Bostadsrättsföreningen Sailor",
+    ...SAILOR_PROFIL,
+  };
 }
 
 function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void {
@@ -82,14 +111,47 @@ function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void
   forberedNyForening(foreningId);
   const namn = lasForeningProfil(foreningId)?.namn;
   sparaUnderhallsplanState(
-    byggLagratStateFranTestplan(testplanId, namn),
+    byggLagratStateFranTestplan(testplanId, namn, { foreningId }),
     foreningId,
   );
+}
+
+const UNDERHALLSPLAN_KEY_BASE = "brf-underhallsplan-state";
+
+/** Uppdaterar Sailors grunduppgifter även om planen redan sparats. */
+function synkaSailorUnderhallsplanGrund(): void {
+  if (typeof window === "undefined") return;
+  const key = foreningStorageKey(UNDERHALLSPLAN_KEY_BASE, SAILOR_FORENING_ID);
+  const raw = localStorage.getItem(key);
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw) as UnderhallsplanLagratState;
+    if (!parsed?.grund) return;
+    const grund = normaliseraGrund(appliceraSailorGrund(parsed.grund));
+    const lgh = hamtaAntalLagenheterFranGrund(grund);
+    const planNamn = uppdateraPlanTitelMedLagenheter(
+      parsed.planNamn?.trim() || "Bostadsrättsföreningen Sailor",
+      lgh,
+    );
+    sparaUnderhallsplanState(
+      {
+        ...parsed,
+        grund,
+        planNamn,
+        grundSaved: true,
+        sparad: new Date().toISOString(),
+      },
+      SAILOR_FORENING_ID,
+    );
+  } catch {
+    /* behåll rådata */
+  }
 }
 
 /**
  * Säkerställer att alla fem testföreningar finns i registret.
  * Behåller användarens sparade namn/uppgifter — skriver bara över startnamn.
+ * Sailor får alltid fasta kontakt- och grunduppgifter.
  */
 export function sakraStandardTestForeningar(): ForeningProfil[] {
   if (typeof window === "undefined") {
@@ -104,8 +166,9 @@ export function sakraStandardTestForeningar(): ForeningProfil[] {
     let profil: ForeningProfil;
     if (!befintlig) {
       profil = tomStandardProfil(def.id, def.namn);
+    } else if (arSailorForening(def.id)) {
+      profil = appliceraSailorProfil({ ...befintlig, id: def.id });
     } else {
-      // Användarens inmatade föreningsnamn behålls; annars «Brf Test N».
       const namn =
         befintlig.namn.trim() && !arStandardTestStartNamn(befintlig.namn)
           ? befintlig.namn.trim()
@@ -116,6 +179,8 @@ export function sakraStandardTestForeningar(): ForeningProfil[] {
     seedTestForeningOmTom(def.id, def.testplanId);
     resultat.push(profil);
   }
+
+  synkaSailorUnderhallsplanGrund();
 
   return resultat;
 }
