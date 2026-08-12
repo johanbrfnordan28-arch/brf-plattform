@@ -1,4 +1,5 @@
 import { standardUnderhallIntervallAr } from "@/components/underhallsplan/underhall-intervall";
+import { standardAvskrivningAr } from "@/components/underhallsplan/komponent-avskrivning";
 import {
   formateraFonsterDorrPoster,
   normaliseraFonsterDorrPost,
@@ -377,6 +378,11 @@ export type UnderkomponentRad = {
   /** Planerat underhåll — kan fyllas i senare */
   underhallNastaAr?: string;
   underhallIntervallAr?: string;
+  /**
+   * Nyttjandeperiod / avskrivningstid i år (K3-komponentavskrivning).
+   * Skiljt från underhållsintervall.
+   */
+  avskrivningAr?: string;
   underhallKostnadKr?: string;
   /** total | kvm | styck | blandad — styr hur kostnaden räknas ut. */
   underhallPrisEnhet?: string;
@@ -1622,6 +1628,7 @@ function slåIhopVarmecentralUnderkomponent(
     måttenhet: källa.måttenhet || mallRad.måttenhet,
     värde: källa.värde || mallRad.värde,
     underhallIntervallAr: källa.underhallIntervallAr || mallRad.underhallIntervallAr,
+    avskrivningAr: källa.avskrivningAr || mallRad.avskrivningAr,
     underhallNastaAr: källa.underhallNastaAr || mallRad.underhallNastaAr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
@@ -1857,6 +1864,9 @@ function skapaUnderkomponentRadFranDef(
   const underhallIntervallAr = komponentNamn
     ? standardUnderhallIntervallAr(komponentNamn, def.id)
     : "";
+  const avskrivningAr = komponentNamn
+    ? standardAvskrivningAr(komponentNamn, def.id)
+    : "";
   return {
     id: def.id,
     etikett: def.etikett,
@@ -1865,6 +1875,7 @@ function skapaUnderkomponentRadFranDef(
     värde: "",
     ärEgen: false,
     underhallIntervallAr,
+    avskrivningAr: avskrivningAr || undefined,
     underhallNastaAr: "",
     underhallKostnadKr: "",
     underhallGarantiAr: "2",
@@ -1898,6 +1909,7 @@ function slåIhopFasadmaterialRad(
     måttenhet: källa.måttenhet || mallRad.måttenhet,
     värde: källa.värde || mallRad.värde,
     underhallIntervallAr: källa.underhallIntervallAr || mallRad.underhallIntervallAr,
+    avskrivningAr: källa.avskrivningAr || mallRad.avskrivningAr,
     underhallNastaAr: källa.underhallNastaAr || mallRad.underhallNastaAr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
@@ -1957,7 +1969,14 @@ export function synkaKomponentDetaljMedMall(
   const underkomponenter: UnderkomponentRad[] = [
     ...mall.underkomponenter.map((def) => {
       const rad = befintligMap.get(def.id);
-      if (rad) return { ...rad, etikett: def.etikett };
+      if (rad) {
+        const standardAvskr = standardAvskrivningAr(mall.namn, def.id);
+        return {
+          ...rad,
+          etikett: def.etikett,
+          avskrivningAr: rad.avskrivningAr?.trim() || standardAvskr || rad.avskrivningAr,
+        };
+      }
       return skapaUnderkomponentRadFranDef(def, mall.namn);
     }),
     ...dataIn.underkomponenter.filter((r) => r.ärEgen),

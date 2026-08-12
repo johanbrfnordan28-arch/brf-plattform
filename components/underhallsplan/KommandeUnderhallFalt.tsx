@@ -4,6 +4,11 @@ import {
   hamtaUnderhallRekommendation,
   standardUnderhallIntervallAr,
 } from "@/components/underhallsplan/underhall-intervall";
+import {
+  arK3AvskrivningsKomponent,
+  hamtaAvskrivningRekommendation,
+  standardAvskrivningAr,
+} from "@/components/underhallsplan/komponent-avskrivning";
 import type { UnderkomponentRad } from "@/components/underhallsplan/komponentregister";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import { UnderhallKostnadFalt } from "@/components/underhallsplan/UnderhallKostnadFalt";
@@ -47,10 +52,18 @@ export function KommandeUnderhallFalt({
   const planeratViaTillfallen =
     planeratViaTillfallenProp ?? fasadPlaneratViaTillfallen;
   const rek = hamtaUnderhallRekommendation(komponentNamn, underkomponentId);
+  const avskrRek = hamtaAvskrivningRekommendation(komponentNamn, underkomponentId);
+  const visaK3Avskrivning =
+    rad.ärEgen ||
+    arK3AvskrivningsKomponent(komponentNamn, underkomponentId) ||
+    Boolean(rad.avskrivningAr?.trim());
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const intervallVal =
     rad.underhallIntervallAr?.trim() ||
     (rek ? String(rek.rekommenderatIntervallAr) : "");
+  const avskrivningVal =
+    rad.avskrivningAr?.trim() ||
+    standardAvskrivningAr(komponentNamn, underkomponentId);
   const harKostnad = effektivUnderhallKostnadKr(rad) > 0;
   const kostnadPerAr =
     kostnadPerArOverride ??
@@ -61,6 +74,12 @@ export function KommandeUnderhallFalt({
     onChange({
       underhallIntervallAr: standard,
       underhallNastaAr: rad.underhallNastaAr?.trim() || String(planStartAr),
+    });
+  }
+
+  function aterstallRekommenderadAvskrivning() {
+    onChange({
+      avskrivningAr: standardAvskrivningAr(komponentNamn, underkomponentId),
     });
   }
 
@@ -94,6 +113,31 @@ export function KommandeUnderhallFalt({
           inte i fälten ovan. Där väljer du åtgärdstyp (t.ex. takmålning), första år,
           intervall och pris per tillfälle.
         </p>
+        {visaK3Avskrivning && (
+          <div className="mt-3 max-w-xs">
+            <label className="block text-sm">
+              <span className="text-xs font-medium text-muted">
+                Avskrivning K3 (år)
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={120}
+                value={avskrivningVal}
+                onChange={(e) => onChange({ avskrivningAr: e.target.value })}
+                placeholder={
+                  avskrRek
+                    ? String(avskrRek.rekommenderadAvskrivningAr)
+                    : "t.ex. 40"
+                }
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            {avskrRek?.hint && (
+              <p className="mt-1 text-[10px] text-muted">{avskrRek.hint}</p>
+            )}
+          </div>
+        )}
         <p className="mt-2 text-xs text-primary-dark">
           Vill du byta <em>vilken</em> lättare åtgärd som föreslås först (målning m.m.)?
           Gör det i <strong className="font-medium">steg 2</strong> under{" "}
@@ -185,7 +229,46 @@ export function KommandeUnderhallFalt({
             )}
           </select>
         </label>
+        {visaK3Avskrivning && (
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">
+              Avskrivning K3 (år)
+            </span>
+            <input
+              type="number"
+              min={1}
+              max={120}
+              value={avskrivningVal}
+              onChange={(e) => onChange({ avskrivningAr: e.target.value })}
+              placeholder={
+                avskrRek
+                  ? String(avskrRek.rekommenderadAvskrivningAr)
+                  : "t.ex. 40"
+              }
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          </label>
+        )}
       </div>
+
+      {visaK3Avskrivning && avskrRek?.arK3Komponent && (
+        <p className="mt-2 text-xs text-muted">
+          K3-nyttjandeperiod (avskrivningstid) — skilt från underhållsintervall.{" "}
+          {avskrRek.hint}
+          {standardAvskrivningAr(komponentNamn, underkomponentId) && (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={aterstallRekommenderadAvskrivning}
+                className="font-medium text-primary hover:underline"
+              >
+                Återställ rekommenderad
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
       <div className="mt-3">
         <UnderhallKostnadFalt

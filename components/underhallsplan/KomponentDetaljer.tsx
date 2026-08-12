@@ -260,6 +260,7 @@ export function KomponentDetaljer({
           värde: "",
           ärEgen: true,
           underhallIntervallAr: "",
+          avskrivningAr: "",
           underhallNastaAr: String(planStartAr),
           underhallKostnadKr: "",
         },

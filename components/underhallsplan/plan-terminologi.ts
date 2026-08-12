@@ -21,4 +21,6 @@ Här sammanställs utgifter som ska tas upp i föreningens årliga budget: avsä
 
 export const FORKLARING_AVSATTNING = `Avsättningen (kr/m² och år) är en jämn post som normalt budgeteras varje år i föreningen.`;
 
-export const FORKLARING_INVESTERING = `Beloppet avser planerad investering/åtgärd det året enligt underhållsplanen. Kostnaden fördelas i bokföringen över avskrivningstid — den ska inte förväxlas med en årlig driftsbudgetpost.`;
+export const FORKLARING_INVESTERING = `Beloppet avser planerad investering/åtgärd det året enligt underhållsplanen. I bokföringen (K3) fördelas större aktiverade åtgärder över komponentens avskrivningstid — det ska inte förväxlas med en årlig driftsbudgetpost.`;
+
+export const FORKLARING_K3 = `Från räkenskapsår som börjar 2026 ska bostadsrättsföreningar tillämpa K3 (BFNAR 2012:1). Byggnaden delas upp i betydande komponenter med olika nyttjandeperioder. Komponentregistret och avskrivningstiderna i underhållsplanen är vägledande underlag till anläggningsregistret — slutlig indelning och värden beslutas med ekonomisk förvaltare.`;

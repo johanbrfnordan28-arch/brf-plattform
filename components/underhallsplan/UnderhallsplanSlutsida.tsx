@@ -14,8 +14,11 @@ import { PlanPresentationDiagram } from "@/components/underhallsplan/PlanPresent
 import {
   FORKLARING_AVSATTNING,
   FORKLARING_ARSBUDGET_VS_PLAN,
+  FORKLARING_K3,
   PLAN_BEGREPP,
 } from "@/components/underhallsplan/plan-terminologi";
+import { samlaK3Underlag } from "@/components/underhallsplan/k3-underlag";
+import { K3_FORKLARING } from "@/components/underhallsplan/komponent-avskrivning";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
 import {
   formateraKomponentSammanfattning,
@@ -197,6 +200,11 @@ export function UnderhallsplanSlutsida({
         planLangdAr,
       ),
     [activeComponents, komponentDetaljer, planStartAr, planLangdAr],
+  );
+
+  const k3Underlag = useMemo(
+    () => samlaK3Underlag(activeComponents, komponentDetaljer),
+    [activeComponents, komponentDetaljer],
   );
 
   const lockedClass = !unlocked ? "pointer-events-none opacity-50" : "";
@@ -606,6 +614,10 @@ export function UnderhallsplanSlutsida({
 
           <div className="mt-6 rounded-xl border border-border bg-background/80 p-5">
             <h3 className="font-semibold text-foreground">Komponentregister</h3>
+            <p className="mt-1 text-xs text-muted">
+              Grunden för planen och för K3-komponentindelning — aktiverade delar
+              med mått och sammanfattning.
+            </p>
             <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
               {activeComponents.map((name) => {
                 const data = komponentDetaljer[name];
@@ -628,7 +640,71 @@ export function UnderhallsplanSlutsida({
           </div>
         </PrintSida>
 
-        <PrintSida sidnummer={5} titel="Planerade underhållstider">
+        <PrintSida sidnummer={5} titel="K3 — komponenter och avskrivningstider">
+          <p className="text-sm font-semibold text-foreground">
+            {K3_FORKLARING.rubrik}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            {FORKLARING_K3}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            {K3_FORKLARING.skillnad}
+          </p>
+
+          {k3Underlag.length > 0 ? (
+            <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-background text-xs uppercase tracking-wide text-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Komponent / del</th>
+                    <th className="px-3 py-2 font-medium">Avskrivning (år)</th>
+                    <th className="px-3 py-2 font-medium">Anm.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {k3Underlag.map((rad) => (
+                    <tr
+                      key={`${rad.komponent}-${rad.underkomponentId}`}
+                      className="border-t border-border bg-white"
+                    >
+                      <td className="px-3 py-2.5">
+                        <span className="font-medium text-foreground">
+                          {rad.etikett}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-muted">
+                          {rad.komponent}
+                          {rad.vagledning
+                            ? " · vägledning"
+                            : rad.iRegistret
+                              ? " · i registret"
+                              : ""}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-medium text-foreground">
+                        {rad.avskrivningAr > 0 ? `${rad.avskrivningAr} år` : "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-muted">
+                        {rad.hint}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
+              Aktivera komponenter i steg 3 för att få K3-underlag med
+              avskrivningstider.
+            </p>
+          )}
+
+          <p className="mt-4 rounded-lg border border-primary/15 bg-[#fafcfa] px-3 py-2 text-xs leading-relaxed text-foreground">
+            {K3_FORKLARING.underlag} Justera avskrivningstiderna i steg 3 per
+            underkomponent.
+          </p>
+        </PrintSida>
+
+        <PrintSida sidnummer={6} titel="Planerade underhållstider">
           <p className="text-sm leading-relaxed text-muted">
             Tiderna bygger på underhållstillfällen i registret (steg 3). Justera
             varje kostnad här om riktpriserna blivit för höga eller låga — ändringen
@@ -738,7 +814,7 @@ export function UnderhallsplanSlutsida({
         </PrintSida>
 
         <PrintSida
-          sidnummer={6}
+          sidnummer={7}
           titel="Tips och råd"
           className="print:break-after-auto"
         >

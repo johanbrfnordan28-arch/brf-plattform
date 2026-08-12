@@ -18,7 +18,7 @@ export default function ForeningUnderhallsplanPage() {
     <ModulePage
       title="Underhållsplan"
       icon="🔧"
-      intro="Här skapar ni föreningens egen underhållsplan — enkel, överskådlig och anpassad för er. Styrelsen ändrar fritt i er plan. Öppna grundmallen skrivskyddat när ni vill se den centrala mallen, och importera saknade delar till er plan. Slutsidan är er summering, klar för stämman."
+      intro="Här skapar ni föreningens egen underhållsplan — enkel, överskådlig och anpassad för er. Styrelsen ändrar fritt i er plan. Komponentregistret innehåller avskrivningstider som underlag till K3 (från 2026). Öppna grundmallen skrivskyddat när ni vill se den centrala mallen. Slutsidan är er summering, klar för stämman."
     >
       <TipsPanel tips={tips.underhallsplan} />
       <UnderhallsplanWizard />

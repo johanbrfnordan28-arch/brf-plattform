@@ -1689,6 +1689,16 @@ export function UnderhallsplanWizard() {
           )}
         </p>
 
+        {!skrivskyddad && (
+          <p className="mt-3 rounded-lg border border-primary/20 bg-[#eef6f0]/50 px-3 py-2 text-xs leading-relaxed text-muted">
+            <strong className="font-medium text-foreground">K3 från 2026:</strong>{" "}
+            Komponentregistret är grunden även för komponentavskrivning. Ange
+            avskrivningstid (nyttjandeperiod) per del — den skiljer sig från
+            underhållsintervall. Underlaget visas på slutsidan och kan användas
+            tillsammans med ekonomisk förvaltare.
+          </p>
+        )}
+
         {renoveringarSaved && (
           <div className="mt-4">
             <KommandeUnderhallSammanfattning

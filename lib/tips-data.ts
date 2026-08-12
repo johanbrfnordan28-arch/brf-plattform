@@ -17,6 +17,11 @@ export const tips: Record<string, TipsPunkt[]> = {
       text: "Styrelsen ändrar fritt i föreningens underhållsplan. Öppna grundmallen skrivskyddat för att se den, och importera saknade delar i steg 3 — utan att er sparade plan skrivs över automatiskt.",
     },
     {
+      ikon: "📐",
+      titel: "K3 och avskrivningstider",
+      text: "Från 2026 gäller K3 för BRF. I komponentregistret anges avskrivningstid per del — underlag till anläggningsregistret, skilt från underhållsintervall. Se slutsidans K3-avsnitt.",
+    },
+    {
       ikon: "📋",
       titel: "Redo för stämman",
       text: "Slutsidan genererar en 50-årsbudget med avsättningsförslag — enkel att skriva ut eller spara som PDF till stämmounderlaget.",
