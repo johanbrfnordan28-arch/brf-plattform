@@ -44,6 +44,21 @@ export type PlanAvsattning = {
   summaAvsattningPlanperiodKr: number;
 };
 
+/**
+ * Typisk avsättning för BRF (kr/m² bo- och lokalyta och år).
+ * Auto-beräkning från planerade investeringar får inte pressa upp över max —
+ * orimligt höga åtgärdskostnader ska justeras i registret, inte i avsättningen.
+ */
+export const TYPISK_AVSATTNING_KR_PER_KVM = {
+  min: 200,
+  lage: 400,
+  hog: 600,
+  /** Tak för autosatt/klampad avsättning. */
+  max: 600,
+  /** Vid återställning av orimligt högt sparat värde. */
+  standard: 500,
+} as const;
+
 /** Summerar alla planerade investeringsbelopp inom planperioden. */
 export function summaPlaneradeInvesteringar(
   atgarder: UnderhallAtgard[],
@@ -56,7 +71,7 @@ export function summaPlaneradeInvesteringar(
 
 /**
  * Jämn avsättning kr/m²/år som motsvarar att totala planerade investeringar
- * fördelas jämnt över planperioden och avsättningsytan.
+ * fördelas jämnt över planperioden och avsättningsytan (obegränsad).
  */
 export function beraknaRekommenderadKrPerKvmAr(
   summaInvesteringKr: number,
@@ -67,6 +82,42 @@ export function beraknaRekommenderadKrPerKvmAr(
     return null;
   }
   return Math.max(1, Math.round(summaInvesteringKr / (boareaM2 * planLangdAr)));
+}
+
+/** Begränsar avsättning till typiskt intervall (max 600 kr/m²/år). */
+export function begransaAvsattningKrPerKvmAr(value: number): number {
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return Math.min(value, TYPISK_AVSATTNING_KR_PER_KVM.max);
+}
+
+export type ForeslagenAvsattning = {
+  /** Obegränsat värde från planerade investeringar. */
+  obegransad: number | null;
+  /** Förslag att sätta i planen — aldrig över typiskt max. */
+  foreslagen: number | null;
+  /** true om obegränsad ligger över typiskt max. */
+  overTypiskt: boolean;
+};
+
+export function beraknaForeslagenAvsattningKrPerKvmAr(
+  summaInvesteringKr: number,
+  boareaM2: number,
+  planLangdAr: number,
+): ForeslagenAvsattning {
+  const obegransad = beraknaRekommenderadKrPerKvmAr(
+    summaInvesteringKr,
+    boareaM2,
+    planLangdAr,
+  );
+  if (obegransad == null) {
+    return { obegransad: null, foreslagen: null, overTypiskt: false };
+  }
+  const overTypiskt = obegransad > TYPISK_AVSATTNING_KR_PER_KVM.max;
+  return {
+    obegransad,
+    foreslagen: begransaAvsattningKrPerKvmAr(obegransad),
+    overTypiskt,
+  };
 }
 
 export function beraknaPlanAvsattning(

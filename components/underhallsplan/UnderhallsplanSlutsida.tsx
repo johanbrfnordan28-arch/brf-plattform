@@ -19,6 +19,10 @@ import {
 } from "@/components/underhallsplan/plan-terminologi";
 import { samlaK3Underlag } from "@/components/underhallsplan/k3-underlag";
 import { K3_FORKLARING } from "@/components/underhallsplan/komponent-avskrivning";
+import { summeraKomponentBeloppFranTidslista } from "@/components/underhallsplan/komponent-belopp-summering";
+import {
+  TYPISK_AVSATTNING_KR_PER_KVM,
+} from "@/components/underhallsplan/plan-budget-sammanfattning";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
 import {
   formateraKomponentSammanfattning,
@@ -207,6 +211,11 @@ export function UnderhallsplanSlutsida({
     [activeComponents, komponentDetaljer],
   );
 
+  const komponentBelopp = useMemo(
+    () => summeraKomponentBeloppFranTidslista(underhallTidslista),
+    [underhallTidslista],
+  );
+
   const lockedClass = !unlocked ? "pointer-events-none opacity-50" : "";
 
   function exporteraPdf() {
@@ -321,11 +330,76 @@ export function UnderhallsplanSlutsida({
                   </span>{" "}
                   i jämn avsättning.
                 </p>
+                {(krPerKvmAr < TYPISK_AVSATTNING_KR_PER_KVM.lage ||
+                  krPerKvmAr > TYPISK_AVSATTNING_KR_PER_KVM.hog) && (
+                  <p className="mt-3 rounded-lg border border-amber-300/70 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
+                    Typisk avsättning ligger ofta kring{" "}
+                    {TYPISK_AVSATTNING_KR_PER_KVM.lage}–
+                    {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²/år. Justera i steg 6
+                    och kontrollera komponentbeloppen nedan om siffran känns
+                    orimlig.
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-sm text-amber-950">
                 Ange boarea och lokalyta i steg 1 och avsättning (kr/m²/år) i steg 6 för att
                 visa beräkningen.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 rounded-xl border border-border bg-background/80 p-5">
+            <h3 className="font-semibold text-foreground">
+              Komponenter och belopp i planen
+            </h3>
+            <p className="mt-1 text-xs text-muted">
+              Summering av planerade kostnader per komponent (från underhållstillfällen
+              i registret). Justera enskilda belopp på sidan «Planerade underhållstider».
+            </p>
+            {komponentBelopp.length > 0 ? (
+              <ul className="mt-4 space-y-3">
+                {komponentBelopp.map((k) => (
+                  <li
+                    key={k.komponent}
+                    className="rounded-lg border border-border bg-white px-3 py-2.5"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="font-medium text-foreground">
+                        {k.komponent}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-primary-dark">
+                        {formatKr(k.summaKr)}
+                      </span>
+                    </div>
+                    <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
+                      {k.delar.map((d) => (
+                        <li
+                          key={d.etikett}
+                          className="flex justify-between gap-3"
+                        >
+                          <span>{d.etikett}</span>
+                          <span className="shrink-0 tabular-nums">
+                            {formatKr(d.summaKr)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-muted">
+                Inga planerade kostnader med belopp ännu — fyll i tillfällen och
+                priser i steg 3.
+              </p>
+            )}
+            {komponentBelopp.length > 0 && (
+              <p className="mt-3 text-sm font-medium text-foreground">
+                Totalt i listan:{" "}
+                {formatKrStor(
+                  komponentBelopp.reduce((s, k) => s + k.summaKr, 0),
+                )}
               </p>
             )}
           </div>
@@ -616,22 +690,45 @@ export function UnderhallsplanSlutsida({
             <h3 className="font-semibold text-foreground">Komponentregister</h3>
             <p className="mt-1 text-xs text-muted">
               Grunden för planen och för K3-komponentindelning — aktiverade delar
-              med mått och sammanfattning.
+              med mått, sammanfattning och planerat belopp.
             </p>
-            <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+            <ul className="mt-3 max-h-80 space-y-2 overflow-y-auto">
               {activeComponents.map((name) => {
                 const data = komponentDetaljer[name];
                 const mall = hamtaKomponentMall(name);
+                const belopp = komponentBelopp.find((k) => k.komponent === name);
                 return (
                   <li
                     key={name}
                     className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
                   >
-                    <span className="font-medium">{name}</span>
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="font-medium">{name}</span>
+                      {belopp && belopp.summaKr > 0 && (
+                        <span className="text-xs font-semibold tabular-nums text-primary-dark">
+                          {formatKr(belopp.summaKr)}
+                        </span>
+                      )}
+                    </div>
                     {data && (
                       <p className="mt-1 text-xs text-muted">
                         {formateraKomponentSammanfattning(data, mall)}
                       </p>
+                    )}
+                    {belopp && belopp.delar.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
+                        {belopp.delar.map((d) => (
+                          <li
+                            key={d.etikett}
+                            className="flex justify-between gap-2"
+                          >
+                            <span>{d.etikett}</span>
+                            <span className="tabular-nums">
+                              {formatKr(d.summaKr)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </li>
                 );

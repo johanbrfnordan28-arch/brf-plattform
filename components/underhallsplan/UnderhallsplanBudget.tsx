@@ -11,7 +11,8 @@ import type { Samfallighetsavgift } from "@/components/underhallsplan/samfalligh
 import {
   beraknaPlanUtgiftsRader,
   beraknaPlanAvsattning,
-  beraknaRekommenderadKrPerKvmAr,
+  beraknaForeslagenAvsattningKrPerKvmAr,
+  TYPISK_AVSATTNING_KR_PER_KVM,
   summaPlaneradeInvesteringar,
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
 import {
@@ -114,9 +115,9 @@ export function UnderhallsplanBudget({
     [underhallAtgarder, planStartAr, planLangdAr],
   );
 
-  const rekommenderadKrPerKvmAr = useMemo(
+  const foreslagenAvsattning = useMemo(
     () =>
-      beraknaRekommenderadKrPerKvmAr(
+      beraknaForeslagenAvsattningKrPerKvmAr(
         summaInvesteringPlan,
         boareaM2,
         planLangdAr,
@@ -124,8 +125,12 @@ export function UnderhallsplanBudget({
     [summaInvesteringPlan, boareaM2, planLangdAr],
   );
 
+  const rekommenderadKrPerKvmAr = foreslagenAvsattning.foreslagen;
+  const obegransadKrPerKvmAr = foreslagenAvsattning.obegransad;
+
   const avsattningUnderRekommendation =
     rekommenderadKrPerKvmAr != null &&
+    !foreslagenAvsattning.overTypiskt &&
     krPerKvmAr < Math.round(rekommenderadKrPerKvmAr * 0.95);
 
   const registerKostnader = sammanstallRegisterKostnader(
@@ -375,11 +380,14 @@ export function UnderhallsplanBudget({
             Avsättning i årsbudgeten (kr/m² och år)
           </p>
           <p className="mt-1 text-xs text-muted">
-            <strong className="font-medium text-foreground">Två delar:</strong>{" "}
-            kolumnen <em>Investering (plan)</em> visar när större åtgärder sker (steg
-            3). Fältet kr/m²/år är den jämna avsättningen varje år — det{" "}
-            <strong className="font-medium">höjs automatiskt</strong> när planens
-            totala investeringskostnad ökar (aldrig sänks automatiskt).
+            Typisk nivå för bostadsrättsföreningar är ungefär{" "}
+            <strong className="font-medium text-foreground">
+              {TYPISK_AVSATTNING_KR_PER_KVM.lage}–{TYPISK_AVSATTNING_KR_PER_KVM.hog}{" "}
+              kr/m²/år
+            </strong>
+            . Kolumnen <em>Investering (plan)</em> visar när större åtgärder sker —
+            orimligt höga åtgärdskostnader ska justeras i steg 3/slutsidan, inte
+            genom att höja avsättningen till flera miljoner per år.
           </p>
 
           {summaInvesteringPlan > 0 && boareaM2 > 0 && (
@@ -391,28 +399,40 @@ export function UnderhallsplanBudget({
                 Summa investeringar i planen ({planStartAr}–{planSlutAr}):{" "}
                 <strong>{formatKr(summaInvesteringPlan)}</strong>
               </p>
-              {rekommenderadKrPerKvmAr != null && (
+              {obegransadKrPerKvmAr != null && (
                 <>
                   <p className="mt-2 text-sm text-foreground">
-                    För att avsättningen ska motsvara samma total över{" "}
-                    {planLangdAr} år och {boareaM2.toLocaleString("sv-SE")} m²
-                    bo- och lokalyta: cirka{" "}
-                    <strong>{rekommenderadKrPerKvmAr} kr/m²/år</strong> (
-                    {formatKr(rekommenderadKrPerKvmAr * boareaM2)}/år).
+                    Om hela summan fördelas jämnt: cirka{" "}
+                    <strong>{obegransadKrPerKvmAr.toLocaleString("sv-SE")} kr/m²/år</strong>{" "}
+                    ({formatKr(obegransadKrPerKvmAr * boareaM2)}/år).
                   </p>
-                  <p className="mt-1 text-xs text-muted">
-                    Nuvarande val: {krPerKvmAr} kr/m²/år (
-                    {formatKr(komponentArskostnad)}/år).
-                  </p>
-                  {krPerKvmAr !== rekommenderadKrPerKvmAr && (
-                    <button
-                      type="button"
-                      onClick={() => onKrPerKvmArChange(rekommenderadKrPerKvmAr)}
-                      className="mt-3 rounded-lg border border-primary bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
-                    >
-                      Sätt till rekommenderat {rekommenderadKrPerKvmAr} kr/m²/år
-                    </button>
+                  {foreslagenAvsattning.overTypiskt ? (
+                    <p className="mt-2 rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-xs text-amber-950">
+                      Det är långt över typiskt ({TYPISK_AVSATTNING_KR_PER_KVM.lage}–
+                      {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²). Kontrollera beloppen
+                      per komponent i summeringen och justera kostnader — avsättningen
+                      begränsas till max {TYPISK_AVSATTNING_KR_PER_KVM.max} kr/m²/år.
+                    </p>
+                  ) : null}
+                  {rekommenderadKrPerKvmAr != null && (
+                    <p className="mt-1 text-xs text-muted">
+                      Nuvarande val: {krPerKvmAr} kr/m²/år (
+                      {formatKr(komponentArskostnad)}/år). Förslag inom typiskt
+                      intervall: {rekommenderadKrPerKvmAr} kr/m²/år.
+                    </p>
                   )}
+                  {rekommenderadKrPerKvmAr != null &&
+                    krPerKvmAr !== rekommenderadKrPerKvmAr && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onKrPerKvmArChange(rekommenderadKrPerKvmAr)
+                        }
+                        className="mt-3 rounded-lg border border-primary bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                      >
+                        Sätt till {rekommenderadKrPerKvmAr} kr/m²/år
+                      </button>
+                    )}
                 </>
               )}
             </div>
@@ -421,17 +441,15 @@ export function UnderhallsplanBudget({
           {summaInvesteringPlan <= 0 && (
             <p className="mt-3 rounded-lg border border-dashed border-amber-300/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
               Inga planerade investeringar med kostnad hittades ännu. Fyll i kostnad
-              och intervall under steg 3 (tillfällen med pris, eller nästa år +
-              kostnad per underkomponent) och spara komponentregistret — då kan
-              förslag på avsättning räknas fram här.
+              och intervall under steg 3 — då kan förslag på avsättning räknas fram
+              här (inom typiskt intervall).
             </p>
           )}
 
           {avsattningUnderRekommendation && rekommenderadKrPerKvmAr != null && (
             <p className="mt-3 rounded-lg border border-amber-300/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
-              Planens kostnader motsvarar cirka {rekommenderadKrPerKvmAr} kr/m²/år —
-              värdet höjs automatiskt vid nästa ändring i registret om det fortfarande
-              ligger lägre. Du kan också trycka knappen ovan.
+              Planens kostnader motsvarar cirka {rekommenderadKrPerKvmAr} kr/m²/år
+              inom typiskt intervall. Du kan höja med knappen ovan.
             </p>
           )}
 
@@ -443,12 +461,17 @@ export function UnderhallsplanBudget({
               <input
                 type="number"
                 min={0}
+                max={TYPISK_AVSATTNING_KR_PER_KVM.max * 2}
                 value={krPerKvmAr}
                 onChange={(event) =>
                   onKrPerKvmArChange(Number(event.target.value) || 0)
                 }
                 className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
+              <span className="mt-1 block text-xs text-muted">
+                Riktmärke {TYPISK_AVSATTNING_KR_PER_KVM.lage}–
+                {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²/år.
+              </span>
             </label>
             <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm">
               <p className="text-muted">Bo- och lokalyta (avsättningsyta)</p>

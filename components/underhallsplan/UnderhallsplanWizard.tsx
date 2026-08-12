@@ -101,7 +101,9 @@ import {
   parseHeltalFranText,
 } from "@/components/underhallsplan/parse-grundtal";
 import {
-  beraknaRekommenderadKrPerKvmAr,
+  beraknaForeslagenAvsattningKrPerKvmAr,
+  begransaAvsattningKrPerKvmAr,
+  TYPISK_AVSATTNING_KR_PER_KVM,
   summaPlaneradeInvesteringar,
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
 import { samlaAllaUnderhallAtgarder } from "@/components/underhallsplan/underhall-budget";
@@ -364,9 +366,9 @@ function StegPanel({
           {!open && summary && (
             <p className="mt-2 text-sm leading-relaxed text-muted">{summary}</p>
           )}
-          {open && blockerarAndra && (
+          {open && (
             <p className="mt-2 text-xs text-muted">
-              Endast ett steg i taget — stäng detta steg innan du öppnar ett annat.
+              Öppna ett annat steg när som helst — det här stängs automatiskt.
             </p>
           )}
           {isLocked && lasOrsak && (
@@ -570,7 +572,7 @@ export function UnderhallsplanWizard() {
     setSamfallighetsavgift(normaliseraSamfallighetsavgift(state.samfallighetsavgift));
     setRenoveringarLista(state.renoveringarLista);
     setRenoveringSammanfattning(state.renoveringSammanfattning);
-    setKrPerKvmAr(state.krPerKvmAr);
+    setKrPerKvmAr(begransaAvsattningKrPerKvmAr(state.krPerKvmAr));
     setAktivTestplan(state.aktivTestplan);
     setPlanNamn(state.planNamn);
     setPlanNotering(state.planNotering);
@@ -698,7 +700,7 @@ export function UnderhallsplanWizard() {
       samfallighetsavgift,
       renoveringarLista,
       renoveringSammanfattning,
-      krPerKvmAr,
+      krPerKvmAr: begransaAvsattningKrPerKvmAr(krPerKvmAr),
     };
   }
 
@@ -1128,7 +1130,7 @@ export function UnderhallsplanWizard() {
   const skrivskyddad = planLage === "grundmall" && !arGrundmallForening();
   const arCentralGrundmall = arGrundmallForening();
 
-  const autoAvsattningKrPerKvm = useMemo(() => {
+  const autoAvsattning = useMemo(() => {
     if (!laddatFranLager || avsattningsYtaM2 <= 0 || planLangdAr <= 0) {
       return null;
     }
@@ -1145,7 +1147,11 @@ export function UnderhallsplanWizard() {
       planStartAr,
       planLangdAr,
     );
-    return beraknaRekommenderadKrPerKvmAr(summa, avsattningsYtaM2, planLangdAr);
+    return beraknaForeslagenAvsattningKrPerKvmAr(
+      summa,
+      avsattningsYtaM2,
+      planLangdAr,
+    );
   }, [
     laddatFranLager,
     activeComponents,
@@ -1158,12 +1164,28 @@ export function UnderhallsplanWizard() {
   ]);
 
   useEffect(() => {
-    if (!laddatFranLager || autoAvsattningKrPerKvm == null) return;
+    if (!laddatFranLager) return;
     if (planLage === "grundmall" && !arGrundmallForening()) return;
+    // Korrigera orimligt hög sparad avsättning (t.ex. auto-bump från uppblåsta kostnader).
+    setKrPerKvmAr((prev) => {
+      if (prev > TYPISK_AVSATTNING_KR_PER_KVM.max) {
+        return TYPISK_AVSATTNING_KR_PER_KVM.standard;
+      }
+      return prev;
+    });
+  }, [laddatFranLager, planLage]);
+
+  // Föreslå höjning inom typiskt intervall — aldrig över max 600 kr/m².
+  useEffect(() => {
+    if (!laddatFranLager || !autoAvsattning?.foreslagen) return;
+    if (planLage === "grundmall" && !arGrundmallForening()) return;
+    if (autoAvsattning.overTypiskt) return;
     setKrPerKvmAr((prev) =>
-      autoAvsattningKrPerKvm > prev ? autoAvsattningKrPerKvm : prev,
+      autoAvsattning.foreslagen! > prev
+        ? autoAvsattning.foreslagen!
+        : prev,
     );
-  }, [laddatFranLager, autoAvsattningKrPerKvm, planLage]);
+  }, [laddatFranLager, autoAvsattning, planLage]);
   const [openSteg, setOpenSteg] = useState<WizardStegId | null>(null);
   const [stegNavFel, setStegNavFel] = useState<StegNavFel | null>(null);
 
@@ -1212,20 +1234,10 @@ export function UnderhallsplanWizard() {
       return;
     }
 
-    if (openSteg) {
-      const oppnet = WIZARD_STEG_META[openSteg];
-      const mal = WIZARD_STEG_META[id];
-      setStegNavFel({
-        typ: "annat-oppet",
-        targetId: id,
-        oppnetStegId: openSteg,
-        text: `Steg ${oppnet.stegNummer} «${oppnet.titel}» är öppet. Stäng det steget innan du öppnar steg ${mal.stegNummer} «${mal.titel}».`,
-      });
-      return;
-    }
-
+    // Byt steg direkt — ingen särskild stängning krävs.
     setStegNavFel(null);
     setOpenSteg(id);
+    scrollTillSteg(id);
   }
 
   function stegPanelNavProps(id: WizardStegId) {
@@ -1233,9 +1245,8 @@ export function UnderhallsplanWizard() {
       lasOrsak: hamtaStegLasOrsak(id, stegLasStatus),
       navFeedback:
         stegNavFel?.targetId === id ? stegNavFel.text : null,
-      visaStangOchBytKnapp:
-        stegNavFel?.typ === "annat-oppet" && stegNavFel.targetId === id,
-      blockerarAndra: openSteg === id,
+      visaStangOchBytKnapp: false,
+      blockerarAndra: false,
       skrivskyddad,
       onStangOchOppna: stangOchOppnaSteg,
     };
