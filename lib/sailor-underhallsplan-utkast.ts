@@ -1,17 +1,23 @@
 /**
  * Utkast till Brf Sailors underhållsplan — fasta fakta om fastigheten.
  * Taxering/anskaffning ligger i SAILOR_VARDERING_UNDERLAG (visas inte för föreningen).
+ * Yta och ekonomi enligt årsredovisning 2024 (2 756 kvm, 40 bostadsrätter).
  */
 
 import { skapaTomBalkongPost } from "@/components/underhallsplan/balkonger";
 import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkonger";
 import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
 import {
+  HISS_UNDERKOMPONENT_ID,
+  skapaTomHissPost,
+} from "@/components/underhallsplan/hissar";
+import {
   KOMPLEMENT_BYGGNAD_NAMN,
   skapaTomKomponentDetalj,
   synkaUnderhallsplanState,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import { skapaTomPPlatserData } from "@/components/underhallsplan/p-platser";
 import {
   skapaStandardSamfallighetsavgift,
   type Samfallighetsavgift,
@@ -25,16 +31,19 @@ import {
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 
+const P_PLATSER_ID = "p-platser";
+
 export const SAILOR_PLAN_NOTERING = [
-  "Utkast — JM-bygge 2013, Gustavsberg 1:395.",
-  "40 lägenheter, 50 badrum.",
-  "Fasad: tunnputs i dåligt skick — planera bättringsputs och ommålning.",
+  "Utkast — JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
+  "40 bostadsrätter, 2 756 kvm boyta, 50 badrum.",
+  "40 p-platser varav 20 med motorvärmare.",
+  "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras.",
   "Tak: bandlagt plåttak.",
-  "36 balkonger.",
+  "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam).",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
-  "Gemensam gård sköts av samfällighet — ingår inte i föreningens egna markåtgärder.",
+  "Gemensam gård sköts av Farstadals samfällighetsförening — ingår inte i föreningens egna markåtgärder.",
 ].join(" ");
 
 const SAILOR_AKTIVA_KOMPONENTER = [
@@ -69,15 +78,25 @@ function aktivera(
 
 function byggSailorBesiktningar(): Besiktning[] {
   return skapaStandardBesiktningar().map((b) => {
-    if (b.id !== "ovk") return b;
-    return {
-      ...b,
-      aktiv: true,
-      intervallAr: 6,
-      /** OVK-protokoll 2026-03-02 — nästa ordinarie 2032-03-02 */
-      senastUtförtAr: 2026,
-      nastaBesiktningAr: 2032,
-    };
+    if (b.id === "ovk") {
+      return {
+        ...b,
+        aktiv: true,
+        intervallAr: 6,
+        /** OVK-protokoll 2026-03-02 — nästa ordinarie 2032-03-02 */
+        senastUtförtAr: 2026,
+        nastaBesiktningAr: 2032,
+      };
+    }
+    if (b.id === "hiss") {
+      return {
+        ...b,
+        aktiv: true,
+        antalHissar: 3,
+        intervallAr: 1,
+      };
+    }
+    return b;
   });
 }
 
@@ -133,9 +152,20 @@ export function byggSailorKomponentUtkast(): {
       })),
       valdaDeltyper: ["bandlaggd-plat"],
     },
-    Trapphus: aktivera("Trapphus", ["lagenhetsdorrar"], () => ({
-      värde: "40",
-    })),
+    Trapphus: {
+      ...aktivera("Trapphus", ["lagenhetsdorrar", HISS_UNDERKOMPONENT_ID], (r) =>
+        r.id === "lagenhetsdorrar"
+          ? { värde: "40" }
+          : { värde: "3" },
+      ),
+      hissRegister: {
+        [HISS_UNDERKOMPONENT_ID]: [
+          { ...skapaTomHissPost("Hiss hus 25"), marke: "kone", hissTyp: "motvikt" },
+          { ...skapaTomHissPost("Hiss hus 27"), marke: "kone", hissTyp: "motvikt" },
+          { ...skapaTomHissPost("Hiss hus 29"), marke: "kone", hissTyp: "motvikt" },
+        ],
+      },
+    },
     VVS: {
       ...aktivera("VVS", ["stambyte"], () => ({
         underhallNastaAr: String(planStartAr + 25),
@@ -202,10 +232,22 @@ export function byggSailorKomponentUtkast(): {
       () => ({ värde: "1" }),
     ),
     [KOMPLEMENT_BYGGNAD_NAMN]: {
-      ...aktivera(KOMPLEMENT_BYGGNAD_NAMN, ["cykelrum", "soprum"], () => ({
-        värde: "1",
-      })),
+      ...aktivera(
+        KOMPLEMENT_BYGGNAD_NAMN,
+        ["cykelrum", "soprum", P_PLATSER_ID],
+        (r) =>
+          r.id === P_PLATSER_ID
+            ? { värde: "40" }
+            : { värde: "1" },
+      ),
       valdaDeltyper: ["mark"],
+      pPlatserRegister: {
+        [P_PLATSER_ID]: {
+          ...skapaTomPPlatserData(),
+          motordvarmare: "20",
+          "p-plats": "20",
+        },
+      },
     },
   };
 
@@ -213,7 +255,6 @@ export function byggSailorKomponentUtkast(): {
     [...SAILOR_AKTIVA_KOMPONENTER],
     registerIn,
     {
-      // Hiss nämns inte — aktivera bara balkong/styr som finns i utkastet
       aktiveraVillkorliga: false,
       skrivOverAvskrivning: true,
       varderingsUnderlag: SAILOR_VARDERING_UNDERLAG,
@@ -229,7 +270,7 @@ export function byggSailorKomponentUtkast(): {
   samfallighet.aktiv = true;
   samfallighet.arligAvgiftKr = 85_000;
   samfallighet.notering =
-    "Gemensam gård sköts av samfällighet — snöröjning, grönytor och gemensamma ytor ingår där.";
+    "Farstadals samfällighetsförening — snöröjning, grönytor och gemensamma ytor ingår där.";
   for (const post of samfallighet.poster) {
     if (
       ["tradgard", "skotsel", "snorojning", "vagunderhall", "belysning"].includes(

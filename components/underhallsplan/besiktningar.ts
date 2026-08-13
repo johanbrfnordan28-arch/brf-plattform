@@ -550,21 +550,50 @@ function sbaKostnadPerAr(
   return perAr;
 }
 
+/** Komponent i underhållsplanen som besiktningen hör till. */
+export function besiktningKomponentNamn(id: BesiktningId): string {
+  switch (id) {
+    case "ovk":
+      return "Ventilation";
+    case "hiss":
+      return "Trapphus";
+    case "sba":
+      return "Brandskydd";
+    case "sotning":
+      return "Skorsten / eldstad";
+    case "radon":
+    case "energideklaration":
+      return "Byggnad";
+    default:
+      return "Övrigt";
+  }
+}
+
+export type BesiktningUtgiftspost = {
+  namn: string;
+  belopp: number;
+  formel?: string;
+  /** Komponent i underhållsplanen som posten avser. */
+  komponent: string;
+};
+
 export function besiktningPosterForAr(
   b: Besiktning,
   antalLagenheter: number,
   ar: number,
-): { namn: string; belopp: number; formel?: string }[] {
+): BesiktningUtgiftspost[] {
   if (!b.aktiv || ingarEjIForeningensBudget(b)) return [];
+  const komponent = besiktningKomponentNamn(b.id);
 
   if (b.id === "ovk") {
-    const poster: { namn: string; belopp: number; formel?: string }[] = [];
+    const poster: BesiktningUtgiftspost[] = [];
     const bostadKost = beraknaOvkBostadKostnad(b, antalLagenheter);
     if (bostadKost > 0 && arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) {
       poster.push({
         namn: "OVK bostäder",
         belopp: bostadKost,
         formel: `${b.kostnadPerLagenhetKr} kr × ${antalLagenheter} lgh`,
+        komponent,
       });
     }
     const verksamhetKost = beraknaOvkVerksamhetKostnad(b);
@@ -576,6 +605,7 @@ export function besiktningPosterForAr(
           namn: "OVK verksamhetslokaler",
           belopp: verksamhetKost,
           formel: `${b.kostnadPerVerksamhetKr ?? OVK_DEFAULT_VERKSAMHET_KR} kr × ${b.antalVerksamheter} lokaler`,
+          komponent,
         });
       }
     }
@@ -583,13 +613,14 @@ export function besiktningPosterForAr(
   }
 
   if (b.id === "sba") {
-    const poster: { namn: string; belopp: number; formel?: string }[] = [];
+    const poster: BesiktningUtgiftspost[] = [];
     const egenKost = beraknaSbaEgenkontrollKostnad(b);
     if (egenKost > 0 && arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) {
       poster.push({
         namn: "SBA egenkontroll",
         belopp: egenKost,
         formel: `${b.kostnadFastKr} kr (årlig)`,
+        komponent,
       });
     }
     const konsultKost = beraknaSbaBrandkonsultKostnad(b);
@@ -601,6 +632,7 @@ export function besiktningPosterForAr(
           namn: "SBA brandkonsult",
           belopp: konsultKost,
           formel: `${b.sbaBrandkonsultKostnadKr ?? SBA_DEFAULT_BRANDKONSULT_KR} kr`,
+          komponent,
         });
       }
     }
@@ -618,6 +650,7 @@ export function besiktningPosterForAr(
       namn: b.namn,
       belopp,
       formel: besiktningKostnadFormel(b, antalLagenheter),
+      komponent,
     },
   ];
 }
@@ -655,7 +688,7 @@ export function besiktningKostnadPerAr(
 
 export type BesiktningBudgetAr = {
   ar: number;
-  poster: { namn: string; belopp: number; formel?: string }[];
+  poster: BesiktningUtgiftspost[];
   summaBesiktningar: number;
 };
 
@@ -665,11 +698,10 @@ export function sammanstallBesiktningBudget(
   planStartAr: number,
   planLangdAr: number = standardPlanLangdAr,
 ): BesiktningBudgetAr[] {
-  const planSlutAr = planStartAr + planLangdAr - 1;
   const arLista = Array.from({ length: planLangdAr }, (_, i) => planStartAr + i);
 
   return arLista.map((ar) => {
-    const poster: { namn: string; belopp: number; formel?: string }[] = [];
+    const poster: BesiktningUtgiftspost[] = [];
 
     for (const b of besiktningar) {
       for (const post of besiktningPosterForAr(b, antalLagenheter, ar)) {

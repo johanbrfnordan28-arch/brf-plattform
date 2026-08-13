@@ -14,7 +14,10 @@ export const SAILOR_PROFIL = {
   grundinfoPaborjad: true,
 } as const;
 
-/** Grunduppgifter i underhållsplanen — endast Sailor. */
+/**
+ * Grunduppgifter — enligt årsredovisning 2024
+ * (40 bostadsrätter, 2 756 kvm, Gustavsberg 1:395).
+ */
 export const SAILOR_GRUND: Pick<
   Grunduppgifter,
   | "boarea"
@@ -27,28 +30,27 @@ export const SAILOR_GRUND: Pick<
   | "ventilationssystem"
   | "fastighetsbeteckning"
 > = {
-  boarea: "2 900",
+  boarea: "2 756",
   antalLagenheter: "40",
   antalVaningar: "4",
   antalByggnader: "3",
   byggar: "2013",
   uppvarmning: "Fjärrvärme",
-  /** OVK 2026: systemtyp F/FX — frånluftsaggregat Exhausto FX (inte FTX). */
+  /** OVK 2026: FX — frånluft med värmeåtervinning (inte FTX). */
   ventilationssystem: "FX — frånluftsfläkt med värmeåtervinning",
   fastighetsbeteckning: "Gustavsberg 1:395",
   adresser: ["Publikvägen 25", "Publikvägen 27", "Publikvägen 29"],
 };
 
 /**
- * Internt värderingsunderlag för Sailor — får ALDRIG visas för föreningen.
- * Skalat till 2 756 m² utifrån typiska kr/m² i årsredovisning 2025
- * (taxering / anskaffning / mark) för jämförbar Gustavsbergsfastighet.
+ * Internt värderingsunderlag — får ALDRIG visas för föreningen.
+ * Källa: årsredovisning 2024, not 10 Byggnad och mark.
  */
 export const SAILOR_VARDERING_UNDERLAG: FastighetsVarderingsUnderlag = {
-  taxeringsvardeByggnadKr: 66_367_000,
-  taxeringsvardeMarkKr: 12_776_000,
-  anskaffningsvardeTotaltKr: 142_422_000,
-  markAnskaffningsvardeKr: 29_398_000,
+  taxeringsvardeByggnadKr: 54_000_000,
+  taxeringsvardeMarkKr: 14_400_000,
+  anskaffningsvardeTotaltKr: 104_605_000,
+  markAnskaffningsvardeKr: 22_158_148,
 };
 
 export function arSailorForening(foreningId?: string | null): boolean {

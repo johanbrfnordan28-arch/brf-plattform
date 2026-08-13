@@ -6,10 +6,12 @@ import { hamtaAktivForeningsNamn, arGrundmallForening } from "@/lib/forening-reg
 import { formatKr } from "@/components/underhallsplan/besiktningar";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
+import { laddaNerUnderhallsplanExcel } from "@/components/underhallsplan/exportera-underhallsplan-excel";
 import {
   beraknaPlanAvsattning,
   beraknaPlanUtgiftsRader,
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
+import { samlaAllaUnderhallAtgarder } from "@/components/underhallsplan/underhall-budget";
 import { PlanPresentationDiagram } from "@/components/underhallsplan/PlanPresentationDiagram";
 import {
   FORKLARING_AVSATTNING,
@@ -236,8 +238,89 @@ export function UnderhallsplanSlutsida({
 
   const lockedClass = !unlocked ? "pointer-events-none opacity-50" : "";
 
+  const underhallAtgarder = useMemo(
+    () =>
+      samlaAllaUnderhallAtgarder(
+        activeComponents,
+        komponentDetaljer,
+        renoveringarLista,
+        planStartAr,
+        planLangdAr,
+        planKostnader,
+      ),
+    [
+      activeComponents,
+      komponentDetaljer,
+      renoveringarLista,
+      planStartAr,
+      planLangdAr,
+      planKostnader,
+    ],
+  );
+
   function exporteraPdf() {
     window.print();
+  }
+
+  function exporteraExcel() {
+    const foreningsNamn =
+      hamtaStyrelseKontakt()?.foreningsnamn ||
+      hamtaAktivForeningsNamn() ||
+      "Förening";
+    laddaNerUnderhallsplanExcel(
+      {
+        foreningsNamn,
+        planNamn: planNamn?.trim() || titel,
+        planStartAr,
+        planSlutAr,
+        boareaM2: avsattningsYtaM2,
+        antalLagenheter: antalLgh,
+        krPerKvmAr,
+        arligAvsattningKr: avsattning.arligAvsattningKr,
+        planNotering,
+        grundRader: [
+          {
+            etikett: "Adress",
+            värde: grund.adresser.filter(Boolean).join(", ") || "—",
+          },
+          {
+            etikett: "Boarea",
+            värde:
+              parseHeltalFranText(grundNorm.boarea) > 0
+                ? `${parseHeltalFranText(grundNorm.boarea).toLocaleString("sv-SE")} m²`
+                : "—",
+          },
+          {
+            etikett: "Lägenheter",
+            värde: antalLgh > 0 ? String(antalLgh) : "—",
+          },
+          {
+            etikett: "Uppvärmning",
+            värde: grund.uppvarmning || "—",
+          },
+          {
+            etikett: "Ventilation",
+            värde: grund.ventilationssystem || "—",
+          },
+          {
+            etikett: "Fastighetsbeteckning",
+            värde: grund.fastighetsbeteckning || "—",
+          },
+          {
+            etikett: "Byggår",
+            värde: grund.byggar || "—",
+          },
+        ],
+        utgiftsRader,
+        atgarder: underhallAtgarder,
+        komponentVarden: k3Underlag.map((r) => ({
+          komponent: `${r.komponent} — ${r.etikett}`,
+          installationskostnadKr: r.installationskostnadKr,
+          avskrivningAr: r.avskrivningAr,
+        })),
+      },
+      `${foreningsNamn}-underhallsplan`,
+    );
   }
 
   return (
@@ -617,6 +700,69 @@ export function UnderhallsplanSlutsida({
                   </div>
                 </div>
               ))}
+          </div>
+
+          <div className="mt-8">
+            <h3 className="text-base font-semibold text-foreground">
+              Utgifter per komponent
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              Besiktningar och investeringar med vilken komponent i planen som
+              avses.
+            </p>
+            <div className="mt-4 space-y-3">
+              {utgiftsRader
+                .filter(
+                  (r) =>
+                    r.besiktningPoster.length > 0 ||
+                    r.investeringPoster.length > 0,
+                )
+                .map((rad) => (
+                  <div
+                    key={`poster-${rad.ar}`}
+                    className="rounded-lg border border-border bg-background/80 px-3 py-2.5"
+                  >
+                    <p className="text-sm font-semibold text-foreground">
+                      {rad.ar}
+                    </p>
+                    {rad.besiktningPoster.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 text-sm text-muted">
+                        {rad.besiktningPoster.map((p) => (
+                          <li key={`${p.komponent}-${p.namn}`}>
+                            <span className="font-medium text-foreground/85">
+                              {p.komponent}
+                            </span>
+                            {" · "}
+                            {p.namn}: {formatKr(p.belopp)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {rad.investeringPoster.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 text-sm text-muted">
+                        {rad.investeringPoster.map((p, i) => (
+                          <li key={`${p.komponent}-${p.namn}-${i}`}>
+                            <span className="font-medium text-violet-900/90">
+                              {p.komponent}
+                            </span>
+                            {" · "}
+                            {p.namn}: {formatKr(p.belopp)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              {utgiftsRader.every(
+                (r) =>
+                  r.besiktningPoster.length === 0 &&
+                  r.investeringPoster.length === 0,
+              ) && (
+                <p className="text-sm text-muted">
+                  Inga besiktningar eller investeringar schemalagda i perioden.
+                </p>
+              )}
+            </div>
           </div>
         </PrintSida>
 
@@ -1017,9 +1163,16 @@ export function UnderhallsplanSlutsida({
           >
             Skriv ut / spara som PDF
           </button>
+          <button
+            type="button"
+            onClick={exporteraExcel}
+            className="rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-medium text-foreground hover:bg-surface"
+          >
+            Ladda ner Excel
+          </button>
           <p className="self-center text-xs text-muted">
-            Välj &quot;Spara som PDF&quot; i utskriftsdialogen. Varje avsnitt blir
-            en egen sida.
+            PDF via utskriftsdialogen. Excel-filen innehåller grunddata, utgifter
+            per år, poster med komponent samt åtgärder.
           </p>
         </div>
       </div>

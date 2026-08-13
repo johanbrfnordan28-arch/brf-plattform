@@ -15,6 +15,13 @@ import {
   type UnderhallAtgard,
 } from "@/components/underhallsplan/underhall-budget";
 
+export type PlanUtgiftspost = {
+  namn: string;
+  belopp: number;
+  /** Komponent i underhållsplanen som posten avser. */
+  komponent: string;
+};
+
 /** Årsvis uppdelning: utgifter i årsbudgeten vs investeringar enligt plan. */
 export type PlanUtgiftsArRad = {
   ar: number;
@@ -28,7 +35,10 @@ export type PlanUtgiftsArRad = {
   utgifterArsbudget: number;
   /** Investering + utgifter i årsbudget (kassaflöde totalt det året). */
   totaltKassaflode: number;
-  besiktningPoster: { namn: string; belopp: number }[];
+  /** Besiktningar och samfällighet — med komponent. */
+  besiktningPoster: PlanUtgiftspost[];
+  /** Planerade investeringar det året — med komponent. */
+  investeringPoster: PlanUtgiftspost[];
 };
 
 /** @deprecated Använd PlanUtgiftsArRad */
@@ -189,13 +199,25 @@ export function beraknaPlanUtgiftsRader(input: {
     const investeringPlan = underhallPerAr[rad.ar] ?? 0;
     const besiktningarSumma = rad.summaBesiktningar + samfallighetPerAr;
     const utgifterArsbudget = besiktningarSumma + avsattning.arligAvsattningKr;
-    const poster = rad.poster.map((p) => ({
+    const poster: PlanUtgiftspost[] = rad.poster.map((p) => ({
       namn: p.namn,
       belopp: p.belopp,
+      komponent: p.komponent,
     }));
     if (samfallighetPerAr > 0) {
-      poster.push({ namn: "Samfällighetsavgift", belopp: samfallighetPerAr });
+      poster.push({
+        namn: "Samfällighetsavgift",
+        belopp: samfallighetPerAr,
+        komponent: "Samfällighet",
+      });
     }
+    const investeringPoster: PlanUtgiftspost[] = underhallAtgarder
+      .filter((a) => a.ar === rad.ar)
+      .map((a) => ({
+        namn: a.del,
+        belopp: a.kostnadKr,
+        komponent: a.komponent,
+      }));
     return {
       ar: rad.ar,
       avsattning: avsattning.arligAvsattningKr,
@@ -204,6 +226,7 @@ export function beraknaPlanUtgiftsRader(input: {
       utgifterArsbudget,
       totaltKassaflode: utgifterArsbudget + investeringPlan,
       besiktningPoster: poster,
+      investeringPoster,
     };
   });
 }

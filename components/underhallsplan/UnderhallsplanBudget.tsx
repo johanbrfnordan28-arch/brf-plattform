@@ -225,7 +225,11 @@ export function UnderhallsplanBudget({
                       {rad.besiktningPoster.length > 0 ? (
                         <ul className="space-y-0.5">
                           {rad.besiktningPoster.map((p) => (
-                            <li key={p.namn}>
+                            <li key={`${p.komponent}-${p.namn}`}>
+                              <span className="text-foreground/80">
+                                {p.komponent}
+                              </span>
+                              {" · "}
                               {p.namn}: {formatKr(p.belopp)}
                             </li>
                           ))}
