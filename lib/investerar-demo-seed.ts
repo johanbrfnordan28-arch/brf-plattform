@@ -18,6 +18,7 @@ import type { Grunduppgifter } from "@/components/underhallsplan/types";
 import {
   appliceraSailorGrund,
   arSailorForening,
+  SAILOR_PLAN_START_AR,
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
@@ -73,7 +74,14 @@ export function byggLagratStateFranTestplan(
     planNamn: uppdateraPlanTitelMedLagenheter(titelBas, antalLgh),
     planNotering,
     grund,
-    planinstallningar: normaliseraPlaninstallningar(plan.planinstallningar),
+    planinstallningar: normaliseraPlaninstallningar(
+      arSailorForening(options?.foreningId)
+        ? {
+            ...plan.planinstallningar,
+            planStartAr: String(SAILOR_PLAN_START_AR),
+          }
+        : plan.planinstallningar,
+    ),
     grundSaved: true,
     renoveringarSaved: false,
     komponenterSaved: arSailor,

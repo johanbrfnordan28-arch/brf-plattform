@@ -83,6 +83,7 @@ function byggUtgifterBlad(rader: PlanUtgiftsArRad[]): string {
     cellString("År"),
     cellString("Avsättning kr"),
     cellString("Besiktning m.m. kr"),
+    cellString("Kostnadsfört underhåll kr"),
     cellString("Utgifter årsbudget kr"),
     cellString("Investering plan kr"),
     cellString("Kassaflöde totalt kr"),
@@ -92,6 +93,7 @@ function byggUtgifterBlad(rader: PlanUtgiftsArRad[]): string {
       cellNumber(r.ar),
       cellNumber(r.avsattning),
       cellNumber(r.besiktningar),
+      cellNumber(r.direktkostnader),
       cellNumber(r.utgifterArsbudget),
       cellNumber(r.investeringPlan),
       cellNumber(r.totaltKassaflode),
@@ -115,6 +117,17 @@ function byggPosterBlad(rader: PlanUtgiftsArRad[]): string {
         row([
           cellNumber(r.ar),
           cellString("Besiktning / avgift"),
+          cellString(p.komponent),
+          cellString(p.namn),
+          cellNumber(p.belopp),
+        ]),
+      );
+    }
+    for (const p of r.direktkostnadPoster) {
+      body.push(
+        row([
+          cellNumber(r.ar),
+          cellString("Kostnadsfört underhåll"),
           cellString(p.komponent),
           cellString(p.namn),
           cellNumber(p.belopp),

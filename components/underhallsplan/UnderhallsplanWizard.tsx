@@ -61,6 +61,7 @@ import {
 import {
   appliceraSailorGrund,
   arSailorForening,
+  SAILOR_PLAN_START_AR,
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
@@ -625,6 +626,10 @@ export function UnderhallsplanWizard() {
         besiktningar: utkast.besiktningar,
         krPerKvmAr: utkast.krPerKvmAr,
         varderingsUnderlag: SAILOR_VARDERING_UNDERLAG,
+        planinstallningar: normaliseraPlaninstallningar({
+          ...(sparad.planinstallningar ?? standardPlaninstallningar()),
+          planStartAr: String(SAILOR_PLAN_START_AR),
+        }),
         grundSaved: true,
         komponenterSaved: true,
         besiktningarSaved: true,

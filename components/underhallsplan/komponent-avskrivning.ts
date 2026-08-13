@@ -318,6 +318,43 @@ export function arK3AvskrivningsKomponent(
   );
 }
 
+/**
+ * Kortcykliska underhållsåtgärder (målning, spolning, filmning m.m.)
+ * som kostnadsförs det år de utförs — aktiveras inte / skrivs inte av (K3).
+ */
+const DIREKTKOSTNAD_ATGARD_ID = new Set([
+  "ommalning",
+  "fasadtvatt",
+  "putsreparation",
+  "takmalning",
+  "plat-underhall",
+  "tak-kontroll",
+  "fonster-malning",
+  "fonster-kontroll",
+]);
+
+/**
+ * true = kostnadsfört underhåll i resultaträkningen (intervall),
+ * false = åtgärd som kan aktiveras och skrivas av.
+ */
+export function arDirektkostnadUnderhall(
+  komponentNamn: string,
+  underkomponentId?: string | null,
+  atgardId?: string | null,
+): boolean {
+  const atgard = (atgardId ?? "").trim();
+  if (atgard && DIREKTKOSTNAD_ATGARD_ID.has(atgard)) return true;
+
+  const underId = (underkomponentId ?? "").trim();
+  if (!underId) return false;
+  const rek = hamtaAvskrivningRekommendation(komponentNamn, underId);
+  if (!rek) return false;
+  return !rek.arK3Komponent;
+}
+
+export const DIREKTKOSTNAD_FORKLARING =
+  "Kostnadsförs i resultaträkningen det år åtgärden utförs — aktiveras inte som anläggningstillgång och skrivs därför inte av (K3).";
+
 /** Effektiv avskrivningstid — sparad eller standard. */
 export function effektivAvskrivningAr(
   komponentNamn: string,

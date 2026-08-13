@@ -21,10 +21,12 @@ import {
   type UnderhallsplanLagratState,
 } from "@/components/underhallsplan/underhallsplan-lager";
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import { normaliseraPlaninstallningar } from "@/components/underhallsplan/planinstallningar";
 import {
   appliceraSailorGrund,
   arSailorForening,
   SAILOR_FORENING_ID,
+  SAILOR_PLAN_START_AR,
   SAILOR_PROFIL,
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
@@ -148,6 +150,13 @@ function synkaSailorUnderhallsplanGrund(): void {
         besiktningar: utkast.besiktningar,
         krPerKvmAr: utkast.krPerKvmAr,
         varderingsUnderlag: SAILOR_VARDERING_UNDERLAG,
+        planinstallningar: normaliseraPlaninstallningar({
+          ...(parsed.planinstallningar ?? {
+            planStartAr: String(SAILOR_PLAN_START_AR),
+            planLangdAr: "50",
+          }),
+          planStartAr: String(SAILOR_PLAN_START_AR),
+        }),
         grundSaved: true,
         komponenterSaved: true,
         besiktningarSaved: true,

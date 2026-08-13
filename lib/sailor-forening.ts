@@ -4,6 +4,9 @@ import type { Grunduppgifter } from "@/components/underhallsplan/types";
 /** Bostadsrättsföreningen Sailor — fast testförenings-id. */
 export const SAILOR_FORENING_ID = "test-forening-5";
 
+/** Underhållsplanen för Sailor börjar detta kalenderår. */
+export const SAILOR_PLAN_START_AR = 2027;
+
 /** Profiluppgifter som alltid ska vara ifyllda för Sailor. */
 export const SAILOR_PROFIL = {
   organisationsnummer: "769623-8166",

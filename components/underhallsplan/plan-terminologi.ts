@@ -1,8 +1,8 @@
 /**
- * Användarvänd begreppsavgränsning:
- * - Underhållsplanen = större investeringar som avskrivs/amorteras över tid.
- * - Årsbudgeten = utgifter styrelsen budgeterar det år de förfaller
- *   (avsättning varje år, besiktningar det år de utförs — t.ex. vart 10:e år).
+ * Användarvänd begreppsavgränsning (bokföringsnära):
+ * - Underhållsplanen = större åtgärder som kan aktiveras och skrivas av (K3).
+ * - Årsbudgeten = poster som kostnadsförs det år de förfaller
+ *   (avsättning, besiktningar, kostnadsfört underhåll t.ex. spolning/filmning).
  */
 
 export const PLAN_BEGREPP = {
@@ -11,16 +11,22 @@ export const PLAN_BEGREPP = {
   arsbudgetStegKort: "Årsbudget",
   avsattning: "Avsättning",
   besiktningar: "Besiktningar",
+  /** Underhåll som kostnadsförs i resultaträkningen (ej aktiveras). */
+  direktkostnader: "Kostnadsfört underhåll",
+  /** Kort kolumnrubrik */
+  direktkostnaderKort: "Kostnadsfört",
   investeringarPlan: "Planerade investeringar",
   utgifterArsbudget: "Summa utgifter i årsbudgeten",
 } as const;
 
-export const FORKLARING_ARSBUDGET_VS_PLAN = `Underhållsplanen beskriver större investeringar (t.ex. stambyte, fasad) som skrivs av över en period — inte som en jämn kostnad varje år i föreningens budget.
+export const FORKLARING_ARSBUDGET_VS_PLAN = `Underhållsplanen beskriver större åtgärder (t.ex. stambyte, fasadbyte) som i bokföringen normalt aktiveras och skrivs av över komponentens nyttjandeperiod (K3) — inte som en jämn kostnad varje år.
 
-Här sammanställs utgifter som ska tas upp i föreningens årliga budget: avsättning per kvm och år samt besiktningar och liknande det år de utförs (vissa vart 3:e, 10:e eller annat intervall). Planerade investeringar från underhållsplanen visas separat som underlag — de är inte samma sak som årsbudgetposten.`;
+Här sammanställs poster som ska tas upp i föreningens årliga budget och som kostnadsförs det år de utförs: avsättning per kvm och år, besiktningar, samt kostnadsfört underhåll (t.ex. avloppsspolning och filmning). Planerade investeringar som kan aktiveras visas separat.`;
 
 export const FORKLARING_AVSATTNING = `Avsättningen (kr/m² och år) är en jämn post som normalt budgeteras varje år i föreningen.`;
 
-export const FORKLARING_INVESTERING = `Beloppet avser planerad investering/åtgärd det året enligt underhållsplanen. I bokföringen (K3) fördelas större aktiverade åtgärder över komponentens avskrivningstid — det ska inte förväxlas med en årlig driftsbudgetpost.`;
+export const FORKLARING_DIREKTKOSTNAD = `Kostnadsfört underhåll är löpande åtgärder med intervall (spolning, filmning, målning m.m.) som kostnadsförs i resultaträkningen det år de utförs. De aktiveras inte som anläggningstillgång och skrivs därför inte av över tid enligt K3 — till skillnad från aktiverade investeringar/komponentutbyten.`;
+
+export const FORKLARING_INVESTERING = `Beloppet avser planerad investering/komponentåtgärd enligt underhållsplanen. I bokföringen (K3) aktiveras större åtgärder normalt som anläggningstillgång och skrivs av över komponentens nyttjandeperiod — det ska inte förväxlas med kostnadsfört underhåll i resultaträkningen.`;
 
 export const FORKLARING_K3 = `Från 2026 ska bostadsrättsföreningar tillämpa K3. Här ser ni uppskattade installationsvärden per komponent och en enkel avskrivningstid. Ta bort komponenter som inte är aktuella i steg 3.`;

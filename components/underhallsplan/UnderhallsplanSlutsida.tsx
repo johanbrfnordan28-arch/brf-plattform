@@ -186,6 +186,10 @@ export function UnderhallsplanSlutsida({
   );
   const summaArsbudget = utgiftsRader.reduce((s, r) => s + r.utgifterArsbudget, 0);
   const summaBesiktning = utgiftsRader.reduce((s, r) => s + r.besiktningar, 0);
+  const summaDirektkostnader = utgiftsRader.reduce(
+    (s, r) => s + r.direktkostnader,
+    0,
+  );
   const summaInvestering = utgiftsRader.reduce((s, r) => s + r.investeringPlan, 0);
   const summaKassaflode = utgiftsRader.reduce((s, r) => s + r.totaltKassaflode, 0);
   const medelArsbudget = utgiftsRader.length
@@ -527,7 +531,7 @@ export function UnderhallsplanSlutsida({
             </div>
           )}
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase text-muted">Komponenter</p>
               <p className="mt-1 text-xl font-bold text-foreground">
@@ -541,7 +545,9 @@ export function UnderhallsplanSlutsida({
               <p className="mt-1 text-xl font-bold text-foreground">
                 {formatKr(medelArsbudget)}
               </p>
-              <p className="text-xs text-muted">Avsättning + besiktningar</p>
+              <p className="text-xs text-muted">
+                Avsättning + besiktningar + kostnadsfört underhåll
+              </p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase text-muted">
@@ -550,6 +556,15 @@ export function UnderhallsplanSlutsida({
               <p className="mt-1 text-xl font-bold text-foreground">
                 {formatKrStor(summaBesiktning)}
               </p>
+            </div>
+            <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+              <p className="text-xs font-medium uppercase text-amber-900/80">
+                Summa kostnadsfört underhåll
+              </p>
+              <p className="mt-1 text-xl font-bold text-amber-950">
+                {formatKrStor(summaDirektkostnader)}
+              </p>
+              <p className="text-xs text-muted">Kostnadsförs — aktiveras ej</p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase text-muted">
@@ -565,11 +580,21 @@ export function UnderhallsplanSlutsida({
           <p className="mt-6 text-sm font-medium text-foreground">
             Summa utgifter i årsbudgeten ({planLangdAr} år):{" "}
             {formatKrStor(summaArsbudget)}
-            {summaInvestering > 0 && (
+            {(summaInvestering > 0 || summaDirektkostnader > 0) && (
               <span className="mt-1 block font-normal text-muted">
-                Planerade investeringar (fördelas via avskrivning):{" "}
-                {formatKrStor(summaInvestering)} · Kassaflöde totalt:{" "}
-                {formatKrStor(summaKassaflode)}
+                {summaDirektkostnader > 0 && (
+                  <>
+                    Kostnadsfört underhåll: {formatKrStor(summaDirektkostnader)}
+                    {summaInvestering > 0 ? " · " : ""}
+                  </>
+                )}
+                {summaInvestering > 0 && (
+                  <>
+                    Planerade investeringar (aktiveras/avskrivs):{" "}
+                    {formatKrStor(summaInvestering)}
+                  </>
+                )}{" "}
+                · Kassaflöde totalt: {formatKrStor(summaKassaflode)}
               </span>
             )}
           </p>
@@ -599,12 +624,15 @@ export function UnderhallsplanSlutsida({
             separat.
           </p>
           <div className="mt-4 max-h-[36rem] overflow-auto rounded-xl border border-border">
-            <table className="w-full min-w-[520px] text-left text-sm">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="sticky top-0 bg-background text-xs uppercase text-muted shadow-sm">
                 <tr>
                   <th className="px-3 py-2">År</th>
                   <th className="px-3 py-2 text-right">Avsättning</th>
                   <th className="px-3 py-2 text-right">Besiktning</th>
+                  <th className="px-3 py-2 text-right">
+                    {PLAN_BEGREPP.direktkostnaderKort}
+                  </th>
                   <th className="px-3 py-2 text-right">Årsbudget</th>
                   <th className="px-3 py-2 text-right">Investering</th>
                   <th className="px-3 py-2 text-right">Kassaflöde</th>
@@ -619,6 +647,11 @@ export function UnderhallsplanSlutsida({
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {rad.besiktningar > 0 ? formatKr(rad.besiktningar) : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-amber-900">
+                      {rad.direktkostnader > 0
+                        ? formatKr(rad.direktkostnader)
+                        : "—"}
                     </td>
                     <td className="px-3 py-2 text-right font-medium tabular-nums text-primary-dark">
                       {formatKr(rad.utgifterArsbudget)}
@@ -642,6 +675,9 @@ export function UnderhallsplanSlutsida({
                   </td>
                   <td className="px-3 py-2 text-right">
                     {formatKrStor(summaBesiktning)}
+                  </td>
+                  <td className="px-3 py-2 text-right text-amber-900">
+                    {formatKrStor(summaDirektkostnader)}
                   </td>
                   <td className="px-3 py-2 text-right text-primary-dark">
                     {formatKrStor(summaArsbudget)}
@@ -692,6 +728,12 @@ export function UnderhallsplanSlutsida({
                       }}
                     />
                     <div
+                      className="bg-[#ca8a04]"
+                      style={{
+                        width: `${(rad.direktkostnader / rad.totaltKassaflode) * 100}%`,
+                      }}
+                    />
+                    <div
                       className="bg-[#5b21b6]"
                       style={{
                         width: `${(rad.investeringPlan / rad.totaltKassaflode) * 100}%`,
@@ -707,14 +749,15 @@ export function UnderhallsplanSlutsida({
               Utgifter per komponent
             </h3>
             <p className="mt-1 text-sm text-muted">
-              Besiktningar och investeringar med vilken komponent i planen som
-              avses.
+              Besiktningar, kostnadsfört underhåll och investeringar med vilken
+              komponent i planen som avses.
             </p>
             <div className="mt-4 space-y-3">
               {utgiftsRader
                 .filter(
                   (r) =>
                     r.besiktningPoster.length > 0 ||
+                    r.direktkostnadPoster.length > 0 ||
                     r.investeringPoster.length > 0,
                 )
                 .map((rad) => (
@@ -738,6 +781,22 @@ export function UnderhallsplanSlutsida({
                         ))}
                       </ul>
                     )}
+                    {rad.direktkostnadPoster.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 text-sm text-muted">
+                        {rad.direktkostnadPoster.map((p, i) => (
+                          <li key={`d-${p.komponent}-${p.namn}-${i}`}>
+                            <span className="font-medium text-amber-900/90">
+                              {p.komponent}
+                            </span>
+                            {" · "}
+                            {p.namn}: {formatKr(p.belopp)}
+                            <span className="ml-1 text-[10px] uppercase tracking-wide text-amber-800/80">
+                              kostnadsfört
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {rad.investeringPoster.length > 0 && (
                       <ul className="mt-1.5 space-y-0.5 text-sm text-muted">
                         {rad.investeringPoster.map((p, i) => (
@@ -756,10 +815,12 @@ export function UnderhallsplanSlutsida({
               {utgiftsRader.every(
                 (r) =>
                   r.besiktningPoster.length === 0 &&
+                  r.direktkostnadPoster.length === 0 &&
                   r.investeringPoster.length === 0,
               ) && (
                 <p className="text-sm text-muted">
-                  Inga besiktningar eller investeringar schemalagda i perioden.
+                  Inga besiktningar, kostnadsfört underhåll eller investeringar
+                  schemalagda i perioden.
                 </p>
               )}
             </div>

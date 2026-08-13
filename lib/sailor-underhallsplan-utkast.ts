@@ -28,6 +28,7 @@ import {
   type Besiktning,
 } from "@/components/underhallsplan/besiktningar";
 import {
+  SAILOR_PLAN_START_AR,
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 
@@ -35,11 +36,13 @@ const P_PLATSER_ID = "p-platser";
 
 export const SAILOR_PLAN_NOTERING = [
   "Utkast — JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
-  "40 bostadsrätter, 2 756 kvm boyta, 50 badrum.",
+  "Planperiod från 2027.",
+  "40 bostadsrätter, 2 756 kvm boyta, 50 badrum. Inga eldstäder (sotning ej aktuell).",
   "40 p-platser varav 20 med motorvärmare.",
   "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras.",
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
+  "VVS: avloppsspolning och filmning som kostnadsfört underhåll (vart 10:e år).",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam).",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
@@ -96,6 +99,15 @@ function byggSailorBesiktningar(): Besiktning[] {
         intervallAr: 1,
       };
     }
+    if (b.id === "sotning") {
+      return {
+        ...b,
+        aktiv: false,
+        antalEldstäder: 0,
+        antalLagenheterMedEldstad: 0,
+        sotningInternDebitering: false,
+      };
+    }
     return b;
   });
 }
@@ -109,13 +121,13 @@ export function byggSailorKomponentUtkast(): {
   planNotering: string;
   krPerKvmAr: number;
 } {
-  const planStartAr = new Date().getFullYear();
+  const planStartAr = SAILOR_PLAN_START_AR;
 
   const fasadBas = aktivera("Fasad", ["fasadmaterial", "dorrar"], (r) =>
     r.id === "fasadmaterial"
       ? {
           värde: "1800",
-          underhallNastaAr: String(planStartAr + 1),
+          underhallNastaAr: String(planStartAr),
           underhallIntervallAr: "12",
         }
       : {},
@@ -135,7 +147,7 @@ export function byggSailorKomponentUtkast(): {
             {
               id: "sailor-fasad-1",
               titel: "Bättringsputs och ommålning",
-              nastaAr: String(planStartAr + 1),
+              nastaAr: String(planStartAr),
               intervallAr: "12",
               atgarder: ["putsreparation", "ommalning", "fasadtvatt"],
             },
@@ -167,10 +179,37 @@ export function byggSailorKomponentUtkast(): {
       },
     },
     VVS: {
-      ...aktivera("VVS", ["stambyte"], () => ({
-        underhallNastaAr: String(planStartAr + 25),
-        underhallIntervallAr: "50",
-      })),
+      ...aktivera(
+        "VVS",
+        ["stambyte", "spolning-avlopp", "filmning-avlopp"],
+        (r) => {
+          if (r.id === "stambyte") {
+            return {
+              underhallNastaAr: String(planStartAr + 25),
+              underhallIntervallAr: "50",
+            };
+          }
+          if (r.id === "spolning-avlopp") {
+            return {
+              värde: "3",
+              underhallNastaAr: String(planStartAr),
+              underhallIntervallAr: "10",
+              underhallPrisEnhet: "total",
+              underhallKostnadKr: "45000",
+            };
+          }
+          if (r.id === "filmning-avlopp") {
+            return {
+              värde: "3",
+              underhallNastaAr: String(planStartAr),
+              underhallIntervallAr: "10",
+              underhallPrisEnhet: "total",
+              underhallKostnadKr: "28000",
+            };
+          }
+          return {};
+        },
+      ),
       valdaDeltyper: ["fjarrvarme"],
       vvsStambyteRegister: {
         stambyte: {

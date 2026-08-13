@@ -10,6 +10,7 @@ import {
   type Samfallighetsavgift,
 } from "@/components/underhallsplan/samfallighetsavgift";
 import {
+  arAtgardDirektkostnad,
   samlaAllaUnderhallAtgarder,
   underhallKostnadPerAr,
   type UnderhallAtgard,
@@ -29,14 +30,21 @@ export type PlanUtgiftsArRad = {
   avsattning: number;
   /** Besiktningar m.m. det år de utförs. */
   besiktningar: number;
+  /**
+   * Kostnadsfört underhåll det år det utförs
+   * (spolning, filmning, målning m.m. — aktiveras ej / skrivs ej av).
+   */
+  direktkostnader: number;
   /** Planerade investeringar/åtgärder enligt underhållsplanen det året. */
   investeringPlan: number;
-  /** Avsättning + besiktningar — det som hör till föreningens årsbudget. */
+  /** Avsättning + besiktningar + kostnadsfört underhåll — årsbudget. */
   utgifterArsbudget: number;
   /** Investering + utgifter i årsbudget (kassaflöde totalt det året). */
   totaltKassaflode: number;
   /** Besiktningar och samfällighet — med komponent. */
   besiktningPoster: PlanUtgiftspost[];
+  /** Kostnadsfört underhåll — med komponent. */
+  direktkostnadPoster: PlanUtgiftspost[];
   /** Planerade investeringar det året — med komponent. */
   investeringPoster: PlanUtgiftspost[];
 };
@@ -69,13 +77,31 @@ export const TYPISK_AVSATTNING_KR_PER_KVM = {
   standard: 500,
 } as const;
 
-/** Summerar alla planerade investeringsbelopp inom planperioden. */
+/** Endast aktiverbara/avskrivningsbara investeringar. */
+export function filtreraInvesteringAtgarder(
+  atgarder: UnderhallAtgard[],
+): UnderhallAtgard[] {
+  return atgarder.filter((a) => !arAtgardDirektkostnad(a));
+}
+
+/** Kostnadsfört underhåll (resultaträkning, ej aktivering). */
+export function filtreraDirektkostnadAtgarder(
+  atgarder: UnderhallAtgard[],
+): UnderhallAtgard[] {
+  return atgarder.filter((a) => arAtgardDirektkostnad(a));
+}
+
+/** Summerar planerade investeringsbelopp (exkl. kostnadsfört underhåll). */
 export function summaPlaneradeInvesteringar(
   atgarder: UnderhallAtgard[],
   planStartAr: number,
   planLangdAr: number,
 ): number {
-  const perAr = underhallKostnadPerAr(atgarder, planStartAr, planLangdAr);
+  const perAr = underhallKostnadPerAr(
+    filtreraInvesteringAtgarder(atgarder),
+    planStartAr,
+    planLangdAr,
+  );
   return Object.values(perAr).reduce((sum, v) => sum + v, 0);
 }
 
@@ -182,8 +208,15 @@ export function beraknaPlanUtgiftsRader(input: {
     planLangdAr,
     planKostnader,
   );
-  const underhallPerAr = underhallKostnadPerAr(
-    underhallAtgarder,
+  const investeringAtgarder = filtreraInvesteringAtgarder(underhallAtgarder);
+  const direktAtgarder = filtreraDirektkostnadAtgarder(underhallAtgarder);
+  const investeringPerAr = underhallKostnadPerAr(
+    investeringAtgarder,
+    planStartAr,
+    planLangdAr,
+  );
+  const direktPerAr = underhallKostnadPerAr(
+    direktAtgarder,
     planStartAr,
     planLangdAr,
   );
@@ -196,9 +229,11 @@ export function beraknaPlanUtgiftsRader(input: {
   const samfallighetPerAr = beraknaSamfallighetsavgiftPerAr(samfallighetsavgift);
 
   return besiktningPerAr.map((rad) => {
-    const investeringPlan = underhallPerAr[rad.ar] ?? 0;
+    const investeringPlan = investeringPerAr[rad.ar] ?? 0;
+    const direktkostnader = direktPerAr[rad.ar] ?? 0;
     const besiktningarSumma = rad.summaBesiktningar + samfallighetPerAr;
-    const utgifterArsbudget = besiktningarSumma + avsattning.arligAvsattningKr;
+    const utgifterArsbudget =
+      besiktningarSumma + avsattning.arligAvsattningKr + direktkostnader;
     const poster: PlanUtgiftspost[] = rad.poster.map((p) => ({
       namn: p.namn,
       belopp: p.belopp,
@@ -211,7 +246,14 @@ export function beraknaPlanUtgiftsRader(input: {
         komponent: "Samfällighet",
       });
     }
-    const investeringPoster: PlanUtgiftspost[] = underhallAtgarder
+    const direktkostnadPoster: PlanUtgiftspost[] = direktAtgarder
+      .filter((a) => a.ar === rad.ar)
+      .map((a) => ({
+        namn: a.del,
+        belopp: a.kostnadKr,
+        komponent: a.komponent,
+      }));
+    const investeringPoster: PlanUtgiftspost[] = investeringAtgarder
       .filter((a) => a.ar === rad.ar)
       .map((a) => ({
         namn: a.del,
@@ -222,10 +264,12 @@ export function beraknaPlanUtgiftsRader(input: {
       ar: rad.ar,
       avsattning: avsattning.arligAvsattningKr,
       besiktningar: besiktningarSumma,
+      direktkostnader,
       investeringPlan,
       utgifterArsbudget,
       totaltKassaflode: utgifterArsbudget + investeringPlan,
       besiktningPoster: poster,
+      direktkostnadPoster,
       investeringPoster,
     };
   });

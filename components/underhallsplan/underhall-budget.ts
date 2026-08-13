@@ -18,6 +18,7 @@ import {
   hamtaUnderhallTillfallenData,
   hamtaUnderhallTillfallenPriser,
 } from "@/components/underhallsplan/underhall-tillfallen-register";
+import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
 import { effektivUnderhallKostnadKr } from "@/components/underhallsplan/underhall-kostnad";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 import type { RenoveringFordelningKontext } from "@/components/underhallsplan/renovering-fordelning";
@@ -26,6 +27,7 @@ import {
   historikTackerAtgardTyp,
   type RenoveringAtgardTyp,
 } from "@/components/underhallsplan/renovering-planering";
+import { RENOVERING_ATGARD_TILL_UNDERKOMPONENT } from "@/components/underhallsplan/underhall-atgard-katalog";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
 
 export type UnderhallAtgardKalla = "register" | "historik";
@@ -42,7 +44,26 @@ export type UnderhallAtgard = {
   kallaRenoveringTitel?: string;
   kostnadForklaring?: string;
   atgardTyp?: RenoveringAtgardTyp;
+  /** Underkomponent-id i registret (för klassning K3 vs direktkostnad). */
+  underkomponentId?: string;
+  /**
+   * true = kostnadsförs i resultaträkningen det år den utförs (ej aktiveras).
+   * false/undefined = planerad investering som kan aktiveras/skrivas av.
+   */
+  direktkostnad?: boolean;
 };
+
+/** Avgör om en åtgärd ska särredovisas som kostnadsfört underhåll. */
+export function arAtgardDirektkostnad(a: UnderhallAtgard): boolean {
+  if (a.direktkostnad === true) return true;
+  if (a.direktkostnad === false) return false;
+  const underId =
+    a.underkomponentId ??
+    (a.atgardTyp
+      ? RENOVERING_ATGARD_TILL_UNDERKOMPONENT[a.atgardTyp]
+      : undefined);
+  return arDirektkostnadUnderhall(a.komponent, underId);
+}
 
 function parseAr(text: string): number {
   const n = Number.parseInt(text.trim(), 10);
@@ -108,6 +129,7 @@ export function samlaUnderhallAtgarder(
             priser,
             planStartAr,
             planLangdAr,
+            rad.id,
           ),
         );
         continue;
@@ -118,6 +140,7 @@ export function samlaUnderhallAtgarder(
 
       let ar = parseAr(rad.underhallNastaAr ?? "") || planStartAr;
       if (ar < planStartAr) ar = planStartAr;
+      const direktkostnad = arDirektkostnadUnderhall(komponent, rad.id);
 
       while (ar <= planSlutAr) {
         atgarder.push({
@@ -127,6 +150,8 @@ export function samlaUnderhallAtgarder(
           kostnadKr: kostnad,
           intervallAr: intervall,
           kalla: "register",
+          underkomponentId: rad.id,
+          direktkostnad,
         });
         ar += intervall;
       }

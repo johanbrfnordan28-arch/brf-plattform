@@ -5,7 +5,9 @@ import {
   standardUnderhallIntervallAr,
 } from "@/components/underhallsplan/underhall-intervall";
 import {
+  arDirektkostnadUnderhall,
   arK3AvskrivningsKomponent,
+  DIREKTKOSTNAD_FORKLARING,
   hamtaAvskrivningRekommendation,
   standardAvskrivningAr,
 } from "@/components/underhallsplan/komponent-avskrivning";
@@ -53,10 +55,15 @@ export function KommandeUnderhallFalt({
     planeratViaTillfallenProp ?? fasadPlaneratViaTillfallen;
   const rek = hamtaUnderhallRekommendation(komponentNamn, underkomponentId);
   const avskrRek = hamtaAvskrivningRekommendation(komponentNamn, underkomponentId);
+  const arDirektkostnad = arDirektkostnadUnderhall(
+    komponentNamn,
+    underkomponentId,
+  );
   const visaK3Avskrivning =
-    rad.ärEgen ||
-    arK3AvskrivningsKomponent(komponentNamn, underkomponentId) ||
-    Boolean(rad.avskrivningAr?.trim());
+    !arDirektkostnad &&
+    (rad.ärEgen ||
+      arK3AvskrivningsKomponent(komponentNamn, underkomponentId) ||
+      Boolean(rad.avskrivningAr?.trim()));
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const intervallVal =
     rad.underhallIntervallAr?.trim() ||
@@ -186,6 +193,13 @@ export function KommandeUnderhallFalt({
         Sammanställning av planerade åtgärder. Utfört arbete och besiktning fylls i
         steg 2 — kostnad och nästa år kan justeras här.
       </p>
+
+      {arDirektkostnad && (
+        <p className="mt-2 rounded-md border border-amber-200 bg-amber-50/90 px-2.5 py-1.5 text-xs text-amber-950">
+          Kostnadsfört underhåll — {DIREKTKOSTNAD_FORKLARING} Aktivera delen,
+          ange nästa år, intervall och kostnad.
+        </p>
+      )}
 
       {rad.underhallFranHistorik && rad.underhallHistorikAr && (
         <p className="mt-2 rounded-md border border-[#d4e8da] bg-white px-2.5 py-1.5 text-xs text-primary-dark">

@@ -203,6 +203,23 @@ export function normaliseraSbaBesiktning(b: Besiktning): Besiktning {
   };
 }
 
+/** Stänger av sotning och nollställer eldstäder — för föreningar utan eldstäder. */
+export function taBortSotningOchEldstader(
+  lista: Besiktning[],
+): Besiktning[] {
+  return lista.map((b) =>
+    b.id === "sotning"
+      ? {
+          ...b,
+          aktiv: false,
+          antalEldstäder: 0,
+          antalLagenheterMedEldstad: 0,
+          sotningInternDebitering: false,
+        }
+      : b,
+  );
+}
+
 /** Kostnad som inte ska in i föreningens årsbudget (t.ex. intern sotningsdebitering). */
 export function ingarEjIForeningensBudget(b: Besiktning): boolean {
   return b.id === "sotning" && Boolean(b.sotningInternDebitering);

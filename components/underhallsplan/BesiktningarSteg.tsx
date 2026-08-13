@@ -21,6 +21,7 @@ import {
   ovkIntervallBostadHint,
   ovkBostadIntervallFromVentilation,
   sammanstallBesiktningBudget,
+  taBortSotningOchEldstader,
   tillampaOvkIntervallFromVentilation,
   type Besiktning,
   type BesiktningId,
@@ -150,6 +151,22 @@ export function Besiktningar({
           );
         })}
       </div>
+
+      {unlocked && lista.some((b) => b.id === "sotning" && b.aktiv) && (
+        <div className={`mt-3 ${lockedClass}`}>
+          <button
+            type="button"
+            onClick={() => onChange(taBortSotningOchEldstader(lista))}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:border-primary/40 hover:bg-[#eef6f0]/40"
+          >
+            Ta bort sotning / eldstäder
+          </button>
+          <p className="mt-1.5 text-xs text-muted">
+            Använd om fastigheten saknar eldstäder — sotning stängs av och antal
+            eldstäder nollställs.
+          </p>
+        </div>
+      )}
 
       <div className={`mt-6 space-y-4 ${lockedClass}`}>
         {lista.filter((b) => b.aktiv).map((besiktning) => {
