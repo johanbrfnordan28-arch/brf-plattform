@@ -51,6 +51,7 @@ export function byggLagratStateFranTestplan(
   let activeComponents = synced.activeComponents;
   let komponentDetaljer = synced.register;
 
+  let besiktningar = plan.besiktningar;
   if (arSailorForening(options?.foreningId)) {
     const utkast = byggSailorKomponentUtkast();
     varderingsUnderlag = SAILOR_VARDERING_UNDERLAG;
@@ -59,9 +60,11 @@ export function byggLagratStateFranTestplan(
     krPerKvmAr = utkast.krPerKvmAr;
     activeComponents = utkast.activeComponents;
     komponentDetaljer = utkast.komponentDetaljer;
+    besiktningar = utkast.besiktningar;
   }
   const antalLgh = hamtaAntalLagenheterFranGrund(grund);
   const titelBas = foreningsnamn?.trim() || plan.namn;
+  const arSailor = Boolean(arSailorForening(options?.foreningId));
 
   return {
     version: 1,
@@ -73,11 +76,11 @@ export function byggLagratStateFranTestplan(
     planinstallningar: normaliseraPlaninstallningar(plan.planinstallningar),
     grundSaved: true,
     renoveringarSaved: false,
-    komponenterSaved: Boolean(arSailorForening(options?.foreningId)),
-    besiktningarSaved: false,
+    komponenterSaved: arSailor,
+    besiktningarSaved: arSailor,
     activeComponents,
     komponentDetaljer,
-    besiktningar: plan.besiktningar,
+    besiktningar,
     samfallighetsavgift,
     renoveringarLista: [],
     renoveringSammanfattning: null,

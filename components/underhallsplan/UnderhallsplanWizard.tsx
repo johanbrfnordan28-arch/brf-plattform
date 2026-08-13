@@ -622,10 +622,12 @@ export function UnderhallsplanWizard() {
         activeComponents: utkast.activeComponents,
         komponentDetaljer: utkast.komponentDetaljer,
         samfallighetsavgift: utkast.samfallighetsavgift,
+        besiktningar: utkast.besiktningar,
         krPerKvmAr: utkast.krPerKvmAr,
         varderingsUnderlag: SAILOR_VARDERING_UNDERLAG,
         grundSaved: true,
         komponenterSaved: true,
+        besiktningarSaved: true,
       };
       sparaUnderhallsplanState(sparad, foreningId);
     }

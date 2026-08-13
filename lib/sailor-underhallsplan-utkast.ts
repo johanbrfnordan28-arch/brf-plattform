@@ -18,15 +18,20 @@ import {
 } from "@/components/underhallsplan/samfallighetsavgift";
 import { skapaTomVvsStambyteData } from "@/components/underhallsplan/vvs-stambyte";
 import {
+  skapaStandardBesiktningar,
+  type Besiktning,
+} from "@/components/underhallsplan/besiktningar";
+import {
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 
 export const SAILOR_PLAN_NOTERING = [
-  "Utkast — JM-bygge 2013.",
+  "Utkast — JM-bygge 2013, Gustavsberg 1:395.",
   "40 lägenheter, 50 badrum.",
   "Fasad: tunnputs i dåligt skick — planera bättringsputs och ommålning.",
   "Tak: bandlagt plåttak.",
   "36 balkonger.",
+  "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam).",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
   "Gemensam gård sköts av samfällighet — ingår inte i föreningens egna markåtgärder.",
@@ -62,11 +67,26 @@ function aktivera(
   };
 }
 
+function byggSailorBesiktningar(): Besiktning[] {
+  return skapaStandardBesiktningar().map((b) => {
+    if (b.id !== "ovk") return b;
+    return {
+      ...b,
+      aktiv: true,
+      intervallAr: 6,
+      /** OVK-protokoll 2026-03-02 — nästa ordinarie 2032-03-02 */
+      senastUtförtAr: 2026,
+      nastaBesiktningAr: 2032,
+    };
+  });
+}
+
 /** Bygger Sailors komponentregister + samfällighet för underhållsplanen. */
 export function byggSailorKomponentUtkast(): {
   activeComponents: string[];
   komponentDetaljer: Record<string, KomponentDetaljData>;
   samfallighetsavgift: Samfallighetsavgift;
+  besiktningar: Besiktning[];
   planNotering: string;
   krPerKvmAr: number;
 } {
@@ -143,8 +163,13 @@ export function byggSailorKomponentUtkast(): {
       valdaDeltyper: ["fjarrvarme"],
     },
     Ventilation: {
-      ...aktivera("Ventilation", ["aggregat"], () => ({ värde: "3" })),
-      valdaDeltyper: ["ftx"],
+      ...aktivera("Ventilation", ["aggregat"], () => ({
+        värde: "2",
+        underhallNastaAr: "2032",
+        underhallIntervallAr: "6",
+      })),
+      // OVK 2026: FX — frånluft + värmeåtervinning (inte FTX)
+      valdaDeltyper: ["fx"],
     },
     Elcentral: aktivera("Elcentral", ["central"], () => ({ värde: "3" })),
     Balkonger: {
@@ -219,6 +244,7 @@ export function byggSailorKomponentUtkast(): {
     activeComponents: synced.activeComponents,
     komponentDetaljer: synced.register,
     samfallighetsavgift: samfallighet,
+    besiktningar: byggSailorBesiktningar(),
     planNotering: SAILOR_PLAN_NOTERING,
     krPerKvmAr: 450,
   };
