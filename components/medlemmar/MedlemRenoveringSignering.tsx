@@ -145,7 +145,7 @@ export function MedlemRenoveringSignering() {
               className="mt-6 w-full rounded-lg bg-[#1e3a5f] px-4 py-3 text-sm font-semibold text-white hover:bg-[#152a45] disabled:opacity-50"
             >
               {bankidSteg === "pågår"
-                ? "Öppnar BankID (demo)…"
+                ? "Öppnar BankID…"
                 : "Godkänn och signera med BankID"}
             </button>
           </>

@@ -195,7 +195,7 @@ export function ForeningsinformationBibliotek() {
         — övriga huvudmappar fylls på när strukturen är godkänd.
       </p>
       <p className="text-xs text-muted">
-        Totalt {totaltDokument} dokument i biblioteket (demo).
+        Totalt {totaltDokument} dokument i biblioteket.
       </p>
       <DemoFilSparningNotis />
 

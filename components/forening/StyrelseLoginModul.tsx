@@ -13,6 +13,7 @@ import {
 } from "@/lib/testforeningar";
 import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { arSailorForening } from "@/lib/sailor-forening";
 
 function initial(namn: string): string {
   return namn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
@@ -39,6 +40,7 @@ interface ForeningKortProps {
 
 function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProps) {
   const ini = initial(forening.namn);
+  const visaTestperiod = !arSailorForening(forening.id);
 
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-border bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -50,9 +52,11 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-lg font-bold text-foreground">{forening.namn}</p>
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-              Testperiod
-            </span>
+            {visaTestperiod && (
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                Testperiod
+              </span>
+            )}
           </div>
           <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
             {forening.skapadTidpunkt && (
@@ -80,7 +84,9 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
 
       <div className="flex items-center justify-between border-t border-border/60 bg-surface/40 px-5 py-2.5">
         <p className="text-xs text-muted">
-          All data sparas enbart i den här testföreningen
+          {visaTestperiod
+            ? "All data sparas enbart i den här testföreningen"
+            : "Data sparas lokalt i webbläsaren för den här föreningen"}
         </p>
         <button
           type="button"

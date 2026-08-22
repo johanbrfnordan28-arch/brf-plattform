@@ -512,7 +512,7 @@ function BildUppladdningsRuta({
             disabled={analyzing}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
           >
-            {analyzing ? "Analyserar…" : "Analysera bild (demo)"}
+            {analyzing ? "Analyserar…" : "Analysera bild"}
           </button>
         )}
       </div>
@@ -528,7 +528,7 @@ function BildUppladdningsRuta({
           {post?.fileName && (
             <p className="mt-2 text-xs text-muted">
               {post.fileName}
-              {post.kalla === "web" && " · hämtad från nätet (demo)"}
+              {post.kalla === "web" && " · hämtad från nätet"}
             </p>
           )}
         </div>
@@ -537,7 +537,7 @@ function BildUppladdningsRuta({
       {post?.analysis && (
         <div className="mt-4 rounded-lg border border-border bg-white p-4">
           <p className="text-sm font-semibold text-primary-dark">
-            Förslag från analys (demo)
+            Förslag från analys
           </p>
           <p className="mt-2 text-sm text-foreground">
             <span className="text-muted">Bedömd typ: </span>

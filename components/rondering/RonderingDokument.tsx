@@ -176,7 +176,7 @@ function RonderingMappRad({
               <div className="rounded-lg border border-dashed border-primary/40 bg-[#eef6f0]/50 p-4">
                 <p className="text-sm font-medium text-foreground">Ladda upp dokument</p>
                 <p className="mt-1 text-xs text-muted">
-                  PDF, Word eller bild — sparas i föreningens ronderingsbibliotek (demo).
+                  PDF, Word eller bild — sparas i föreningens ronderingsbibliotek.
                 </p>
                 <label className="mt-3 inline-flex cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
                   Välj fil

@@ -166,7 +166,7 @@ export function RenoveringsAnmalan() {
               </p>
               <p className="mt-1 text-sm text-muted">
                 Medlemmen får inte påbörja renoveringen förrän styrelsen godkänt
-                alla punkter. Bocka av i takt med att underlag kommer in (demo).
+                alla punkter. Bocka av i takt med att underlag kommer in.
               </p>
             </div>
             <p className="rounded-full bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
@@ -224,11 +224,11 @@ export function RenoveringsAnmalan() {
               onClick={sparaChecklista}
               className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
             >
-              Spara checklista (demo)
+              Spara checklista
             </button>
             {sparad && (
               <p className="text-sm font-medium text-primary-dark">
-                Checklistan är sparad. Medlemmen ser samma lista i sin vy (demo).
+                Checklistan är sparad. Medlemmen ser samma lista i sin vy.
               </p>
             )}
             {allaKlara && (
@@ -243,7 +243,7 @@ export function RenoveringsAnmalan() {
       {sektioner.length > 0 && (
         <div className="rounded-xl border border-dashed border-primary/30 bg-[#eef6f0]/50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-            Medlemmens vy (demo)
+            Medlemmens vy
           </p>
           <p className="mt-2 text-sm text-muted">
             Medlemmen ser samma punkter och kan ladda upp underlag per rad. Tills

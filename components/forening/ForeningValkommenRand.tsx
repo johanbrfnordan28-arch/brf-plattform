@@ -37,9 +37,9 @@ export function ForeningValkommenRand() {
       <p className="text-sm font-semibold text-primary-dark">Välkommen!</p>
       <p className="mt-1 text-base font-bold text-foreground">{namn}</p>
       <p className="mt-2 text-sm text-muted">
-        Er föreningssida är en kopia av grundmallen — samma moduler och demo-innehåll.
-        Börja med årshjulet eller underhållsplanen nedan. Föreningsuppgifter fyller ni i
-        när det passar.
+        Er föreningssida har samma moduler som plattformen. Börja med årshjulet
+        eller underhållsplanen nedan. Föreningsuppgifter fyller ni i när det
+        passar.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link

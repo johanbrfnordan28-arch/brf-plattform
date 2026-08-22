@@ -121,7 +121,7 @@ export function SkapaForeningPanel({
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Ni får en egen kopia av grundmallen — samma moduler som {BRF_NAVET_NAMN} visar,
         men med <strong className="text-foreground">ert föreningsnamn</strong> och
-        er egen data{visaBankId ? ", bekräftat med BankID" : " i webbläsaren (demo)"}.
+        er egen data{visaBankId ? ", bekräftat med BankID" : " i webbläsaren"}.
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
         <strong>Endast styrelsen</strong> ska skapa föreningens sida. Entreprenörer
@@ -178,7 +178,7 @@ export function SkapaForeningPanel({
               }`}
             >
               {bankidSteg === "pågår"
-                ? "Öppnar BankID (demo)…"
+                ? "Öppnar BankID…"
                 : bankidSteg === "klar"
                   ? "Signerat med BankID ✓"
                   : "Signera med BankID"}
