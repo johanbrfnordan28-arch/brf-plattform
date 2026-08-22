@@ -788,7 +788,7 @@ export function Besiktningar({
         </button>
         {saved && (
           <p className="text-sm font-medium text-primary-dark">
-            Sparat (demo) — gå vidare till utgifter i årsbudgeten (steg 6).
+            Sparat — gå vidare till utgifter i årsbudgeten (steg 6).
           </p>
         )}
       </div>

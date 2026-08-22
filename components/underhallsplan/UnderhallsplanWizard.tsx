@@ -505,7 +505,7 @@ function GrunduppgiftSelect({
           </button>
           {visarOvk && (
             <div className="mt-2 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted">
-              <p className="font-medium text-foreground">OVK-protokoll (demo)</p>
+              <p className="font-medium text-foreground">OVK-protokoll</p>
               <p className="mt-1">
                 System: {ovkSystemText || "—"} · Senaste kontroll: godkänd · OVK-intervall
                 enligt ventilationstyp (S/F/FX: 6 år, FT/FTX: 3 år i flerbostadshus).
@@ -1438,14 +1438,15 @@ export function UnderhallsplanWizard() {
           </ul>
         )}
         <p className="mt-3 text-xs text-muted">
-          Vill ni bara ha en enkel åtgärds- och kostnadslista? Använd{" "}
+          Behöver ni bara en enkel åtgärds- och kostnadslista utan 50-årsbudget?
+          Det finns en separat{" "}
           <Link
             href="/forening/plan"
             className="font-medium text-primary-dark underline hover:no-underline"
           >
-            Åtgärdsplan
+            enkel åtgärdslista
           </Link>{" "}
-          i stället.
+          — den är inte samma sak som underhållsplanen.
         </p>
       </div>
 
@@ -1662,7 +1663,7 @@ export function UnderhallsplanWizard() {
           </button>
           {grundSaved && (
             <p className="text-sm font-medium text-primary-dark">
-              Sparat (demo) — gå vidare till renoveringshistorik (steg 2).
+              Sparat — gå vidare till renoveringshistorik (steg 2).
             </p>
           )}
         </div>
@@ -1897,7 +1898,7 @@ export function UnderhallsplanWizard() {
           </button>
           {komponenterSaved && (
             <p className="text-sm font-medium text-primary-dark">
-              Sparat (demo) — gå vidare till besiktningar (steg 4).
+              Sparat — gå vidare till besiktningar (steg 4).
             </p>
           )}
           {komponenterSaved && (

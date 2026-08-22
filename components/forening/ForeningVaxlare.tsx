@@ -14,6 +14,7 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { arStandardTestForening } from "@/lib/forening-konstanter";
+import { arSailorForening } from "@/lib/sailor-forening";
 import {
   hittaForeningarForPerson,
   lasInloggningsSession,
@@ -113,7 +114,7 @@ export function ForeningVaxlare() {
 
   const aktivForening = foreningar.find((f) => f.id === aktivId);
   const aktivNamn = aktivForening?.namn ?? GRUNDMALL_NAMN;
-  const arTest = arStandardTestForening(aktivId);
+  const arTest = arStandardTestForening(aktivId) && !arSailorForening(aktivId);
   const ini = foreningInitial(aktivNamn, aktivId);
 
   const andraBörjan = foreningar.filter((f) => f.id !== aktivId);

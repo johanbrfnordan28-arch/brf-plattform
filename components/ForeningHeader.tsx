@@ -15,9 +15,9 @@ const nav = [
     aktivPa: (p: string) => p.startsWith("/forening/underhallsplan"),
   },
   {
-    href: "/forening/plan",
-    label: "Åtgärdsplan",
-    aktivPa: (p: string) => p.startsWith("/forening/plan"),
+    href: "/forening/upphandling",
+    label: "Upphandling",
+    aktivPa: (p: string) => p.startsWith("/forening/upphandling"),
   },
   {
     href: "/forening/rondering#manadssignering-schema",

@@ -35,7 +35,7 @@ import {
 const P_PLATSER_ID = "p-platser";
 
 export const SAILOR_PLAN_NOTERING = [
-  "Utkast — JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
+  "JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
   "Planperiod från 2027.",
   "40 bostadsrätter, 2 756 kvm boyta, 50 badrum. Inga eldstäder (sotning ej aktuell).",
   "40 p-platser varav 20 med motorvärmare.",
