@@ -50,7 +50,7 @@ export const guideFilmer: GuideFilm[] = [
   },
   {
     id: "underhallsplan",
-    modul: "Underhållsplan",
+    modul: "Underhåll",
     titel: "Bygg underhållsplanen steg för steg",
     längd: "ca 55 sek",
     beskrivning:
@@ -72,7 +72,7 @@ export const guideFilmer: GuideFilm[] = [
   },
   {
     id: "arshjul",
-    modul: "Årshjul & kalender",
+    modul: "Årshjul",
     titel: "Så fungerar styrelsens årshjul",
     längd: "ca 45 sek",
     beskrivning:

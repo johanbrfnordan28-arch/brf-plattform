@@ -42,99 +42,87 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
   const base = mode === "forening" ? "/forening" : "";
   const isForening = mode === "forening";
 
-  const coreModules = isForening
-    ? [
-        {
-          title: "Årshjul & kalender",
-          description:
-            "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
-          href: `${base}/arshjul`,
-          icon: "📅",
-        },
-        {
-          title: "Upphandling",
-          description:
-            "Färdiga mallar och enkel eller utökad upphandling. Publicera med knappen Upphandla.",
-          href: `${base}/upphandling`,
-          icon: "📋",
-        },
-        {
-          title: "Underhållsplan",
-          description:
-            "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
-          href: `${base}/underhallsplan`,
-          icon: "🔧",
-        },
-        {
-          title: "Guider & tips",
-          description:
-            "Korta AI-filmer om funktionerna samt råd om upphandling och entreprenörer.",
-          href: `${base}/guider`,
-          icon: "🎬",
-        },
-      ]
-    : [
-        {
-          title: "Årshjul & kalender",
-          description:
-            "Slipp missa OVK, stämma och bokslut — påminnelser och tidslinje flera år framåt.",
-          href: `${base}/arshjul`,
-          icon: "📅",
-        },
-        {
-          title: "Underhållsplan",
-          description:
-            "Komponentregister, besiktningar och budget i samma plan — beslutsstöd som håller över tid.",
-          href: `${base}/underhallsplan`,
-          icon: "🔧",
-        },
-        {
-          title: "Upphandling",
-          description:
-            "Mallar och Upphandla-knappen för stora och små entreprenader — anbud samlas strukturerat.",
-          href: `${base}/upphandling`,
-          icon: "📋",
-        },
-        {
-          title: "Film & prisuppgift",
-          description:
-            "Korta filmer visar funktionerna — se filmen och få tydlig prisbild innan ni startar provperiod.",
-          href: "#intro-film",
-          icon: "🎬",
-        },
-      ];
-
-  const modules = [
-    ...coreModules,
+  const publicModules = [
     {
-      title: "Juridik",
-      description: "Vägledning och mallar för styrelseärenden och avtal.",
-      href: `${base}/juridik`,
-      icon: "⚖️",
+      title: "Årshjul",
+      description:
+        "Slipp missa OVK, stämma och bokslut — påminnelser och tidslinje flera år framåt.",
+      href: `${base}/arshjul`,
+      icon: "📅",
+    },
+    {
+      title: "Underhåll",
+      description:
+        "Komponentregister, besiktningar och budget i samma plan — beslutsstöd som håller över tid.",
+      href: `${base}/underhallsplan`,
+      icon: "🔧",
+    },
+    {
+      title: "Upphandling",
+      description:
+        "Mallar och Upphandla-knappen för stora och små entreprenader — anbud samlas strukturerat.",
+      href: `${base}/upphandling`,
+      icon: "📋",
+    },
+    {
+      title: "Film & prisuppgift",
+      description:
+        "Korta filmer visar funktionerna — se filmen och få tydlig prisbild innan ni startar provperiod.",
+      href: "#intro-film",
+      icon: "🎬",
+    },
+  ];
+
+  /** Förening: 4×3 — översta raden prioriterad, Tips och råd sist, Juridik näst sist. */
+  const foreningModules = [
+    {
+      title: "Årshjul",
+      description:
+        "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
+      href: `${base}/arshjul`,
+      icon: "📅",
     },
     {
       title: "Föreningsinformation",
-      description: isForening
-        ? "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument i mappar."
-        : "Stadgar, besiktningar och styrelsedokument — uppladdning efter inloggning.",
+      description:
+        "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument i mappar.",
       href: `${base}/foreningsinformation`,
       icon: "📁",
     },
     {
-      title: "Projekt",
-      description: isForening
-        ? "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument."
-        : "Börja med projektbeskrivning, status och målbild — stöd finns för resten.",
-      href: `${base}/projekt`,
-      icon: "📐",
+      title: "Medlemmar",
+      description:
+        "Lägenhetsarkiv, renoveringshistorik och anmälningar med checklista per åtgärd.",
+      href: `${base}/medlemmar`,
+      icon: "👥",
     },
     {
-      title: isForening ? "Medlemmar" : "Lägenhetskort & renovering",
-      description: isForening
-        ? "Lägenhetsarkiv, renoveringshistorik och anmälningar med checklista per åtgärd."
-        : "Ett kort per lägenhet — enkelt för styrelsen, spårbart med signering av överenskommelser.",
-      href: `${base}/medlemmar`,
-      icon: isForening ? "👥" : "🏠",
+      title: "Kalender",
+      description:
+        "Styrelsens kalender — möten, deadlines och påminnelser samlade i tidslinjen.",
+      href: `${base}/arshjul#kalender`,
+      icon: "🗓️",
+    },
+    {
+      title: "Upphandling",
+      description:
+        "Färdiga mallar och enkel eller utökad upphandling. Publicera med knappen Upphandla.",
+      href: `${base}/upphandling`,
+      icon: "📋",
+    },
+    {
+      title: "Underhåll",
+      description:
+        "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
+      href: `${base}/underhallsplan`,
+      icon: "🔧",
+    },
+    {
+      title: "Projekt",
+      description:
+        "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument.",
+      href: `${base}/projekt`,
+      icon: "📐",
     },
     {
       title: "Rondering & avvikelser",
@@ -145,32 +133,86 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     },
     {
       title: "Energi & drift",
-      description: isForening
-        ? "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen."
-        : "Payback time och kostnader före/efter — tips om energi och drift som utvecklas löpande.",
+      description:
+        "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
       href: `${base}/energi`,
       icon: "⚡",
     },
     {
       title: "Entreprenörer",
-      description: isForening
-        ? "Lista bra entreprenörer som känner huset — egna kontakter för er förening."
-        : "Sök entreprenör för ert projekt — med referenser och betyg från andra föreningar.",
+      description:
+        "Lista bra entreprenörer som känner huset — egna kontakter för er förening.",
       href: `${base}/entreprenorer`,
       icon: "🏗️",
     },
-    ...(isForening
-      ? [
-          {
-            title: "Fastighetsskador",
-            description:
-              "Dokumentera skador med checklista, försäkringstips och spårbar historik.",
-            href: `${base}/fastighets-skador`,
-            icon: "🩹",
-          },
-        ]
-      : []),
+    {
+      title: "Juridik",
+      description: "Vägledning och mallar för styrelseärenden och avtal.",
+      href: `${base}/juridik`,
+      icon: "⚖️",
+    },
+    {
+      title: "Tips och råd",
+      description:
+        "Korta AI-filmer om funktionerna samt råd om upphandling och entreprenörer.",
+      href: `${base}/guider`,
+      icon: "🎬",
+    },
   ];
+
+  const modules = isForening
+    ? foreningModules
+    : [
+        ...publicModules,
+        {
+          title: "Juridik",
+          description: "Vägledning och mallar för styrelseärenden och avtal.",
+          href: `${base}/juridik`,
+          icon: "⚖️",
+        },
+        {
+          title: "Föreningsinformation",
+          description:
+            "Stadgar, besiktningar och styrelsedokument — uppladdning efter inloggning.",
+          href: `${base}/foreningsinformation`,
+          icon: "📁",
+        },
+        {
+          title: "Projekt",
+          description:
+            "Börja med projektbeskrivning, status och målbild — stöd finns för resten.",
+          href: `${base}/projekt`,
+          icon: "📐",
+        },
+        {
+          title: "Lägenhetskort & renovering",
+          description:
+            "Ett kort per lägenhet — enkelt för styrelsen, spårbart med signering av överenskommelser.",
+          href: `${base}/medlemmar`,
+          icon: "🏠",
+        },
+        {
+          title: "Rondering & avvikelser",
+          description:
+            "Signering och spårbarhet för städ och rondering — höjer kvaliteten varje månad.",
+          href: `${base}/rondering`,
+          icon: "✅",
+        },
+        {
+          title: "Energi & drift",
+          description:
+            "Payback time och kostnader före/efter — tips om energi och drift som utvecklas löpande.",
+          href: `${base}/energi`,
+          icon: "⚡",
+        },
+        {
+          title: "Entreprenörer",
+          description:
+            "Sök entreprenör för ert projekt — med referenser och betyg från andra föreningar.",
+          href: `${base}/entreprenorer`,
+          icon: "🏗️",
+        },
+      ];
 
   return (
     <main>
@@ -338,7 +380,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               : "Dokument, rondering, entreprenörer och medlemshantering — allt hänger ihop när grunden är på plats."}
           </p>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={`grid gap-6 sm:grid-cols-2 ${
+            isForening ? "lg:grid-cols-4" : "lg:grid-cols-3"
+          }`}
+        >
           {modules.map((mod) => (
             <ModuleCard key={mod.title} {...mod} />
           ))}

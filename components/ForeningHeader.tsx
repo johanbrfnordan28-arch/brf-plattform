@@ -11,7 +11,7 @@ const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
   {
     href: "/forening/underhallsplan",
-    label: "Underhållsplan",
+    label: "Underhåll",
     aktivPa: (p: string) => p.startsWith("/forening/underhallsplan"),
   },
   {

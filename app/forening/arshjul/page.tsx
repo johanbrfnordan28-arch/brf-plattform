@@ -8,7 +8,7 @@ import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    ...(await foreningModulMetadata("Årshjul & kalender")),
+    ...(await foreningModulMetadata("Årshjul")),
     description:
       "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
   };
@@ -17,13 +17,15 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function ForeningArshjulPage() {
   return (
     <ModulePage
-      title="Årshjul & kalender"
+      title="Årshjul"
       icon="📅"
       intro="Planera hela styrelseåret i förväg — OVK, stämma, bokslut och besiktningar med påminnelse i rätt tid. Slipp glömma deadlines som kostar föreningen pengar."
     >
       <TipsPanel tips={tips.arshjul} />
       <ContentSection title="Styrelsens kalender" plain>
-        <ArshjulModul />
+        <div id="kalender">
+          <ArshjulModul />
+        </div>
       </ContentSection>
     </ModulePage>
   );

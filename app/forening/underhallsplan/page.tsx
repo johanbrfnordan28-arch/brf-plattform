@@ -7,7 +7,7 @@ import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    ...(await foreningModulMetadata("Underhållsplan")),
+    ...(await foreningModulMetadata("Underhåll")),
     description:
       "Bygg föreningens underhållsplan steg för steg — komponentregister, renoveringshistorik, besiktningar och 50-årsbudget.",
   };
@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function ForeningUnderhallsplanPage() {
   return (
     <ModulePage
-      title="Underhållsplan"
+      title="Underhåll"
       icon="🔧"
       intro="Här skapar ni föreningens egen underhållsplan — översiktlig och anpassad för er. Styrelsen ändrar fritt i er plan. Komponentregistret innehåller avskrivningstider som underlag till K3. Slutsidan är er summering, klar för stämman."
     >

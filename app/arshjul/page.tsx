@@ -42,7 +42,7 @@ const fordeler = [
 ] as const;
 
 export const metadata: Metadata = {
-  title: `Årshjul & kalender — ${BRF_NAVET_NAMN}`,
+  title: `Årshjul — ${BRF_NAVET_NAMN}`,
   description:
     "Styrelsens årshjul med påminnelser — planera OVK, stämma och besiktningar flera år framåt utan att missa deadlines.",
 };
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 export default function ArshjulPage() {
   return (
     <ModulePage
-      title="Årshjul & kalender"
+      title="Årshjul"
       icon="📅"
       intro="Styrelsen behöver inte hålla huvudet fullt av datum. Årshjulet samlar det viktigaste för året — med påminnelser i rätt tid och tidslinje flera år framåt."
     >
