@@ -13,7 +13,7 @@ import {
   type MedlemsKravState,
   type OmbyggnadsavtalStatus,
 } from "@/components/lagenhetsarkiv/medlems-krav";
-import { byggOmbyggnadsavtalText } from "@/components/lagenhetsarkiv/ombyggnadsavtal";
+import { byggOmbyggnadsavtalText, laddaNerOmbyggnadsavtalWord, skrivUtOmbyggnadsavtalPdf } from "@/components/lagenhetsarkiv/ombyggnadsavtal";
 import type { RenoveringsMallId } from "@/components/lagenhetsarkiv/renoverings-mallar";
 import { lasAktivForeningId } from "@/lib/forening-registry";
 import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
@@ -97,11 +97,52 @@ export function MedlemsKravPanel({
     const kontakt = hamtaStyrelseKontakt();
     return byggOmbyggnadsavtalText(punkter, {
       foreningsnamn: kontakt?.foreningsnamn ?? "",
+      organisationsnummer: kontakt?.organisationsnummer,
       lagenhetsnummer,
       mappNamn,
       mallEtikett,
       datum: new Date().toLocaleDateString("sv-SE"),
+      postadress: kontakt?.postadress,
+      ort: kontakt?.ort,
     });
+  }
+
+  function avtalMeta() {
+    const kontakt = hamtaStyrelseKontakt();
+    return {
+      foreningsnamn: kontakt?.foreningsnamn ?? "",
+      organisationsnummer: kontakt?.organisationsnummer,
+      lagenhetsnummer,
+      mappNamn,
+      mallEtikett,
+      datum: new Date().toLocaleDateString("sv-SE"),
+      postadress: kontakt?.postadress,
+      ort: kontakt?.ort,
+    };
+  }
+
+  function sparaSomWord() {
+    if (valda.length === 0) {
+      setMeddelande("Välj minst ett moment innan du sparar ombyggnadsavtalet.");
+      return;
+    }
+    laddaNerOmbyggnadsavtalWord(valda, avtalMeta());
+    setVisaAvtal(true);
+    setMeddelande(
+      "Ombyggnadsavtal sparat som Word-fil (.doc). Öppna i Word eller Pages.",
+    );
+  }
+
+  function sparaSomPdf() {
+    if (valda.length === 0) {
+      setMeddelande("Välj minst ett moment innan du sparar ombyggnadsavtalet.");
+      return;
+    }
+    skrivUtOmbyggnadsavtalPdf(valda, avtalMeta());
+    setVisaAvtal(true);
+    setMeddelande(
+      "Utskriftsfönster öppnat — välj \"Spara som PDF\" i utskriftsdialogen.",
+    );
   }
 
   function toggleIngar(punktId: string) {
@@ -450,9 +491,32 @@ export function MedlemsKravPanel({
             </button>
           </div>
           {visaAvtal && (
-            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-background p-3 text-xs leading-relaxed text-foreground">
-              {medlemsKrav.avtalText?.trim() || byggAvtal()}
-            </pre>
+            <>
+              <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-background p-3 text-xs leading-relaxed text-foreground">
+                {medlemsKrav.avtalText?.trim() || byggAvtal()}
+              </pre>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={sparaSomWord}
+                  className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                >
+                  Spara som Word (.doc)
+                </button>
+                <button
+                  type="button"
+                  onClick={sparaSomPdf}
+                  className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                >
+                  Spara som PDF (skriv ut)
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-muted">
+                Dokumentet heter Ombyggnadsavtal och innehåller juridisk bastext
+                (ägande, skadeansvar inkl. lägenheter under, handlingar före/efter).
+                Mall på basnivå — vid komplicerade ärenden bör jurist rådfrågas.
+              </p>
+            </>
           )}
         </div>
       )}
@@ -475,6 +539,47 @@ export function MedlemsKravPanel({
           )}
 
           <div className="flex flex-wrap gap-2">
+            {(status === "utkast" || status === "styrelsegranskning") && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (valda.length === 0) {
+                      setMeddelande(
+                        "Välj minst ett moment innan du sparar ombyggnadsavtalet.",
+                      );
+                      return;
+                    }
+                    uppdatera({
+                      ...medlemsKrav,
+                      avtalText: byggAvtal(),
+                    });
+                    setVisaAvtal(true);
+                    setMeddelande(
+                      "Utkastet till ombyggnadsavtal är uppdaterat. Du kan spara som Word eller PDF.",
+                    );
+                  }}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
+                >
+                  Uppdatera avtalstext
+                </button>
+                <button
+                  type="button"
+                  onClick={sparaSomWord}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+                >
+                  Spara Word
+                </button>
+                <button
+                  type="button"
+                  onClick={sparaSomPdf}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+                >
+                  Spara PDF
+                </button>
+              </>
+            )}
+
             {status === "utkast" && (
               <button
                 type="button"
