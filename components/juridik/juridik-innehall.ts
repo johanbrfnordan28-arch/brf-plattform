@@ -3,7 +3,7 @@
 export const juridikStyrelseAnsvar = {
   rubrik: "Styrelsen fattar beslut — biblioteket ger underlag",
   ingress:
-    "Det gemensamma biblioteket underhålls i grundmodulen och visas på BRF Navet. Vägledande domar är tillgängliga för alla föreningar. Egna uppladdningar sparas enbart i er förening och syns bara för er styrelse.",
+    "Det gemensamma biblioteket underhålls i grundmodulen och visas på Styrelse-Navet. Vägledande domar är tillgängliga för alla föreningar. Egna uppladdningar sparas enbart i er förening och syns bara för er styrelse.",
   punkter: [
     "Styrelsen avgör hur ärenden hanteras i er förening — inte materialet i detta bibliotek.",
     "Använd central vägledning och egna anteckningar som underlag inför samtal med medlemmar, styrelsemöten och juridiskt ombud.",
@@ -15,7 +15,7 @@ export const juridikStyrelseAnsvar = {
 export const juridikGemensamtVsEget = {
   rubrik: "Två nivåer — gemensamt och styrelsens egna dokument",
   gemensamt:
-    "Domar och vägledning i flikarna byggs i grundmodulen och är lika för alla föreningar samt på BRF Navet. Styrelsen kan läsa materialet, men kan inte ändra det gemensamma biblioteket.",
+    "Domar och vägledning i flikarna byggs i grundmodulen och är lika för alla föreningar samt på Styrelse-Navet. Styrelsen kan läsa materialet, men kan inte ändra det gemensamma biblioteket.",
   eget:
     "Dokument som er styrelse laddar upp i egna mappar sparas per förening och visas endast för er aktuella styrelse — inte för andra föreningar och inte som allmän vägledning på plattformen.",
 };
@@ -64,7 +64,7 @@ export const juridikFriskrivningKort =
   "Innehållet är allmän information och utgör inte juridisk rådgivning. Beslut fattas av styrelsen i er förening — kontakta jurist vid tvist eller osäkerhet.";
 
 export const juridikDelatBibliotekNotis =
-  "Det gemensamma biblioteket byggs i grundmodulen och visas på BRF Navet. Endast inloggning via Navet-inloggning ger rätt att lägga till flikar och ladda upp domar.";
+  "Det gemensamma biblioteket byggs i grundmodulen och visas på Styrelse-Navet. Endast inloggning via Styrelse-Navet-inloggning ger rätt att lägga till flikar och ladda upp domar.";
 
 export const juridikEgnaMapparNotis =
   "Egna mappar är er styrelses interna arbetsyta. Uppladdade dokument sparas per förening och visas endast för er aktuella styrelse — de ingår inte i det gemensamma biblioteket.";

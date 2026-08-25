@@ -661,7 +661,7 @@ export function hamtaPubliceradeUpphandlingar(): PubliceradUpphandling[] {
   );
 }
 
-/** Publik BRF Navet-sida — samlar publicerade uppdrag från alla föreningar (ej grundmall). */
+/** Publik Styrelse-Navet-sida — samlar publicerade uppdrag från alla föreningar (ej grundmall). */
 export function hamtaPubliceradeUpphandlingarFranAllaForeningar(): PubliceradUpphandling[] {
   if (typeof window === "undefined") return [];
 

@@ -17,7 +17,7 @@ export default function ForeningJuridikPage() {
     <ModulePage
       title="Juridik"
       icon="⚖️"
-      intro="Vägledande domar från det gemensamma biblioteket — plus egna mappar där er styrelse sparar ärenden som bara ni ser. I grundmodulen kan ni lägga till flikar och domar som sedan syns på BRF Navet. Materialet ersätter inte juridisk rådgivning."
+      intro="Vägledande domar från det gemensamma biblioteket — plus egna mappar där er styrelse sparar ärenden som bara ni ser. I grundmodulen kan ni lägga till flikar och domar som sedan syns på Styrelse-Navet. Materialet ersätter inte juridisk rådgivning."
     >
       <ContentSection title="Bibliotek" plain>
         <JuridikModul />

@@ -61,7 +61,7 @@ function normaliseraState(raw: unknown): CentralaDomFlikarState {
   };
 }
 
-/** Läser centrala domflikar från grundmodulen — samma data visas publikt på BRF Navet. */
+/** Läser centrala domflikar från grundmodulen — samma data visas publikt på Styrelse-Navet. */
 export function lasCentralaDomFlikar(): CentralaDomFlikarState {
   if (typeof window === "undefined") return skapaSeedFranDomMappar();
   try {

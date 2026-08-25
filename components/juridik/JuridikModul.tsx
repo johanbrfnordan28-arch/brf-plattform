@@ -18,9 +18,10 @@ import {
   EGNA_MAPPAR_KEY_BASE,
 } from "@/components/juridik/juridik-egna-mappar-lager";
 import { arGrundmallForening } from "@/lib/forening-registry";
+import { NAVET_INLOGGNING_LABEL } from "@/lib/forening-konstanter";
 
 type JuridikModulProps = {
-  /** Publik sida på BRF Navet — visar grundmodulens innehåll utan redigering. */
+  /** Publik sida på Styrelse-Navet — visar grundmodulens innehåll utan redigering. */
   publik?: boolean;
 };
 
@@ -129,7 +130,7 @@ export function JuridikModul({ publik = false }: JuridikModulProps) {
         <p className="mt-2 text-sm text-muted">
           {publik
             ? "Vägledande domar samlade per ämne. Innehållet byggs i grundmodulen och visas här — öppna en flik och läs vägledningen."
-            : "Vägledande domar samlade per ämne. I grundmodulen kan ni lägga till flikar och ladda upp domar som sedan syns för alla föreningar och på BRF Navet."}
+            : "Vägledande domar samlade per ämne. I grundmodulen kan ni lägga till flikar och ladda upp domar som sedan syns för alla föreningar och på Styrelse-Navet."}
         </p>
         {!publik && (
           <p className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
@@ -139,7 +140,8 @@ export function JuridikModul({ publik = false }: JuridikModulProps) {
         {publik && (
           <p className="mt-3 rounded-lg border border-border bg-background/60 px-4 py-3 text-sm text-muted">
             Detta är en skrivskyddad vy. För att lägga till flikar och domar, logga in via
-            Navet-inloggning i grundmodulen.
+            {` ${NAVET_INLOGGNING_LABEL} `}
+            i grundmodulen.
           </p>
         )}
 
