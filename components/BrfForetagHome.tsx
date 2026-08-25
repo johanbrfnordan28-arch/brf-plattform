@@ -73,7 +73,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     },
   ];
 
-  /** Förening: 4×3 — översta raden prioriterad, Tips och råd sist, Juridik näst sist. */
+  /** Förening: 4 kolumner — Kalender borttagen (ingår i Årshjul). */
   const foreningModules = [
     {
       title: "Årshjul",
@@ -97,20 +97,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       icon: "👥",
     },
     {
-      title: "Kalender",
-      description:
-        "Styrelsens kalender — möten, deadlines och påminnelser samlade i tidslinjen.",
-      href: `${base}/arshjul#kalender`,
-      icon: "🗓️",
-    },
-    {
-      title: "Upphandling",
-      description:
-        "Färdiga mallar och enkel eller utökad upphandling. Publicera med knappen Upphandla.",
-      href: `${base}/upphandling`,
-      icon: "📋",
-    },
-    {
       title: "Underhåll",
       description:
         "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
@@ -118,11 +104,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       icon: "🔧",
     },
     {
-      title: "Projekt",
+      title: "Energi & drift",
       description:
-        "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument.",
-      href: `${base}/projekt`,
-      icon: "📐",
+        "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
+      href: `${base}/energi`,
+      icon: "⚡",
     },
     {
       title: "Rondering & avvikelser",
@@ -132,11 +118,18 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       icon: "✅",
     },
     {
-      title: "Energi & drift",
+      title: "Upphandling",
       description:
-        "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
-      href: `${base}/energi`,
-      icon: "⚡",
+        "Färdiga mallar och enkel eller utökad upphandling. Publicera med knappen Upphandla.",
+      href: `${base}/upphandling`,
+      icon: "📋",
+    },
+    {
+      title: "Projekt",
+      description:
+        "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument.",
+      href: `${base}/projekt`,
+      icon: "📐",
     },
     {
       title: "Entreprenörer",
