@@ -71,49 +71,65 @@ export function MedlemRenoveringSignering() {
     <main className="mx-auto max-w-lg px-4 py-10">
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-          Renoveringskrav
+          Ombyggnadsavtal
         </p>
         <h1 className="mt-2 text-xl font-semibold text-foreground">
-          Godkänn krav för {signering.mappNamn}
+          Läs och signera — {signering.mappNamn}
         </h1>
         <p className="mt-2 text-sm text-muted">
           Lägenhet {signering.lagenhetsnummer} · {signering.mallEtikett}
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
+          Styrelsen har godkänt detta ombyggnadsavtal. Läs igenom kraven och
+          signera med BankID när du accepterar dem. Handlingar före och efter
+          renoveringen följs upp av styrelsen i renoveringsmappen.
         </p>
 
         {redanKlar ? (
           <div className="mt-6 rounded-xl border border-primary/30 bg-[#eef6f0] p-4">
             <p className="text-sm font-semibold text-primary-dark">
-              Signerat med BankID
+              Ombyggnadsavtal signerat med BankID
             </p>
             <p className="mt-1 text-sm text-muted">
               {signering.signeradAv ?? namn} · {signering.signeradDatum}
             </p>
             <p className="mt-3 text-xs text-muted">
-              Du har godkänt att uppfylla kraven ovan. Styrelsen har fått
-              bekräftelsen.
+              Du har godkänt ombyggnadsavtalet. Styrelsen har fått bekräftelsen
+              och följer upp handlingar före och efter renoveringen.
             </p>
           </div>
         ) : (
           <>
-            <div className="mt-6 space-y-4">
-              {grupper.map((grupp) => (
-                <div key={grupp.etikett}>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    {grupp.etikett}
-                  </p>
-                  <ul className="mt-2 space-y-1.5">
-                    {grupp.texter.map((text, index) => (
-                      <li
-                        key={`${grupp.etikett}-${index}`}
-                        className="rounded-lg border border-border bg-background px-3 py-2 text-xs leading-relaxed text-foreground"
-                      >
-                        {text}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+            {signering.avtalText?.trim() ? (
+              <div className="mt-6">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Avtalstext
+                </p>
+                <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-background p-3 text-xs leading-relaxed text-foreground">
+                  {signering.avtalText}
+                </pre>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-4">
+                {grupper.map((grupp) => (
+                  <div key={grupp.etikett}>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                      {grupp.etikett}
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {grupp.texter.map((text, index) => (
+                        <li
+                          key={`${grupp.etikett}-${index}`}
+                          className="rounded-lg border border-border bg-background px-3 py-2 text-xs leading-relaxed text-foreground"
+                        >
+                          {text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <label className="mt-6 flex items-start gap-2 text-sm">
               <input
@@ -123,8 +139,9 @@ export function MedlemRenoveringSignering() {
                 className="mt-0.5 h-4 w-4 rounded border-border text-primary"
               />
               <span>
-                Jag bekräftar att jag ska uppfylla samtliga krav ovan innan
-                renoveringen påbörjas.
+                Jag har läst ombyggnadsavtalet och bekräftar att jag ska uppfylla
+                kraven samt lämna handlingar före och efter renoveringen enligt
+                styrelsens anvisningar.
               </span>
             </label>
 
@@ -146,7 +163,7 @@ export function MedlemRenoveringSignering() {
             >
               {bankidSteg === "pågår"
                 ? "Öppnar BankID…"
-                : "Godkänn och signera med BankID"}
+                : "Godkänn ombyggnadsavtal med BankID"}
             </button>
           </>
         )}

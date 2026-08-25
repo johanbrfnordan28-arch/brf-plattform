@@ -130,21 +130,25 @@ export function forvantadeDokumentForMall(
 }
 
 const gemensammaGuider: Record<RenoveringsUndermappTyp, string[]> = {
-  ritning: ["Ritning/skiss före", "Ritning/skiss efter"],
+  ritning: ["Före — Ritning/skiss", "Efter — Ritning/skiss"],
   handlingar: [
-    "Renoveringsanmälan",
-    "Entreprenörsavtal eller offert",
-    "Försäkringsintyg",
+    "Före — Renoveringsanmälan",
+    "Före — Entreprenörsavtal eller offert",
+    "Före — Försäkringsintyg",
+    "Efter — Slutdokumentation från entreprenör",
   ],
-  myndigheter: ["Styrelsens godkännande", "Eventuell bygganmälan"],
+  myndigheter: [
+    "Före — Styrelsens godkännande",
+    "Före — Eventuell bygganmälan",
+  ],
   egenkontroller: [
-    "Startbesiktning — bilder på befintliga skador (signerad med BankID)",
-    "Signerad egenkontroll (BankID)",
+    "Före — Startbesiktning med bilder på befintliga skador (BankID)",
+    "Efter — Signerad egenkontroll (BankID)",
   ],
   ovrigt: [
-    "Bilder — skador i lägenhet, fastighet och angränsande lägenheter",
-    "Foton före/efter",
-    "Garantibevis",
+    "Före — Bilder på skador i lägenhet, fastighet och angränsande lägenheter",
+    "Efter — Foton efter renovering",
+    "Efter — Garantibevis",
   ],
 };
 

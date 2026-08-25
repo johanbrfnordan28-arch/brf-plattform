@@ -16,6 +16,8 @@ export type RenoveringMedlemsSignering = {
   apartmentId: number;
   mallEtikett: string;
   punkter: Pick<MedlemsKravPunkt, "id" | "text" | "sektionEtikett">[];
+  /** Färdigt ombyggnadsavtal som medlemmen ska godkänna. */
+  avtalText?: string;
   skapad: string;
   status: "vantar" | "signerad";
   signeradDatum?: string;
@@ -103,6 +105,7 @@ export function signeraRenoveringMedlemsKrav(
             ...m,
             medlemsKrav: {
               ...m.medlemsKrav,
+              status: "signerad" as const,
               medlemSignerad: {
                 datum: signerad.signeradDatum!,
                 av: signeradAv,

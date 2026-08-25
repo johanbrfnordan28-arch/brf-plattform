@@ -212,27 +212,52 @@ function HandlingarDel({
   onTaBortDokument: (docId: string) => void;
 }) {
   const [nyHandling, setNyHandling] = useState("");
+  const [nyFas, setNyFas] = useState<"fore" | "efter" | "lopande">("fore");
   const [nyttDokument, setNyttDokument] = useState("");
+
+  function parsingFas(handling: string): "fore" | "efter" | "lopande" {
+    const t = handling.toLowerCase();
+    if (t.startsWith("före") || t.startsWith("fore") || t.includes(" före")) {
+      return "fore";
+    }
+    if (
+      t.startsWith("efter") ||
+      t.includes(" efter") ||
+      t.includes("före/efter")
+    ) {
+      return "efter";
+    }
+    return "lopande";
+  }
+
+  function etikettUtanPrefix(handling: string): string {
+    return handling
+      .replace(/^(före|efter|löpande)\s*[—:-]\s*/i, "")
+      .trim();
+  }
 
   function läggTillHandling() {
     const text = nyHandling.trim();
     if (!text) return;
+    const prefix =
+      nyFas === "fore"
+        ? "Före — "
+        : nyFas === "efter"
+          ? "Efter — "
+          : "Löpande — ";
+    const full = `${prefix}${text}`;
     if (
-      forvantadeHandlingar.some(
-        (h) => h.toLowerCase() === text.toLowerCase(),
-      )
+      forvantadeHandlingar.some((h) => h.toLowerCase() === full.toLowerCase())
     ) {
       setNyHandling("");
       return;
     }
-    onUppdateraForvantade([...forvantadeHandlingar, text]);
+    onUppdateraForvantade([...forvantadeHandlingar, full]);
     setNyHandling("");
   }
 
   function taBortHandling(index: number) {
-    onUppdateraForvantade(
-      forvantadeHandlingar.filter((_, i) => i !== index),
-    );
+    onUppdateraForvantade(forvantadeHandlingar.filter((_, i) => i !== index));
   }
 
   function läggTillDokument() {
@@ -241,6 +266,21 @@ function HandlingarDel({
     onLäggTillDokument(namn);
     setNyttDokument("");
   }
+
+  const grupper: {
+    fas: "fore" | "efter" | "lopande";
+    titel: string;
+    poster: { text: string; index: number }[];
+  }[] = [
+    { fas: "fore", titel: "Före renovering", poster: [] },
+    { fas: "efter", titel: "Efter renovering", poster: [] },
+    { fas: "lopande", titel: "Övrigt / löpande", poster: [] },
+  ];
+
+  forvantadeHandlingar.forEach((handling, index) => {
+    const fas = parsingFas(handling);
+    grupper.find((g) => g.fas === fas)!.poster.push({ text: handling, index });
+  });
 
   const uppladdade = forvantadeHandlingar.filter((guide) =>
     dokument.some((d) =>
@@ -252,47 +292,98 @@ function HandlingarDel({
     <div className="space-y-4">
       <div>
         <p className="text-xs font-medium text-primary-dark">
-          Handlingar som ska in
+          Handlingar före och efter renovering
         </p>
         <p className="mt-0.5 text-xs text-muted">
-          Lägg till eller ta bort handlingar efter projektets behov.
+          Markera vad som ska in innan start respektive efter slutfört arbete.
+          Bocka av genom att ladda upp motsvarande dokument — följ upp tills
+          allt är klart.
         </p>
-        {forvantadeHandlingar.length > 0 ? (
-          <ul className="mt-2 space-y-1">
-            {forvantadeHandlingar.map((handling, index) => {
-              const finns = dokument.some((d) =>
-                d.filnamn
-                  .toLowerCase()
-                  .includes(handling.toLowerCase().slice(0, 6)),
-              );
-              return (
-                <li
-                  key={`${handling}-${index}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-[#fafcfa] px-2.5 py-1.5"
-                >
-                  <span
-                    className={`text-xs ${finns ? "text-primary-dark" : "text-foreground"}`}
-                  >
-                    {finns ? "✓ " : "○ "}
-                    {handling}
+
+        {grupper.map((grupp) => {
+          if (grupp.poster.length === 0 && forvantadeHandlingar.length > 0) {
+            return null;
+          }
+          return (
+            <div key={grupp.fas} className="mt-3">
+              <p className="text-xs font-semibold text-foreground">
+                {grupp.titel}
+                {grupp.poster.length > 0 && (
+                  <span className="ml-1 font-normal text-muted">
+                    (
+                    {
+                      grupp.poster.filter(({ text }) =>
+                        dokument.some((d) =>
+                          d.filnamn
+                            .toLowerCase()
+                            .includes(text.toLowerCase().slice(0, 6)),
+                        ),
+                      ).length
+                    }
+                    /{grupp.poster.length} inlämnade)
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => taBortHandling(index)}
-                    className="shrink-0 text-xs text-muted hover:text-red-800"
-                  >
-                    Ta bort
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="mt-2 text-xs text-muted">
-            Inga handlingar angivna ännu — lägg till nedan.
-          </p>
-        )}
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                )}
+              </p>
+              {grupp.poster.length > 0 ? (
+                <ul className="mt-1.5 space-y-1">
+                  {grupp.poster.map(({ text, index }) => {
+                    const finns = dokument.some((d) =>
+                      d.filnamn
+                        .toLowerCase()
+                        .includes(text.toLowerCase().slice(0, 6)),
+                    );
+                    return (
+                      <li
+                        key={`${text}-${index}`}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border bg-[#fafcfa] px-2.5 py-1.5"
+                      >
+                        <span
+                          className={`text-xs ${finns ? "text-primary-dark" : "text-foreground"}`}
+                        >
+                          {finns ? "✓ " : "○ "}
+                          {etikettUtanPrefix(text) || text}
+                          {!finns && (
+                            <span className="ml-1 text-[10px] uppercase tracking-wide text-amber-800">
+                              saknas
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => taBortHandling(index)}
+                          className="shrink-0 text-xs text-muted hover:text-red-800"
+                        >
+                          Ta bort
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                forvantadeHandlingar.length === 0 &&
+                grupp.fas === "fore" && (
+                  <p className="mt-1 text-xs text-muted">
+                    Inga handlingar angivna ännu — lägg till nedan.
+                  </p>
+                )
+              )}
+            </div>
+          );
+        })}
+
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <select
+            value={nyFas}
+            onChange={(e) =>
+              setNyFas(e.target.value as "fore" | "efter" | "lopande")
+            }
+            className="rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm"
+            aria-label="Fas för ny handling"
+          >
+            <option value="fore">Före</option>
+            <option value="efter">Efter</option>
+            <option value="lopande">Löpande</option>
+          </select>
           <input
             value={nyHandling}
             onChange={(e) => setNyHandling(e.target.value)}

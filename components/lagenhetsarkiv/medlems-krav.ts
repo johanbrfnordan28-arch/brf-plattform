@@ -16,8 +16,19 @@ export type MedlemsKravPunkt = {
   egen?: boolean;
 };
 
+/** Flöde för ombyggnadsavtal: utkast → styrelse → medlem → signerad. */
+export type OmbyggnadsavtalStatus =
+  | "utkast"
+  | "styrelsegranskning"
+  | "skickad"
+  | "signerad";
+
 export type MedlemsKravState = {
   punkter: MedlemsKravPunkt[];
+  status?: OmbyggnadsavtalStatus;
+  /** Genererad avtalstext vid skick till styrelse/medlem. */
+  avtalText?: string;
+  styrelseSkickad?: string;
   skickadTillMedlem?: string;
   signeringId?: string;
   medlemSignerad?: {
@@ -26,6 +37,28 @@ export type MedlemsKravState = {
     metod: "bankid";
   };
 };
+
+export const OMBYGGNADSAVTAL_STATUS_ETIKETT: Record<
+  OmbyggnadsavtalStatus,
+  string
+> = {
+  utkast: "Utkast",
+  styrelsegranskning: "Granskas av styrelsen",
+  skickad: "Skickad till medlem",
+  signerad: "Signerad",
+};
+
+export function hamtaOmbyggnadsavtalStatus(
+  state: MedlemsKravState | undefined,
+): OmbyggnadsavtalStatus {
+  if (!state) return "utkast";
+  if (state.medlemSignerad || state.status === "signerad") return "signerad";
+  if (state.status === "skickad" || state.skickadTillMedlem) return "skickad";
+  if (state.status === "styrelsegranskning" || state.styrelseSkickad) {
+    return "styrelsegranskning";
+  }
+  return state.status ?? "utkast";
+}
 
 export function skapaMedlemsKravForTyp(mallId: RenoveringsMallId): MedlemsKravState {
   const sektioner = byggChecklista([mallId]);
@@ -43,7 +76,7 @@ export function skapaMedlemsKravForTyp(mallId: RenoveringsMallId): MedlemsKravSt
     }
   }
 
-  return { punkter };
+  return { punkter, status: "utkast" };
 }
 
 export function kompileraMedlemsKrav(
@@ -88,6 +121,10 @@ export function laggTillEgenMedlemsKravPunkt(
   const id = `egen-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   return {
     ...state,
+    status: hamtaOmbyggnadsavtalStatus(state) === "signerad" ? "signerad" : "utkast",
+    styrelseSkickad: undefined,
+    skickadTillMedlem: undefined,
+    signeringId: undefined,
     punkter: [
       ...state.punkter,
       {
@@ -102,13 +139,18 @@ export function laggTillEgenMedlemsKravPunkt(
   };
 }
 
+/** Tar bort ett moment (egen eller mallpunkt) från utkastet. */
 export function taBortMedlemsKravPunkt(
   state: MedlemsKravState,
   punktId: string,
 ): MedlemsKravState {
   return {
     ...state,
-    punkter: state.punkter.filter((p) => p.id !== punktId || !p.egen),
+    status: "utkast",
+    styrelseSkickad: undefined,
+    skickadTillMedlem: undefined,
+    signeringId: undefined,
+    punkter: state.punkter.filter((p) => p.id !== punktId),
   };
 }
 
@@ -121,7 +163,7 @@ export function normaliseraMedlemsKrav(
   if (!Array.isArray(data.punkter) || data.punkter.length === 0) {
     return skapaMedlemsKravForTyp(mallId);
   }
-  return {
+  const base: MedlemsKravState = {
     punkter: data.punkter.map((p) => ({
       id: String(p.id),
       sektionId: String(p.sektionId),
@@ -130,9 +172,16 @@ export function normaliseraMedlemsKrav(
       ingar: Boolean(p.ingar),
       egen: p.egen === true,
     })),
+    status: data.status,
+    avtalText: typeof data.avtalText === "string" ? data.avtalText : undefined,
+    styrelseSkickad: data.styrelseSkickad,
     skickadTillMedlem: data.skickadTillMedlem,
     signeringId: data.signeringId,
     medlemSignerad: data.medlemSignerad,
+  };
+  return {
+    ...base,
+    status: hamtaOmbyggnadsavtalStatus(base),
   };
 }
 
