@@ -53,7 +53,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     {
       title: "Underhåll",
       description:
-        "Komponentregister, besiktningar och budget i samma plan — beslutsstöd som håller över tid.",
+        "Underhållsbehov, besiktningar och budget i samma plan — beslutsstöd som håller över tid.",
       href: `${base}/underhallsplan`,
       icon: "🔧",
     },
@@ -99,7 +99,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     {
       title: "Underhåll",
       description:
-        "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
+        "Bygg upp föreningens underhållsbehov, renoveringshistorik och framtida underhåll i portalen.",
       href: `${base}/underhallsplan`,
       icon: "🔧",
     },
