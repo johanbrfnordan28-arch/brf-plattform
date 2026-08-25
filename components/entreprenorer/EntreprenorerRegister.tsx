@@ -17,17 +17,31 @@ import {
   sparaEntreprenorerState,
 } from "@/components/entreprenorer/entreprenorer-lager";
 import { AnbudsforfrAganPanel } from "@/components/entreprenorer/AnbudsforfrAganPanel";
+import { EntreprenorVarningar } from "@/components/entreprenorer/EntreprenorVarningar";
+import { laggTillHusEntreprenor } from "@/components/entreprenorer/hus-entreprenorer-lager";
 
 type EntreprenorerRegisterProps = {
   /** Registrering och godkännande — publik sida för företag i demo. */
   kanRegistrera?: boolean;
   /** Redigera föreningens lista: lägg till, ta bort, skicka anbudsförfrågan. */
   kanRedigera?: boolean;
+  /** Visa referens-/kvalitetsvarningar (stäng av om sidan redan visar dem). */
+  visaVarningar?: boolean;
+  /** Rubrik ovanför sökfältet. */
+  sokRubrik?: string;
+  /** Kort hjälptext under rubriken. */
+  sokIngress?: string;
+  /** Tillåt "Lägg till i er lista" (kopierar till hus-entreprenörlistan). */
+  kanLaggTillIHusLista?: boolean;
 };
 
 export function EntreprenorerRegister({
   kanRegistrera = false,
   kanRedigera = false,
+  visaVarningar = true,
+  sokRubrik = "Sök entreprenör för ert projekt",
+  sokIngress,
+  kanLaggTillIHusLista = false,
 }: EntreprenorerRegisterProps) {
   // ── State ──────────────────────────────────────────────────────────────────
   const [lista, setLista] = useState<Entreprenor[]>(demoEntreprenorer);
@@ -38,6 +52,9 @@ export function EntreprenorerRegister({
   const [behörigBekräftad, setBehörigBekräftad] = useState(kanRegistrera);
   const [visarFormular, setVisarFormular] = useState(kanRegistrera);
   const [betygVal, setBetygVal] = useState<Record<string, number>>({});
+  const [tillagdFeedbackId, setTillagdFeedbackId] = useState<string | null>(
+    null,
+  );
 
   // Redigera-läge
   const [valdaIds, setValdaIds] = useState<Set<string>>(new Set());
@@ -183,6 +200,22 @@ export function EntreprenorerRegister({
     });
   }
 
+  function laggTillIHusLista(ent: Entreprenor) {
+    laggTillHusEntreprenor({
+      namn: ent.foretagsnamn,
+      telefon: ent.telefon,
+      epost: ent.epost,
+      kategori: ent.kategorier[0] ?? "",
+      anteckning: ent.referens.trim()
+        ? `Från rekommenderade. ${ent.referens.trim()}`
+        : "Tillagd från rekommenderade entreprenörer.",
+    });
+    setTillagdFeedbackId(ent.id);
+    window.setTimeout(() => {
+      setTillagdFeedbackId((id) => (id === ent.id ? null : id));
+    }, 2500);
+  }
+
   // ── Betyg ──────────────────────────────────────────────────────────────────
   function sättBetyg(id: string, stjärnor: number) {
     setBetygVal((c) => ({ ...c, [id]: stjärnor }));
@@ -317,29 +350,23 @@ export function EntreprenorerRegister({
       )}
 
       {/* ── Info / kvalitet ─────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-primary/25 bg-[#eef6f0]/50 p-4 sm:p-5">
-        <p className="text-sm font-semibold text-foreground">
-          Referenser och kvalitet
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          Vi tar referenser på företagen i registret. Vi rekommenderar er att
-          även ta egna referenser innan ni väljer entreprenör.
-        </p>
-      </section>
+      {visaVarningar && <EntreprenorVarningar />}
 
       {/* ── Sök + lista ─────────────────────────────────────────────────── */}
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-foreground">
-              Sök entreprenör för ert projekt
+              {sokRubrik}
             </h3>
-            {kanRedigera && (
+            {sokIngress ? (
+              <p className="mt-0.5 text-sm text-muted">{sokIngress}</p>
+            ) : kanRedigera ? (
               <p className="mt-0.5 text-sm text-muted">
-                Markera företag och klicka "Skicka anbudsförfrågan" för att
-                bjuda in till anbud.
+                Markera företag och klicka &quot;Skicka anbudsförfrågan&quot; för
+                att bjuda in till anbud.
               </p>
-            )}
+            ) : null}
           </div>
           {kanRedigera && (
             <button
@@ -554,6 +581,18 @@ export function EntreprenorerRegister({
                         </button>
                       )
                     )}
+
+                    {kanLaggTillIHusLista && (
+                      <button
+                        type="button"
+                        onClick={() => laggTillIHusLista(ent)}
+                        className="rounded-lg border border-primary bg-[#e2f0e6] px-2.5 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#d5e9db]"
+                      >
+                        {tillagdFeedbackId === ent.id
+                          ? "Tillagd i er lista"
+                          : "Lägg till i er lista"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </li>
@@ -606,9 +645,10 @@ export function EntreprenorerRegister({
       <section className="rounded-xl border border-border bg-background p-4 text-sm text-muted">
         <p className="font-semibold text-foreground">Misskötsel och borttagning</p>
         <p className="mt-2 leading-relaxed">
-          Företag som missköter sig kan tas bort från registret. Innan vi agerar
-          vill vi höra båda sidor — styrelsens synpunkter och entreprenörens —
-          så att beslutet blir rättvist och väl underbyggt.
+          Företag som missköter sig kan tas bort från det centrala registret.
+          Innan vi agerar vill vi höra båda sidor — styrelsens synpunkter och
+          entreprenörens — så att beslutet blir rättvist. I er egen lista tar ni
+          själva bort poster som inte längre ska rekommenderas.
         </p>
       </section>
     </div>

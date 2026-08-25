@@ -103,18 +103,18 @@ export const tips: Record<string, TipsPunkt[]> = {
   entreprenorer: [
     {
       ikon: "🏠",
-      titel: "De som känner huset",
-      text: "Lägg in entreprenörer som arbetat i huset tidigare — skriv en kort anteckning så nästa styrelse vet varför ni litar på dem.",
+      titel: "Er lista först",
+      text: "Spara entreprenörer ni litar på i er egen lista — med anteckning så nästa styrelse förstår varför. Ta bort dem som inte längre håller måttet.",
     },
     {
-      ikon: "➕",
-      titel: "Egna kontakter",
-      text: "Klicka Lägg till entreprenör och spara namn, telefon och kategori. Listan syns bara för er förening.",
+      ikon: "🔍",
+      titel: "Två sökvägar",
+      text: "Sök i er lista och separat i det centrala registret. Lägg till från registret med ett klick — men ta alltid egna referenser innan ni beställer.",
     },
     {
-      ikon: "💰",
-      titel: "Priser i planen",
-      text: "Priser lägger ni in manuellt på åtgärder i underhållsplanen när ni har offert — inte via en gemensam prislista.",
+      ikon: "📝",
+      titel: "Skriftlig beställning",
+      text: "Upprätta skriftlig beställning eller avtal med omfattning, tid och pris. Företag kan byta ägare och personal — kvaliteten kan förändras över tid.",
     },
   ],
 

@@ -73,7 +73,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     },
   ];
 
-  /** Förening: 4 kolumner — Kalender borttagen (ingår i Årshjul). */
+  /** Förening: 4 kolumner — 12 moduler (Fastighetsskador mellan Entreprenörer och Juridik). */
   const foreningModules = [
     {
       title: "Årshjul",
@@ -134,9 +134,16 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     {
       title: "Entreprenörer",
       description:
-        "Lista bra entreprenörer som känner huset — egna kontakter för er förening.",
+        "Egna kontakter och rekommenderade entreprenörer — sök, lägg till och ta bort.",
       href: `${base}/entreprenorer`,
       icon: "🏗️",
+    },
+    {
+      title: "Fastighetsskador",
+      description:
+        "Dokumentera skador med checklista, försäkringstips och spårbar historik.",
+      href: `${base}/fastighets-skador`,
+      icon: "🩹",
     },
     {
       title: "Juridik",
