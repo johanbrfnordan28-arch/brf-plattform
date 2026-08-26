@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 const nav = [
@@ -21,7 +22,7 @@ export function Header() {
             B
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">
-            BRF Företag
+            {BRF_NAVET_NAMN}
           </span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
@@ -37,16 +38,16 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <Link
-            href={PROVA_GRATIS_PATH}
+            href="/styrelse-login"
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
           >
-            Pröva gratis
+            Logga in
           </Link>
           <Link
-            href="/styrelse-login"
-            className="brf-knapp-gron px-4 py-2 text-sm"
+            href={PROVA_GRATIS_PATH}
+            className="brf-knapp-gron px-5 py-2.5 text-sm font-semibold sm:px-6 sm:py-3 sm:text-base"
           >
-            Logga in styrelse
+            Pröva gratis
           </Link>
         </div>
       </div>

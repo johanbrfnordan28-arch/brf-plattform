@@ -13,7 +13,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "Gränsen mellan föreningens och medlemmens underhållsansvar för golv, väggar och tak i lägenheten.",
     vägledning:
-      "Domar i denna mapp handlar ofta om vad som räknas som ytskikt, när medlemmen ska stå för renovering och när föreningen kan kräva åtgärd. Ladda upp aktuell dom så styrelsen kan läsa hela texten.",
+      "Central vägledning om gränsen mellan föreningens och medlemmens underhållsansvar för golv, väggar och tak. Läs domarna i biblioteket inför dialog med medlem eller juridiskt ombud.",
   },
   {
     id: "rokkanaler",
@@ -21,7 +21,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "Ansvar för skorsten, rökkanal, inspektion och säkerhet kring eldstäder och kamin.",
     vägledning:
-      "Här samlas domar om vem som ansvarar för sotning, besiktning och fel som uppstår i samband med eldstäder. Styrelsen kan jämföra med föreningens stadgar och försäkring.",
+      "Central vägledning om sotning, besiktning och ansvar kring eldstäder. Jämför med föreningens stadgar och försäkring innan ni fattar beslut.",
   },
   {
     id: "storningar",
@@ -29,7 +29,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "När föreningen får ingripa vid störning, buller och brukande av lägenheten.",
     vägledning:
-      "Mappen innehåller vägledande avgöranden om störningsärenden, varningar och i vissa fall åtgärder mot medlem. Ladda upp domar som är relevanta för er hantering.",
+      "Vägledande avgöranden om störningsärenden, varningar och möjliga åtgärder. Använd som underlag — styrelsen fattar beslut i ert specifika ärende.",
   },
   {
     id: "tilltrade",
@@ -45,7 +45,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "Ansvar när läckage eller fukt uppstår mellan lägenheter eller från stammar.",
     vägledning:
-      "Avgöranden om skadestånd, fördelning mellan förening och medlem och bevisning vid fuktskador. Styrelsen kan spara domar som liknar aktuella ärenden i huset.",
+      "Avgöranden om skadestånd, ansvarsfördelning och bevisning vid fuktskador. Jämför med liknande fall i biblioteket innan ni går vidare i processen.",
   },
 ];
 

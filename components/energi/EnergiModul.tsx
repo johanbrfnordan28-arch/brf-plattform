@@ -5,6 +5,8 @@ import { KortGuideFilm } from "@/components/guider/KortGuideFilm";
 import { energiGuideFilm } from "@/components/energi/energi-guide-film";
 import {
   energiBelysningAtgarder,
+  energiFonsterAtgarder,
+  energiTakAtgarder,
   energiVarmeAtgarder,
   type EnergiAtgard,
 } from "@/components/energi/energi-atgarder";
@@ -13,12 +15,17 @@ import { LivslangdForklaringPanel } from "@/components/underhallsplan/LivslangdF
 function AtgardLista({
   rubrik,
   atgarder,
+  id,
 }: {
   rubrik: string;
   atgarder: EnergiAtgard[];
+  id?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 sm:p-5">
+    <div
+      id={id}
+      className="scroll-mt-24 rounded-xl border border-border bg-surface p-4 sm:p-5"
+    >
       <h3 className="text-lg font-semibold text-foreground">{rubrik}</h3>
       <ul className="mt-4 space-y-4">
         {atgarder.map((a) => (
@@ -30,12 +37,14 @@ function AtgardLista({
             <p className="mt-1 text-sm text-muted">{a.beskrivning}</p>
             <p className="mt-2 text-xs text-primary-dark">
               {a.effekt === "drift" && "Främst lägre driftkostnad"}
-              {a.effekt === "livslangd" && "Främst längre livslängd / bättre funktion"}
+              {a.effekt === "livslangd" &&
+                "Främst längre livslängd / bättre funktion"}
               {a.effekt === "bade" && "Både driftkostnad och livslängd"}
             </p>
             {a.tips && (
               <p className="mt-1 text-xs text-muted">
-                <span className="font-medium text-foreground">Tips:</span> {a.tips}
+                <span className="font-medium text-foreground">Tips:</span>{" "}
+                {a.tips}
               </p>
             )}
           </li>
@@ -64,8 +73,18 @@ export function EnergiModul() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <AtgardLista rubrik="Värmesystem" atgarder={energiVarmeAtgarder} />
+        <AtgardLista
+          id="varme"
+          rubrik="Värmesystem"
+          atgarder={energiVarmeAtgarder}
+        />
         <AtgardLista rubrik="Belysning" atgarder={energiBelysningAtgarder} />
+        <AtgardLista id="tak" rubrik="Tak" atgarder={energiTakAtgarder} />
+        <AtgardLista
+          id="fonster"
+          rubrik="Fönster"
+          atgarder={energiFonsterAtgarder}
+        />
       </div>
 
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-4 text-sm text-muted">
@@ -81,17 +100,17 @@ export function EnergiModul() {
             <Link href="/forening/rondering" className="text-primary-dark underline">
               Rondering
             </Link>{" "}
-            — undercentral, belysning och ventilation i drift
+            — takavvattning, belysning och undercentral i drift
           </li>
           <li>
             <Link href="/forening/upphandling" className="text-primary-dark underline">
               Upphandling
             </Link>{" "}
-            — större energi- och belysningsprojekt
+            — större energi-, tak- och fönsterprojekt
           </li>
         </ul>
         <p className="mt-3 text-xs">
-          Modulen är under uppbyggnad — fler åtgärder (t.ex. ventilation, solceller) kan
+          Modulen byggs ut löpande — fler åtgärder (t.ex. ventilation och solceller) kan
           läggas till efter behov.
         </p>
       </div>

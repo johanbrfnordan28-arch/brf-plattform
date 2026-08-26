@@ -1,5 +1,6 @@
 import { formatKr } from "@/components/underhallsplan/besiktningar";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
+import { effektivUnderhallKostnadKr } from "@/components/underhallsplan/underhall-kostnad";
 import {
   normaliseraVvsStambyteData,
   skapaTomStambytePriser,
@@ -184,6 +185,8 @@ export function hamtaStambyteKostnadVvs(
   const rad = vvsDetalj.underkomponenter.find((r) => r.id === "stambyte");
   if (!rad?.aktiv) return 0;
   const data = vvsDetalj.vvsStambyteRegister?.["stambyte"];
-  if (!data) return 0;
-  return beraknaStambytePris(data).totaltKr;
+  const franPanel = data ? beraknaStambytePris(data).totaltKr : 0;
+  if (franPanel > 0) return franPanel;
+  /** Fall back till sparad underhållskostnad på raden (t.ex. klumpsumma per badrum). */
+  return effektivUnderhallKostnadKr(rad);
 }

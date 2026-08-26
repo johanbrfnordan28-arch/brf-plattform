@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
   antalSotningProtokollDokument,
@@ -189,13 +190,16 @@ export function SotningProtokollMappar({ onAntalÄndrat }: SotningProtokollMappa
                   >
                     Ta bort
                   </button>
-                  <button
-                    type="button"
+                  <OppnaStangKnapp
+                    oppen={mappState.öppen}
                     onClick={() => toggleMapp(mapp.id)}
-                    className="shrink-0 text-sm text-muted"
-                  >
-                    {mappState.öppen ? "−" : "+"}
-                  </button>
+                    storlek="sm"
+                    ariaLabel={
+                      mappState.öppen
+                        ? `Stäng mappen ${mapp.titel}`
+                        : `Öppna mappen ${mapp.titel}`
+                    }
+                  />
                 </div>
 
                 {mappState.öppen && (

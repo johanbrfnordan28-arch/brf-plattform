@@ -6,6 +6,7 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { arStandardTestForening, arStandardTestStartNamn } from "@/lib/testforeningar";
 import { normaliseraGrund } from "@/components/underhallsplan/grund-synk";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
@@ -49,6 +50,37 @@ export function arStyrelseKontaktKomplett(kontakt: StyrelseKontakt): boolean {
       kontakt.kontaktperson &&
       kontakt.postadress,
   );
+}
+
+/**
+ * Saknas obligatoriska föreningsuppgifter (eller testförening har kvar startnamn)
+ * → användaren ska till /forening/uppgifter.
+ */
+export function behoverFyllaForeningsuppgifter(foreningId?: string): boolean {
+  if (typeof window === "undefined") return false;
+  const id = foreningId ?? lasAktivForeningId();
+  if (!id || arGrundmallForening(id)) return false;
+
+  const kontakt = hamtaStyrelseKontakt(id);
+  if (!kontakt) return true;
+  if (!arStyrelseKontaktKomplett(kontakt)) return true;
+
+  // Testföreningar ska döpas om från «Brf Test N» innan de räknas som klara.
+  if (
+    arStandardTestForening(id) &&
+    arStandardTestStartNamn(kontakt.foreningsnamn)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/** Startsida efter inloggning: uppgifter om något saknas, annars portalen. */
+export function hamtaForeningStartPath(foreningId?: string): string {
+  return behoverFyllaForeningsuppgifter(foreningId)
+    ? "/forening/uppgifter"
+    : "/forening";
 }
 
 export function formateraStyrelseKontaktBlock(

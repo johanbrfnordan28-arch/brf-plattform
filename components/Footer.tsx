@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { useStyrelseKontakt } from "@/components/forening/useStyrelseKontakt";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 
 export function Footer() {
   const pathname = usePathname();
   const isForening = pathname.startsWith("/forening");
   const foreningsNamn = useAktivForeningsNamn();
   const kontakt = useStyrelseKontakt();
-  const brand = isForening ? foreningsNamn : "BRF Företag";
+  const brand = isForening ? foreningsNamn : BRF_NAVET_NAMN;
 
   return (
     <footer className="border-t border-border bg-surface">
@@ -46,7 +47,7 @@ export function Footer() {
                 href="/"
                 className="text-sm font-medium text-primary-dark hover:underline"
               >
-                BRF Företags huvudsida
+                {BRF_NAVET_NAMN}s huvudsida
               </Link>
             )}
           </div>

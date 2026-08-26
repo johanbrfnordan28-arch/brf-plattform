@@ -4,29 +4,47 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
+  arFlerarsIntervall,
+  arMotesHandelse,
   arshjulStorageKey,
+  aterstallTillfalle,
+  aterstallTillfalleKlar,
+  behoverPlaneringsperiod,
   expanderaTillfallen,
   formatDatumKort,
+  grupperaHandelser,
   hamtaPaminnelser,
+  handelseIntervallText,
+  intervallAlternativ,
+  intervallEtiketter,
   kategoriEtiketter,
   kategoriFarger,
+  laggTillPunktForManad,
   manadsnamn,
+  markeraTillfalleKlar,
+  motesTypAlternativ,
+  myndighetskravAlternativ,
   normaliseraHandelse,
-  skapaHandelseId,
+  ovrigtAlternativ,
   skapaTomHandelse,
-  STANDARD_PAMINNELSE_DAGAR,
+  STANDARD_PLANERING_AR_FRAM,
+  stallInTillfalle,
+  taBortTillfallePermanent,
+  veckodagEtiketter,
+  veckodagOrdningEtiketter,
   type ArshjulHandelse,
-  type ArshjulHandelseTyp,
+  type ArshjulIntervall,
   type ArshjulKategori,
   type ArshjulTillfalle,
+  type ArshjulVeckodag,
+  type ArshjulVeckodagOrdning,
 } from "@/components/arshjul/arshjul";
-import {
-  importeraFranProjekt,
-  importeraFranUnderhallsplan,
-} from "@/components/arshjul/arshjul-import";
 import { safeSetLocalStorage } from "@/lib/localStorage";
+import { MotesDokumentPanel } from "@/components/arshjul/MotesDokumentPanel";
+import { HandelseRedigeraPanel } from "@/components/arshjul/HandelseRedigeraPanel";
 
-type Vy = "arshjul" | "tidslinje" | "paminnelser";
+type Vy = "arshjul" | "paminnelser";
+type SnabbTyp = "mote" | "myndighetskrav" | "ovrigt";
 
 function lasHandelser(): ArshjulHandelse[] {
   if (typeof window === "undefined") return [];
@@ -45,57 +63,89 @@ function sparaHandelser(lista: ArshjulHandelse[]): void {
   safeSetLocalStorage(arshjulStorageKey(), JSON.stringify(lista));
 }
 
-const exempelHandelser: ArshjulHandelse[] = [
-  normaliseraHandelse({
-    id: "ex-stamma",
-    titel: "Årsstämma",
-    beskrivning: "Kallelse, underlag och protokoll.",
-    kategori: "stamma",
-    typ: "arlig",
-    manad: 4,
-    dag: 15,
-    paminnelseDagar: [90, 60, 30, 14],
-    klar: false,
-    skapad: "demo",
-    externKalla: "manuell",
-  }),
-  normaliseraHandelse({
-    id: "ex-bokslut",
-    titel: "Bokslut & budget",
-    beskrivning: "Ekonomisk plan och budget inför nästa år.",
-    kategori: "ekonomi",
-    typ: "arlig",
-    manad: 11,
-    dag: 30,
-    paminnelseDagar: [60, 30, 14],
-    klar: false,
-    skapad: "demo",
-    externKalla: "manuell",
-  }),
-];
+function skapaExempel(ar: number): ArshjulHandelse[] {
+  return [
+    normaliseraHandelse({
+      id: "ex-styrelse",
+      titel: "Styrelsemöte",
+      beskrivning: "Ordinarie styrelsemöte.",
+      kategori: "styrelsemote",
+      intervall: "manadsvis_veckodag",
+      veckodag: 1,
+      veckodagOrdning: 2,
+      undantagnaManader: [7, 8],
+      planerasFranAr: ar,
+      planerasTillAr: ar + STANDARD_PLANERING_AR_FRAM,
+      motesPunkter: [
+        {
+          id: "ex-p1",
+          text: "Ekonomi",
+          klar: false,
+          manader: [1, 3, 5],
+        },
+      ],
+      paminnelseDagar: [14, 7],
+      klar: false,
+      skapad: "demo",
+      externKalla: "manuell",
+    }),
+  ];
+}
 
 export function ArshjulModul() {
   const innevarandeAr = new Date().getFullYear();
+  const kommandeAr = innevarandeAr + STANDARD_PLANERING_AR_FRAM;
+  const aktuellManad = new Date().getMonth() + 1;
+
   const [handelser, setHandelser] = useState<ArshjulHandelse[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [vy, setVy] = useState<Vy>("arshjul");
   const [valtAr, setValtAr] = useState(innevarandeAr);
-  const [tidslinjeSlutAr, setTidslinjeSlutAr] = useState(innevarandeAr + 15);
   const [skapaOppen, setSkapaOppen] = useState(false);
-  const [redigeraId, setRedigeraId] = useState<string | null>(null);
-  const [form, setForm] = useState(skapaTomHandelse());
-  const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
+  const [snabbTyp, setSnabbTyp] = useState<SnabbTyp>("mote");
+  const [meddelande, setMeddelande] = useState<string | null>(null);
+
+  // Mötesformulär
+  const [motesTypId, setMotesTypId] = useState<string>("styrelsemote");
+  const [motesTitel, setMotesTitel] = useState("Styrelsemöte");
+  const [intervall, setIntervall] = useState<ArshjulIntervall>("manadsvis_veckodag");
+  const [veckodag, setVeckodag] = useState<ArshjulVeckodag>(1);
+  const [vecka, setVecka] = useState<ArshjulVeckodagOrdning>(2);
+  const [manad, setManad] = useState(aktuellManad);
+  const [dag, setDag] = useState(15);
+  const [datum, setDatum] = useState(
+    `${innevarandeAr}-${String(aktuellManad).padStart(2, "0")}-15`,
+  );
+  const [startAr, setStartAr] = useState(innevarandeAr);
+  const [planFran, setPlanFran] = useState(innevarandeAr);
+  const [planTill, setPlanTill] = useState(kommandeAr);
+  const [hoppaSemester, setHoppaSemester] = useState(true);
+
+  // Myndighetskrav / övrigt
+  const [kravTypId, setKravTypId] = useState("ovk_3");
+  const [kravTitel, setKravTitel] = useState("OVK (3 år)");
+  const [kravBeskrivning, setKravBeskrivning] = useState(
+    "Obligatorisk ventilationskontroll — ofta verksamheter.",
+  );
+  const [ovrigtTypId, setOvrigtTypId] = useState("staddag");
+  const [ovrigtTitel, setOvrigtTitel] = useState("Städdag");
+  const [ovrigtBeskrivning, setOvrigtBeskrivning] = useState(
+    "Gemensam städ- och ordningsdag.",
+  );
+
+  // Agenda på möte/månad
+  const [agendaMoteId, setAgendaMoteId] = useState<string | null>(null);
+  const [agendaManad, setAgendaManad] = useState(aktuellManad);
+  const [redigerarId, setRedigerarId] = useState<string | null>(null);
+
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
     const sparade = lasHandelser();
-    if (sparade.length > 0) {
-      setHandelser(sparade);
-    } else if (arGrundmallForening(lasAktivForeningId())) {
-      setHandelser(exempelHandelser);
-    } else {
-      setHandelser([]);
-    }
+    if (sparade.length > 0) setHandelser(sparade);
+    else if (arGrundmallForening(lasAktivForeningId())) {
+      setHandelser(skapaExempel(new Date().getFullYear()));
+    } else setHandelser([]);
     skipFirstSave.current = true;
     setHydrated(true);
   }, []);
@@ -114,11 +164,6 @@ export function ArshjulModul() {
     [handelser, valtAr],
   );
 
-  const tillfallenTidslinje = useMemo(
-    () => expanderaTillfallen(handelser, innevarandeAr, tidslinjeSlutAr),
-    [handelser, innevarandeAr, tidslinjeSlutAr],
-  );
-
   const paminnelser = useMemo(() => {
     const till = new Date();
     till.setFullYear(till.getFullYear() + 2);
@@ -128,113 +173,325 @@ export function ArshjulModul() {
   const perManad = useMemo(() => {
     const map = new Map<number, ArshjulTillfalle[]>();
     for (let m = 1; m <= 12; m++) map.set(m, []);
-    for (const t of tillfallenAr) {
-      map.get(t.manad)?.push(t);
-    }
+    for (const t of tillfallenAr) map.get(t.manad)?.push(t);
     return map;
   }, [tillfallenAr]);
 
-  const perArTidslinje = useMemo(() => {
-    const map = new Map<number, ArshjulTillfalle[]>();
-    for (const t of tillfallenTidslinje) {
-      const lista = map.get(t.ar) ?? [];
-      lista.push(t);
-      map.set(t.ar, lista);
-    }
-    return [...map.entries()].sort(([a], [b]) => a - b);
-  }, [tillfallenTidslinje]);
+  const moten = useMemo(
+    () => handelser.filter((h) => arMotesHandelse(h)),
+    [handelser],
+  );
 
-  function uppdateraHandelse(id: string, patch: Partial<ArshjulHandelse>) {
-    setHandelser((current) =>
-      current.map((h) => (h.id === id ? normaliseraHandelse({ ...h, ...patch }) : h)),
+  function valjMotesTyp(id: string) {
+    setMotesTypId(id);
+    const typ = motesTypAlternativ.find((t) => t.id === id);
+    if (!typ) return;
+    if (id !== "eget") setMotesTitel(typ.etikett);
+    else if (
+      !motesTitel ||
+      motesTypAlternativ.some((t) => t.etikett === motesTitel)
+    ) {
+      setMotesTitel("");
+    }
+    setIntervall(typ.standardIntervall);
+    if (typ.standardManad) setManad(typ.standardManad);
+    setHoppaSemester(Boolean(typ.hoppaSemester));
+  }
+
+  function valjKravTyp(id: string) {
+    setKravTypId(id);
+    const typ = myndighetskravAlternativ.find((t) => t.id === id);
+    if (!typ) return;
+    if (id !== "eget") {
+      setKravTitel(typ.etikett);
+      setKravBeskrivning(typ.beskrivning ?? "");
+    } else {
+      setKravTitel("");
+      setKravBeskrivning(typ.beskrivning ?? "");
+    }
+    setIntervall(typ.standardIntervall);
+    if (typ.standardManad) setManad(typ.standardManad);
+    setStartAr(innevarandeAr);
+  }
+
+  function valjOvrigtTyp(id: string) {
+    setOvrigtTypId(id);
+    const typ = ovrigtAlternativ.find((t) => t.id === id);
+    if (!typ) return;
+    if (id !== "eget") {
+      setOvrigtTitel(typ.etikett);
+      setOvrigtBeskrivning(typ.beskrivning ?? "");
+    } else {
+      setOvrigtTitel("");
+      setOvrigtBeskrivning("");
+    }
+    setIntervall(typ.standardIntervall);
+    if (typ.standardManad) setManad(typ.standardManad);
+    if (typ.standardIntervall === "engang") {
+      setDatum(
+        `${valtAr}-${String(typ.standardManad ?? aktuellManad).padStart(2, "0")}-15`,
+      );
+    }
+  }
+
+  const grupper = useMemo(() => grupperaHandelser(handelser), [handelser]);
+
+  function uppdatera(id: string, patch: Partial<ArshjulHandelse> | ArshjulHandelse) {
+    setHandelser((cur) =>
+      cur.map((h) =>
+        h.id === id ? normaliseraHandelse({ ...h, ...patch }) : h,
+      ),
     );
   }
 
-  function taBortHandelse(id: string) {
-    setHandelser((current) => current.filter((h) => h.id !== id));
-    if (redigeraId === id) setRedigeraId(null);
+  function taBort(id: string) {
+    setHandelser((cur) => cur.filter((h) => h.id !== id));
+    if (agendaMoteId === id) setAgendaMoteId(null);
+    if (redigerarId === id) setRedigerarId(null);
   }
 
-  function markeraKlar(id: string, ar?: number) {
-    const h = handelser.find((x) => x.id === id);
-    if (!h) return;
-    if (h.typ === "intervall" && ar != null) {
-      uppdateraHandelse(id, { senastKlarAr: ar, klar: false });
-    } else {
-      uppdateraHandelse(id, { klar: true });
-    }
+  function taBortGrupp(poster: ArshjulHandelse[]) {
+    const ids = new Set(poster.map((p) => p.id));
+    setHandelser((cur) => cur.filter((h) => !ids.has(h.id)));
+    if (redigerarId && ids.has(redigerarId)) setRedigerarId(null);
   }
 
-  function sparaForm(event: React.FormEvent) {
-    event.preventDefault();
-    if (!form.titel.trim()) return;
-    const sparad = normaliseraHandelse({
-      ...form,
-      titel: form.titel.trim(),
-      id: redigeraId ?? form.id ?? skapaHandelseId(),
-    });
-    if (redigeraId) {
-      setHandelser((current) =>
-        current.map((h) => (h.id === redigeraId ? sparad : h)),
-      );
-      setRedigeraId(null);
-    } else {
-      setHandelser((current) => [...current, sparad]);
-    }
-    setForm(skapaTomHandelse());
+  function borjaRedigera(id: string) {
+    setRedigerarId(id);
     setSkapaOppen(false);
+    setVy("arshjul");
   }
 
-  function startaRedigera(h: ArshjulHandelse) {
-    setRedigeraId(h.id);
-    setForm({ ...h });
-    setSkapaOppen(true);
+  function sparaRedigering(
+    id: string,
+    patch: Partial<ArshjulHandelse>,
+  ) {
+    uppdatera(id, patch);
+    setRedigerarId(null);
+    setMeddelande("Ändringar sparade.");
   }
 
-  function importeraUnderhallsplan() {
-    const nya = importeraFranUnderhallsplan(handelser);
-    if (nya.length === 0) {
-      setImportMeddelande(
-        "Inga nya besiktningar att importera — spara underhållsplanen först eller allt är redan importerat.",
-      );
+  function skapaMote() {
+    const typ = motesTypAlternativ.find((t) => t.id === motesTypId);
+    const titel =
+      motesTypId === "eget"
+        ? motesTitel.trim()
+        : motesTitel.trim() || typ?.etikett || "Möte";
+    if (!titel) {
+      setMeddelande("Ange ett namn på mötet.");
       return;
     }
-    setHandelser((current) => [...current, ...nya]);
-    setImportMeddelande(`${nya.length} besiktning(ar) importerade från underhållsplanen.`);
+    const kategori: ArshjulKategori =
+      motesTypId === "eget" ? "ovrigt" : (motesTypId as ArshjulKategori);
+
+    const bas: Partial<ArshjulHandelse> = {
+      titel,
+      kategori,
+      underkategori: motesTypId === "eget" ? "Möte" : undefined,
+      intervall,
+      paminnelseDagar: [90, 30, 14, 7],
+      planerasFranAr: planFran,
+      planerasTillAr: planTill,
+      undantagnaManader:
+        hoppaSemester && behoverPlaneringsperiod(intervall) ? [7, 8] : [],
+    };
+
+    if (intervall === "engang" || intervall === "veckovis") {
+      bas.datum = datum;
+    } else if (intervall === "manadsvis_veckodag") {
+      bas.veckodag = veckodag;
+      bas.veckodagOrdning = vecka;
+    } else if (intervall === "manadsvis" || intervall === "kvartalsvis") {
+      bas.manad = manad;
+      bas.dag = dag;
+    } else if (intervall === "arlig") {
+      bas.manad = manad;
+      bas.dag = dag;
+    } else if (arFlerarsIntervall(intervall)) {
+      bas.manad = manad;
+      bas.dag = dag;
+      bas.startAr = startAr;
+    }
+
+    const h = skapaTomHandelse(bas);
+    setHandelser((cur) => [...cur, h]);
+    setAgendaMoteId(h.id);
+    setAgendaManad(aktuellManad);
+    setSkapaOppen(false);
+    setMeddelande(
+      `${titel} tillagt med påminnelser. Välj månad och lägg till punkter vid behov.`,
+    );
   }
 
-  function importeraProjekt() {
-    const nya = importeraFranProjekt(handelser);
-    if (nya.length === 0) {
-      setImportMeddelande(
-        "Inget nytt att importera från projekt (garantibesiktning eller tidsplan).",
-      );
+  function skapaMyndighetskrav() {
+    const typ = myndighetskravAlternativ.find((t) => t.id === kravTypId);
+    const titel =
+      kravTypId === "eget"
+        ? kravTitel.trim()
+        : kravTitel.trim() || typ?.etikett || "Myndighetskrav";
+    if (!titel) {
+      setMeddelande("Ange namn på myndighetskravet.");
       return;
     }
-    setHandelser((current) => [...current, ...nya]);
-    setImportMeddelande(`${nya.length} påminnelse(r) från projekt importerade.`);
+    const bas: Partial<ArshjulHandelse> = {
+      titel,
+      kategori: typ?.kategori ?? "besiktning",
+      underkategori: "Myndighetskrav",
+      beskrivning: kravBeskrivning.trim(),
+      intervall,
+      paminnelseDagar: [365, 180, 90, 30],
+      manad,
+      dag,
+    };
+    if (arFlerarsIntervall(intervall)) {
+      bas.startAr = startAr;
+    }
+    if (intervall === "engang") {
+      bas.datum = datum;
+    }
+    const h = skapaTomHandelse(bas);
+    setHandelser((cur) => [...cur, h]);
+    setSkapaOppen(false);
+    setMeddelande(`${titel} tillagt med påminnelser.`);
+  }
+
+  function skapaOvrigt() {
+    const typ = ovrigtAlternativ.find((t) => t.id === ovrigtTypId);
+    const titel =
+      ovrigtTypId === "eget"
+        ? ovrigtTitel.trim()
+        : ovrigtTitel.trim() || typ?.etikett || "Övrigt";
+    if (!titel) {
+      setMeddelande("Ange namn.");
+      return;
+    }
+    const bas: Partial<ArshjulHandelse> = {
+      titel,
+      kategori: "ovrigt",
+      underkategori: "Övrigt",
+      beskrivning: ovrigtBeskrivning.trim(),
+      intervall,
+      paminnelseDagar: [60, 30, 14],
+      manad,
+      dag,
+      planerasFranAr: planFran,
+      planerasTillAr: planTill,
+    };
+    if (intervall === "engang" || intervall === "veckovis") {
+      bas.datum = datum;
+    }
+    const h = skapaTomHandelse(bas);
+    setHandelser((cur) => [...cur, h]);
+    setSkapaOppen(false);
+    setMeddelande(`${titel} tillagt.`);
   }
 
   function TillfalleChip({ t }: { t: ArshjulTillfalle }) {
     const h = handelser.find((x) => x.id === t.handelseId);
+    const planerat = t.planeratDatumIso ?? t.datumIso;
+    if (t.installd) {
+      return (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs">
+          <p className="font-medium line-through opacity-70">{t.titel}</p>
+          <p className="text-amber-900">Inställt</p>
+          {h && (
+            <button
+              type="button"
+              onClick={() =>
+                uppdatera(h.id, aterstallTillfalle(h, planerat, t.datumIso))
+              }
+              className="mt-1 underline"
+            >
+              Återställ
+            </button>
+          )}
+        </div>
+      );
+    }
     return (
       <div
-        className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]}`}
+        className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]} ${
+          t.arKlar ? "opacity-55" : ""
+        }`}
       >
         <p className="font-medium">{t.titel}</p>
-        {t.dag > 1 && (
-          <p className="opacity-80">
-            {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
+        <p>
+          {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
+          {t.arKlar ? " · klart" : ""}
+        </p>
+        {(t.punkterPaTillfalle ?? []).length > 0 && (
+          <p className="mt-0.5 opacity-90">
+            {t.punkterPaTillfalle!.join(", ")}
           </p>
         )}
-        {h && !h.klar && (
+        {h && t.arKlar && (
           <button
             type="button"
-            onClick={() => markeraKlar(h.id, t.ar)}
-            className="mt-1 underline-offset-2 hover:underline"
+            onClick={() =>
+              uppdatera(
+                h.id,
+                aterstallTillfalleKlar(h, t.datumIso, planerat),
+              )
+            }
+            className="mt-1 font-medium underline"
           >
-            Markera klar
+            Återställ
           </button>
+        )}
+        {h && !t.arKlar && (
+          <div className="mt-1 flex flex-col gap-0.5">
+            {arMotesHandelse(h) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAgendaMoteId(h.id);
+                  setAgendaManad(t.manad);
+                }}
+                className="text-left font-medium underline"
+              >
+                Lägg till punkt
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                uppdatera(h.id, markeraTillfalleKlar(h, t.datumIso))
+              }
+              className="text-left underline"
+            >
+              Markera klart
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                let n = stallInTillfalle(h, planerat);
+                if (planerat !== t.datumIso) n = stallInTillfalle(n, t.datumIso);
+                uppdatera(h.id, n);
+              }}
+              className="text-left underline"
+            >
+              Ställ in
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Ta bort mötet permanent? Det kan inte återställas.",
+                  )
+                ) {
+                  return;
+                }
+                uppdatera(
+                  h.id,
+                  taBortTillfallePermanent(h, planerat, t.datumIso),
+                );
+              }}
+              className="text-left text-red-800 underline"
+            >
+              Ta bort
+            </button>
+          </div>
         )}
       </div>
     );
@@ -245,12 +502,12 @@ export function ArshjulModul() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="max-w-3xl space-y-2">
-        <p className="text-sm leading-relaxed text-muted">
-          Samla styrelsens årshjul och långsiktiga kalender på ett ställe. Lägg in
-          egna påminnelser eller importera besiktningar från underhållsplanen — OVK
-          och andra kontroller kan ligga flera år fram i tiden.
+    <div className="space-y-5">
+      <div className="max-w-2xl space-y-2">
+        <p className="text-sm text-muted">
+          Lägg till möten, myndighetskrav eller övrigt — med intervall och
+          påminnelser. Alla tre har också <strong>Lägg till</strong> för egna
+          poster.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -258,286 +515,583 @@ export function ArshjulModul() {
       <div className="flex flex-wrap gap-2">
         {(
           [
-            ["arshjul", "Årshjul"],
-            ["tidslinje", "Tidslinje"],
-            ["paminnelser", `Påminnelser (${paminnelser.length})`],
+            [innevarandeAr, "I år"],
+            [kommandeAr, "Kommande"],
           ] as const
-        ).map(([id, label]) => (
+        ).map(([ar, label]) => (
           <button
-            key={id}
+            key={ar}
             type="button"
-            onClick={() => setVy(id)}
+            onClick={() => {
+              setValtAr(ar);
+              setVy("arshjul");
+            }}
             className={`rounded-full px-4 py-2 text-sm font-medium ${
-              vy === id
+              valtAr === ar && vy === "arshjul"
                 ? "bg-primary text-white"
-                : "border border-border bg-white text-muted hover:border-primary/50"
+                : "border border-border bg-white text-muted"
             }`}
           >
-            {label}
+            {label} ({ar})
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setVy("paminnelser")}
+          className={`rounded-full px-4 py-2 text-sm font-medium ${
+            vy === "paminnelser"
+              ? "bg-primary text-white"
+              : "border border-border bg-white text-muted"
+          }`}
+        >
+          Påminnelser ({paminnelser.length})
+        </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {!skapaOppen ? (
         <button
           type="button"
-          onClick={importeraUnderhallsplan}
-          className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+          onClick={() => setSkapaOppen(true)}
+          className="rounded-xl border border-primary/40 bg-[#eef6f0] px-4 py-3 font-semibold text-primary-dark hover:bg-[#e4f0e8]"
         >
-          Importera besiktningar (underhållsplan)
+          + Lägg till
         </button>
-        <button
-          type="button"
-          onClick={importeraProjekt}
-          className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-primary/50"
-        >
-          Importera från projekt (garanti + tidsplaner)
-        </button>
-      </div>
-      {importMeddelande && (
+      ) : (
+        <div className="rounded-xl border border-primary/40 bg-[#eef6f0]">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <p className="font-semibold text-primary-dark">Lägg till</p>
+            <button
+              type="button"
+              onClick={() => setSkapaOppen(false)}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Stäng
+            </button>
+          </div>
+          <div className="space-y-4 border-t border-primary/20 px-4 pb-4 pt-3">
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["mote", "Möte"],
+                ["myndighetskrav", "Myndighetskrav"],
+                ["ovrigt", "Övrigt"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setSnabbTyp(id);
+                  if (id === "mote") valjMotesTyp(motesTypId);
+                  if (id === "myndighetskrav") valjKravTyp(kravTypId);
+                  if (id === "ovrigt") valjOvrigtTyp(ovrigtTypId);
+                }}
+                className={`rounded-full px-3 py-1.5 text-sm ${
+                  snabbTyp === id
+                    ? "bg-primary text-white"
+                    : "border border-border bg-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {snabbTyp === "mote" && (
+            <div className="space-y-3">
+              <label className="block text-sm">
+                Typ av möte
+                <select
+                  value={motesTypId}
+                  onChange={(e) => valjMotesTyp(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {motesTypAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {(motesTypId === "eget" ||
+                motesTypId === "projekteringsmote" ||
+                motesTypId === "upphandlingsmote") && (
+                <label className="block text-sm">
+                  Namn
+                  <input
+                    value={motesTitel}
+                    onChange={(e) => setMotesTitel(e.target.value)}
+                    placeholder="t.ex. Upphandlingsmöte fasad"
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {motesTypId === "eget" && (
+                <p className="text-xs text-muted">
+                  Eget möte — välj intervall och datum nedan.
+                </p>
+              )}
+
+              <label className="block text-sm">
+                Intervall
+                <select
+                  value={intervall}
+                  onChange={(e) =>
+                    setIntervall(e.target.value as ArshjulIntervall)
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {intervallAlternativ.map((i) => (
+                    <option key={i} value={i}>
+                      {intervallEtiketter[i]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {(intervall === "engang" || intervall === "veckovis") && (
+                <label className="block text-sm">
+                  {intervall === "veckovis" ? "Startdatum" : "Datum"}
+                  <input
+                    type="date"
+                    value={datum}
+                    onChange={(e) => setDatum(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+
+              {intervall === "manadsvis_veckodag" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Vecka i månaden
+                    <select
+                      value={vecka}
+                      onChange={(e) =>
+                        setVecka(
+                          Number(e.target.value) as ArshjulVeckodagOrdning,
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {Object.entries(veckodagOrdningEtiketter).map(
+                        ([v, etikett]) => (
+                          <option key={v} value={v}>
+                            {etikett}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Veckodag
+                    <select
+                      value={veckodag}
+                      onChange={(e) =>
+                        setVeckodag(Number(e.target.value) as ArshjulVeckodag)
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {([1, 2, 3, 4, 5, 6, 7] as ArshjulVeckodag[]).map((d) => (
+                        <option key={d} value={d}>
+                          {veckodagEtiketter[d]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {(intervall === "manadsvis" ||
+                intervall === "kvartalsvis" ||
+                intervall === "arlig" ||
+                arFlerarsIntervall(intervall)) && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Månad
+                    <select
+                      value={manad}
+                      onChange={(e) => setManad(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((n, i) => (
+                        <option key={n} value={i + 1}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Dag
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={dag}
+                      onChange={(e) => setDag(Number(e.target.value) || 1)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {arFlerarsIntervall(intervall) && (
+                <label className="block text-sm">
+                  Första / nästa år
+                  <input
+                    type="number"
+                    value={startAr}
+                    onChange={(e) => setStartAr(Number(e.target.value))}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+
+              {behoverPlaneringsperiod(intervall) && (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["i-nasta", "I år + kommande", 1],
+                        ["bara", "Bara i år", 0],
+                        ["3", "3 år", 2],
+                      ] as const
+                    ).map(([id, label, extra]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setPlanFran(innevarandeAr);
+                          setPlanTill(innevarandeAr + extra);
+                        }}
+                        className="rounded-full border border-border px-3 py-1 text-xs hover:border-primary/50"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-sm">
+                      Från år
+                      <input
+                        type="number"
+                        value={planFran}
+                        onChange={(e) => setPlanFran(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      Till och med år
+                      <input
+                        type="number"
+                        value={planTill}
+                        onChange={(e) => setPlanTill(Number(e.target.value))}
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={hoppaSemester}
+                      onChange={(e) => setHoppaSemester(e.target.checked)}
+                    />
+                    Hoppa över juli och augusti
+                  </label>
+                </>
+              )}
+
+              <p className="text-xs text-muted">
+                Påminnelser skapas automatiskt (90, 30, 14 och 7 dagar före).
+              </p>
+              <button
+                type="button"
+                onClick={skapaMote}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              >
+                Lägg till möte
+              </button>
+            </div>
+          )}
+
+          {snabbTyp === "myndighetskrav" && (
+            <div className="space-y-3">
+              <label className="block text-sm">
+                Typ av myndighetskrav
+                <select
+                  value={kravTypId}
+                  onChange={(e) => valjKravTyp(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {myndighetskravAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {kravTypId === "eget" && (
+                <label className="block text-sm">
+                  Namn
+                  <input
+                    value={kravTitel}
+                    onChange={(e) => setKravTitel(e.target.value)}
+                    placeholder="t.ex. Hissbesiktning"
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {(kravBeskrivning || kravTypId === "eget") && (
+                <label className="block text-sm">
+                  Anteckning
+                  <textarea
+                    value={kravBeskrivning}
+                    onChange={(e) => setKravBeskrivning(e.target.value)}
+                    rows={2}
+                    placeholder={
+                      kravTypId === "sba"
+                        ? "Krav: dokumentation"
+                        : "Valfri beskrivning"
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {kravTypId === "sba" && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  Systematisk brandskyddskontroll ska göras varje år. Kravet är
+                  dokumentation.
+                </p>
+              )}
+              <label className="block text-sm">
+                Intervall
+                <select
+                  value={intervall}
+                  onChange={(e) =>
+                    setIntervall(e.target.value as ArshjulIntervall)
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {intervallAlternativ.map((i) => (
+                    <option key={i} value={i}>
+                      {intervallEtiketter[i]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {(intervall === "engang" || intervall === "veckovis") && (
+                <label className="block text-sm">
+                  Datum
+                  <input
+                    type="date"
+                    value={datum}
+                    onChange={(e) => setDatum(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {(intervall === "arlig" ||
+                arFlerarsIntervall(intervall) ||
+                intervall === "manadsvis" ||
+                intervall === "kvartalsvis") && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Månad
+                    <select
+                      value={manad}
+                      onChange={(e) => setManad(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((n, i) => (
+                        <option key={n} value={i + 1}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Dag
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={dag}
+                      onChange={(e) => setDag(Number(e.target.value) || 1)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
+              {arFlerarsIntervall(intervall) && (
+                <label className="block text-sm">
+                  Första / nästa år
+                  <input
+                    type="number"
+                    value={startAr}
+                    onChange={(e) => setStartAr(Number(e.target.value))}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              <p className="text-xs text-muted">
+                Påminnelser: 365, 180, 90 och 30 dagar före.
+              </p>
+              <button
+                type="button"
+                onClick={skapaMyndighetskrav}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              >
+                Lägg till myndighetskrav
+              </button>
+            </div>
+          )}
+
+          {snabbTyp === "ovrigt" && (
+            <div className="space-y-3">
+              <label className="block text-sm">
+                Typ
+                <select
+                  value={ovrigtTypId}
+                  onChange={(e) => valjOvrigtTyp(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {ovrigtAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {ovrigtTypId === "eget" && (
+                <label className="block text-sm">
+                  Namn
+                  <input
+                    value={ovrigtTitel}
+                    onChange={(e) => setOvrigtTitel(e.target.value)}
+                    placeholder="t.ex. Lekplatsdag"
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              <label className="block text-sm">
+                Intervall
+                <select
+                  value={intervall}
+                  onChange={(e) =>
+                    setIntervall(e.target.value as ArshjulIntervall)
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {intervallAlternativ.map((i) => (
+                    <option key={i} value={i}>
+                      {intervallEtiketter[i]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {(intervall === "engang" || intervall === "veckovis") && (
+                <label className="block text-sm">
+                  Datum
+                  <input
+                    type="date"
+                    value={datum}
+                    onChange={(e) => setDatum(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+              )}
+              {(intervall === "arlig" ||
+                arFlerarsIntervall(intervall) ||
+                intervall === "manadsvis" ||
+                intervall === "kvartalsvis") && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    Månad
+                    <select
+                      value={manad}
+                      onChange={(e) => setManad(Number(e.target.value))}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {manadsnamn.map((n, i) => (
+                        <option key={n} value={i + 1}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    Dag
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={dag}
+                      onChange={(e) => setDag(Number(e.target.value) || 1)}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={skapaOvrigt}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              >
+                Lägg till
+              </button>
+            </div>
+          )}
+          </div>
+        </div>
+      )}
+
+      {meddelande && (
         <p className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
-          {importMeddelande}
+          {meddelande}
         </p>
       )}
 
-      <details
-        className="rounded-2xl border border-primary/40 bg-[#eef6f0]"
-        open={skapaOppen || undefined}
-        onToggle={(e) => setSkapaOppen((e.target as HTMLDetailsElement).open)}
-      >
-        <summary className="cursor-pointer list-none px-5 py-4 [&::-webkit-details-marker]:hidden">
-          <span className="font-semibold text-primary-dark">
-            {redigeraId ? "Redigera händelse" : "+ Lägg till påminnelse / händelse"}
-          </span>
-        </summary>
-        <form onSubmit={sparaForm} className="space-y-4 border-t border-primary/20 px-5 pb-5 pt-2">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block sm:col-span-2">
-              <span className="text-sm font-medium">Titel</span>
-              <input
-                required
-                value={form.titel}
-                onChange={(e) => setForm({ ...form, titel: e.target.value })}
-                placeholder="t.ex. OVK, Årsstämma, Radonmätning"
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="text-sm font-medium">Beskrivning</span>
-              <textarea
-                value={form.beskrivning}
-                onChange={(e) => setForm({ ...form, beskrivning: e.target.value })}
-                rows={2}
-                placeholder="Vad ska göras, vem ansvarar, länkar…"
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">Kategori</span>
-              <select
-                value={form.kategori}
-                onChange={(e) =>
-                  setForm({ ...form, kategori: e.target.value as ArshjulKategori })
-                }
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              >
-                {(Object.keys(kategoriEtiketter) as ArshjulKategori[]).map((k) => (
-                  <option key={k} value={k}>
-                    {kategoriEtiketter[k]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">Typ</span>
-              <select
-                value={form.typ}
-                onChange={(e) =>
-                  setForm({ ...form, typ: e.target.value as ArshjulHandelseTyp })
-                }
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              >
-                <option value="engang">Engång (datum)</option>
-                <option value="arlig">Årligen (samma månad)</option>
-                <option value="intervall">Intervall (t.ex. vart 6:e år)</option>
-              </select>
-            </label>
-
-            {form.typ === "engang" && (
-              <label className="block sm:col-span-2">
-                <span className="text-sm font-medium">Datum</span>
-                <input
-                  type="date"
-                  required
-                  value={form.datum ?? ""}
-                  onChange={(e) => setForm({ ...form, datum: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-              </label>
-            )}
-
-            {(form.typ === "arlig" || form.typ === "intervall") && (
-              <>
-                <label className="block">
-                  <span className="text-sm font-medium">Månad</span>
-                  <select
-                    value={form.manad ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, manad: Number(e.target.value) })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  >
-                    {manadsnamn.map((namn, i) => (
-                      <option key={namn} value={i + 1}>
-                        {namn}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="text-sm font-medium">Dag i månaden</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={28}
-                    value={form.dag ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, dag: Number(e.target.value) || 1 })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                </label>
-              </>
-            )}
-
-            {form.typ === "intervall" && (
-              <>
-                <label className="block">
-                  <span className="text-sm font-medium">Första / nästa år</span>
-                  <input
-                    type="number"
-                    min={innevarandeAr - 5}
-                    max={innevarandeAr + 50}
-                    value={form.startAr ?? innevarandeAr}
-                    onChange={(e) =>
-                      setForm({ ...form, startAr: Number(e.target.value) })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-sm font-medium">Intervall (år)</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={form.intervallAr ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, intervallAr: Number(e.target.value) || 1 })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                  <span className="mt-1 block text-xs text-muted">
-                    t.ex. 3 för OVK, 10 för radon, 6 för energideklaration
-                  </span>
-                </label>
-              </>
-            )}
-
-            <label className="block sm:col-span-2">
-              <span className="text-sm font-medium">
-                Påminnelse (dagar före) — kommaseparerat
-              </span>
-              <input
-                value={form.paminnelseDagar.join(", ")}
-                onChange={(e) => {
-                  const dagar = e.target.value
-                    .split(",")
-                    .map((s) => Number.parseInt(s.trim(), 10))
-                    .filter((n) => !Number.isNaN(n) && n > 0);
-                  setForm({
-                    ...form,
-                    paminnelseDagar:
-                      dagar.length > 0 ? dagar : [...STANDARD_PAMINNELSE_DAGAR],
-                  });
-                }}
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-              <span className="mt-1 block text-xs text-muted">
-                Standard: {STANDARD_PAMINNELSE_DAGAR.join(", ")} dagar
-              </span>
-            </label>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-            >
-              {redigeraId ? "Spara ändringar" : "Lägg till"}
-            </button>
-            {redigeraId && (
-              <button
-                type="button"
-                onClick={() => {
-                  setRedigeraId(null);
-                  setForm(skapaTomHandelse());
-                  setSkapaOppen(false);
-                }}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
-              >
-                Avbryt
-              </button>
-            )}
-          </div>
-        </form>
-      </details>
-
       {vy === "arshjul" && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium text-foreground">
-              Visa år
-              <select
-                value={valtAr}
-                onChange={(e) => setValtAr(Number(e.target.value))}
-                className="ml-2 rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-              >
-                {Array.from({ length: 21 }, (_, i) => innevarandeAr - 2 + i).map((ar) => (
-                  <option key={ar} value={ar}>
-                    {ar}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/50 p-4 sm:p-6">
-            <div className="mb-4 text-center">
-              <p className="text-3xl font-bold text-primary-dark">{valtAr}</p>
-              <p className="text-sm text-muted">
-                Årshjul — {tillfallenAr.length} händelser detta år
-              </p>
-            </div>
-            <div
-              className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4"
-              aria-label={`Årshjul ${valtAr}`}
-            >
+          <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/40 p-4">
+            <p className="mb-3 text-center text-2xl font-bold text-primary-dark">
+              {valtAr}
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 12 }, (_, i) => i + 1).map((manad) => {
                 const poster = perManad.get(manad) ?? [];
+                const arAktuell =
+                  manad === aktuellManad && valtAr === innevarandeAr;
                 return (
                   <div
                     key={manad}
-                    className="flex min-h-[6rem] flex-col rounded-xl border border-border bg-white p-2.5 shadow-sm"
+                    className={`flex min-h-[5.5rem] flex-col rounded-xl border bg-white p-2.5 ${
+                      arAktuell
+                        ? "border-primary ring-1 ring-primary/30"
+                        : "border-border"
+                    }`}
                   >
-                    <p className="text-xs font-bold text-foreground">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAgendaManad(manad);
+                        if (moten[0]) setAgendaMoteId(moten[0].id);
+                      }}
+                      className="text-left text-xs font-bold text-foreground hover:text-primary-dark"
+                    >
                       {manadsnamn[manad - 1]}
-                    </p>
-                    <div className="mt-1.5 flex flex-1 flex-col gap-1 overflow-y-auto">
+                      {arAktuell ? " · nu" : ""}
+                    </button>
+                    <div className="mt-1.5 flex flex-1 flex-col gap-1">
                       {poster.length === 0 ? (
-                        <span className="text-[10px] text-muted/50">Inget inlagt</span>
+                        <span className="text-[10px] text-muted/50">—</span>
                       ) : (
                         poster.map((t) => (
-                          <TillfalleChip key={`${t.handelseId}-${t.ar}`} t={t} />
+                          <TillfalleChip
+                            key={`${t.handelseId}-${t.datumIso}`}
+                            t={t}
+                          />
                         ))
                       )}
                     </div>
@@ -548,76 +1102,181 @@ export function ArshjulModul() {
           </div>
 
           <ul className="space-y-2">
-            {handelser.map((h) => (
-              <li
-                key={h.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              >
-                <span className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}>
-                  {kategoriEtiketter[h.kategori]}
-                </span>
-                <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
-                <span className="text-xs text-muted">
-                  {h.typ === "engang" && h.datum
-                    ? formatDatumKort(h.datum)
-                    : h.typ === "arlig"
-                      ? `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`
-                      : `Vart ${h.intervallAr}:e år från ${h.startAr}`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => startaRedigera(h)}
-                  className="text-xs text-primary-dark hover:underline"
-                >
-                  Redigera
-                </button>
-                <button
-                  type="button"
-                  onClick={() => taBortHandelse(h.id)}
-                  className="text-xs text-muted hover:text-red-700"
-                >
-                  Ta bort
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+            {grupper.map(({ nyckel, poster }) => {
+              const arMyndighet =
+                poster.every((p) => p.underkategori === "Myndighetskrav") ||
+                Boolean(poster[0]?.gruppNyckel?.startsWith("ovk"));
+              if (arMyndighet && poster.length >= 1) {
+                return (
+                  <li
+                    key={nyckel}
+                    className="rounded-lg border border-sky-200 bg-sky-50/50 px-3 py-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-sky-950">
+                          Myndighetskrav
+                        </p>
+                        <ul className="mt-1 space-y-1.5 text-xs text-sky-900">
+                          {poster.map((p) => (
+                            <li key={p.id}>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="flex-1">
+                                  {p.titel}
+                                  {" · "}
+                                  {handelseIntervallText(p)}
+                                  {p.startAr ? ` · nästa ${p.startAr}` : ""}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setRedigerarId(
+                                      redigerarId === p.id ? null : p.id,
+                                    )
+                                  }
+                                  className="font-medium text-primary-dark underline"
+                                >
+                                  {redigerarId === p.id ? "Stäng" : "Ändra"}
+                                </button>
+                                {poster.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => taBort(p.id)}
+                                    className="text-muted hover:text-red-700"
+                                  >
+                                    Ta bort
+                                  </button>
+                                )}
+                              </div>
+                              {redigerarId === p.id && (
+                                <HandelseRedigeraPanel
+                                  handelse={p}
+                                  innevarandeAr={innevarandeAr}
+                                  onSpara={(patch) =>
+                                    sparaRedigering(p.id, patch)
+                                  }
+                                  onAvbryt={() => setRedigerarId(null)}
+                                />
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      {poster.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => taBortGrupp(poster)}
+                          className="text-xs text-muted hover:text-red-700"
+                        >
+                          Ta bort
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => taBort(poster[0]!.id)}
+                          className="text-xs text-muted hover:text-red-700"
+                        >
+                          Ta bort
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              }
 
-      {vy === "tidslinje" && (
-        <div className="space-y-4">
-          <label className="text-sm font-medium">
-            Visa fram till år
-            <input
-              type="number"
-              min={innevarandeAr}
-              max={innevarandeAr + 50}
-              value={tidslinjeSlutAr}
-              onChange={(e) => setTidslinjeSlutAr(Number(e.target.value))}
-              className="ml-2 w-24 rounded-lg border border-border px-2 py-1 text-sm"
-            />
-          </label>
-          <div className="space-y-4">
-            {perArTidslinje.map(([ar, poster]) => (
-              <div key={ar} className="rounded-xl border border-border bg-white p-4">
-                <h3 className="text-lg font-bold text-foreground">{ar}</h3>
-                <ul className="mt-3 space-y-2">
-                  {poster.map((t) => (
-                    <li
-                      key={`${t.handelseId}-${t.datumIso}`}
-                      className="flex flex-wrap items-center gap-2"
+              const h = poster[0];
+              if (!h) return null;
+              return (
+                <li
+                  key={h.id}
+                  className="rounded-lg border border-border bg-white px-3 py-3 text-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}
                     >
-                      <span className="text-sm text-muted">{formatDatumKort(t.datumIso)}</span>
-                      <TillfalleChip t={t} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-            {perArTidslinje.length === 0 && (
-              <p className="text-sm text-muted">Inga händelser i vald period.</p>
+                      {h.underkategori === "Övrigt"
+                        ? "Övrigt"
+                        : kategoriEtiketter[h.kategori]}
+                    </span>
+                    <span className="flex-1 font-medium">{h.titel}</span>
+                    <span className="text-xs text-muted">
+                      {handelseIntervallText(h)}
+                    </span>
+                    {arMotesHandelse(h) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAgendaMoteId(h.id);
+                          setAgendaManad(aktuellManad);
+                        }}
+                        className="text-xs text-primary-dark underline"
+                      >
+                        Punkter
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRedigerarId(redigerarId === h.id ? null : h.id)
+                      }
+                      className="text-xs font-medium text-primary-dark underline"
+                    >
+                      {redigerarId === h.id ? "Stäng" : "Ändra"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => taBort(h.id)}
+                      className="text-xs text-muted hover:text-red-700"
+                    >
+                      Ta bort
+                    </button>
+                  </div>
+                  {redigerarId === h.id && (
+                    <HandelseRedigeraPanel
+                      handelse={h}
+                      innevarandeAr={innevarandeAr}
+                      onSpara={(patch) => sparaRedigering(h.id, patch)}
+                      onAvbryt={() => setRedigerarId(null)}
+                    />
+                  )}
+                  {(h.motesPunkter ?? []).filter((p) => !p.klar).length > 0 && (
+                    <p className="mt-1.5 text-xs text-muted">
+                      Öppna punkter:{" "}
+                      {(h.motesPunkter ?? [])
+                        .filter((p) => !p.klar)
+                        .map((p) => p.text)
+                        .join(", ")}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+            {grupper.length === 0 && (
+              <li className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted">
+                Inget inlagt ännu. Börja med styrelsemöte.
+              </li>
             )}
-          </div>
+          </ul>
+
+          {moten.length > 0 && (
+            <MotesDokumentPanel
+              moten={moten}
+              valtAr={valtAr}
+              aktuellManad={aktuellManad}
+              innevarandeAr={innevarandeAr}
+              moteId={agendaMoteId}
+              manad={agendaManad}
+              onMoteIdChange={setAgendaMoteId}
+              onManadChange={setAgendaManad}
+              onMeddelande={setMeddelande}
+              onLaggTillManadsPunkt={(moteId, text, manad) => {
+                const h = handelser.find((x) => x.id === moteId);
+                if (!h) return;
+                uppdatera(moteId, laggTillPunktForManad(h, text, manad));
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -625,8 +1284,7 @@ export function ArshjulModul() {
         <div className="space-y-3">
           {paminnelser.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted">
-              Inga aktiva påminnelser de närmaste två åren. Lägg till händelser eller
-              importera från underhållsplanen.
+              Inga aktiva påminnelser just nu.
             </p>
           ) : (
             paminnelser.map((p) => (
@@ -640,23 +1298,19 @@ export function ArshjulModul() {
                       : "border-primary/30 bg-[#eef6f0]"
                 }`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-foreground">{p.rubrik}</p>
-                    <p className="mt-1 text-sm text-muted">{p.text}</p>
-                    <p className="mt-1 text-xs text-muted">
-                      {formatDatumKort(p.tillfalleDatum)} ·{" "}
-                      {kategoriEtiketter[p.kategori]}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => markeraKlar(p.handelseId)}
-                    className="shrink-0 text-xs font-medium text-primary-dark hover:underline"
-                  >
-                    Markera klar
-                  </button>
-                </div>
+                <p className="font-semibold">{p.rubrik}</p>
+                <p className="mt-1 text-sm text-muted">{p.text}</p>
+                <p className="mt-1 text-xs text-muted">
+                  {formatDatumKort(p.tillfalleDatum)} ·{" "}
+                  {kategoriEtiketter[p.kategori]}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => borjaRedigera(p.handelseId)}
+                  className="mt-2 text-sm font-medium text-primary-dark underline"
+                >
+                  Ändra intervall / datum
+                </button>
               </div>
             ))
           )}

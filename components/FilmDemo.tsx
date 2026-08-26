@@ -5,6 +5,7 @@ import {
   InformationsFilmSpelare,
   type InformationsFilmScen,
 } from "@/components/InformationsFilmSpelare";
+import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 
 const scenesPublic: InformationsFilmScen[] = [
@@ -59,8 +60,10 @@ type FilmDemoProps = {
 
 export function FilmDemo({ variant = "public" }: FilmDemoProps) {
   const isForening = variant === "forening";
+  const foreningsNamn = useAktivForeningsNamn();
   const scener = isForening ? scenesForening : scenesPublic;
   const scenMs = isForening ? 6000 : 5000;
+  const portalNamn = isForening ? foreningsNamn : STYRELSEFLOW_NAMN;
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
@@ -68,7 +71,7 @@ export function FilmDemo({ variant = "public" }: FilmDemoProps) {
         <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
           <div className="bg-primary-dark p-6 text-white sm:p-8">
             <p className="text-sm font-semibold text-white/75">
-              {isForening ? `Introduktion · ${STYRELSEFLOW_NAMN}` : "Film & prisuppgift"}
+              {isForening ? `Introduktion · ${portalNamn}` : "Film & prisuppgift"}
             </p>
             <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
               {isForening
@@ -90,10 +93,10 @@ export function FilmDemo({ variant = "public" }: FilmDemoProps) {
             ) : (
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
-                  href="/styrelse-login"
+                  href="/prova-gratis"
                   className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-white/90"
                 >
-                  Prova gratis 30 dagar
+                  Pröva gratis
                 </Link>
                 <Link
                   href="#priser"

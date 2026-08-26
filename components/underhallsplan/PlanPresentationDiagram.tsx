@@ -8,6 +8,7 @@ import type { PlanUtgiftsArRad } from "@/components/underhallsplan/plan-budget-s
 const FARG = {
   avsattning: "#2d6a4f",
   besiktning: "#b45309",
+  direktkostnad: "#ca8a04",
   investering: "#5b21b6",
 } as const;
 
@@ -234,6 +235,13 @@ export function PlanPresentationDiagram({
           <span className="flex items-center gap-1.5">
             <span
               className="h-3 w-3 rounded-sm"
+              style={{ backgroundColor: FARG.direktkostnad }}
+            />
+            {PLAN_BEGREPP.direktkostnader}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-3 w-3 rounded-sm"
               style={{ backgroundColor: FARG.investering }}
             />
             {PLAN_BEGREPP.investeringarPlan}
@@ -283,6 +291,11 @@ export function PlanPresentationDiagram({
                   key: "besiktning",
                   val: rad.besiktningar,
                   color: FARG.besiktning,
+                },
+                {
+                  key: "direktkostnad",
+                  val: rad.direktkostnader,
+                  color: FARG.direktkostnad,
                 },
                 {
                   key: "investering",
@@ -475,6 +488,8 @@ export function PlanPresentationDiagram({
                 <span className="font-semibold text-foreground">{rad.ar}</span>
                 <span className="text-muted">
                   {PLAN_BEGREPP.utgifterArsbudget}: {formatKr(rad.utgifterArsbudget)}
+                  {rad.direktkostnader > 0 &&
+                    ` · ${PLAN_BEGREPP.direktkostnader}: ${formatKr(rad.direktkostnader)}`}
                   {rad.investeringPlan > 0 &&
                     ` · ${PLAN_BEGREPP.investeringarPlan}: ${formatKr(rad.investeringPlan)}`}
                 </span>

@@ -10,7 +10,8 @@
     "build": "next build",
     "demo": "next build && next start",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "publicera": "bash scripts/publicera.sh"
   },
   "dependencies": {
     "react": "19.1.0",

@@ -4,17 +4,18 @@ import { hamtaAktivForeningsNamn } from "@/lib/forening-registry";
 /** Modulnamn per föreningssökväg — används i flikrubrik efter föreningens namn. */
 export const FORENING_MODUL_TITLAR: Record<string, string> = {
   "/forening/uppgifter": "Föreningsuppgifter",
-  "/forening/underhallsplan": "Underhållsplan",
+  "/forening/underhallsplan": "Underhåll",
   "/forening/juridik": "Juridik",
   "/forening/foreningsinformation": "Föreningsinformation",
-  "/forening/arshjul": "Årshjul & kalender",
+  "/forening/arshjul": "Årshjul",
   "/forening/projekt": "Projekt",
   "/forening/medlemmar": "Medlemmar",
   "/forening/energi": "Energi & drift",
   "/forening/upphandling": "Upphandling",
   "/forening/entreprenorer": "Entreprenörer",
+  "/forening/fastighets-skador": "Fastighetsskador",
   "/forening/rondering": "Rondering & avvikelser",
-  "/forening/guider": "Guider & tips",
+  "/forening/guider": "Tips och råd",
 };
 
 export function normaliseraForeningSokvag(pathname: string): string {

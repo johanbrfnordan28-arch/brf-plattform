@@ -1,4 +1,5 @@
 import { antalForeningsHuvudmappar } from "@/components/foreningsinformation/mappar";
+import { sbaChecklistaPunkterSomText } from "@/components/guider/sba-checklista";
 
 export type GuideFilmScen = {
   titel: string;
@@ -18,7 +19,7 @@ export type GuideFilm = {
 
 export type GuideTips = {
   id: string;
-  kategori: "upphandling" | "entreprenor";
+  kategori: "upphandling" | "entreprenor" | "projekt" | "brandskydd";
   titel: string;
   ingress: string;
   punkter: string[];
@@ -49,7 +50,7 @@ export const guideFilmer: GuideFilm[] = [
   },
   {
     id: "underhallsplan",
-    modul: "Underhållsplan",
+    modul: "Underhåll",
     titel: "Bygg underhållsplanen steg för steg",
     längd: "ca 55 sek",
     beskrivning:
@@ -70,24 +71,122 @@ export const guideFilmer: GuideFilm[] = [
     ],
   },
   {
-    id: "rondering",
-    modul: "Rondering",
-    titel: "Rondering och signering",
-    längd: "ca 40 sek",
+    id: "arshjul",
+    modul: "Årshjul",
+    titel: "Så fungerar styrelsens årshjul",
+    längd: "ca 45 sek",
     beskrivning:
-      "Checklistor, månadssignering och avvikelser — enkelt för fastighetsskötare och städ.",
+      "Se hur årshjul, tidslinje och påminnelser hänger ihop — utan att behöva öppna verktyget själv.",
     scener: [
       {
-        titel: "Schema och checklista",
-        text: "Entreprenören ser vad som ska göras och när — inga oklara papper i fickan.",
+        titel: "Årshjuls-vyn",
+        text: "Styrelsen ser hela året i ett grepp — stämma, bokslut, OVK och möten samlade per månad.",
       },
       {
-        titel: "Signera utfört",
-        text: "Utfört arbete signeras digitalt så styrelsen ser att ronderingen är gjord.",
+        titel: "Tidslinje flera år framåt",
+        text: "Byt till tidslinje och planera besiktningar och projekt långt innan deadline — inte i sista stund.",
       },
       {
-        titel: "Avvikelse",
-        text: "Saknas något rapporteras det direkt — styrelsen slipper jaga svar i efterhand.",
+        titel: "Påminnelser i rätt tid",
+        text: "Ställ in hur många dagar före ni vill bli påmind — inget viktigt datum glöms bort.",
+      },
+      {
+        titel: "Koppling till underhållsplan",
+        text: "Besiktningar från underhållsplanen kan importeras direkt — samma datum, ett ställe att följa upp.",
+      },
+      {
+        titel: "Överlever mandatperioder",
+        text: "Nästa styrelse tar över samma plan — historik och kommande händelser finns kvar.",
+      },
+    ],
+  },
+  {
+    id: "projekt",
+    modul: "Projekt",
+    titel: "Projektmappen — från förarbete till avslut",
+    längd: "ca 50 sek",
+    beskrivning:
+      "Styrelsen börjar enkelt med beskrivning och status — vi hjälper till med struktur, dokument och uppföljning.",
+    scener: [
+      {
+        titel: "Projektbeskrivning",
+        text: "Börja med en enkel modell: vad projektet gäller, hur läget är idag och vad ni vill ha när det är klart.",
+      },
+      {
+        titel: "Projektmappen",
+        text: "Kontrakt, ritningar och protokoll samlas per projekt och år — inget letande i mejl.",
+      },
+      {
+        titel: "Tidsplan och årshjul",
+        text: "Milstolpar kan föras över till årshjulet så styrelsen får påminnelse i rätt tid.",
+      },
+      {
+        titel: "Garantibesiktning",
+        text: "Modulen påminner när garantitiden närmar sig slut — innan ni förlorar rätten att reklamera.",
+      },
+      {
+        titel: "Stöd för resten",
+        text: "Upphandling, projektledning och tyngre dokumentation — det kan ni ta hjälp med när förarbetet är klart.",
+      },
+    ],
+  },
+  {
+    id: "rondering",
+    modul: "Rondering & avvikelser",
+    titel: "Rondering, signering och spårbarhet",
+    längd: "ca 45 sek",
+    beskrivning:
+      "Checklistor och månadssignering — se hur spårbarhet och avvikelser höjer kvaliteten i praktiken.",
+    scener: [
+      {
+        titel: "Tydliga checklistor",
+        text: "Utvändig och invändig rondering, städning i trapphus och tvättstuga — alla vet vad som ska ingå.",
+      },
+      {
+        titel: "Signering varje månad",
+        text: "Fastighetsskötare eller städbolag signerar utfört arbete — bara det höjer nivån jämfört med muntliga löften.",
+      },
+      {
+        titel: "Spårbarhet",
+        text: "Styrelsen ser vem som signerat, när och vad som gjorts — historik som finns kvar, inte i någons mejl.",
+      },
+      {
+        titel: "Avvikelser med uppföljning",
+        text: "Saknas något rapporteras det direkt med allvarlighetsgrad — och följs upp tills det är åtgärdat.",
+      },
+      {
+        titel: "Styrelsen har kontroll",
+        text: "Ingen utebliven rondering eller städning blir osynlig — ni kan agera innan medlemmarna hör av sig.",
+      },
+    ],
+  },
+  {
+    id: "lagenhetskort",
+    modul: "Lägenhetskort & renovering",
+    titel: "Lägenhetskort — enkelt för styrelsen, spårbart för alla",
+    längd: "ca 50 sek",
+    beskrivning:
+      "Ett kort per lägenhet med renoveringshistorik, krav och signering av överenskommelser.",
+    scener: [
+      {
+        titel: "Lägenhetskort",
+        text: "Varje lägenhet får ett tydligt kort — grunduppgifter, renoveringar och dokument på ett ställe.",
+      },
+      {
+        titel: "Enkelt för styrelsen",
+        text: "Välj typ av renovering — checklistan byggs automatiskt. Inget mejlkaos, samma format varje gång.",
+      },
+      {
+        titel: "Spårbar historik",
+        text: "Vad som gjorts, när och vem som godkänt — historiken finns kvar när styrelsen byts.",
+      },
+      {
+        titel: "Överenskommelse med medlem",
+        text: "Styrelsen skickar krav och villkor — medlemmen godkänner och signerar digitalt.",
+      },
+      {
+        titel: "Signering med BankID",
+        text: "När allt är klart signeras överenskommelsen — spårbart vem som stått för vad, innan arbetet startar.",
       },
     ],
   },
@@ -139,47 +238,93 @@ export const guideFilmer: GuideFilm[] = [
     id: "brandskydd-sba",
     modul: "Brandskydd",
     titel: "Systematiskt brandskyddsarbete (SBA)",
-    längd: "ca 50 sek",
+    längd: "ca 60 sek",
     beskrivning:
-      "Förbyggande brandskydd — i projekt, löpande under åren och med tydlig dokumentation.",
+      "Förbyggande brandskydd — årlig kontroll, medlemmars eget ansvar, utrymning och brandskyddsdokumentation vid större projekt.",
     scener: [
       {
-        titel: "Förbyggande syfte",
-        text: "SBA handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar kontroller och åtgärder innan riskerna växer.",
+        titel: "Förbyggande SBA",
+        text: "SBA (systematiskt brandskyddsarbete) handlar om att förebygga brand och rökskador — inte bara reagera när något hänt. Styrelsen planerar årliga kontroller innan riskerna växer.",
       },
       {
-        titel: "Brandskydd i projekt",
-        text: "När huset renoveras eller lägenheter byggs om ska fastighetens brandskydd vara en del av projektet — branddörrar, utrymningsvägar och rökgasevakuering får inte glömmas bort.",
+        titel: "Medlemmars eget ansvar",
+        text: "Brandvarnare i lägenheten ska kontrolleras årligen av medlemmen — funktion, signal och batteribyte. Frivilligt förebyggande som släckfilt och brandplan hemma är bra: en brand påverkar grannar och hela föreningen. Påminn minst en gång per år, gärna två — vid städdag på sommaren och inför jul när brandrisken är förhöjd.",
       },
       {
-        titel: "Löpande arbete",
-        text: "Det återkommande arbetet under åren är minst lika viktigt: årlig egenkontroll, branddörrar som stänger, fria utrymningsvägar och eventuell brandkonsult.",
+        titel: "Brandvarnare och släckare",
+        text: "I gemensamma utrymmen kontrolleras brandvarnare årligen av föreningen — funktion, batteribyte och utökning vid behov. Brandsläckare och annan släckutrustning ska vara på plats, inom giltighetstid och korrekt skyltad.",
+      },
+      {
+        titel: "Utrymning och skyltning",
+        text: "Utrymningsskyltar på väggen och vägvisning på golvet ska leda tydligt. Utrymningsvägar ska vara fria — i trapphus får ingen förvaring ske som kan orsaka brand eller försvåra utrymning.",
+      },
+      {
+        titel: "Medlemmars renovering",
+        text: "Vid lägenhetsrenovering är brandskydd viktigt — enklare information till medlemmen om brandceller, brandfarliga produkter och att trapphus ska hållas fritt.",
+      },
+      {
+        titel: "Föreningens projekt",
+        text: "Vid större projekt ska entreprenören ta fram brandskyddsdokumentation — hur brand förhindras och hur brandspridning minimeras. Mindre projekt kan hanteras med enklare skriftlig kommunikation.",
       },
       {
         titel: "Dokumentation",
-        text: "Protokoll, avvikelser och genomförda åtgärder sparas i portalen — så nästa styrelse och myndigheter ser att brandskyddet sköts över tid.",
+        text: "Protokoll, avvikelser och brandskyddsdokumentation sparas i portalen — så nästa styrelse och myndigheter ser att brandskyddet sköts över tid.",
       },
     ],
   },
   {
     id: "energi",
     modul: "Energi & drift",
-    titel: "Värme, belysning och livslängd",
-    längd: "ca 45 sek",
+    titel: "Energi, drift och payback time",
+    längd: "ca 50 sek",
     beskrivning:
-      "Skillnaden mellan teknisk livslängd och energiåtgärder som sänker driftkostnaden.",
+      "Värme, belysning och payback — jämför kostnader före och efter investering.",
     scener: [
       {
-        titel: "Två olika saker",
-        text: "Byte planeras efter teknisk livslängd — energiåtgärder ger effekt tidigare.",
+        titel: "Ett ständigt arbete",
+        text: "Tips och råd om energi och drift utvecklas löpande — modulen växer med er förenings behov.",
       },
       {
-        titel: "Värme",
-        text: "Injustering och rondering av undercentralen minskar onödig förbrukning.",
+        titel: "Teknisk livslängd vs energi",
+        text: "Stora byten planeras i underhållsplanen — injustering, LED och styrning ger effekt tidigare.",
       },
       {
-        titel: "Belysning",
-        text: "LED och styrning sänker elräkningen; armaturbyte planeras separat.",
+        titel: "Kostnader före och efter",
+        text: "Samla driftkostnad innan åtgärden — det är grunden för att se om investeringen lönar sig.",
+      },
+      {
+        titel: "Payback time",
+        text: "Räkna hur många år det tar innan lägre värme- och elkostnad täckt investeringen — centralt för styrelsens beslut.",
+      },
+      {
+        titel: "Kassa-plus efter payback",
+        text: "När payback är nådd kan återstående avskrivningstid bli ett plus — pengar till nästa åtgärd.",
+      },
+    ],
+  },
+  {
+    id: "projektutvardering",
+    modul: "Projekt",
+    titel: "Projektutvärdering — ekonomi och payback",
+    längd: "ca 55 sek",
+    beskrivning:
+      "Jämför drift, försäkring och investering före och efter — räkna payback och kassa-plus under avskrivningstiden.",
+    scener: [
+      {
+        titel: "Baslinje 2–5 år före",
+        text: "Samla vatten, el, värme, försäkringspremier och skadehistorik innan projektet startar — så ni ser trender och kan jämföra.",
+      },
+      {
+        titel: "Efter slutbesiktning",
+        text: "Följ upp samma nyckeltal efter godkänd slutbesiktning — idealiskt genom hela entreprenörens tioåriga ansvarstid.",
+      },
+      {
+        titel: "Payback och kassa-plus",
+        text: "Räkna återbetalningstid när lägre drift täcker investeringen. Betalar sig projektet på fem år med tjugo års avskrivning blir resterande år ett plus i kassan.",
+      },
+      {
+        titel: "Säkerhet och försäkring",
+        text: "Säkerhet kan inte värderas i kronor — bedöm brand, utrymning och fukt separat. Budgetera för försäkringsluckor och skador som inte ersätts fullt ut.",
       },
     ],
   },
@@ -259,5 +404,36 @@ export const guideTips: GuideTips[] = [
       "Notera vad som fungerade dåligt — så ni undviker samma misstag.",
       "Uppdatera underhållsplanen om komponenter bytts eller renoverats.",
     ],
+  },
+  {
+    id: "projektutvardering",
+    kategori: "projekt",
+    titel: "Projektutvärdering — checklista",
+    ingress:
+      "Jämför ekonomi och risker före, under och efter projektet — inklusive entreprenörens ansvarstid. Säkerhet kan inte värderas i kronor men ska alltid bedömas separat.",
+    punkter: [
+      "Baslinje 2–5 år före start: samla förbrukning av vatten, el och värme (kWh, m³, fjärrvärme eller motsvarande) så trender syns innan åtgärden.",
+      "Baslinje 2–5 år före start: notera försäkringspremier, självrisker och historik av försäkringsskador — vad kostade skadorna totalt och vad ersattes?",
+      "Baslinje 2–5 år före start: dokumentera drift- och underhållskostnader för berörda delar (t.ex. tak, stammar, fasad) så ni kan jämföra före/efter.",
+      "Finansiering: om likvida medel saknas i kassan bör högre avsättning till underhållsfond planeras minst två år före projektstart — undvik att låsa budgeten sent.",
+      "Investeringskostnad: projektkostnad, finansiering, ränta och eventuella tilläggsarbeten — tydligt avgränsat i beslutsunderlaget.",
+      "Efter godkänd slutbesiktning: följ upp samma nyckeltal (vatten, el, värme) minst lika länge som ni har baslinje — idealiskt genom hela entreprenörens ansvarstid (10 år).",
+      "Payback time (återbetalningstid): räkna när lägre driftkostnader och färre skador har täckt projektets nettokostnad — t.ex. om värme och el minskar med X kr/år, hur många år tar det?",
+      "Avskrivning vs payback: ett energiprojekt kan betala sig på t.ex. 5 år medan teknisk avskrivning är 20 år — då blir åren 6–20 ett plus i kassan som kan finansiera nästa åtgärd.",
+      "Fördröjd renovering: skjuter ni på åtgärden växer ofta både skadekostnad och investeringsbehov — ta med det i jämförelsen mellan ”göra nu” och ”vänta”.",
+      "Säkerhet (ej i kronor): bedöm brand, utrymning, fall, fukt och personsäkerhet vid och efter projektet — detta kan inte ersättas av en payback-kalkyl.",
+      "Försäkringsrisker: kartlägg kommande förändringar i försäkringsskydd, höjda premier eller begränsad ersättning efter större skador eller flera skadeärenden.",
+      "Skador utan full ersättning: räkna med att flera skador eller skador utanför policyn kan behöva täckas av föreningen — budgetera för självrisk och ”luckor” i försäkringen.",
+      "Entreprenörens ansvarstid (10 år): spara slutbesiktning, garantibevis och avvikelser; följ upp om fel upptäcks inom ansvarstiden så krav kan ställas i tid.",
+      "Sammanställning till styrelsen: en sida med före/efter-siffror, payback, kvarvarande risker och säkerhetsbedömning — underlag inför nästa projekt och årsredovisning.",
+    ],
+  },
+  {
+    id: "sba-arbete",
+    kategori: "brandskydd",
+    titel: "Systematiskt brandskyddsarbete (SBA) — checklista",
+    ingress:
+      "Förbyggande brandskydd med årlig kontroll av brandvarnare, brandsläckare, utrymning och skyltning — medlemmars eget ansvar (brandvarnare i lägenheten) och påminnelser vid städdag och jul — samt brandskydd vid medlemmars och föreningens projekt.",
+    punkter: sbaChecklistaPunkterSomText(),
   },
 ];

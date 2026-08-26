@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import { skapaNyForening } from "@/lib/forening-registry";
+import { initieraSkapareSomBehorig } from "@/lib/kund-inloggning";
 import { navigeraTillNyForening } from "@/lib/skapa-forening-navigering";
 
 type Props = {
   kompakt?: boolean;
   visaSnabbstart?: boolean;
+  /** Kräv demo-signering med BankID innan skapande (föreningsformation på startsidan). */
+  visaBankId?: boolean;
 };
 
 const DEMO_FORENINGS_NAMN = "Brf Testförening";
@@ -16,11 +19,13 @@ const DEMO_FORENINGS_NAMN = "Brf Testförening";
 export function SkapaForeningPanel({
   kompakt = false,
   visaSnabbstart = false,
+  visaBankId = false,
 }: Props) {
   const [namn, setNamn] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [skapar, setSkapar] = useState(false);
   const [skapatNamn, setSkapatNamn] = useState<string | null>(null);
+  const [bankidSteg, setBankidSteg] = useState<"idle" | "pågår" | "klar">("idle");
   const checkboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,6 +50,9 @@ export function SkapaForeningPanel({
     setSkapar(true);
     try {
       const profil = skapaNyForening(trimmatNamn);
+      initieraSkapareSomBehorig(profil.id, {
+        namn: profil.kontaktperson || "Styrelseansvarig",
+      });
       setSkapatNamn(profil.namn);
       navigeraTillNyForening(profil);
       window.setTimeout(() => {
@@ -66,11 +74,25 @@ export function SkapaForeningPanel({
       setFel("Bocka i rutan: du tillhör styrelsen (eller har mandat).");
       return;
     }
+    if (visaBankId && bankidSteg !== "klar") {
+      setFel("Signera med BankID innan ni skapar föreningen.");
+      return;
+    }
     if (!trimmatNamn) {
       setFel("Döp föreningen — t.ex. Brf Solsidan 1.");
       return;
     }
     korSkapa(trimmatNamn);
+  }
+
+  function signeraMedBankId() {
+    if (!arStyrelseBekraftat()) {
+      setFel("Bocka i styrelserutan först — sedan signera med BankID.");
+      return;
+    }
+    setFel(null);
+    setBankidSteg("pågår");
+    window.setTimeout(() => setBankidSteg("klar"), 1400);
   }
 
   function hanteraSkapaMedNamn(event?: React.SyntheticEvent) {
@@ -97,9 +119,9 @@ export function SkapaForeningPanel({
         Skapa vår förening
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Ni får en egen kopia av grundmallen — samma moduler som BRF Företag visar,
+        Ni får en egen kopia av grundmallen — samma moduler som {BRF_NAVET_NAMN} visar,
         men med <strong className="text-foreground">ert föreningsnamn</strong> och
-        er egen data i webbläsaren (demo).
+        er egen data{visaBankId ? ", bekräftat med BankID" : " i webbläsaren"}.
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
         <strong>Endast styrelsen</strong> ska skapa föreningens sida. Entreprenörer
@@ -132,9 +154,37 @@ export function SkapaForeningPanel({
           />
           <span className="text-muted">
             Jag bekräftar att jag är styrelseledamot eller har styrelsens mandat att
-            skapa föreningens sida i BRF Företag.
+            skapa föreningens sida i {BRF_NAVET_NAMN}.
           </span>
         </label>
+
+        {visaBankId && (
+          <div className="rounded-xl border border-primary/30 bg-white/90 p-4">
+            <p className="text-sm font-semibold text-foreground">
+              Bekräfta med BankID
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Styrelsen signerar att ni startar föreningens portal — tryck på knappen
+              nedan (demo utan riktig BankID-koppling).
+            </p>
+            <button
+              type="button"
+              disabled={bankidSteg === "pågår" || skapar}
+              onClick={signeraMedBankId}
+              className={`mt-3 w-full rounded-lg px-4 py-3 text-sm font-semibold transition-colors ${
+                bankidSteg === "klar"
+                  ? "border border-primary bg-[#eef6f0] text-primary-dark"
+                  : "bg-primary text-white hover:bg-primary-dark disabled:opacity-60"
+              }`}
+            >
+              {bankidSteg === "pågår"
+                ? "Öppnar BankID…"
+                : bankidSteg === "klar"
+                  ? "Signerat med BankID ✓"
+                  : "Signera med BankID"}
+            </button>
+          </div>
+        )}
 
         {fel && (
           <p
@@ -157,7 +207,7 @@ export function SkapaForeningPanel({
                 : "Skapar er förening …"}
             </p>
             <p className="mt-1 text-muted">
-              Ni skickas till {STYRELSEFLOW_NAMN} om ett ögonblick.
+              Ni skickas till er förenings huvudsida om ett ögonblick.
             </p>
           </div>
         )}

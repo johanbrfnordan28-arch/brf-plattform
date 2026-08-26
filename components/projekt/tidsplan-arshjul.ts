@@ -28,7 +28,7 @@ function milstolpeTillHandelse(
       .filter(Boolean)
       .join(" "),
     kategori: "underhall",
-    typ: "engang",
+    intervall: "engang",
     datum,
     startAr: ar,
     manad,

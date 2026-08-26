@@ -11,11 +11,15 @@ Eller klistra in i Safari:
 (Börja på BRF Företag-startsidan, klicka dig vidare därifrån.)
 
 
-LADDA UPP TILL GITHUB (en gång)
--------------------------------
-1. Skapa tomt repo på github.com med namnet: brf-plattform
-2. Dubbelklicka:  PUBLICERA-GITHUB.command
-3. Logga in om det frågas
+SKICKA UPP TILL GITHUB (varje gång du vill synka)
+-------------------------------------------------
+Dubbelklicka:  PUBLICERA-GITHUB.command
+
+Gör automatiskt: lägg till ändringar → commit → push till GitHub.
+Vid första gången: skapa tomt repo på github.com (brf-plattform) och logga in om det frågas.
+
+Alternativ i terminalen:  npm run publicera
+Alternativ i webbläsaren (vid npm run dev):  http://127.0.0.1:3010/dev
 
 
 PUBLIK LÄNK TILL KOLLEGOR (efter GitHub)

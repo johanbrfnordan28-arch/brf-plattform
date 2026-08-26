@@ -2,11 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { KortGuideFilm } from "@/components/guider/KortGuideFilm";
+import { guideFilmer } from "@/components/guider/guider";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
+
+const BOSTADSRATTSLAGEN_URL =
+  "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/bostadsrattslag-1991614_sfs-1991-614/";
+
+const BOVERKET_UNDERHALLSPLAN_URL =
+  "https://www.boverket.se/sv/ekonomiska-planer/ekonomisk-plan/teknisk-underhallsplan/";
+
+const underhallsplanFilm = guideFilmer.find((f) => f.id === "underhallsplan")!;
 
 export const metadata: Metadata = {
-  title: "Underhållsplan — BRF Företag",
+  title: `Underhållsplan — ${BRF_NAVET_NAMN}`,
   description:
-    "Bygg upp föreningens underhållsplan med grunduppgifter, komponentregister, historik och bildstöd.",
+    "Få hjälp att ta fram eller uppdatera föreningens underhållsplan — grunduppgifter, renoveringshistorik och komponentregister samlat.",
 };
 
 export default function UnderhallsplanPage() {
@@ -17,29 +28,23 @@ export default function UnderhallsplanPage() {
       intro="I föreningens egen portal bygger styrelsen eller styrelsens ombud upp underhållsplanen steg för steg: grunduppgifter, komponenter, tidigare renoveringar, kostnader och bildstöd samlas på ett ställe."
     >
       <div className="rounded-xl border border-primary/40 bg-[#eef6f0] p-5 sm:p-6">
-        <p className="text-sm font-semibold text-primary-dark">
-          Interaktiv underhållsplan
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          Den här sidan beskriver funktionerna. Själva verktyget — wizard med
-          komponentregister, budget och bildstöd — finns i{" "}
-          <strong className="font-medium text-foreground">Grundmall föreningar</strong>{" "}
-          efter inloggning.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
+        <p className="text-sm leading-relaxed text-muted">
+          Ni kan få hjälp med att ta fram en ny underhållsplan eller uppdatera er
+          befintliga. Det som behövs är grunduppgifter om fastigheten och en
+          överskådlig beskrivning av utförda renoveringar. Rätt sak på rätt plats
+          — det hjälper vi till med när ni{" "}
           <Link
-            href="/styrelse-login"
-            className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+            href="/#intro-film"
+            className="font-medium text-primary-dark underline hover:no-underline"
           >
-            Logga in (demo)
+            hör av er och får prisuppgift
           </Link>
-          <Link
-            href="/forening/underhallsplan"
-            className="inline-flex rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-          >
-            Gå direkt till verktyget
-          </Link>
-        </div>
+          .
+        </p>
+      </div>
+
+      <div className="max-w-2xl">
+        <KortGuideFilm film={underhallsplanFilm} />
       </div>
 
       <ContentSection title="Grunduppgifter först">
@@ -81,6 +86,35 @@ export default function UnderhallsplanPage() {
           Bilder laddas upp per komponent, till exempel tak och fasad. Systemet kan ge
           ett förslag på typ och synliga brister — men det är alltid föreningen som
           avgör om analysen stämmer innan underhåll planeras.
+        </p>
+      </ContentSection>
+
+      <ContentSection title="Lagkrav och innehåll">
+        <p>
+          Lagkravet på teknisk underhållsplan gäller för nyproducerade och nyombildade
+          bostadsrättsföreningar från och med 1 januari 2024 — se{" "}
+          <a
+            href={BOSTADSRATTSLAGEN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary-dark underline hover:no-underline"
+          >
+            bostadsrättslagen (3 kap. 1 a §)
+          </a>
+          .
+        </p>
+        <p>
+          Vad den tekniska underhållsplanen ska innehålla och hur den ska utformas
+          framgår på{" "}
+          <a
+            href={BOVERKET_UNDERHALLSPLAN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-primary-dark underline hover:no-underline"
+          >
+            Boverkets webbplats
+          </a>
+          .
         </p>
       </ContentSection>
     </ModulePage>

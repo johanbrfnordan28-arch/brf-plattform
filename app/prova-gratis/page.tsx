@@ -1,27 +1,48 @@
 import type { Metadata } from "next";
-import { ModulePage } from "@/components/ModulePage";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import Link from "next/link";
+import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 
 export const metadata: Metadata = {
-  title: "Skapa vår förening — BRF Företag",
+  title: `Pröva gratis — ${BRF_NAVET_NAMN}`,
   description:
-    "Styrelsen skapar er förenings sida och kan prova plattformen gratis i 30 dagar.",
+    "Välj en testförening och prova hela plattformen gratis — logga in direkt, data sparas per förening.",
 };
 
-/** Bokmärkesadress i Safari — endast sidan för att skapa föreningen. */
 export default function ProvaGratisPage() {
   return (
-    <ModulePage
-      title="Skapa vår förening"
-      icon="🏠"
-      intro="Här skapar styrelsen er egen föreningssida (kopia av grundmallen). Fyll i namn, bocka i bekräftelsen och tryck på den gröna knappen nedan."
-    >
-      <div>
-        <h2 className="mb-4 text-xl font-semibold text-foreground">
-          Steg 1 — Skapa föreningens sida
-        </h2>
-        <SkapaForeningPanel visaSnabbstart />
+    <main className="flex min-h-[calc(100vh-4rem)] flex-col bg-surface/40 py-12">
+      <div className="mx-auto mb-10 max-w-2xl px-4 text-center sm:px-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary-dark">
+          {BRF_NAVET_NAMN} · 30 dagar gratis
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Välj en testförening
+        </h1>
+        <p className="mt-3 text-base text-muted">
+          Fem färdiga demo-föreningar att klicka sig in i. Ingen bindning — utforska
+          underhållsplan, upphandling och övriga moduler i er egen takt.
+        </p>
       </div>
-    </ModulePage>
+
+      <StyrelseLoginModul />
+
+      <p className="mt-10 text-center text-sm text-muted">
+        Vill ni starta på riktigt?{" "}
+        <Link
+          href="/#foreningsformation"
+          className="font-medium text-primary-dark underline hover:no-underline"
+        >
+          Skapa er egen förening
+        </Link>
+        {" · "}
+        <Link href="/" className="font-medium text-primary-dark underline hover:no-underline">
+          Tillbaka till startsidan
+        </Link>
+      </p>
+      <p className="mt-3 text-center text-xs text-muted">
+        All data sparas lokalt i din webbläsare. Testperioden är gratis.
+      </p>
+    </main>
   );
 }
