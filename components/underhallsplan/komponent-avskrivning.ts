@@ -170,6 +170,11 @@ const rekommendationer: Record<
       arK3Komponent: true,
       hint: "FAR: från-/tilluft 20 år; självdrag 100 år.",
     },
+    filterbyte: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Filterbyte — löpande underhåll, kostnadsförs årligen.",
+    },
     kanaler: {
       rekommenderadAvskrivningAr: 0,
       arK3Komponent: false,

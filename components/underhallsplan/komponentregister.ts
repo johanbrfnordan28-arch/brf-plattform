@@ -389,6 +389,12 @@ export type UnderkomponentRad = {
    */
   installationskostnadKr?: string;
   underhallKostnadKr?: string;
+  /**
+   * Ursprungligt belopp inkl. moms — sparas när moms tas bort så att avdraget kan visas/återställas.
+   */
+  underhallKostnadInklMomsKr?: string;
+  /** Moms som tagits bort från kostnaden och särredovisas (kr per tillfälle). */
+  underhallMomsAvdragenKr?: string;
   /** total | kvm | styck | blandad — styr hur kostnaden räknas ut. */
   underhallPrisEnhet?: string;
   /** Kr per m² (kvm/blandad) eller per styck (styck). */
@@ -819,6 +825,12 @@ const komponentMallar: Record<string, KomponentMall> = {
         detaljPanel: "ventilation-extra-lista",
       },
       { id: "aggregat", etikett: "Aggregat", defaultMåttenhet: "antal", måttHint: "Antal ventilationsaggregat." },
+      {
+        id: "filterbyte",
+        etikett: "Filterbyte",
+        defaultMåttenhet: "antal",
+        måttHint: "Filterbyte per år — kostnad för filter till ventilationsaggregat.",
+      },
       { id: "kanaler", etikett: "Kanaler / kanalnet", defaultMåttenhet: "kvm", måttHint: "Kanalyta eller schablon kvm." },
       { id: "don", etikett: "Don / ventiler", defaultMåttenhet: "antal", måttHint: "Antal don." },
     ],
@@ -1676,6 +1688,10 @@ function slåIhopVarmecentralUnderkomponent(
     installationskostnadKr:
       källa.installationskostnadKr || mallRad.installationskostnadKr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
+    underhallKostnadInklMomsKr:
+      källa.underhallKostnadInklMomsKr || mallRad.underhallKostnadInklMomsKr,
+    underhallMomsAvdragenKr:
+      källa.underhallMomsAvdragenKr || mallRad.underhallMomsAvdragenKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
     underhallEnhetsprisKr: källa.underhallEnhetsprisKr || mallRad.underhallEnhetsprisKr,
     underhallPrisAntal: källa.underhallPrisAntal || mallRad.underhallPrisAntal,
@@ -1960,6 +1976,10 @@ function slåIhopFasadmaterialRad(
     installationskostnadKr:
       källa.installationskostnadKr || mallRad.installationskostnadKr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
+    underhallKostnadInklMomsKr:
+      källa.underhallKostnadInklMomsKr || mallRad.underhallKostnadInklMomsKr,
+    underhallMomsAvdragenKr:
+      källa.underhallMomsAvdragenKr || mallRad.underhallMomsAvdragenKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
     underhallEnhetsprisKr: källa.underhallEnhetsprisKr || mallRad.underhallEnhetsprisKr,
     underhallPrisAntal: källa.underhallPrisAntal || mallRad.underhallPrisAntal,

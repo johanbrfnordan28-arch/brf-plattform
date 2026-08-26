@@ -10,6 +10,7 @@ import { UnderhallBlandadPrisFalt } from "@/components/underhallsplan/UnderhallB
 import {
   hamtaRiktprisForUnderkomponent,
 } from "@/components/underhallsplan/underhall-atgard-riktpris";
+import { MomsAvdragKnapp } from "@/components/underhallsplan/MomsAvdragKnapp";
 import {
   beraknaUnderhallKostnadFranEnhet,
   hamtaUnderhallPrisEnhet,
@@ -268,10 +269,35 @@ export function UnderhallKostnadFalt({
                 underhallKostnadKr: e.target.value,
                 underhallPrisEnhet: "total",
                 underhallEnhetsprisKr: "",
+                underhallMomsAvdragenKr: "",
+                underhallKostnadInklMomsKr: "",
               })
             }
             placeholder="Tomt = lägg till senare"
             className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          />
+          <MomsAvdragKnapp
+            kostnadKr={rad.underhallKostnadKr}
+            momsAvdragenKr={rad.underhallMomsAvdragenKr}
+            kostnadInklMomsKr={rad.underhallKostnadInklMomsKr}
+            onApply={({ kostnadExklMoms, momsAvdragen, kostnadInklMoms }) =>
+              onChange({
+                underhallKostnadKr: String(kostnadExklMoms),
+                underhallMomsAvdragenKr: String(momsAvdragen),
+                underhallKostnadInklMomsKr: String(kostnadInklMoms),
+                underhallPrisEnhet: "total",
+              })
+            }
+            onAterstall={() => {
+              const inkl = rad.underhallKostnadInklMomsKr?.trim();
+              if (!inkl) return;
+              onChange({
+                underhallKostnadKr: inkl,
+                underhallMomsAvdragenKr: "",
+                underhallKostnadInklMomsKr: "",
+                underhallPrisEnhet: "total",
+              });
+            }}
           />
           <p className="mt-1 text-[10px] text-muted">
             Välj «Yta + styck + total» om du vill fördela på m² och styck med

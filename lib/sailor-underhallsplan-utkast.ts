@@ -43,7 +43,8 @@ export const SAILOR_PLAN_NOTERING = [
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
   "VVS: avloppsspolning och filmning som kostnadsfört underhåll (vart 10:e år).",
-  "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam).",
+  "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam). Filterbyte 1 gång/år.",
+  "10 laddstolpar installerade (2026). Energideklaration utförd 2026. Offert radonmätning finns.",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
   "Gemensam gård sköts av Farstadals samfällighetsförening — ingår inte i föreningens egna markåtgärder.",
@@ -89,6 +90,29 @@ function byggSailorBesiktningar(): Besiktning[] {
         /** OVK-protokoll 2026-03-02 — nästa ordinarie 2032-03-02 */
         senastUtförtAr: 2026,
         nastaBesiktningAr: 2032,
+        /** Faktisk offert 550 kr/lgh inkl. moms — planen behåller 300 kr/lgh exkl. moms. */
+        kostnadPerLagenhetKr: 300,
+        senastKostnadKr: 550 * 40,
+      };
+    }
+    if (b.id === "energideklaration") {
+      return {
+        ...b,
+        aktiv: true,
+        intervallAr: 10,
+        senastUtförtAr: 2026,
+        nastaBesiktningAr: 2036,
+        kostnadFastKr: 12_000,
+      };
+    }
+    if (b.id === "radon") {
+      return {
+        ...b,
+        aktiv: true,
+        intervallAr: 10,
+        /** Offert finns — planeras i planstartåret. */
+        nastaBesiktningAr: SAILOR_PLAN_START_AR,
+        kostnadFastKr: 14_865,
       };
     }
     if (b.id === "hiss") {
@@ -232,11 +256,28 @@ export function byggSailorKomponentUtkast(): {
       valdaDeltyper: ["fjarrvarme"],
     },
     Ventilation: {
-      ...aktivera("Ventilation", ["aggregat"], () => ({
-        värde: "2",
-        underhallNastaAr: "2032",
-        underhallIntervallAr: "6",
-      })),
+      ...aktivera("Ventilation", ["aggregat", "filterbyte"], (r) => {
+        if (r.id === "aggregat") {
+          return {
+            värde: "2",
+            underhallNastaAr: "2032",
+            underhallIntervallAr: "6",
+          };
+        }
+        if (r.id === "filterbyte") {
+          // 36 859 kr inkl. moms → exkl. 29 487, moms 7 372 (25 %)
+          return {
+            värde: "2",
+            underhallNastaAr: String(planStartAr),
+            underhallIntervallAr: "1",
+            underhallPrisEnhet: "total",
+            underhallKostnadKr: "29487",
+            underhallKostnadInklMomsKr: "36859",
+            underhallMomsAvdragenKr: "7372",
+          };
+        }
+        return {};
+      }),
       // OVK 2026: FX — frånluft + värmeåtervinning (inte FTX)
       valdaDeltyper: ["fx"],
     },
@@ -274,17 +315,26 @@ export function byggSailorKomponentUtkast(): {
       ...aktivera(
         KOMPLEMENT_BYGGNAD_NAMN,
         ["cykelrum", "soprum", P_PLATSER_ID],
-        (r) =>
-          r.id === P_PLATSER_ID
-            ? { värde: "40" }
-            : { värde: "1" },
+        (r) => {
+          if (r.id === P_PLATSER_ID) {
+            // 10 laddstolpar: 436 750 kr inkl. moms → exkl. 349 400, moms 87 350
+            return {
+              värde: "40",
+              installationskostnadKr: "349400",
+              underhallKostnadInklMomsKr: "436750",
+              underhallMomsAvdragenKr: "87350",
+            };
+          }
+          return { värde: "1" };
+        },
       ),
       valdaDeltyper: ["mark"],
       pPlatserRegister: {
         [P_PLATSER_ID]: {
           ...skapaTomPPlatserData(),
           motordvarmare: "20",
-          "p-plats": "20",
+          "p-plats": "10",
+          elbilsladdare: "10",
         },
       },
     },

@@ -19,6 +19,7 @@ import {
   hamtaUnderhallTillfallenPriser,
 } from "@/components/underhallsplan/underhall-tillfallen-register";
 import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
+import { parseKrBelopp } from "@/components/underhallsplan/moms";
 import { effektivUnderhallKostnadKr } from "@/components/underhallsplan/underhall-kostnad";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 import type { RenoveringFordelningKontext } from "@/components/underhallsplan/renovering-fordelning";
@@ -51,6 +52,8 @@ export type UnderhallAtgard = {
    * false/undefined = planerad investering som kan aktiveras/skrivas av.
    */
   direktkostnad?: boolean;
+  /** Moms som tagits bort från kostnaden och särredovisas detta tillfälle. */
+  momsAvdragenKr?: number;
 };
 
 /** Avgör om en åtgärd ska särredovisas som kostnadsfört underhåll. */
@@ -141,6 +144,7 @@ export function samlaUnderhallAtgarder(
       let ar = parseAr(rad.underhallNastaAr ?? "") || planStartAr;
       if (ar < planStartAr) ar = planStartAr;
       const direktkostnad = arDirektkostnadUnderhall(komponent, rad.id);
+      const momsAvdragenKr = parseKrBelopp(rad.underhallMomsAvdragenKr);
 
       while (ar <= planSlutAr) {
         atgarder.push({
@@ -152,6 +156,7 @@ export function samlaUnderhallAtgarder(
           kalla: "register",
           underkomponentId: rad.id,
           direktkostnad,
+          ...(momsAvdragenKr > 0 ? { momsAvdragenKr } : {}),
         });
         ar += intervall;
       }

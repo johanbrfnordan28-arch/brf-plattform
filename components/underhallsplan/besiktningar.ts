@@ -57,6 +57,13 @@ export type Besiktning = {
   antalEldstäder: number;
   /** Radon, energideklaration — fast pris per tillfälle. */
   kostnadFastKr: number;
+  /**
+   * Moms som tagits bort från kostnaden (per tillfälle totalt, eller per lgh för OVK)
+   * och särredovisas i budgeten.
+   */
+  momsAvdragenKr?: number;
+  /** Ursprungligt belopp inkl. moms innan avdrag. */
+  kostnadInklMomsKr?: number;
   /** Sotning: debitering mot lägenheter med öppen spis/eldstad — ingår ej i föreningens budget. */
   sotningInternDebitering?: boolean;
   /** Sotning intern debitering: antal lägenheter som debiteras. */

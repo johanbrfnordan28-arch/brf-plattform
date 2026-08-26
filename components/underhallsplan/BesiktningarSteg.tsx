@@ -27,6 +27,7 @@ import {
   type BesiktningId,
 } from "@/components/underhallsplan/besiktningar";
 import { SBA_BRANDKONSULT_INTERVALL_AR, SBA_DEFAULT_BRANDKONSULT_KR } from "@/components/underhallsplan/brandskydd";
+import { MomsAvdragKnapp } from "@/components/underhallsplan/MomsAvdragKnapp";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 
 type BesiktningarProps = {
@@ -414,6 +415,8 @@ export function Besiktningar({
                         onChange={(event) =>
                           uppdatera(besiktning.id, {
                             kostnadPerLagenhetKr: Number(event.target.value) || 0,
+                            momsAvdragenKr: undefined,
+                            kostnadInklMomsKr: undefined,
                           })
                         }
                         className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
@@ -423,6 +426,26 @@ export function Besiktningar({
                           ? `Riktpris ${OVK_RIKTPRIS_PER_LGH_KR} kr/lgh · × ${antalLagenheter || 0} lägenheter`
                           : `× ${antalLagenheter || 0} lägenheter från grunduppgifter`}
                       </span>
+                      <MomsAvdragKnapp
+                        kostnadKr={besiktning.kostnadPerLagenhetKr}
+                        momsAvdragenKr={besiktning.momsAvdragenKr}
+                        kostnadInklMomsKr={besiktning.kostnadInklMomsKr}
+                        onApply={({ kostnadExklMoms, momsAvdragen, kostnadInklMoms }) =>
+                          uppdatera(besiktning.id, {
+                            kostnadPerLagenhetKr: kostnadExklMoms,
+                            momsAvdragenKr: momsAvdragen,
+                            kostnadInklMomsKr: kostnadInklMoms,
+                          })
+                        }
+                        onAterstall={() => {
+                          if (!besiktning.kostnadInklMomsKr) return;
+                          uppdatera(besiktning.id, {
+                            kostnadPerLagenhetKr: besiktning.kostnadInklMomsKr,
+                            momsAvdragenKr: undefined,
+                            kostnadInklMomsKr: undefined,
+                          });
+                        }}
+                      />
                     </label>
                   )}
 
@@ -745,9 +768,31 @@ export function Besiktningar({
                         onChange={(event) =>
                           uppdatera(besiktning.id, {
                             kostnadFastKr: Number(event.target.value) || 0,
+                            momsAvdragenKr: undefined,
+                            kostnadInklMomsKr: undefined,
                           })
                         }
                         className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                      <MomsAvdragKnapp
+                        kostnadKr={besiktning.kostnadFastKr}
+                        momsAvdragenKr={besiktning.momsAvdragenKr}
+                        kostnadInklMomsKr={besiktning.kostnadInklMomsKr}
+                        onApply={({ kostnadExklMoms, momsAvdragen, kostnadInklMoms }) =>
+                          uppdatera(besiktning.id, {
+                            kostnadFastKr: kostnadExklMoms,
+                            momsAvdragenKr: momsAvdragen,
+                            kostnadInklMomsKr: kostnadInklMoms,
+                          })
+                        }
+                        onAterstall={() => {
+                          if (!besiktning.kostnadInklMomsKr) return;
+                          uppdatera(besiktning.id, {
+                            kostnadFastKr: besiktning.kostnadInklMomsKr,
+                            momsAvdragenKr: undefined,
+                            kostnadInklMomsKr: undefined,
+                          });
+                        }}
                       />
                     </label>
                   )}

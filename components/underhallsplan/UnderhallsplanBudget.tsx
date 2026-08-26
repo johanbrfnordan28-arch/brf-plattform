@@ -126,6 +126,60 @@ export function UnderhallsplanBudget({
     [direktAtgarder],
   );
 
+  const momsSummeradPerAr = useMemo(() => {
+    const map = new Map<
+      number,
+      { summaKr: number; poster: { komponent: string; del: string; beloppKr: number }[] }
+    >();
+    for (const a of underhallAtgarder) {
+      const moms = a.momsAvdragenKr ?? 0;
+      if (moms <= 0) continue;
+      const befintlig = map.get(a.ar) ?? { summaKr: 0, poster: [] };
+      befintlig.summaKr += moms;
+      befintlig.poster.push({
+        komponent: a.komponent,
+        del: a.del,
+        beloppKr: moms,
+      });
+      map.set(a.ar, befintlig);
+    }
+    return [...map.entries()]
+      .map(([ar, data]) => ({ ar, ...data }))
+      .sort((a, b) => a.ar - b.ar);
+  }, [underhallAtgarder]);
+
+  const engangsMomsAvdragen = useMemo(() => {
+    const poster: { etikett: string; beloppKr: number; inklKr: number }[] = [];
+    for (const namn of activeComponents) {
+      const data = komponentDetaljer[namn];
+      if (!data) continue;
+      for (const rad of data.underkomponenter) {
+        if (!rad.aktiv) continue;
+        const moms = Number.parseInt(
+          (rad.underhallMomsAvdragenKr ?? "").replace(/\s/g, ""),
+          10,
+        );
+        const inkl = Number.parseInt(
+          (rad.underhallKostnadInklMomsKr ?? "").replace(/\s/g, ""),
+          10,
+        );
+        const harLopande =
+          Number.parseInt((rad.underhallIntervallAr ?? "").trim(), 10) >= 1 &&
+          Number.parseInt((rad.underhallKostnadKr ?? "").replace(/\s/g, ""), 10) >
+            0;
+        // Engång: moms markerad men ingen löpande underhållskostnad i planen
+        if (moms > 0 && !harLopande) {
+          poster.push({
+            etikett: `${namn} — ${rad.etikett}`,
+            beloppKr: moms,
+            inklKr: Number.isFinite(inkl) ? inkl : 0,
+          });
+        }
+      }
+    }
+    return poster;
+  }, [activeComponents, komponentDetaljer]);
+
   const avsattning = beraknaPlanAvsattning(boareaM2, krPerKvmAr, planLangdAr);
   const komponentArskostnad = avsattning.arligAvsattningKr;
 
@@ -352,6 +406,51 @@ export function UnderhallsplanBudget({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {(momsSummeradPerAr.length > 0 || engangsMomsAvdragen.length > 0) && (
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/40 px-4 py-3">
+            <p className="text-sm font-semibold text-sky-950">
+              Moms borttagen — särredovisning
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Belopp där moms (25 %) tagits bort via knappen «Ta bort moms».
+              Planen använder exkl. moms; momsen visas här separat (momsregistrerad
+              förening — avdrag per post).
+            </p>
+            {engangsMomsAvdragen.length > 0 && (
+              <ul className="mt-3 space-y-1 text-xs text-sky-950">
+                {engangsMomsAvdragen.map((p) => (
+                  <li key={p.etikett}>
+                    {p.etikett}: {formatKr(p.beloppKr)} moms
+                    {p.inklKr > 0 ? ` (från ${formatKr(p.inklKr)} inkl.)` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {momsSummeradPerAr.length > 0 && (
+              <div className="mt-3 space-y-3">
+                {momsSummeradPerAr.map((grupp) => (
+                  <div
+                    key={`moms-${grupp.ar}`}
+                    className="rounded-lg border border-border/80 bg-white px-3 py-2"
+                  >
+                    <p className="flex flex-wrap items-baseline justify-between gap-2 text-sm font-semibold text-foreground">
+                      <span>{grupp.ar}</span>
+                      <span className="text-sky-900">{formatKr(grupp.summaKr)}</span>
+                    </p>
+                    <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
+                      {grupp.poster.map((p, i) => (
+                        <li key={`${p.komponent}-${p.del}-${i}`}>
+                          {p.komponent} — {p.del}: {formatKr(p.beloppKr)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
