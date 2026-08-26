@@ -25,6 +25,9 @@ export type NavetPubliceradTeaser = {
 export type NavetUnderlagDokument = {
   etikett: string;
   filnamn: string;
+  /** Valfri data-URL för mindre filer i demo (localStorage). */
+  dataUrl?: string;
+  uppladdad?: string;
 };
 
 export type NavetUnderlag = {
@@ -311,10 +314,152 @@ export function hamtaNavetAnbudFor(upphandlingId: string): NavetAnbud[] {
   );
 }
 
+/** Endast eget anbud via inbjudningstoken — exponerar aldrig andras anbud. */
+export function hamtaEgetAnbudViaToken(token: string): NavetAnbud | undefined {
+  const access = hamtaUnderlagMedToken(token);
+  if (!access.ok) return undefined;
+  return lasNavetUpphandlingLager().anbud.find(
+    (a) =>
+      a.upphandlingId === access.teaser.id &&
+      a.entreprenorId === access.entreprenor.id,
+  );
+}
+
 export function hamtaInbjudningarFor(upphandlingId: string): NavetInbjudan[] {
   return lasNavetUpphandlingLager().inbjudningar.filter(
     (i) => i.upphandlingId === upphandlingId,
   );
+}
+
+/** Skapa namngiven upphandling från intern yta (underlag kan fyllas på senare). */
+export function skapaNavetUpphandling(input: {
+  titel: string;
+  ort?: string;
+  sistaAnbudsdag?: string;
+  foreningIntern?: string;
+  kortBeskrivning?: string;
+  kategoriNamn?: string;
+}): NavetPubliceradTeaser {
+  const titel = input.titel.trim();
+  if (!titel) throw new Error("Ange namn på upphandlingen.");
+
+  const kategoriNamn = (input.kategoriNamn ?? "Upphandling").trim() || "Upphandling";
+  const id = skapaId("navet");
+  return publiceraTillNavet({
+    id,
+    kategoriId: kategoriNamn
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "") || "upphandling",
+    kategoriNamn,
+    gruppId: "entreprenad",
+    titel,
+    ort: (input.ort ?? "").trim() || "—",
+    sistaAnbudsdag: (input.sistaAnbudsdag ?? "").trim(),
+    foreningIntern: (input.foreningIntern ?? "").trim() || "Intern",
+    kortBeskrivning:
+      (input.kortBeskrivning ?? "").trim() ||
+      "Upphandling via Styrelse-Navet. Förfrågningsunderlag endast för inbjudna entreprenörer.",
+    dokument: [],
+    internAnteckning: "",
+  });
+}
+
+export function uppdateraNavetTeaser(
+  id: string,
+  patch: Partial<
+    Pick<
+      NavetPubliceradTeaser,
+      | "titel"
+      | "ort"
+      | "sistaAnbudsdag"
+      | "foreningIntern"
+      | "kortBeskrivning"
+      | "kategoriNamn"
+    >
+  >,
+): NavetPubliceradTeaser {
+  const lager = lasNavetUpphandlingLager();
+  const befintlig = lager.publicerade.find((u) => u.id === id);
+  if (!befintlig) throw new Error("Upphandlingen hittades inte.");
+  const underlag = lager.underlag.find((u) => u.upphandlingId === id);
+  return publiceraTillNavet({
+    id,
+    kategoriId: befintlig.kategoriId,
+    kategoriNamn: patch.kategoriNamn?.trim() || befintlig.kategoriNamn,
+    gruppId: befintlig.gruppId,
+    titel: patch.titel ?? befintlig.titel,
+    ort: patch.ort ?? befintlig.ort,
+    sistaAnbudsdag: patch.sistaAnbudsdag ?? befintlig.sistaAnbudsdag,
+    foreningIntern: patch.foreningIntern ?? befintlig.foreningIntern,
+    kortBeskrivning: patch.kortBeskrivning ?? befintlig.kortBeskrivning,
+    dokument: underlag?.dokument ?? [],
+    internAnteckning: underlag?.internAnteckning,
+  });
+}
+
+export function laggTillNavetDokument(
+  upphandlingId: string,
+  dokument: NavetUnderlagDokument,
+): NavetUnderlag {
+  const lager = lasNavetUpphandlingLager();
+  if (!lager.publicerade.some((u) => u.id === upphandlingId)) {
+    throw new Error("Upphandlingen hittades inte.");
+  }
+  const befintlig = lager.underlag.find((u) => u.upphandlingId === upphandlingId);
+  const nasta: NavetUnderlag = {
+    upphandlingId,
+    internAnteckning: befintlig?.internAnteckning ?? "",
+    dokument: [
+      ...(befintlig?.dokument ?? []),
+      {
+        ...dokument,
+        filnamn: dokument.filnamn.trim(),
+        etikett: dokument.etikett.trim() || dokument.filnamn.trim(),
+        uppladdad: dokument.uppladdad ?? new Date().toISOString(),
+      },
+    ],
+  };
+  lager.underlag = [
+    ...lager.underlag.filter((u) => u.upphandlingId !== upphandlingId),
+    nasta,
+  ];
+  sparaLager(lager);
+  return nasta;
+}
+
+export function taBortNavetDokument(
+  upphandlingId: string,
+  filnamn: string,
+  etikett: string,
+): void {
+  const lager = lasNavetUpphandlingLager();
+  const befintlig = lager.underlag.find((u) => u.upphandlingId === upphandlingId);
+  if (!befintlig) return;
+  lager.underlag = [
+    ...lager.underlag.filter((u) => u.upphandlingId !== upphandlingId),
+    {
+      ...befintlig,
+      dokument: befintlig.dokument.filter(
+        (d) => !(d.filnamn === filnamn && d.etikett === etikett),
+      ),
+    },
+  ];
+  sparaLager(lager);
+}
+
+export function mailtoInbjudan(input: {
+  epost: string;
+  titel: string;
+  lank: string;
+}): string {
+  const amne = encodeURIComponent(`Inbjudan till upphandling: ${input.titel}`);
+  const kropp = encodeURIComponent(
+    `Hej,\n\nNi inbjuds att ta del av förfrågningsunderlaget och lämna anbud för "${input.titel}" via Styrelse-Navet.\n\nÖppna underlaget här (länken är personlig — dela den inte):\n${input.lank}\n\nÖvriga anbudsgivare ser varken er inbjudan eller ert anbud.\n\nMed vänlig hälsning\nStyrelse-Navet`,
+  );
+  return `mailto:${encodeURIComponent(input.epost)}?subject=${amne}&body=${kropp}`;
 }
 
 export function lamnaNavetAnbud(input: {
@@ -345,7 +490,6 @@ export function lamnaNavetAnbud(input: {
     inlamnad: new Date().toISOString(),
   };
 
-  // Ersätt tidigare anbud från samma entreprenör
   lager.anbud = [
     anbud,
     ...lager.anbud.filter(
@@ -370,28 +514,4 @@ export function formatNavetDatum(isoEllerDatum: string): string {
   } catch {
     return isoEllerDatum;
   }
-}
-
-/** Demo-seed så landningssidan visar exempel om lagret är tomt. */
-export function sakraDemoNavetUpphandling(): void {
-  const lager = lasNavetUpphandlingLager();
-  if (lager.publicerade.length > 0) return;
-  publiceraTillNavet({
-    id: "navet-demo-tak-2026",
-    kategoriId: "tak",
-    kategoriNamn: "Tak",
-    gruppId: "entreprenad",
-    titel: "Omläggning av tak — exempelupphandling",
-    ort: "Stockholm",
-    sistaAnbudsdag: "2026-10-15",
-    foreningIntern: "Exempel Brf (intern)",
-    kortBeskrivning:
-      "Omläggning av yttertak inkl. ställning och rivning. Omfattning och ritningar finns i förfrågningsunderlaget för inbjudna entreprenörer.",
-    dokument: [
-      { etikett: "Administrativa föreskrifter", filnamn: "AF_Tak_exempel.pdf" },
-      { etikett: "Anbudsformulär", filnamn: "Anbudsformular_tak.pdf" },
-      { etikett: "Ritning", filnamn: "Takplan_exempel.pdf" },
-    ],
-    internAnteckning: "Demo-publicering för Styrelse-Navet.",
-  });
 }

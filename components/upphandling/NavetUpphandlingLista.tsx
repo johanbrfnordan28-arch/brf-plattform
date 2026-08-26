@@ -7,7 +7,6 @@ import {
   hamtaNavetPublicerade,
   NAVET_UPPHANDLING_EVENT,
   navetUpphandlingStorageKey,
-  sakraDemoNavetUpphandling,
   type NavetPubliceradTeaser,
 } from "@/components/upphandling/navet-upphandling-lager";
 import { upphandlingsGrupper } from "@/components/upphandling/kategorier";
@@ -22,7 +21,6 @@ export function NavetUpphandlingLista({ visaLankar = true }: Props) {
   const [hydrated, setHydrated] = useState(false);
 
   function uppdatera() {
-    sakraDemoNavetUpphandling();
     setLista(hamtaNavetPublicerade());
   }
 

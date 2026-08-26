@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   arAnbudstidStangd,
   formatNavetDatum,
-  hamtaNavetAnbudFor,
+  hamtaEgetAnbudViaToken,
   hamtaUnderlagMedToken,
   lamnaNavetAnbud,
   NAVET_UPPHANDLING_EVENT,
@@ -27,9 +27,7 @@ export function EntreprenorUnderlagVy({ token }: Props) {
     const result = hamtaUnderlagMedToken(token);
     setAccess(result);
     if (result.ok) {
-      const egna = hamtaNavetAnbudFor(result.teaser.id).find(
-        (a) => a.entreprenorId === result.entreprenor.id,
-      );
+      const egna = hamtaEgetAnbudViaToken(token);
       setEgetAnbudSumma(egna?.anbudSummaKr ?? null);
     }
   }
@@ -151,7 +149,8 @@ export function EntreprenorUnderlagVy({ token }: Props) {
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
         <h3 className="text-lg font-semibold text-foreground">Lämna anbud</h3>
         <p className="mt-2 text-sm text-muted">
-          Anbudet skickas till Styrelse-Navet och syns inte på föreningssidan.
+          Anbudet skickas till Styrelse-Navet. Andra anbudsgivare ser varken ert
+          anbud eller att ni är inbjudna — och ni ser inte dem.
         </p>
 
         {stangd ? (

@@ -4,11 +4,9 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
-import { BegarPubliceringForm } from "@/components/upphandling/BegarPubliceringForm";
 import { NavetUpphandlingLista } from "@/components/upphandling/NavetUpphandlingLista";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
-import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
 
 type BrfForetagHomeProps = {
   mode: "public" | "forening";
@@ -473,7 +471,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 {
                   steg: "3",
                   titel: "Anbud till oss",
-                  text: "Anbud fylls i och kommer till Styrelse-Navet — inte till föreningssidan.",
+                  text: "Anbud fylls i och kommer till Styrelse-Navet — inte till föreningssidan. Anbudsgivare ser inte varandra.",
                 },
               ].map((item) => (
                 <li
@@ -489,7 +487,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               ))}
             </ol>
 
-            <div className="mb-10">
+            <div>
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <h3 className="text-lg font-semibold text-foreground">
                   Aktuella upphandlingar
@@ -503,24 +501,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </div>
               <NavetUpphandlingLista />
             </div>
-
-            <div className="mb-10">
-              <p className="mb-3 text-sm font-medium text-foreground">
-                Exempel på vad som kan upphandlas
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {upphandlingsKategorier.map((name) => (
-                  <span
-                    key={name}
-                    className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground"
-                  >
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <BegarPubliceringForm />
           </div>
         </section>
       ) : (
@@ -535,20 +515,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </h2>
               <p className="mt-2 text-muted">
                 Förbered underlag i modulen. Publicering och anbudshantering sker via
-                plattformen — inkomna anbud syns inte här.
+                Styrelse-Navet — inkomna anbud syns inte här och anbudsgivare ser
+                inte varandra.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {upphandlingsKategorier.map((name) => (
-                <span
-                  key={name}
-                  className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground"
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-            <div className="mt-10 rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
+            <div className="rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
               <h3 className="font-semibold text-primary-dark">Öppna upphandlingsmodulen</h3>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
                 Skapa beskrivning och underlag. När ni är redo publicerar ni via oss —

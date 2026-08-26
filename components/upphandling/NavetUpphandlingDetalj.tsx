@@ -7,7 +7,6 @@ import {
   hamtaNavetTeaser,
   NAVET_UPPHANDLING_EVENT,
   navetUpphandlingStorageKey,
-  sakraDemoNavetUpphandling,
   type NavetPubliceradTeaser,
 } from "@/components/upphandling/navet-upphandling-lager";
 import { upphandlingsGrupper } from "@/components/upphandling/kategorier";
@@ -21,7 +20,6 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
 
   useEffect(() => {
     function las() {
-      sakraDemoNavetUpphandling();
       setTeaser(hamtaNavetTeaser(upphandlingId) ?? null);
     }
     las();

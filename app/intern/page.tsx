@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
-import { BegarPubliceringLista } from "@/components/upphandling/BegarPubliceringLista";
-import { InternNavetUpphandlingPanel } from "@/components/upphandling/InternNavetUpphandlingPanel";
 import { InternUpphandlingModul } from "@/components/upphandling/InternUpphandlingModul";
 
 export const metadata: Metadata = {
@@ -16,57 +15,34 @@ export default function InternPage() {
     <ModulePage
       title="Intern portal"
       icon="🗂️"
-      intro="Intern inloggning för er egen organisation. Här kan olika behörigheter styra vem som får se hela portalen och vem som bara får tillgång till vissa delar."
+      intro="Intern inloggning för er egen organisation. Känslig upphandlingsinformation och anbud hanteras här — inte på föreningssidan."
     >
-      <ContentSection title="Navet-upphandling — inbjudan och anbud">
+      <ContentSection title="Upphandling via Styrelse-Navet">
         <p className="mb-4 text-sm text-muted">
-          Publicerade uppdrag på Styrelse-Navet. Bjud in godkända entreprenörer via
-          mejl (unik länk till underlaget) och ta emot anbud här — syns inte för
-          föreningen.
+          Skapa upphandling, ladda upp underlag, mejla inbjudan och ta emot anbud
+          på en låst sida. Anbudsgivare ser varken inbjudna eller andras anbud.
         </p>
-        <InternNavetUpphandlingPanel />
-      </ContentSection>
-
-      <ContentSection title="Inkomna publiceringsförfrågningar">
-        <p className="mb-4 text-sm text-muted">
-          Förfrågningar från landningssidan (&quot;Begär publicering&quot;). Hanteras
-          manuellt innan ni publicerar underlag och bjuder in entreprenörer.
-        </p>
-        <BegarPubliceringLista />
+        <Link
+          href="/intern/upphandling"
+          className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+        >
+          Öppna intern upphandling
+        </Link>
       </ContentSection>
 
       <ContentSection title="Föreningspublicerade upphandlingar (äldre flöde)">
         <p className="mb-4 text-sm text-muted">
-          Upphandlingar publicerade från föreningsmodulen. Anbud här är demo/internt —
-          styrelsen ser dem inte.
+          Upphandlingar publicerade från föreningsmodulen. Anbud här är
+          demo/internt — styrelsen ser dem inte.
         </p>
         <InternUpphandlingModul />
       </ContentSection>
 
-      <ContentSection title="Olika behörighetsnivåer">
-        <p>
-          Du kan ha en övergripande behörighet som ser alla föreningar,
-          upphandlingar, inkomna anbud, offerter och inställningar. Andra
-          anställda kan få begränsad åtkomst till de delar de behöver för sitt
-          arbete.
-        </p>
-      </ContentSection>
-
       <ContentSection title="Känslig upphandlingsinformation">
         <p>
-          Upphandlingar, inkomna anbud och offerter kan vara känsliga. Därför bör
-          de inte visas för alla anställda, entreprenörer eller styrelser. Styrelsen
-          får endast se materialet när ni väljer att släppa det vidare.
+          Inkomna anbud och inbjudningslistor syns endast internt. Styrelsen och
+          övriga anbudsgivare får inte se råa anbud eller vilka som är inbjudna.
         </p>
-      </ContentSection>
-
-      <ContentSection title="Exempel på roller">
-        <ul className="list-disc space-y-1 pl-5">
-          <li>Systemansvarig: ser allt och kan hantera behörigheter.</li>
-          <li>Intern medarbetare: ser endast tilldelade föreningar och arbetsområden.</li>
-          <li>Styrelse: ser sin egen föreningssida och det material som är släppt till dem.</li>
-          <li>Entreprenör: ser aktuella upphandlingar och sina egna inlämnade anbud.</li>
-        </ul>
       </ContentSection>
     </ModulePage>
   );
