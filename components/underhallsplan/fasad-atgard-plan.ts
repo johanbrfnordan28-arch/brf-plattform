@@ -10,6 +10,7 @@ import {
   beraknaFasadAtgardPrisSumma,
   type FasadAtgardPrisRegister,
 } from "@/components/underhallsplan/fasad-atgard-pris";
+import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import type { UnderhallKostnadPerArRad } from "@/components/underhallsplan/underhall-plan-ar";
@@ -119,6 +120,12 @@ export function samlaFasadAtgardBudgetPoster(
           kostnadKr,
           intervallAr: intervall,
           kalla: "register",
+          underkomponentId: "fasadmaterial",
+          direktkostnad: arDirektkostnadUnderhall(
+            "Fasad",
+            "fasadmaterial",
+            atgardId,
+          ),
         });
       }
       ar += intervall;

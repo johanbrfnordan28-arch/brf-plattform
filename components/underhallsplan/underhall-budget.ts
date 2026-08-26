@@ -21,7 +21,10 @@ import {
 import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
 import { parseKrBelopp } from "@/components/underhallsplan/moms";
 import { effektivUnderhallKostnadKr } from "@/components/underhallsplan/underhall-kostnad";
-import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
+import {
+  beraknaUpphandlingOchProjektledning,
+  type PlanKostnaderNormaliserade,
+} from "@/components/underhallsplan/plan-kostnader";
 import type { RenoveringFordelningKontext } from "@/components/underhallsplan/renovering-fordelning";
 import {
   genereraAtgarderFranHistorik,
@@ -115,7 +118,14 @@ export function samlaUnderhallAtgarder(
     for (const rad of data.underkomponenter) {
       if (!rad.aktiv || arUnderhallFlyttad(rad)) continue;
       if (fasadmaterialPlaneratViaTillfallen(komponent, rad.id, detalj)) {
-        continue;
+        /**
+         * Tillfällen (puts/målning m.m.) är redan tillagda ovan.
+         * Fortsätt med radens underhållskostnad om den är ifylld — t.ex. större
+         * fasadförnyelse som K3-investering utöver löpande tillfällen.
+         */
+        const kostnad = effektivUnderhallKostnadKr(rad);
+        const intervall = parseAr(rad.underhallIntervallAr ?? "");
+        if (kostnad <= 0 || intervall < 1) continue;
       }
       const planNyckel = hamtaUnderhallTillfallenPlanNyckel(komponent, rad.id);
       if (
@@ -232,6 +242,30 @@ export function samlaAllaUnderhallAtgarder(
       const rad = data?.underkomponenter.find((r) => r.etikett === a.del);
       if (!rad) return true;
       return !registerSkallFiltreras(rad, a.komponent, renoveringar, fordelningKontext);
+    });
+  }
+
+  /** Upphandling + projektledning på registerinvesteringar (som för historik). */
+  if (planKostnader) {
+    franRegister = franRegister.map((a) => {
+      if (arAtgardDirektkostnad(a) || a.kostnadKr <= 0) return a;
+      const oh = beraknaUpphandlingOchProjektledning(
+        a.kostnadKr,
+        planKostnader,
+      );
+      if (oh.totaltKr === a.kostnadKr) return a;
+      return {
+        ...a,
+        kostnadKr: oh.totaltKr,
+        kostnadForklaring: [
+          a.kostnadForklaring,
+          `Entreprenad ${a.kostnadKr.toLocaleString("sv-SE")} kr`,
+          `Upphandling ${planKostnader.upphandlingProcent}% +${oh.upphandlingKr.toLocaleString("sv-SE")} kr`,
+          `Projektledning ${planKostnader.projektledningProcent}% +${oh.projektledningKr.toLocaleString("sv-SE")} kr`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      };
     });
   }
 
