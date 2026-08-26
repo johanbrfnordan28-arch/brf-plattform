@@ -89,6 +89,17 @@ body {
   text-decoration: underline;
 }
 
+@keyframes navetFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Rondering — utskrift av anpassad checklista */
 @media print {
   body.rondering-print-lage * {

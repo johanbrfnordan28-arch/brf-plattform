@@ -3,7 +3,7 @@ import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 const nav = [
   { href: "#moduler", label: "Moduler" },
-  { href: "#upphandlingar", label: "Upphandling" },
+  { href: "/upphandling", label: "Aktuella upphandlingar" },
   { href: "#intro-film", label: "Film & pris" },
   { href: "#priser", label: "Priser" },
 ];

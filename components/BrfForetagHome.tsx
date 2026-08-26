@@ -4,7 +4,6 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
-import { NavetUpphandlingLista } from "@/components/upphandling/NavetUpphandlingLista";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
@@ -449,10 +448,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </h2>
               <p className="mt-2 text-muted">
                 En egen yta för aktuella upphandlingar — skiljd från övriga
-                styrelsemoduler. Föreningar och entreprenörer ser en kort
-                sammanfattning. Fullständigt förfrågningsunderlag och anbud är
-                endast för inbjudna, godkända entreprenörer. Inga
-                kontaktuppgifter visas publikt; allt går via oss.
+                styrelsemoduler. Publikt syns bara en kort sammanfattning.
+                Underlag och anbud är låsta till inbjudna entreprenörer; anbudsgivare
+                ser inte varandra.
               </p>
             </div>
 
@@ -487,19 +485,20 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               ))}
             </ol>
 
-            <div>
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Aktuella upphandlingar
-                </h3>
-                <Link
-                  href="/upphandling"
-                  className="text-sm font-medium text-primary hover:text-primary-dark"
-                >
-                  Öppna upphandlingsytan →
-                </Link>
-              </div>
-              <NavetUpphandlingLista />
+            <div className="rounded-2xl border border-primary/25 bg-[#eef6f0]/80 px-6 py-8 sm:px-8">
+              <h3 className="text-lg font-semibold text-foreground">
+                Se vad som är ute just nu
+              </h3>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                Öppna sidan med enbart aktuella upphandlingar — utan övriga
+                styrelsemoduler.
+              </p>
+              <Link
+                href="/upphandling"
+                className="brf-knapp-gron mt-5 px-6 py-3 text-sm sm:text-base"
+              >
+                Aktuella upphandlingar
+              </Link>
             </div>
           </div>
         </section>
