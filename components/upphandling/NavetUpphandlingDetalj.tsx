@@ -107,6 +107,17 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
         </div>
       </div>
 
+      <div
+        className="border-b border-amber-200/80 bg-amber-50"
+        role="status"
+      >
+        <div className="mx-auto max-w-5xl px-4 py-3 text-sm leading-relaxed text-amber-950 sm:px-6">
+          <span className="font-semibold">Upphandlingssidan är under utveckling.</span>{" "}
+          Alla upphandlingar hanteras manuellt av Styrelse-Navet tills sidan är
+          färdigutvecklad. Anmäl intresse — vi återkommer personligen.
+        </div>
+      </div>
+
       <article className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <header className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
