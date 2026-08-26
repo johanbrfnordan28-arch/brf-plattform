@@ -109,26 +109,45 @@ const featuredPublic = [
   {
     title: "Underhållsplan",
     description:
-      "Bygg komponentregister, renoveringshistorik, besiktningar och budget i samma plan — från stambyte till fasad. Styrelsen får beslutsstöd som håller över tid, inte bara ett kalkylark.",
+      "En levande 50-årsplan med komponenter, historik och avsättning — så styrelsen alltid har aktuellt beslutsunderlag inför stämma, bank och långsiktiga investeringar.",
     anchor: "#moduler",
     icon: "🔧",
     bullets: [
-      "50-årsplan med avsättning och besiktningar i rätt år",
-      "Komponenter, bildstöd och kostnadsuppskattning",
-      "Underlag inför stämma och långsiktiga investeringar",
+      "Avsättning och åtgärder i rätt år — inte gissningar i Excel",
+      "Komponentregister med teknisk livslängd och kostnad",
+      "Underlag som håller över mandatperioder",
     ],
   },
   {
     title: "Upphandling",
     description:
-      "Föreningen publicerar via oss. Vi bjuder in entreprenörer till underlaget och tar emot anbud — utan att anbuden syns på föreningssidan.",
+      "Strukturerad upphandling utan mejlkaos. Vi publicerar underlag, bjuder in entreprenörer och tar emot anbud — säkert och spårbart, utan att anbud syns på föreningssidan.",
     anchor: "#upphandlingar",
     icon: "📋",
     bullets: [
-      "Entreprenad, konsulter och fastighetsförvaltning",
-      "Ni skickar underlag — vi hanterar publicering",
-      "Anbud kommer till oss och hanteras manuellt",
+      "Från mindre servicejobb till större entreprenader",
+      "Inbjudan till underlag via oss",
+      "Anbud hanteras konfidentiellt av Styrelse-Navet",
     ],
+  },
+] as const;
+
+const erfarenhetOmraden = [
+  {
+    titel: "Teknisk förvaltning",
+    text: "Drift, underhåll och tekniska beslut som håller över tid.",
+  },
+  {
+    titel: "Upphandling",
+    text: "Förfrågningsunderlag, anbud och avtal utan onödiga risker.",
+  },
+  {
+    titel: "Projektledning",
+    text: "Från planering till genomförande — tydlig styrning i varje steg.",
+  },
+  {
+    titel: "Skadeutredning",
+    text: "Analys, dokumentation och rätt åtgärder när skadan är framme.",
   },
 ] as const;
 
@@ -150,23 +169,27 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
           aria-hidden
         />
+        <div
+          className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-primary/5 blur-3xl"
+          aria-hidden
+        />
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           {isForening ? (
             <ForeningHeroEtikett />
           ) : (
-            <p className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-dark">
-              Styrelse-Navet · För styrelser som vill ha kontroll
+            <p className="text-sm font-semibold tracking-wide text-primary-dark">
+              Styrelse-Navet
             </p>
           )}
-          <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:mt-5 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
             {isForening
               ? STYRELSEFLOW_NAMN
-              : "Underhållsplan och upphandling — utan kaos i mejl och mappar"}
+              : "Plattformen som ger styrelsen kontroll — från underhåll till upphandling"}
           </h1>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "Styrelse-Navet samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som håller."}
+              : "Byggd och utvecklad av personer med över 25 års erfarenhet av teknisk förvaltning, upphandling, projektledning och skadeutredning. Mindre tid i mejl och mappar — mer tid på beslut som håller."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -177,19 +200,19 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Testa gratis i 30 dagar
+                30 dagar gratis — ingen bindning
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Spara upp till 60&nbsp;% på tvåårsavtal
+                Underhåll, upphandling och dokument i samma portal
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Ingen bindning under provperioden
+                Framtaget ur verklig förvaltningsvardag
               </li>
             </ul>
           )}
@@ -220,27 +243,21 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               <>
                 <Link
                   href={PROVA_GRATIS_PATH}
-                  className="brf-knapp-gron px-5 py-3 text-sm"
+                  className="brf-knapp-gron px-7 py-3.5 text-base"
                 >
-                  Vi vill pröva gratis i 30 dagar
+                  Börja gratis i 30 dagar
                 </Link>
                 <Link
-                  href="/styrelse-login"
-                  className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
+                  href="/upphandling"
+                  className="rounded-lg border-2 border-primary bg-white px-7 py-3.5 text-base font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0]"
                 >
-                  Logga in styrelse
+                  Aktuella upphandlingar
                 </Link>
                 <Link
-                  href="#intro-film"
-                  className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
+                  href="#erfarenhet"
+                  className="rounded-lg border border-border bg-surface px-5 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
                 >
-                  Se filmerna — få prisuppgift
-                </Link>
-                <Link
-                  href="#moduler"
-                  className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
-                >
-                  Se modulerna
+                  Vår erfarenhet
                 </Link>
               </>
             )}
@@ -250,21 +267,59 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
       {!isForening && (
         <section
+          id="erfarenhet"
+          className="scroll-mt-24 border-b border-border bg-[#eef6f0]/70"
+        >
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold text-primary-dark">
+                Bakom plattformen
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+                Över 25 års erfarenhet — inbyggd i varje modul
+              </h2>
+              <p className="mt-3 text-muted leading-relaxed">
+                Styrelse-Navet är inte en generisk IT-lösning. Funktionen och
+                upplägget är framtaget av personer som arbetat nära styrelser,
+                förvaltare och entreprenörer i mer än ett kvartsekel.
+              </p>
+            </div>
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {erfarenhetOmraden.map((omrade) => (
+                <li key={omrade.titel} className="border-l-2 border-primary/50 pl-4">
+                  <h3 className="font-semibold text-foreground">{omrade.titel}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">
+                    {omrade.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {!isForening && (
+        <section
           id="skapa-forening"
           className="scroll-mt-24 border-b border-border bg-surface/80"
         >
           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-            <p className="mb-4 max-w-2xl text-sm text-muted">
-              Skapa flera föreningar och växla mellan dem på föreningssidorna. Gemensamma
-              plattformsuppdateringar slås ihop överallt — era ifyllda uppgifter behålls.
-            </p>
+            <div className="mb-6 max-w-2xl">
+              <h2 className="text-xl font-bold text-foreground sm:text-2xl">
+                Kom igång med er förening
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                Skapa er miljö på några minuter. Gemensamma plattformsuppdateringar
+                slås ihop överallt — era ifyllda uppgifter behålls.
+              </p>
+            </div>
             <SkapaForeningPanel kompakt visaSnabbstart />
           </div>
         </section>
       )}
 
       {!isForening && (
-        <section className="border-b border-border bg-[#eef6f0]/60">
+        <section className="border-b border-border bg-surface">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-4 py-4 text-center text-sm sm:px-6">
             <p>
               <span className="font-semibold text-primary-dark">30 dagar gratis</span>
@@ -361,22 +416,22 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
             <div className="mb-10 max-w-2xl">
               <p className="text-sm font-semibold text-primary-dark">
-                Det styrelsen oftast behöver först
+                Där styrelsen sparar mest tid
               </p>
               <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Underhållsplan och upphandling i samma portal
+                Två hörnstenar — samma portal
               </h2>
               <p className="mt-2 text-muted">
-                De här två delarna sparar mest tid och ger tydligast värde — resten
-                av modulerna bygger vidare på samma struktur. Funktionerna prövas
-                efter inloggning eller gratisperiod.
+                Underhållsplan och upphandling är det de flesta styrelser behöver
+                först. Resten av modulerna bygger vidare på samma struktur när ni
+                är igång.
               </p>
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
               {featuredPublic.map((mod) => (
                 <div
                   key={mod.title}
-                  className="flex flex-col rounded-2xl border-2 border-primary/20 bg-surface p-6 shadow-sm sm:p-8"
+                  className="flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
                 >
                   <span
                     className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#e8f3ec] text-2xl"
@@ -408,8 +463,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     className="mt-5 text-sm font-medium text-primary hover:text-primary-dark"
                   >
                     {mod.title === "Upphandling"
-                      ? "Se hur upphandling via oss fungerar →"
-                      : "Se modulerna →"}
+                      ? "Läs mer om upphandling →"
+                      : "Se alla moduler →"}
                   </Link>
                 </div>
               ))}
@@ -426,7 +481,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-2 text-muted">
             {isForening
               ? "Välj en modul för att arbeta i er förenings miljö."
-              : "Samma tolv moduler som i föreningsplattformen — här beskrivs vad de gör. Funktionen prövas efter inloggning eller gratisperiod."}
+              : "Tolv verktyg i samma miljö — från årshjul och underhåll till rondering, dokument och juridik. Allt hänger ihop när grunden är på plats."}
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -447,10 +502,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Upphandling via Styrelse-Navet
               </h2>
               <p className="mt-2 text-muted">
-                En egen yta för aktuella upphandlingar — skiljd från övriga
-                styrelsemoduler. Publikt syns bara en kort sammanfattning.
-                Underlag och anbud är låsta till inbjudna entreprenörer; anbudsgivare
-                ser inte varandra.
+                En egen yta för aktuella projekt — skiljd från övriga
+                styrelsemoduler. Entreprenörer ser projektinformation och kan
+                anmäla intresse. Underlag och anbud hanteras av oss, konfidentiellt.
               </p>
             </div>
 
@@ -458,18 +512,18 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               {[
                 {
                   steg: "1",
-                  titel: "Vi publicerar underlag",
-                  text: "Förfrågningsunderlaget läggs ut. Publikt syns bara vad som upphandlas — utan kontakter.",
+                  titel: "Projektet syns publikt",
+                  text: "Kort information om vad som upphandlas — utan kontaktuppgifter eller underlag.",
                 },
                 {
                   steg: "2",
-                  titel: "Inbjudan via mejl",
-                  text: "Godkända entreprenörer får unik länk till underlaget. Oinbjudna ser endast teaser.",
+                  titel: "Intresse och inbjudan",
+                  text: "Entreprenörer anmäler intresse. Vi bjuder in utvalda till förfrågningsunderlaget.",
                 },
                 {
                   steg: "3",
                   titel: "Anbud till oss",
-                  text: "Anbud fylls i och kommer till Styrelse-Navet — inte till föreningssidan. Anbudsgivare ser inte varandra.",
+                  text: "Anbud kommer till Styrelse-Navet. Anbudsgivare ser inte varandra — föreningen ser inte råa anbud.",
                 },
               ].map((item) => (
                 <li
@@ -488,11 +542,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             <div className="rounded-2xl border border-primary/25 bg-[#eef6f0]/80 px-6 py-8 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:px-10 sm:py-10">
               <div className="max-w-xl">
                 <h3 className="text-xl font-semibold text-foreground sm:text-2xl">
-                  Se vad som är ute just nu
+                  Se aktuella projekt
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">
-                  Öppna sidan med enbart aktuella upphandlingar — utan övriga
-                  styrelsemoduler.
+                  Öppna upphandlingssidan — enbart projektöversikt, sök och
+                  intresseanmälan. Utan övriga styrelsemoduler.
                 </p>
               </div>
               <Link
@@ -542,12 +596,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <div className="mb-10 max-w-2xl">
             <p className="text-sm font-semibold text-primary-dark">Pris & avtal</p>
             <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-              Börja gratis — välj avtal när ni är redo
+              Börja gratis — väx när ni är redo
             </h2>
             <p className="mt-2 text-muted">
-              Se filmerna ovan för att förstå funktionerna och få prisuppgift anpassad
-              efter er förening. Längre avtal ger tydlig besparing jämfört med
-              månadsdebitering.
+              Testa plattformen utan kostnad. När ni ser värdet väljer ni avtal —
+              med tydlig besparing på längre bindningstid.
             </p>
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
