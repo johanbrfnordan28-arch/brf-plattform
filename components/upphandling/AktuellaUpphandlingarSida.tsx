@@ -1,26 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   arAnbudstidStangd,
   formatNavetDatum,
-  hamtaNavetPublicerade,
   NAVET_UPPHANDLING_EVENT,
   navetUpphandlingStorageKey,
+  sakraExempelNavetUpphandling,
+  sokNavetUpphandlingar,
   type NavetPubliceradTeaser,
 } from "@/components/upphandling/navet-upphandling-lager";
 
+function UnderUtvecklingBanner() {
+  return (
+    <div
+      className="border-b border-amber-200/80 bg-amber-50"
+      role="status"
+    >
+      <div className="mx-auto max-w-5xl px-4 py-3 text-sm leading-relaxed text-amber-950 sm:px-6">
+        <span className="font-semibold">Upphandlingssidan är under utveckling.</span>{" "}
+        Alla upphandlingar hanteras manuellt av Styrelse-Navet tills sidan är
+        färdigutvecklad. Anmäl gärna intresse — vi återkommer personligen.
+      </div>
+    </div>
+  );
+}
+
 /**
- * Dedikerad sida för entreprenörer: projektöversikt, inte styrelsemoduler.
+ * Dedikerad sida för entreprenörer: projektöversikt, sök och exempelprojekt.
  */
 export function AktuellaUpphandlingarSida() {
   const [lista, setLista] = useState<NavetPubliceradTeaser[]>([]);
+  const [sokord, setSokord] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     function las() {
-      setLista(hamtaNavetPublicerade());
+      sakraExempelNavetUpphandling();
+      setLista(sokNavetUpphandlingar(""));
     }
     las();
     setHydrated(true);
@@ -35,6 +53,17 @@ export function AktuellaUpphandlingarSida() {
     };
   }, []);
 
+  const filtrerad = useMemo(() => {
+    const q = sokord.trim().toLowerCase();
+    if (!q) return lista;
+    return lista.filter((u) => {
+      const hay = [u.titel, u.ort, u.kategoriNamn, u.kortBeskrivning]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [lista, sokord]);
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#e8f0ea_0%,#f6f9f7_32%,#f4faf6_100%)]">
       <div className="border-b border-border/60 bg-white/50">
@@ -47,6 +76,8 @@ export function AktuellaUpphandlingarSida() {
           </Link>
         </div>
       </div>
+
+      <UnderUtvecklingBanner />
 
       <section className="relative overflow-hidden border-b border-border/70">
         <div
@@ -65,7 +96,7 @@ export function AktuellaUpphandlingarSida() {
             Aktuella projekt
           </h1>
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
-            Här hittar ni projektinformation om pågående upphandlingar. Är ni
+            Sök och läs projektinformation om pågående upphandlingar. Är ni
             intresserade av att lämna offert kan ni anmäla er — vi bjuder sedan
             in utvalda entreprenörer till förfrågningsunderlaget.
           </p>
@@ -73,31 +104,46 @@ export function AktuellaUpphandlingarSida() {
       </section>
 
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-foreground">
-            Projektöversikt
-          </h2>
-          <p className="mt-1 text-sm text-muted">
-            Öppna ett projekt för omfattning, ort och anbudstid. Underlag delas
-            först efter inbjudan.
-          </p>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Projektöversikt
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Öppna ett projekt för omfattning, ort och anbudstid. Underlag delas
+              först efter inbjudan.
+            </p>
+          </div>
+          <label className="block w-full sm:max-w-xs">
+            <span className="sr-only">Sök projekt</span>
+            <input
+              type="search"
+              value={sokord}
+              onChange={(e) => setSokord(e.target.value)}
+              placeholder="Sök på titel, ort eller kategori…"
+              className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-sm text-foreground shadow-sm placeholder:text-muted/70 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
         </div>
 
         {!hydrated ? (
           <p className="text-sm text-muted">Laddar projekt…</p>
-        ) : lista.length === 0 ? (
+        ) : filtrerad.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-white/80 px-6 py-14 text-center">
             <p className="text-base font-medium text-foreground">
-              Inga aktuella projekt just nu
+              {sokord.trim()
+                ? "Inga projekt matchade sökningen"
+                : "Inga aktuella projekt just nu"}
             </p>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              När nya upphandlingar publiceras syns de här med projektnamn, ort
-              och sista anbudsdag.
+              {sokord.trim()
+                ? "Prova ett annat sökord, t.ex. fasad, Stockholm eller tak."
+                : "När nya upphandlingar publiceras syns de här med projektnamn, ort och sista anbudsdag."}
             </p>
           </div>
         ) : (
           <ul className="space-y-4">
-            {lista.map((upph, index) => {
+            {filtrerad.map((upph, index) => {
               const stangd = arAnbudstidStangd(upph.sistaAnbudsdag);
               return (
                 <li
@@ -169,7 +215,7 @@ export function AktuellaUpphandlingarSida() {
               {
                 n: "3",
                 t: "Få inbjudan",
-                d: "Utvalda får unik länk till underlag och kan lämna anbud.",
+                d: "Utvalda får unik länk till underlag och kan lämna anbud — under tiden hanteras allt manuellt.",
               },
             ].map((steg) => (
               <li key={steg.n} className="text-sm">

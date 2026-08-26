@@ -584,3 +584,57 @@ export function formatNavetDatum(isoEllerDatum: string): string {
     return isoEllerDatum;
   }
 }
+
+/** Exempelupphandling så entreprenörer kan se hur sidan fungerar. */
+export const NAVET_EXEMPEL_ID = "navet-exempel-fasad-sodermalm";
+
+export function sakraExempelNavetUpphandling(): void {
+  const lager = lasNavetUpphandlingLager();
+  if (lager.publicerade.some((u) => u.id === NAVET_EXEMPEL_ID)) return;
+
+  publiceraTillNavet({
+    id: NAVET_EXEMPEL_ID,
+    kategoriId: "fasad",
+    kategoriNamn: "Fasad",
+    gruppId: "entreprenad",
+    titel: "Fasadrenovering och ommålning — Brf Exempel Södermalm",
+    ort: "Stockholm",
+    sistaAnbudsdag: "2026-11-30",
+    foreningIntern: "Brf Exempel Södermalm (demo)",
+    kortBeskrivning:
+      "Renovering av putsad fasad inkl. bättring, ommålning och ställning för ett flerbostadshus från 1930-talet. Omfattning ca 2 400 kvm fasadyta. Detaljerat förfrågningsunderlag, AF-del och ritningar delas med inbjudna entreprenörer.",
+    dokument: [
+      {
+        etikett: "Administrativa föreskrifter",
+        filnamn: "AF_Fasad_Exempel_Sodermalm.pdf",
+      },
+      {
+        etikett: "Teknisk beskrivning",
+        filnamn: "TB_Fasadputs_ommalning.pdf",
+      },
+      {
+        etikett: "Anbudsformulär",
+        filnamn: "Anbudsformular_fasad.pdf",
+      },
+    ],
+    internAnteckning:
+      "Exempelprojekt för publik demo. Hanteras manuellt tills upphandlingssidan är färdigutvecklad.",
+  });
+}
+
+export function sokNavetUpphandlingar(sokord: string): NavetPubliceradTeaser[] {
+  const q = sokord.trim().toLowerCase();
+  const lista = hamtaNavetPublicerade();
+  if (!q) return lista;
+  return lista.filter((u) => {
+    const hay = [
+      u.titel,
+      u.ort,
+      u.kategoriNamn,
+      u.kortBeskrivning,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  });
+}
