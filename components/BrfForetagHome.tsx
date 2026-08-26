@@ -485,17 +485,19 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               ))}
             </ol>
 
-            <div className="rounded-2xl border border-primary/25 bg-[#eef6f0]/80 px-6 py-8 sm:px-8">
-              <h3 className="text-lg font-semibold text-foreground">
-                Se vad som är ute just nu
-              </h3>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                Öppna sidan med enbart aktuella upphandlingar — utan övriga
-                styrelsemoduler.
-              </p>
+            <div className="rounded-2xl border border-primary/25 bg-[#eef6f0]/80 px-6 py-8 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:px-10 sm:py-10">
+              <div className="max-w-xl">
+                <h3 className="text-xl font-semibold text-foreground sm:text-2xl">
+                  Se vad som är ute just nu
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">
+                  Öppna sidan med enbart aktuella upphandlingar — utan övriga
+                  styrelsemoduler.
+                </p>
+              </div>
               <Link
                 href="/upphandling"
-                className="brf-knapp-gron mt-5 px-6 py-3 text-sm sm:text-base"
+                className="brf-knapp-gron mt-6 w-full px-8 py-4 text-base sm:mt-0 sm:w-auto sm:min-w-[16rem] sm:px-10 sm:py-5 sm:text-lg"
               >
                 Aktuella upphandlingar
               </Link>

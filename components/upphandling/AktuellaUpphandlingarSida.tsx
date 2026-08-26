@@ -89,7 +89,7 @@ export function AktuellaUpphandlingarSida() {
             href="/"
             className="text-sm font-medium text-primary hover:text-primary-dark"
           >
-            ← Till Styrelse-Navet
+            ← Tillbaka till Styrelse-Navet
           </Link>
         </div>
 
