@@ -7,6 +7,7 @@
 import { skapaTomBalkongPost } from "@/components/underhallsplan/balkonger";
 import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkonger";
 import { beraknaBalkongListaPris } from "@/components/underhallsplan/balkong-pris";
+import { SBA_UNDERKOMPONENT_ID } from "@/components/underhallsplan/brandskydd";
 import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
 import {
   skapaTomDorrPost,
@@ -69,8 +70,8 @@ function sailorNastaAr(intervallAr: number): string {
 }
 
 export const SAILOR_PLAN_NOTERING = [
-  "JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
-  "Planperiod från 2027. Underhållsår räknas från byggåret 2013 + intervall.",
+  "JM-bygge 2013, Gustavsberg 1:395.",
+  "Planperiod från 2027.",
   "40 bostadsrätter, 2 756 kvm boyta, tomtyta 4 688 kvm, 50 badrum. Inga eldstäder (sotning ej aktuell).",
   "40 p-platser varav 20 med motorvärmare och 10 med laddstolpe.",
   "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras.",
@@ -95,6 +96,7 @@ const SAILOR_AKTIVA_KOMPONENTER = [
   "Ventilation",
   "Elcentral",
   "Balkonger",
+  "Brandskydd",
   "Styr och övervakning",
   KOMPLEMENT_BYGGNAD_NAMN,
 ] as const;
@@ -155,6 +157,21 @@ function byggSailorBesiktningar(): Besiktning[] {
         aktiv: true,
         antalHissar: 3,
         intervallAr: 1,
+      };
+    }
+    if (b.id === "sba") {
+      return {
+        ...b,
+        aktiv: true,
+        kostnadFastKr: 0,
+        sbaInkluderaBrandkonsult: true,
+        sbaBrandkonsultIntervallAr: 5,
+        /** 15 000 kr inkl. moms — vart 5:e år. */
+        sbaBrandkonsultKostnadKr: 15_000,
+        kostnadInklMomsKr: 15_000,
+        /** 2013+5 → 2018; första i planperioden 2028. */
+        sbaNastaBrandkonsultAr: 2028,
+        nastaBesiktningAr: 2028,
       };
     }
     if (b.id === "sotning") {
@@ -520,6 +537,12 @@ export function byggSailorKomponentUtkast(): {
       balkongRegister: {
         [BALKONGER_UNDERKOMPONENT_ID]: sailorBalkongPoster,
       },
+    },
+    Brandskydd: {
+      ...aktivera("Brandskydd", [SBA_UNDERKOMPONENT_ID], () => ({
+        värde: "1",
+      })),
+      valdaDeltyper: ["sba"],
     },
     "Styr och övervakning": aktivera("Styr och övervakning", ["system"], () => ({
       värde: "1",
