@@ -8,9 +8,9 @@ import {
 } from "@/components/upphandling/kategorier";
 
 export const metadata: Metadata = {
-  title: "Upphandling — BRF Företag",
+  title: "Upphandling — Styrelse-Navet",
   description:
-    "Publicerade upphandlingar från BRF-föreningar — titel, ort, kategori och sista anbudsdag.",
+    "Publicerade upphandlingar från BRF-föreningar — titel, ort, kategori och sista anbudsdag. Anbud hanteras manuellt av oss.",
 };
 
 export default function UpphandlingPage() {
@@ -18,7 +18,7 @@ export default function UpphandlingPage() {
     <ModulePage
       title="Upphandling"
       icon="📋"
-      intro="Styrelsen publicerar uppdrag från föreningssidan. Här syns aktuella upphandlingar med sista anbudsdag — anbudsinnehåll visas inte publikt."
+      intro="Aktuella uppdrag som publicerats via Styrelse-Navet. Anbud och offerter visas inte här — de hanteras manuellt av oss."
     >
       <ContentSection title="Publicerade upphandlingar">
         <PubliceradeUpphandlingarPanel />
@@ -26,24 +26,21 @@ export default function UpphandlingPage() {
 
       <ContentSection title="Så fungerar det">
         <p>
-          Föreningen bygger en upphandling med beskrivning, anbudsformulär och
-          kontraktsformulär — enkelt (max tre dokument) eller utökat med AF,
-          ritning och bilagor. Med knappen <strong>Upphandla</strong> syns
-          uppdraget publikt med titel, ort, kategori och sista anbudsdag — utan
-          att anbud visas.
+          Föreningen begär publicering via landningssidan eller föreningsmodulen.
+          Vi bjuder in entreprenörer till underlaget. Anbud fylls i och kommer till
+          oss — ingen på föreningssidan ser inkomna anbud.
         </p>
         <p>
-          Entreprenörer med godkänt konto lämnar anbud i er standardiserade
-          formulär. Under anbudstiden är innehållet låst; utvärdering sker först
-          efter deadline.
+          I början sköts inbjudan och anbudshantering manuellt. När utvärderingen är
+          klar återkopplar vi till styrelsen utan att öppna anbudsöversikten i
+          föreningsvyn.
         </p>
       </ContentSection>
 
       <ContentSection title="Kategorier efter typ">
         <p>
           Välj kategori när upphandlingen skapas. Per kategori finns plats för
-          projektbeskrivning, underlag, anbudsformulär och fler dokument — med
-          mallar från föreningens dokumentbank.
+          projektbeskrivning, underlag och övriga dokument.
         </p>
         <div className="mt-4 space-y-6">
           {upphandlingsGrupper.map((grupp) => (
@@ -72,26 +69,11 @@ export default function UpphandlingPage() {
         </div>
       </ContentSection>
 
-      <ContentSection title="Enkel eller komplicerad upphandling">
-        <p>
-          <strong>Enkel:</strong> beskrivning, anbudsformulär, kontraktsformulär.
-        </p>
-        <p>
-          <strong>Komplicerad:</strong> utökat paket med administrativa föreskrifter,
-          ritningar och bilagor — ofta vid stambyte, fasad och större byggprojekt.
-        </p>
-        <p>
-          Föreningen kan driva upphandlingen själv eller med inhyrd projektledare
-          som ingår i tjänsten.
-        </p>
-      </ContentSection>
-
       <ContentSection title="Behörighet och sekretess">
         <p>
-          Upphandlingsdelen är känslig. Inkomna anbud och offerter ska inte vara
-          synliga för alla anställda, entreprenörer eller styrelser. Informationen
-          hanteras i den interna portalen och släpps vidare först när ni väljer att
-          dela den med rätt mottagare.
+          Inkomna anbud och offerter syns inte för styrelsen, entreprenörer eller
+          publikt. Informationen hanteras av oss och delas vidare först när ni
+          väljer det.
         </p>
       </ContentSection>
     </ModulePage>

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { BegarPubliceringLista } from "@/components/upphandling/BegarPubliceringLista";
 import { InternUpphandlingModul } from "@/components/upphandling/InternUpphandlingModul";
 
 export const metadata: Metadata = {
-  title: "Intern portal — BRF Företag",
+  title: "Intern portal — Styrelse-Navet",
   description:
     "Intern inloggning för administration, behörigheter och känsliga uppgifter.",
 };
@@ -16,6 +17,15 @@ export default function InternPage() {
       icon="🗂️"
       intro="Intern inloggning för er egen organisation. Här kan olika behörigheter styra vem som får se hela portalen och vem som bara får tillgång till vissa delar."
     >
+      <ContentSection title="Inkomna publiceringsförfrågningar">
+        <p className="mb-4 text-sm text-muted">
+          Förfrågningar från landningssidan (&quot;Begär publicering&quot;). Hanteras
+          manuellt — bjud in entreprenörer till underlaget och ta emot anbud utanför
+          föreningsvyn.
+        </p>
+        <BegarPubliceringLista />
+      </ContentSection>
+
       <ContentSection title="Upphandlingar och anbud (internt)">
         <p className="mb-4 text-sm text-muted">
           Inkomna anbud hanteras här — styrelsen ser dem inte. När utvärderingen är klar

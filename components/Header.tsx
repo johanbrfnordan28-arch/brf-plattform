@@ -2,10 +2,10 @@ import Link from "next/link";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 const nav = [
-  { href: "#fokus", label: "Underhåll & upphandling" },
+  { href: "#moduler", label: "Moduler" },
+  { href: "#upphandlingar", label: "Upphandling" },
   { href: "#intro-film", label: "Film & pris" },
   { href: "#priser", label: "Priser" },
-  { href: "#moduler", label: "Moduler" },
 ];
 
 export function Header() {
@@ -21,7 +21,7 @@ export function Header() {
             B
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">
-            BRF Företag
+            Styrelse-Navet
           </span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">

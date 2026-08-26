@@ -3,8 +3,8 @@ import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
-import { SkapaForeningNavKnapp } from "@/components/forening/SkapaForeningNavKnapp";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { BegarPubliceringForm } from "@/components/upphandling/BegarPubliceringForm";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
@@ -13,12 +13,106 @@ type BrfForetagHomeProps = {
   mode: "public" | "forening";
 };
 
+type ModulDef = {
+  title: string;
+  description: string;
+  path: string;
+  icon: string;
+};
+
+/** Samma 12 moduler på Styrelse-Navet och i föreningen (4×3). */
+const foreningModules: ModulDef[] = [
+  {
+    title: "Årshjul & kalender",
+    description:
+      "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
+    path: "/arshjul",
+    icon: "📅",
+  },
+  {
+    title: "Föreningsinformation",
+    description:
+      "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument i mappar.",
+    path: "/foreningsinformation",
+    icon: "📁",
+  },
+  {
+    title: "Medlemmar",
+    description:
+      "Renoveringsanmälan, utskick och lägenhetsarkiv med mappar per lägenhet.",
+    path: "/medlemmar",
+    icon: "👥",
+  },
+  {
+    title: "Underhållsplan",
+    description:
+      "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
+    path: "/underhallsplan",
+    icon: "🔧",
+  },
+  {
+    title: "Energi & drift",
+    description:
+      "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
+    path: "/energi",
+    icon: "⚡",
+  },
+  {
+    title: "Rondering & avvikelser",
+    description:
+      "Tydliga checklistor, signering och avvikelserapportering för städning och fastighetsskötsel.",
+    path: "/rondering",
+    icon: "✅",
+  },
+  {
+    title: "Upphandling",
+    description:
+      "Publicera via oss — vi bjuder in entreprenörer till underlaget och hanterar anbud manuellt.",
+    path: "/upphandling",
+    icon: "📋",
+  },
+  {
+    title: "Projekt",
+    description:
+      "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument.",
+    path: "/projekt",
+    icon: "📐",
+  },
+  {
+    title: "Entreprenörer",
+    description:
+      "Egna kontakter och rekommenderade entreprenörer — sök, lägg till och ta bort.",
+    path: "/entreprenorer",
+    icon: "🏗️",
+  },
+  {
+    title: "Föreningsuppgifter",
+    description:
+      "Grunduppgifter om föreningen — adress, styrelse och övriga fakta samlade på ett ställe.",
+    path: "/uppgifter",
+    icon: "🏢",
+  },
+  {
+    title: "Juridik",
+    description: "Vägledning och mallar för styrelseärenden och avtal.",
+    path: "/juridik",
+    icon: "⚖️",
+  },
+  {
+    title: "Guider & tips",
+    description:
+      "Korta AI-filmer om funktionerna samt råd om upphandling och entreprenörer.",
+    path: "/guider",
+    icon: "🎬",
+  },
+];
+
 const featuredPublic = [
   {
     title: "Underhållsplan",
     description:
       "Bygg komponentregister, renoveringshistorik, besiktningar och budget i samma plan — från stambyte till fasad. Styrelsen får beslutsstöd som håller över tid, inte bara ett kalkylark.",
-    href: "/styrelse-login",
+    anchor: "#moduler",
     icon: "🔧",
     bullets: [
       "50-årsplan med avsättning och besiktningar i rätt år",
@@ -29,13 +123,13 @@ const featuredPublic = [
   {
     title: "Upphandling",
     description:
-      "Från mindre servicejobb till större entreprenader — mallar, dokument och publicering med Upphandla-knappen. Anbud samlas strukturerat och jämförs på ett ställe.",
-    href: "/upphandling",
+      "Föreningen publicerar via oss. Vi bjuder in entreprenörer till underlaget och tar emot anbud — utan att anbuden syns på föreningssidan.",
+    anchor: "#upphandlingar",
     icon: "📋",
     bullets: [
       "Entreprenad, konsulter och fastighetsförvaltning",
-      "Enkel upphandling eller fullständigt underlag",
-      "Låsta anbud till efter sista anbudsdag",
+      "Ni skickar underlag — vi hanterar publicering",
+      "Anbud kommer till oss och hanteras manuellt",
     ],
   },
 ] as const;
@@ -44,115 +138,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
   const base = mode === "forening" ? "/forening" : "";
   const isForening = mode === "forening";
 
-  const coreModules = isForening
-    ? [
-        {
-          title: "Årshjul & kalender",
-          description:
-            "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
-          href: `${base}/arshjul`,
-          icon: "📅",
-        },
-        {
-          title: "Upphandling",
-          description:
-            "Färdiga mallar och enkel eller utökad upphandling. Publicera med knappen Upphandla.",
-          href: `${base}/upphandling`,
-          icon: "📋",
-        },
-        {
-          title: "Underhållsplan",
-          description:
-            "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
-          href: `${base}/underhallsplan`,
-          icon: "🔧",
-        },
-        {
-          title: "Guider & tips",
-          description:
-            "Korta AI-filmer om funktionerna samt råd om upphandling och entreprenörer.",
-          href: `${base}/guider`,
-          icon: "🎬",
-        },
-      ]
-    : [
-        {
-          title: "Underhållsplan",
-          description:
-            "Komponentregister, besiktningar och budget i samma plan — beslutsstöd som håller över tid.",
-          href: `${base}/underhallsplan`,
-          icon: "🔧",
-        },
-        {
-          title: "Upphandling",
-          description:
-            "Mallar och Upphandla-knappen för stora och små entreprenader — anbud samlas strukturerat.",
-          href: `${base}/upphandling`,
-          icon: "📋",
-        },
-        {
-          title: "Film & prisuppgift",
-          description:
-            "Korta filmer visar funktionerna — se filmen och få tydlig prisbild innan ni startar provperiod.",
-          href: "#intro-film",
-          icon: "🎬",
-        },
-      ];
-
-  const modules = [
-    ...coreModules,
-    {
-      title: "Juridik",
-      description: "Vägledning och mallar för styrelseärenden och avtal.",
-      href: `${base}/juridik`,
-      icon: "⚖️",
-    },
-    {
-      title: "Föreningsinformation",
-      description: isForening
-        ? "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument i mappar."
-        : "Stadgar, besiktningar och styrelsedokument — uppladdning efter inloggning.",
-      href: `${base}/foreningsinformation`,
-      icon: "📁",
-    },
-    {
-      title: "Projekt",
-      description: isForening
-        ? "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument."
-        : "Projektmappar med årtal och underlag — hantering efter inloggning.",
-      href: `${base}/projekt`,
-      icon: "📐",
-    },
-    {
-      title: isForening ? "Medlemmar" : "Renoveringshistorik & rutiner",
-      description: isForening
-        ? "Renoveringsanmälan, utskick och lägenhetsarkiv med mappar per lägenhet."
-        : "Historik per lägenhet, renoveringsrutiner och anmälan med checklista.",
-      href: `${base}/medlemmar`,
-      icon: isForening ? "👥" : "📋",
-    },
-    {
-      title: "Rondering & avvikelser",
-      description:
-        "Tydliga checklistor, signering och avvikelserapportering för städning och fastighetsskötsel.",
-      href: `${base}/rondering`,
-      icon: "✅",
-    },
-    {
-      title: "Energi & drift",
-      description:
-        "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
-      href: `${base}/energi`,
-      icon: "⚡",
-    },
-    {
-      title: "Entreprenörer",
-      description:
-        "Sök entreprenör för ert projekt — med referenser och betyg från andra föreningar.",
-      href: `${base}/entreprenorer`,
-      icon: "🏗️",
-    },
-  ];
+  const modules = foreningModules.map((mod) => ({
+    title: mod.title,
+    description: mod.description,
+    icon: mod.icon,
+    ...(isForening ? { href: `${base}${mod.path}` } : {}),
+  }));
 
   return (
     <main>
@@ -166,7 +157,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             <ForeningHeroEtikett />
           ) : (
             <p className="inline-flex rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-primary-dark">
-              BRF Företag · För styrelser som vill ha kontroll
+              Styrelse-Navet · För styrelser som vill ha kontroll
             </p>
           )}
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
@@ -177,7 +168,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "BRF Företag samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som håller."}
+              : "Styrelse-Navet samlar det styrelsen behöver för långsiktigt underhåll och tydliga upphandlingar — från mindre jobb till större entreprenader. Mindre tid på administration, mer tid på beslut som håller."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -248,10 +239,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Se filmerna — få prisuppgift
                 </Link>
                 <Link
-                  href="#fokus"
+                  href="#moduler"
                   className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
                 >
-                  Varför underhåll & upphandling
+                  Se modulerna
                 </Link>
               </>
             )}
@@ -329,7 +320,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   title: "Upphandling",
                   href: `${base}/upphandling`,
                   icon: "📋",
-                  text: "Mallar och Upphandla-knappen",
+                  text: "Mallar och publicering via oss",
                 },
                 {
                   title: "Projekt",
@@ -379,15 +370,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </h2>
               <p className="mt-2 text-muted">
                 De här två delarna sparar mest tid och ger tydligast värde — resten
-                av modulerna bygger vidare på samma struktur.
+                av modulerna bygger vidare på samma struktur. Funktionerna prövas
+                efter inloggning eller gratisperiod.
               </p>
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
               {featuredPublic.map((mod) => (
-                <Link
+                <div
                   key={mod.title}
-                  href={mod.href}
-                  className="group flex flex-col rounded-2xl border-2 border-primary/20 bg-surface p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-md sm:p-8"
+                  className="flex flex-col rounded-2xl border-2 border-primary/20 bg-surface p-6 shadow-sm sm:p-8"
                 >
                   <span
                     className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#e8f3ec] text-2xl"
@@ -395,7 +386,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   >
                     {mod.icon}
                   </span>
-                  <h3 className="text-xl font-semibold text-foreground group-hover:text-primary-dark">
+                  <h3 className="text-xl font-semibold text-foreground">
                     {mod.title}
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
@@ -414,10 +405,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                       </li>
                     ))}
                   </ul>
-                  <span className="mt-5 text-sm font-medium text-primary group-hover:text-primary-dark">
-                    Läs mer om {mod.title.toLowerCase()} →
-                  </span>
-                </Link>
+                  <Link
+                    href={mod.anchor}
+                    className="mt-5 text-sm font-medium text-primary hover:text-primary-dark"
+                  >
+                    {mod.title === "Upphandling"
+                      ? "Se hur upphandling via oss fungerar →"
+                      : "Se modulerna →"}
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
@@ -427,62 +423,128 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       <section id="moduler" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 max-w-2xl">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-            {isForening ? "Moduler" : "Fler moduler i samma plattform"}
+            Moduler
           </h2>
           <p className="mt-2 text-muted">
             {isForening
-              ? "Samma moduler som på den publika sidan — här arbetar styrelsen i er förenings miljö."
-              : "Dokument, rondering, entreprenörer och medlemshantering — allt hänger ihop när grunden är på plats."}
+              ? "Välj en modul för att arbeta i er förenings miljö."
+              : "Samma tolv moduler som i föreningsplattformen — här beskrivs vad de gör. Funktionen prövas efter inloggning eller gratisperiod."}
           </p>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {modules.map((mod) => (
             <ModuleCard key={mod.title} {...mod} />
           ))}
         </div>
       </section>
 
-      <section
-        id="upphandlingar"
-        className="border-y border-border bg-surface/60"
-      >
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mb-10 max-w-2xl">
-            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-              {isForening ? "Upphandlingar" : "Stora och små entreprenader"}
-            </h2>
-            <p className="mt-2 text-muted">
-              {isForening
-                ? "Föreningen eller deras ombud tar fram ett underlag och trycker på Upphandla."
-                : "Samma flöde oavsett om det gäller tak, stambyte, fastighetsskötsel eller brandkonsult — kategori, mallar och låsta anbud."}
-            </p>
+      {!isForening ? (
+        <section
+          id="upphandlingar"
+          className="border-y border-border bg-surface/60"
+        >
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+            <div className="mb-10 max-w-2xl">
+              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+                Upphandling via Styrelse-Navet
+              </h2>
+              <p className="mt-2 text-muted">
+                Föreningen publicerar via oss. Vi bjuder in entreprenörer till
+                underlaget och tar emot anbuden — anbud syns inte på föreningssidan.
+              </p>
+            </div>
+
+            <ol className="mb-10 grid gap-4 sm:grid-cols-3">
+              {[
+                {
+                  steg: "1",
+                  titel: "Ni skickar underlag",
+                  text: "Begär publicering med kategori, kontakt och kort beskrivning.",
+                },
+                {
+                  steg: "2",
+                  titel: "Vi bjuder in",
+                  text: "Entreprenörer får del av underlaget via inbjudan från oss.",
+                },
+                {
+                  steg: "3",
+                  titel: "Anbud till oss",
+                  text: "Anbud fylls i och kommer till oss — vi hanterar dem manuellt.",
+                },
+              ].map((item) => (
+                <li
+                  key={item.steg}
+                  className="rounded-2xl border border-border bg-background p-5"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                    Steg {item.steg}
+                  </p>
+                  <h3 className="mt-2 font-semibold text-foreground">{item.titel}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{item.text}</p>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mb-10">
+              <p className="mb-3 text-sm font-medium text-foreground">
+                Exempel på vad som kan upphandlas
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {upphandlingsKategorier.map((name) => (
+                  <span
+                    key={name}
+                    className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <BegarPubliceringForm />
           </div>
-          <div className="flex flex-wrap gap-3">
-            {upphandlingsKategorier.map((name) => (
-              <span
-                key={name}
-                className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:bg-[#e8f3ec] hover:text-primary-dark"
+        </section>
+      ) : (
+        <section
+          id="upphandlingar"
+          className="border-y border-border bg-surface/60"
+        >
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+            <div className="mb-10 max-w-2xl">
+              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+                Upphandlingar
+              </h2>
+              <p className="mt-2 text-muted">
+                Förbered underlag i modulen. Publicering och anbudshantering sker via
+                plattformen — inkomna anbud syns inte här.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {upphandlingsKategorier.map((name) => (
+                <span
+                  key={name}
+                  className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+            <div className="mt-10 rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
+              <h3 className="font-semibold text-primary-dark">Öppna upphandlingsmodulen</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                Skapa beskrivning och underlag. När ni är redo publicerar ni via oss —
+                entreprenörer bjuds in och anbud hanteras manuellt utanför föreningsvyn.
+              </p>
+              <Link
+                href={`${base}/upphandling`}
+                className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
               >
-                {name}
-              </span>
-            ))}
+                Gå till upphandling
+              </Link>
+            </div>
           </div>
-          <div className="mt-10 rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
-            <h3 className="font-semibold text-primary-dark">Upphandla-knappen</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              Styrelsen eller ett anlitat ombud fyller i mallar och bifogar
-              handlingar. Entreprenörer med godkänt konto kan begära underlag och
-              lämna anbud — först låst till efter sista anbudsdag.
-            </p>
-            <Link
-              href={`${base}/upphandling`}
-              className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-            >
-              Läs om upphandling
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {!isForening ? (
         <section id="priser" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
