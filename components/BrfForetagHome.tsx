@@ -5,6 +5,7 @@ import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 import { BegarPubliceringForm } from "@/components/upphandling/BegarPubliceringForm";
+import { NavetUpphandlingLista } from "@/components/upphandling/NavetUpphandlingLista";
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { upphandlingsKategorier } from "@/components/upphandling/kategorier";
@@ -67,7 +68,7 @@ const foreningModules: ModulDef[] = [
   {
     title: "Upphandling",
     description:
-      "Publicera via oss — vi bjuder in entreprenörer till underlaget och hanterar anbud manuellt.",
+      "Aktuella uppdrag via Styrelse-Navet — underlag till inbjudna entreprenörer, anbud till oss.",
     path: "/upphandling",
     icon: "📋",
   },
@@ -449,8 +450,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Upphandling via Styrelse-Navet
               </h2>
               <p className="mt-2 text-muted">
-                Föreningen publicerar via oss. Vi bjuder in entreprenörer till
-                underlaget och tar emot anbuden — anbud syns inte på föreningssidan.
+                En egen yta för aktuella upphandlingar — skiljd från övriga
+                styrelsemoduler. Föreningar och entreprenörer ser en kort
+                sammanfattning. Fullständigt förfrågningsunderlag och anbud är
+                endast för inbjudna, godkända entreprenörer. Inga
+                kontaktuppgifter visas publikt; allt går via oss.
               </p>
             </div>
 
@@ -458,18 +462,18 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               {[
                 {
                   steg: "1",
-                  titel: "Ni skickar underlag",
-                  text: "Begär publicering med kategori, kontakt och kort beskrivning.",
+                  titel: "Vi publicerar underlag",
+                  text: "Förfrågningsunderlaget läggs ut. Publikt syns bara vad som upphandlas — utan kontakter.",
                 },
                 {
                   steg: "2",
-                  titel: "Vi bjuder in",
-                  text: "Entreprenörer får del av underlaget via inbjudan från oss.",
+                  titel: "Inbjudan via mejl",
+                  text: "Godkända entreprenörer får unik länk till underlaget. Oinbjudna ser endast teaser.",
                 },
                 {
                   steg: "3",
                   titel: "Anbud till oss",
-                  text: "Anbud fylls i och kommer till oss — vi hanterar dem manuellt.",
+                  text: "Anbud fylls i och kommer till Styrelse-Navet — inte till föreningssidan.",
                 },
               ].map((item) => (
                 <li
@@ -484,6 +488,21 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 </li>
               ))}
             </ol>
+
+            <div className="mb-10">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Aktuella upphandlingar
+                </h3>
+                <Link
+                  href="/upphandling"
+                  className="text-sm font-medium text-primary hover:text-primary-dark"
+                >
+                  Öppna upphandlingsytan →
+                </Link>
+              </div>
+              <NavetUpphandlingLista />
+            </div>
 
             <div className="mb-10">
               <p className="mb-3 text-sm font-medium text-foreground">

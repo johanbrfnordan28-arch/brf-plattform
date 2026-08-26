@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
 import { BegarPubliceringLista } from "@/components/upphandling/BegarPubliceringLista";
+import { InternNavetUpphandlingPanel } from "@/components/upphandling/InternNavetUpphandlingPanel";
 import { InternUpphandlingModul } from "@/components/upphandling/InternUpphandlingModul";
 
 export const metadata: Metadata = {
@@ -17,19 +18,27 @@ export default function InternPage() {
       icon="🗂️"
       intro="Intern inloggning för er egen organisation. Här kan olika behörigheter styra vem som får se hela portalen och vem som bara får tillgång till vissa delar."
     >
+      <ContentSection title="Navet-upphandling — inbjudan och anbud">
+        <p className="mb-4 text-sm text-muted">
+          Publicerade uppdrag på Styrelse-Navet. Bjud in godkända entreprenörer via
+          mejl (unik länk till underlaget) och ta emot anbud här — syns inte för
+          föreningen.
+        </p>
+        <InternNavetUpphandlingPanel />
+      </ContentSection>
+
       <ContentSection title="Inkomna publiceringsförfrågningar">
         <p className="mb-4 text-sm text-muted">
           Förfrågningar från landningssidan (&quot;Begär publicering&quot;). Hanteras
-          manuellt — bjud in entreprenörer till underlaget och ta emot anbud utanför
-          föreningsvyn.
+          manuellt innan ni publicerar underlag och bjuder in entreprenörer.
         </p>
         <BegarPubliceringLista />
       </ContentSection>
 
-      <ContentSection title="Upphandlingar och anbud (internt)">
+      <ContentSection title="Föreningspublicerade upphandlingar (äldre flöde)">
         <p className="mb-4 text-sm text-muted">
-          Inkomna anbud hanteras här — styrelsen ser dem inte. När utvärderingen är klar
-          levereras den till föreningssidan för styrelsens beslut.
+          Upphandlingar publicerade från föreningsmodulen. Anbud här är demo/internt —
+          styrelsen ser dem inte.
         </p>
         <InternUpphandlingModul />
       </ContentSection>

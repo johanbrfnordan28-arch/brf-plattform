@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
-import { PubliceradeUpphandlingarPanel } from "@/components/upphandling/PubliceradeUpphandlingarPanel";
+import { NavetUpphandlingLista } from "@/components/upphandling/NavetUpphandlingLista";
 import {
   arInramadUpphandlingsGrupp,
   upphandlingsGrupper,
@@ -10,39 +10,39 @@ import {
 export const metadata: Metadata = {
   title: "Upphandling — Styrelse-Navet",
   description:
-    "Publicerade upphandlingar från BRF-föreningar — titel, ort, kategori och sista anbudsdag. Anbud hanteras manuellt av oss.",
+    "Aktuella upphandlingar via Styrelse-Navet. Begränsad info publikt — underlag och anbud endast för inbjudna entreprenörer.",
 };
 
 export default function UpphandlingPage() {
   return (
     <ModulePage
-      title="Upphandling"
+      title="Upphandling via Styrelse-Navet"
       icon="📋"
-      intro="Aktuella uppdrag som publicerats via Styrelse-Navet. Anbud och offerter visas inte här — de hanteras manuellt av oss."
+      intro="Här kan föreningar och entreprenörer se aktuella upphandlingar. Fullständigt förfrågningsunderlag och anbud är endast för inbjudna, godkända entreprenörer — utan publik kontakt till föreningen."
     >
-      <ContentSection title="Publicerade upphandlingar">
-        <PubliceradeUpphandlingarPanel />
+      <ContentSection title="Aktuella upphandlingar">
+        <NavetUpphandlingLista />
       </ContentSection>
 
       <ContentSection title="Så fungerar det">
-        <p>
-          Föreningen begär publicering via landningssidan eller föreningsmodulen.
-          Vi bjuder in entreprenörer till underlaget. Anbud fylls i och kommer till
-          oss — ingen på föreningssidan ser inkomna anbud.
-        </p>
-        <p>
-          I början sköts inbjudan och anbudshantering manuellt. När utvärderingen är
-          klar återkopplar vi till styrelsen utan att öppna anbudsöversikten i
-          föreningsvyn.
-        </p>
+        <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted">
+          <li>
+            Styrelse-Navet publicerar ett förfrågningsunderlag. Publikt syns
+            endast en kort beskrivning — ingen kontaktinformation.
+          </li>
+          <li>
+            Vi bjuder in godkända entreprenörer via mejl med unik länk till
+            underlaget.
+          </li>
+          <li>
+            Inbjudna lämnar anbud till oss. Föreningen ser inte råa anbud —
+            vi hanterar dem manuellt och återkopplar.
+          </li>
+        </ol>
       </ContentSection>
 
-      <ContentSection title="Kategorier efter typ">
-        <p>
-          Välj kategori när upphandlingen skapas. Per kategori finns plats för
-          projektbeskrivning, underlag och övriga dokument.
-        </p>
-        <div className="mt-4 space-y-6">
+      <ContentSection title="Kategorier">
+        <div className="mt-2 space-y-6">
           {upphandlingsGrupper.map((grupp) => (
             <div
               key={grupp.id}
@@ -67,14 +67,6 @@ export default function UpphandlingPage() {
             </div>
           ))}
         </div>
-      </ContentSection>
-
-      <ContentSection title="Behörighet och sekretess">
-        <p>
-          Inkomna anbud och offerter syns inte för styrelsen, entreprenörer eller
-          publikt. Informationen hanteras av oss och delas vidare först när ni
-          väljer det.
-        </p>
       </ContentSection>
     </ModulePage>
   );
