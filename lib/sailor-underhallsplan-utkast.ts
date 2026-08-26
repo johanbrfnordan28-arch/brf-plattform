@@ -74,10 +74,10 @@ export const SAILOR_PLAN_NOTERING = [
   "Planperiod från 2027.",
   "40 bostadsrätter, 2 756 kvm boyta, tomtyta 4 688 kvm, 50 badrum. Inga eldstäder (sotning ej aktuell).",
   "40 p-platser varav 20 med motorvärmare och 10 med laddstolpe.",
-  "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras.",
+  "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras 2027.",
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
-  "VVS: avloppsspolning och filmning som kostnadsfört underhåll (vart 10:e år).",
+  "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som kostnadsfört underhåll.",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam). Filterbyte 1 gång/år.",
   "10 laddstolpar installerade (2026). Energideklaration utförd 2026. Offert radonmätning finns.",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
@@ -330,16 +330,19 @@ export function byggSailorKomponentUtkast(): {
           tillfallen: [
             {
               id: "sailor-fasad-1",
-              titel: "Bättringsputs och ommålning",
-              /** 2013+12 → 2025; i planen första gång 2037. */
-              nastaAr: sailorNastaAr(12),
+              titel: "Bättringsputs och ommålning (tunnputs)",
+              /** Tidigarelagt till planstart — tunnputs åtgärdas 2027. */
+              nastaAr: String(SAILOR_PLAN_START_AR),
               intervallAr: "12",
               atgarder: ["putsreparation", "ommalning", "fasadtvatt"],
             },
           ],
         },
       },
-      /** Löpande puts/målning — kostnadsförs (ingår ej i kr/m²-avsättning). */
+      /**
+       * Löpande tunnputs — kostnadsförs i resultaträkningen (ingår ej i kr/m²).
+       * Totalt ca 1 195 000 kr per tillfälle (puts + ommålning + tvätt).
+       */
       fasadAtgardPrisRegister: {
         fasadmaterial: {
           putsreparation: {
@@ -430,13 +433,16 @@ export function byggSailorKomponentUtkast(): {
             };
           }
           if (r.id === "spolning-avlopp") {
+            // 44 447 kr inkl. moms → exkl. 35 558, moms 8 889 (25 %)
             return {
               värde: "3",
-              underhallNastaAr: sailorNastaAr(10),
+              underhallUtförtAr: "2022",
+              underhallNastaAr: "2032",
               underhallIntervallAr: "10",
               underhallPrisEnhet: "total",
-              underhallKostnadKr: "45000",
-              underhallUtförtAr: String(SAILOR_BYGGAR),
+              underhallKostnadKr: "35558",
+              underhallKostnadInklMomsKr: "44447",
+              underhallMomsAvdragenKr: "8889",
             };
           }
           if (r.id === "filmning-avlopp") {
