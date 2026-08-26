@@ -279,6 +279,7 @@ export function UnderhallsplanSlutsida({
         planSlutAr,
         boareaM2: avsattningsYtaM2,
         antalLagenheter: antalLgh,
+        tomtstorlekM2: parseHeltalFranText(grundNorm.tomtstorlek) || undefined,
         krPerKvmAr,
         arligAvsattningKr: avsattning.arligAvsattningKr,
         planNotering,
@@ -288,15 +289,26 @@ export function UnderhallsplanSlutsida({
             värde: grund.adresser.filter(Boolean).join(", ") || "—",
           },
           {
-            etikett: "Boarea",
+            etikett: "Boarea m²",
             värde:
               parseHeltalFranText(grundNorm.boarea) > 0
-                ? `${parseHeltalFranText(grundNorm.boarea).toLocaleString("sv-SE")} m²`
+                ? String(parseHeltalFranText(grundNorm.boarea))
+                : "—",
+          },
+          {
+            etikett: "Tomtyta m²",
+            värde:
+              parseHeltalFranText(grundNorm.tomtstorlek) > 0
+                ? String(parseHeltalFranText(grundNorm.tomtstorlek))
                 : "—",
           },
           {
             etikett: "Lägenheter",
             värde: antalLgh > 0 ? String(antalLgh) : "—",
+          },
+          {
+            etikett: "Byggår",
+            värde: grund.byggar || "—",
           },
           {
             etikett: "Uppvärmning",
@@ -309,10 +321,6 @@ export function UnderhallsplanSlutsida({
           {
             etikett: "Fastighetsbeteckning",
             värde: grund.fastighetsbeteckning || "—",
-          },
-          {
-            etikett: "Byggår",
-            värde: grund.byggar || "—",
           },
         ],
         utgiftsRader,
@@ -843,6 +851,14 @@ export function UnderhallsplanSlutsida({
                   <dd className="font-medium text-foreground">
                     {parseHeltalFranText(grundNorm.boarea) > 0
                       ? `${parseHeltalFranText(grundNorm.boarea).toLocaleString("sv-SE")} m²`
+                      : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Tomtyta</dt>
+                  <dd className="font-medium text-foreground">
+                    {parseHeltalFranText(grundNorm.tomtstorlek) > 0
+                      ? `${parseHeltalFranText(grundNorm.tomtstorlek).toLocaleString("sv-SE")} m²`
                       : "—"}
                   </dd>
                 </div>

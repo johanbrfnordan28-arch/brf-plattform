@@ -24,6 +24,7 @@ export const SAILOR_PROFIL = {
 export const SAILOR_GRUND: Pick<
   Grunduppgifter,
   | "boarea"
+  | "tomtstorlek"
   | "antalLagenheter"
   | "antalVaningar"
   | "antalByggnader"
@@ -34,6 +35,7 @@ export const SAILOR_GRUND: Pick<
   | "fastighetsbeteckning"
 > = {
   boarea: "2 756",
+  tomtstorlek: "4 688",
   antalLagenheter: "40",
   antalVaningar: "4",
   antalByggnader: "3",

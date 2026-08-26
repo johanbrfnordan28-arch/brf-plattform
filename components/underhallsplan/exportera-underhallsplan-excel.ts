@@ -1,6 +1,8 @@
 /**
  * Exporterar underhållsplanen som Excel-kompatibel XML-kalkylblad (.xls).
  * Öppnas i Excel/Numbers/Google Sheets utan extra bibliotek.
+ *
+ * Första bladet hålls kort och sifferbaserat — lång löptext ligger på fliken Notering.
  */
 
 import type { PlanUtgiftsArRad } from "@/components/underhallsplan/plan-budget-sammanfattning";
@@ -31,6 +33,25 @@ function worksheet(name: string, rows: string[]): string {
   return `<Worksheet ss:Name="${xmlEscape(name)}"><Table>${rows.join("")}</Table></Worksheet>`;
 }
 
+/** Försök tolka ett grundvärde som tal (t.ex. «2 756», «2756 m²»). */
+function tolkaTalFranText(värde: string): number | null {
+  const rensad = värde
+    .replace(/\s/g, "")
+    .replace(/m²|kvm|kr|st\.?/gi, "")
+    .replace(",", ".");
+  if (!rensad || !/^-?\d+(\.\d+)?$/.test(rensad)) return null;
+  const n = Number.parseFloat(rensad);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Delar lång notering till korta rader (en mening per rad). */
+export function delaPlanNoteringTillRader(text: string): string[] {
+  return text
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export type UnderhallsplanExcelInput = {
   foreningsNamn: string;
   planNamn: string;
@@ -38,9 +59,11 @@ export type UnderhallsplanExcelInput = {
   planSlutAr: number;
   boareaM2: number;
   antalLagenheter: number;
+  tomtstorlekM2?: number;
   krPerKvmAr: number;
   arligAvsattningKr: number;
   planNotering?: string | null;
+  /** Korta etikett/värde-rader — tal skrivs som Number när möjligt. */
   grundRader: { etikett: string; värde: string }[];
   utgiftsRader: PlanUtgiftsArRad[];
   atgarder: UnderhallAtgard[];
@@ -53,29 +76,62 @@ export type UnderhallsplanExcelInput = {
 
 function byggGrundBlad(input: UnderhallsplanExcelInput): string {
   const rader = [
+    row([cellString("Nyckeltal"), cellString("Värde")]),
     row([cellString("Förening"), cellString(input.foreningsNamn)]),
     row([cellString("Plan"), cellString(input.planNamn)]),
-    row([
-      cellString("Planperiod"),
-      cellString(`${input.planStartAr}–${input.planSlutAr}`),
-    ]),
+    row([cellString("Planstart år"), cellNumber(input.planStartAr)]),
+    row([cellString("Planslut år"), cellNumber(input.planSlutAr)]),
     row([cellString("Boarea m²"), cellNumber(input.boareaM2)]),
     row([cellString("Lägenheter"), cellNumber(input.antalLagenheter)]),
+  ];
+  if (input.tomtstorlekM2 != null && input.tomtstorlekM2 > 0) {
+    rader.push(
+      row([cellString("Tomtyta m²"), cellNumber(input.tomtstorlekM2)]),
+    );
+  }
+  rader.push(
     row([cellString("Avsättning kr/m²/år"), cellNumber(input.krPerKvmAr)]),
-    row([cellString("Årlig avsättning kr"), cellNumber(input.arligAvsattningKr)]),
+    row([
+      cellString("Årlig avsättning kr"),
+      cellNumber(input.arligAvsattningKr),
+    ]),
     row([cellString(""), cellString("")]),
     row([cellString("Grunduppgift"), cellString("Värde")]),
-    ...input.grundRader.map((g) =>
-      row([cellString(g.etikett), cellString(g.värde)]),
-    ),
-  ];
+  );
+
+  for (const g of input.grundRader) {
+    const tal = tolkaTalFranText(g.värde);
+    if (tal != null) {
+      rader.push(row([cellString(g.etikett), cellNumber(tal)]));
+    } else {
+      rader.push(row([cellString(g.etikett), cellString(g.värde)]));
+    }
+  }
+
   if (input.planNotering?.trim()) {
     rader.push(
       row([cellString(""), cellString("")]),
-      row([cellString("Notering"), cellString(input.planNotering.trim())]),
+      row([
+        cellString("Notering"),
+        cellString("Se fliken «Notering» (en punkt per rad)."),
+      ]),
     );
   }
+
   return worksheet("Grunduppgifter", rader);
+}
+
+function byggNoteringBlad(planNotering: string | null | undefined): string | null {
+  const text = planNotering?.trim();
+  if (!text) return null;
+  const punkter = delaPlanNoteringTillRader(text);
+  const rader = [
+    row([cellString("Nr"), cellString("Punkt")]),
+    ...punkter.map((p, i) =>
+      row([cellNumber(i + 1), cellString(p)]),
+    ),
+  ];
+  return worksheet("Notering", rader);
 }
 
 function byggUtgifterBlad(rader: PlanUtgiftsArRad[]): string {
@@ -194,8 +250,10 @@ function byggKomponentVardenBlad(
 export function byggUnderhallsplanExcelXml(
   input: UnderhallsplanExcelInput,
 ): string {
+  const noteringBlad = byggNoteringBlad(input.planNotering);
   const blad = [
     byggGrundBlad(input),
+    ...(noteringBlad ? [noteringBlad] : []),
     byggUtgifterBlad(input.utgiftsRader),
     byggPosterBlad(input.utgiftsRader),
     byggAtgarderBlad(input.atgarder),

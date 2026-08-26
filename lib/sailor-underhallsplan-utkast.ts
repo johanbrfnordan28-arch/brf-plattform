@@ -37,8 +37,8 @@ const P_PLATSER_ID = "p-platser";
 export const SAILOR_PLAN_NOTERING = [
   "JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
   "Planperiod från 2027.",
-  "40 bostadsrätter, 2 756 kvm boyta, 50 badrum. Inga eldstäder (sotning ej aktuell).",
-  "40 p-platser varav 20 med motorvärmare.",
+  "40 bostadsrätter, 2 756 kvm boyta, tomtyta 4 688 kvm, 50 badrum. Inga eldstäder (sotning ej aktuell).",
+  "40 p-platser varav 20 med motorvärmare och 10 med laddstolpe.",
   "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras.",
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
@@ -90,8 +90,8 @@ function byggSailorBesiktningar(): Besiktning[] {
         /** OVK-protokoll 2026-03-02 — nästa ordinarie 2032-03-02 */
         senastUtförtAr: 2026,
         nastaBesiktningAr: 2032,
-        /** Faktisk offert 550 kr/lgh inkl. moms — planen behåller 300 kr/lgh exkl. moms. */
-        kostnadPerLagenhetKr: 300,
+        /** Offert/utfört: 550 kr/lgh. */
+        kostnadPerLagenhetKr: 550,
         senastKostnadKr: 550 * 40,
       };
     }
