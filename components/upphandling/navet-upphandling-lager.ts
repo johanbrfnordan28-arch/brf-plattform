@@ -67,12 +67,25 @@ export type NavetAnbud = {
   inlamnad: string;
 };
 
+/** Intresseanmälan från entreprenör — synlig endast internt inför inbjudan. */
+export type NavetIntresse = {
+  id: string;
+  upphandlingId: string;
+  epost: string;
+  foretagsnamn: string;
+  telefon: string;
+  meddelande: string;
+  skapad: string;
+  status: "ny" | "inbjuden" | "avvisad";
+};
+
 export type NavetUpphandlingLager = {
   publicerade: NavetPubliceradTeaser[];
   underlag: NavetUnderlag[];
   entreprenorer: NavetEntreprenor[];
   inbjudningar: NavetInbjudan[];
   anbud: NavetAnbud[];
+  intressen: NavetIntresse[];
 };
 
 function tomtLager(): NavetUpphandlingLager {
@@ -82,6 +95,7 @@ function tomtLager(): NavetUpphandlingLager {
     entreprenorer: [],
     inbjudningar: [],
     anbud: [],
+    intressen: [],
   };
 }
 
@@ -111,6 +125,7 @@ export function lasNavetUpphandlingLager(): NavetUpphandlingLager {
         ? parsed.inbjudningar
         : [],
       anbud: Array.isArray(parsed.anbud) ? parsed.anbud : [],
+      intressen: Array.isArray(parsed.intressen) ? parsed.intressen : [],
     };
   } catch {
     return tomtLager();
@@ -502,6 +517,60 @@ export function lamnaNavetAnbud(input: {
   ];
   sparaLager(lager);
   return anbud;
+}
+
+export function anmalIntresse(input: {
+  upphandlingId: string;
+  epost: string;
+  foretagsnamn: string;
+  telefon?: string;
+  meddelande?: string;
+}): NavetIntresse {
+  const epost = input.epost.trim().toLowerCase();
+  const foretagsnamn = input.foretagsnamn.trim();
+  if (!input.upphandlingId || !epost || !foretagsnamn) {
+    throw new Error("Ange företagsnamn och e-post.");
+  }
+  const lager = lasNavetUpphandlingLager();
+  if (!lager.publicerade.some((u) => u.id === input.upphandlingId)) {
+    throw new Error("Upphandlingen hittades inte.");
+  }
+
+  const befintlig = lager.intressen.find(
+    (i) =>
+      i.upphandlingId === input.upphandlingId &&
+      i.epost.toLowerCase() === epost &&
+      i.status === "ny",
+  );
+  if (befintlig) return befintlig;
+
+  const intresse: NavetIntresse = {
+    id: skapaId("int"),
+    upphandlingId: input.upphandlingId,
+    epost,
+    foretagsnamn,
+    telefon: (input.telefon ?? "").trim(),
+    meddelande: (input.meddelande ?? "").trim(),
+    skapad: new Date().toISOString(),
+    status: "ny",
+  };
+  lager.intressen = [intresse, ...lager.intressen];
+  sparaLager(lager);
+  return intresse;
+}
+
+export function hamtaIntressenFor(upphandlingId: string): NavetIntresse[] {
+  return lasNavetUpphandlingLager()
+    .intressen.filter((i) => i.upphandlingId === upphandlingId)
+    .sort((a, b) => b.skapad.localeCompare(a.skapad));
+}
+
+export function markeraIntresseInbjuden(intresseId: string): void {
+  const lager = lasNavetUpphandlingLager();
+  lager.intressen = lager.intressen.map((i) =>
+    i.id === intresseId ? { ...i, status: "inbjuden" as const } : i,
+  );
+  sparaLager(lager);
 }
 
 export function formatNavetDatum(isoEllerDatum: string): string {

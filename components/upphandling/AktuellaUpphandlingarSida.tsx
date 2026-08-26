@@ -12,8 +12,7 @@ import {
 } from "@/components/upphandling/navet-upphandling-lager";
 
 /**
- * Dedikerad sida endast för aktuella upphandlingar.
- * Teaser-info publikt; underlag och anbud är låsta till inbjudna.
+ * Dedikerad sida för entreprenörer: projektöversikt, inte styrelsemoduler.
  */
 export function AktuellaUpphandlingarSida() {
   const [lista, setLista] = useState<NavetPubliceradTeaser[]>([]);
@@ -37,101 +36,89 @@ export function AktuellaUpphandlingarSida() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#eef5f0_0%,#f7faf8_28%,#f4faf6_100%)]">
-      {/* Hero — ett fokus: varumärke, rubrik, mening, CTA-hint */}
+    <main className="min-h-screen bg-[linear-gradient(180deg,#e8f0ea_0%,#f6f9f7_32%,#f4faf6_100%)]">
+      <div className="border-b border-border/60 bg-white/50">
+        <div className="mx-auto flex max-w-5xl items-center px-4 py-3 sm:px-6">
+          <Link
+            href="/"
+            className="text-sm font-medium text-primary-dark hover:text-primary"
+          >
+            ← Åter till Huvudsidan
+          </Link>
+        </div>
+      </div>
+
       <section className="relative overflow-hidden border-b border-border/70">
         <div
-          className="pointer-events-none absolute inset-0 opacity-70"
+          className="pointer-events-none absolute inset-0"
           aria-hidden
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 15% 20%, rgba(61,115,84,0.16), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 10%, rgba(90,154,110,0.12), transparent 50%)",
+              "radial-gradient(ellipse 75% 55% at 10% 0%, rgba(61,115,84,0.14), transparent 50%), radial-gradient(ellipse 60% 45% at 95% 20%, rgba(90,154,110,0.1), transparent 48%)",
           }}
         />
-        <div className="relative mx-auto max-w-5xl px-4 pb-14 pt-12 sm:px-6 sm:pb-16 sm:pt-16">
-          <p className="text-sm font-semibold tracking-wide text-primary-dark animate-[navetFadeUp_0.5s_ease-out]">
-            Styrelse-Navet
+        <div className="relative mx-auto max-w-5xl px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-12">
+          <p className="text-sm font-semibold tracking-wide text-primary-dark">
+            Styrelse-Navet · För entreprenörer
           </p>
-          <h1 className="mt-3 max-w-2xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl animate-[navetFadeUp_0.55s_ease-out]">
-            Aktuella upphandlingar
+          <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Aktuella projekt
           </h1>
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted animate-[navetFadeUp_0.6s_ease-out]">
-            Här syns bara vad som upphandlas. Förfrågningsunderlag och anbud är
-            låsta — inbjudan sker via mejl från oss.
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
+            Här hittar ni projektinformation om pågående upphandlingar. Är ni
+            intresserade av att lämna offert kan ni anmäla er — vi bjuder sedan
+            in utvalda entreprenörer till förfrågningsunderlaget.
           </p>
-          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-foreground/80 animate-[navetFadeUp_0.65s_ease-out]">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
-              Ingen kontaktinfo publikt
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
-              Underlag endast för inbjudna
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
-              Anbudsgivare ser inte varandra
-            </span>
-          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Öppna uppdrag</h2>
-            <p className="mt-1 text-sm text-muted">
-              Välj ett uppdrag för mer information. Fullständigt underlag kräver
-              personlig inbjudan.
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="text-sm font-medium text-primary hover:text-primary-dark"
-          >
-            ← Tillbaka till Styrelse-Navet
-          </Link>
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-foreground">
+            Projektöversikt
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Öppna ett projekt för omfattning, ort och anbudstid. Underlag delas
+            först efter inbjudan.
+          </p>
         </div>
 
         {!hydrated ? (
-          <p className="text-sm text-muted">Laddar upphandlingar…</p>
+          <p className="text-sm text-muted">Laddar projekt…</p>
         ) : lista.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-white/70 px-6 py-14 text-center">
+          <div className="rounded-2xl border border-dashed border-border bg-white/80 px-6 py-14 text-center">
             <p className="text-base font-medium text-foreground">
-              Inga aktuella upphandlingar just nu
+              Inga aktuella projekt just nu
             </p>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              När Styrelse-Navet publicerar ett uppdrag syns det här med titel,
-              ort och sista anbudsdag — utan underlag eller kontakter.
+              När nya upphandlingar publiceras syns de här med projektnamn, ort
+              och sista anbudsdag.
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border/80 overflow-hidden rounded-2xl border border-border bg-white/80 shadow-[0_12px_40px_-28px_rgba(26,46,34,0.35)]">
+          <ul className="space-y-4">
             {lista.map((upph, index) => {
               const stangd = arAnbudstidStangd(upph.sistaAnbudsdag);
               return (
                 <li
                   key={upph.id}
-                  className="group animate-[navetFadeUp_0.45s_ease-out_both]"
-                  style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+                  className="animate-[navetFadeUp_0.45s_ease-out_both]"
+                  style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
                 >
                   <Link
                     href={`/upphandling/${upph.id}`}
-                    className="flex flex-col gap-4 px-5 py-5 transition-colors hover:bg-[#eef6f0]/70 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-6"
+                    className="group block rounded-2xl border border-border bg-white/90 p-5 shadow-[0_10px_36px_-28px_rgba(26,46,34,0.4)] transition-all hover:border-primary/40 hover:bg-white sm:p-7"
                   >
-                    <div className="min-w-0 flex-1 border-l-2 border-primary/50 pl-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-                        {upph.kategoriNamn}
-                        {upph.ort && upph.ort !== "—" ? ` · ${upph.ort}` : ""}
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold text-foreground group-hover:text-primary-dark">
-                        {upph.titel}
-                      </h3>
-                      <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">
-                        {upph.kortBeskrivning}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end sm:pl-6">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                          {upph.kategoriNamn}
+                          {upph.ort && upph.ort !== "—" ? ` · ${upph.ort}` : ""}
+                        </p>
+                        <h3 className="mt-1.5 text-xl font-semibold text-foreground group-hover:text-primary-dark">
+                          {upph.titel}
+                        </h3>
+                      </div>
                       <span
                         className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                           stangd
@@ -139,16 +126,21 @@ export function AktuellaUpphandlingarSida() {
                             : "bg-[#e8f3ec] text-primary-dark"
                         }`}
                       >
-                        {stangd ? "Anbudstid stängd" : "Anbudstid öppen"}
+                        {stangd ? "Anbudstid stängd" : "Tar emot intresse"}
                       </span>
-                      <p className="text-sm text-muted">
-                        Sista dag{" "}
-                        <span className="font-medium text-foreground">
+                    </div>
+                    <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted sm:text-[15px]">
+                      {upph.kortBeskrivning}
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border/70 pt-4 text-sm">
+                      <p className="text-muted">
+                        Sista anbudsdag{" "}
+                        <span className="font-semibold text-foreground">
                           {formatNavetDatum(upph.sistaAnbudsdag)}
                         </span>
                       </p>
-                      <span className="text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100 sm:opacity-100">
-                        Visa sammanfattning →
+                      <span className="font-medium text-primary">
+                        Visa projektinformation →
                       </span>
                     </div>
                   </Link>
@@ -158,26 +150,36 @@ export function AktuellaUpphandlingarSida() {
           </ul>
         )}
 
-        <aside className="mt-12 grid gap-6 border-t border-border/80 pt-10 sm:grid-cols-3">
-          {[
-            {
-              titel: "Publikt",
-              text: "Titel, ort, kort beskrivning och sista anbudsdag.",
-            },
-            {
-              titel: "Inbjudna",
-              text: "Unik mejllänk till förfrågningsunderlag och anbudsformulär.",
-            },
-            {
-              titel: "Konfidentiellt",
-              text: "Vem som är inbjuden och vilka anbud som kommit in syns bara hos oss.",
-            },
-          ].map((rad) => (
-            <div key={rad.titel}>
-              <h3 className="text-sm font-semibold text-foreground">{rad.titel}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{rad.text}</p>
-            </div>
-          ))}
+        <aside className="mt-12 rounded-2xl border border-border/80 bg-white/70 p-6 sm:p-8">
+          <h2 className="text-base font-semibold text-foreground">
+            Så fungerar det för er som entreprenör
+          </h2>
+          <ol className="mt-4 grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                n: "1",
+                t: "Läs projektet",
+                d: "Se omfattning, ort och tidsplan i projektinformationen.",
+              },
+              {
+                n: "2",
+                t: "Anmäl intresse",
+                d: "Skicka en intresseanmälan om ni vill lämna offert.",
+              },
+              {
+                n: "3",
+                t: "Få inbjudan",
+                d: "Utvalda får unik länk till underlag och kan lämna anbud.",
+              },
+            ].map((steg) => (
+              <li key={steg.n} className="text-sm">
+                <p className="font-semibold text-primary-dark">
+                  {steg.n}. {steg.t}
+                </p>
+                <p className="mt-1 leading-relaxed text-muted">{steg.d}</p>
+              </li>
+            ))}
+          </ol>
         </aside>
       </section>
     </main>

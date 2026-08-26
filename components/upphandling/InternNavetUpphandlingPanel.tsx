@@ -5,18 +5,21 @@ import {
   bjudInEntreprenor,
   formatNavetDatum,
   hamtaInbjudningarFor,
+  hamtaIntressenFor,
   hamtaNavetAnbudFor,
   hamtaNavetPublicerade,
   hamtaNavetUnderlag,
   hamtaEntreprenor,
   laggTillNavetDokument,
   mailtoInbjudan,
+  markeraIntresseInbjuden,
   NAVET_UPPHANDLING_EVENT,
   navetUpphandlingStorageKey,
   skapaNavetUpphandling,
   taBortNavetDokument,
   type NavetAnbud,
   type NavetInbjudan,
+  type NavetIntresse,
   type NavetPubliceradTeaser,
   type NavetUnderlagDokument,
 } from "@/components/upphandling/navet-upphandling-lager";
@@ -29,6 +32,7 @@ export function InternNavetUpphandlingPanel() {
   const [valdId, setValdId] = useState("");
   const [dokument, setDokument] = useState<NavetUnderlagDokument[]>([]);
   const [inbjudningar, setInbjudningar] = useState<NavetInbjudan[]>([]);
+  const [intressen, setIntressen] = useState<NavetIntresse[]>([]);
   const [anbud, setAnbud] = useState<NavetAnbud[]>([]);
 
   const [nyTitel, setNyTitel] = useState("");
@@ -57,10 +61,12 @@ export function InternNavetUpphandlingPanel() {
     if (id) {
       setDokument(hamtaNavetUnderlag(id)?.dokument ?? []);
       setInbjudningar(hamtaInbjudningarFor(id));
+      setIntressen(hamtaIntressenFor(id));
       setAnbud(hamtaNavetAnbudFor(id));
     } else {
       setDokument([]);
       setInbjudningar([]);
+      setIntressen([]);
       setAnbud([]);
     }
   }
@@ -87,6 +93,7 @@ export function InternNavetUpphandlingPanel() {
     if (!valdId) return;
     setDokument(hamtaNavetUnderlag(valdId)?.dokument ?? []);
     setInbjudningar(hamtaInbjudningarFor(valdId));
+    setIntressen(hamtaIntressenFor(valdId));
     setAnbud(hamtaNavetAnbudFor(valdId));
     setSenasteLank(null);
     setSenasteMailto(null);
@@ -429,6 +436,81 @@ export function InternNavetUpphandlingPanel() {
               </div>
             )}
           </form>
+
+          <div>
+            <h3 className="font-semibold text-foreground">
+              Intresseanmälningar (endast intern vy)
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              Entreprenörer som vill lämna offert. Bjud in dem till underlaget.
+            </p>
+            {intressen.length === 0 ? (
+              <p className="mt-2 text-sm text-muted">Inga intresseanmälningar ännu.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {intressen.map((i) => (
+                  <li
+                    key={i.id}
+                    className="rounded-lg border border-border bg-surface px-4 py-3 text-sm"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {i.foretagsnamn}{" "}
+                          <span className="font-normal text-muted">({i.epost})</span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted">
+                          {i.telefon ? `${i.telefon} · ` : ""}
+                          {formatNavetDatum(i.skapad)} · {i.status}
+                        </p>
+                        {i.meddelande && (
+                          <p className="mt-2 text-sm text-foreground/90">{i.meddelande}</p>
+                        )}
+                      </div>
+                      {i.status === "ny" && (
+                        <button
+                          type="button"
+                          className="rounded-lg border border-primary bg-[#eef6f0] px-3 py-1.5 text-xs font-medium text-primary-dark"
+                          onClick={() => {
+                            try {
+                              const { lank } = bjudInEntreprenor({
+                                upphandlingId: valdId,
+                                epost: i.epost,
+                                foretagsnamn: i.foretagsnamn,
+                              });
+                              markeraIntresseInbjuden(i.id);
+                              const absolut =
+                                typeof window !== "undefined"
+                                  ? `${window.location.origin}${lank}`
+                                  : lank;
+                              const vald = lista.find((u) => u.id === valdId);
+                              setSenasteLank(absolut);
+                              setSenasteMailto(
+                                mailtoInbjudan({
+                                  epost: i.epost,
+                                  titel: vald?.titel ?? "Upphandling",
+                                  lank: absolut,
+                                }),
+                              );
+                              uppdatera(valdId);
+                            } catch (error) {
+                              setInbjudFel(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Kunde inte bjuda in.",
+                              );
+                            }
+                          }}
+                        >
+                          Bjud in till underlag
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           <div>
             <h3 className="font-semibold text-foreground">

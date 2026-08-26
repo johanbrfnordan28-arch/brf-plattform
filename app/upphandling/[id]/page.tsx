@@ -1,24 +1,15 @@
 import type { Metadata } from "next";
-import { ModulePage } from "@/components/ModulePage";
 import { NavetUpphandlingDetalj } from "@/components/upphandling/NavetUpphandlingDetalj";
 
 type Props = { params: Promise<{ id: string }> };
 
 export const metadata: Metadata = {
-  title: "Upphandling — Styrelse-Navet",
+  title: "Projekt — Styrelse-Navet",
   description:
-    "Begränsad information om en publicerad upphandling. Underlag endast för inbjudna entreprenörer.",
+    "Projektinformation om en upphandling. Anmäl intresse för att bli inbjuden till underlag och anbud.",
 };
 
 export default async function UpphandlingDetaljPage({ params }: Props) {
   const { id } = await params;
-  return (
-    <ModulePage
-      title="Upphandling"
-      icon="📋"
-      intro="Publik sammanfattning utan kontaktuppgifter. Fullständigt förfrågningsunderlag får endast inbjudna, godkända entreprenörer."
-    >
-      <NavetUpphandlingDetalj upphandlingId={id} />
-    </ModulePage>
-  );
+  return <NavetUpphandlingDetalj upphandlingId={id} />;
 }
