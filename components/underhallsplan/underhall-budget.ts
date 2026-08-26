@@ -25,6 +25,7 @@ import {
   beraknaUpphandlingOchProjektledning,
   type PlanKostnaderNormaliserade,
 } from "@/components/underhallsplan/plan-kostnader";
+import { forstaAtgardArIPlan } from "@/components/underhallsplan/underhall-plan-ar";
 import type { RenoveringFordelningKontext } from "@/components/underhallsplan/renovering-fordelning";
 import {
   genereraAtgarderFranHistorik,
@@ -151,8 +152,11 @@ export function samlaUnderhallAtgarder(
       const intervall = parseAr(rad.underhallIntervallAr ?? "");
       if (kostnad <= 0 || intervall < 1) continue;
 
-      let ar = parseAr(rad.underhallNastaAr ?? "") || planStartAr;
-      if (ar < planStartAr) ar = planStartAr;
+      let ar = forstaAtgardArIPlan(
+        parseAr(rad.underhallNastaAr ?? "") || planStartAr,
+        intervall,
+        planStartAr,
+      );
       const direktkostnad = arDirektkostnadUnderhall(komponent, rad.id);
       const momsAvdragenKr = parseKrBelopp(rad.underhallMomsAvdragenKr);
 

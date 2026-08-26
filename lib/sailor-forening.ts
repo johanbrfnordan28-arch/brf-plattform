@@ -7,6 +7,9 @@ export const SAILOR_FORENING_ID = "test-forening-5";
 /** Underhållsplanen för Sailor börjar detta kalenderår. */
 export const SAILOR_PLAN_START_AR = 2027;
 
+/** Byggår enligt årsredovisning — åtgärdsår räknas härifrån + intervall. */
+export const SAILOR_BYGGAR = 2013;
+
 /** Profiluppgifter som alltid ska vara ifyllda för Sailor. */
 export const SAILOR_PROFIL = {
   organisationsnummer: "769623-8166",
@@ -39,7 +42,7 @@ export const SAILOR_GRUND: Pick<
   antalLagenheter: "40",
   antalVaningar: "4",
   antalByggnader: "3",
-  byggar: "2013",
+  byggar: String(SAILOR_BYGGAR),
   uppvarmning: "Fjärrvärme",
   /** OVK 2026: FX — frånluft med värmeåtervinning (inte FTX). */
   ventilationssystem: "FX — frånluftsfläkt med värmeåtervinning",

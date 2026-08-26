@@ -45,23 +45,32 @@ import {
   type Besiktning,
 } from "@/components/underhallsplan/besiktningar";
 import { samlaAllaUnderhallAtgarder } from "@/components/underhallsplan/underhall-budget";
+import { nastaArFranByggar } from "@/components/underhallsplan/underhall-plan-ar";
 import {
+  SAILOR_BYGGAR,
   SAILOR_PLAN_START_AR,
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 
 const P_PLATSER_ID = "p-platser";
 const SAILOR_BOAREA_M2 = 2756;
-/** Bandlagt plåttak — planeringsriktpris kr/m² för omläggning. */
-const SAILOR_TAK_RIKT_KR_PER_KVM = 1_800;
+/** Bandlagt plåttak — planeringsriktpris kr/m² för omläggning (−25 % mot tidigare). */
+const SAILOR_TAK_RIKT_KR_PER_KVM = 1_350;
 /** Större fasadförnyelse (K3) — kr/m², utöver löpande puts/målning. */
 const SAILOR_FASAD_FORNYELSE_KR_PER_KVM = 4_000;
-/** Stambyte inkl. badrum — planeringsklumpsumma per badrum. */
-const SAILOR_STAMBYTE_KR_PER_BADRUM = 464_000;
+/** Stambyte inkl. badrum — 300 000 kr per badrum. */
+const SAILOR_STAMBYTE_KR_PER_BADRUM = 300_000;
+/** Elcentraler — tre hus (−25 % mot tidigare 1 050 tkr). */
+const SAILOR_ELCENTRAL_ENTREPRENAD_KR = 787_500;
+
+/** Nästa åtgärdsår = byggår + intervall (t.ex. 2013+30 → 2043). */
+function sailorNastaAr(intervallAr: number): string {
+  return String(nastaArFranByggar(SAILOR_BYGGAR, intervallAr));
+}
 
 export const SAILOR_PLAN_NOTERING = [
   "JM-bygge 2013, Gustavsberg 1:395 (årsredovisning 2024).",
-  "Planperiod från 2027.",
+  "Planperiod från 2027. Underhållsår räknas från byggåret 2013 + intervall.",
   "40 bostadsrätter, 2 756 kvm boyta, tomtyta 4 688 kvm, 50 badrum. Inga eldstäder (sotning ej aktuell).",
   "40 p-platser varav 20 med motorvärmare och 10 med laddstolpe.",
   "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras.",
@@ -170,8 +179,6 @@ export function byggSailorKomponentUtkast(): {
   planNotering: string;
   krPerKvmAr: number;
 } {
-  const planStartAr = SAILOR_PLAN_START_AR;
-
   const sailorHissPoster = [
     {
       ...skapaTomHissPost("Hiss hus 25"),
@@ -272,20 +279,22 @@ export function byggSailorKomponentUtkast(): {
     if (r.id === "fasadmaterial") {
       return {
         värde: "1800",
-        /** Större fasadförnyelse — löpande puts/målning ligger i tillfällen. */
-        underhallNastaAr: String(planStartAr + 3),
+        /** Större fasadförnyelse — 2013+30 → 2043. Puts/målning i tillfällen. */
+        underhallNastaAr: sailorNastaAr(30),
         underhallIntervallAr: "30",
         underhallPrisEnhet: "total",
         underhallKostnadKr: String(sailorFasadFornyelseKr),
+        underhallUtförtAr: String(SAILOR_BYGGAR),
       };
     }
     if (r.id === "dorrar") {
       return {
         värde: "9",
-        underhallNastaAr: "2045",
+        underhallNastaAr: sailorNastaAr(35),
         underhallIntervallAr: "35",
         underhallPrisEnhet: "total",
         underhallKostnadKr: String(sailorYtterDorrEntreprenadKr),
+        underhallUtförtAr: String(SAILOR_BYGGAR),
       };
     }
     return {};
@@ -305,7 +314,8 @@ export function byggSailorKomponentUtkast(): {
             {
               id: "sailor-fasad-1",
               titel: "Bättringsputs och ommålning",
-              nastaAr: String(planStartAr),
+              /** 2013+12 → 2025; i planen första gång 2037. */
+              nastaAr: sailorNastaAr(12),
               intervallAr: "12",
               atgarder: ["putsreparation", "ommalning", "fasadtvatt"],
             },
@@ -342,11 +352,11 @@ export function byggSailorKomponentUtkast(): {
     Fönster: {
       ...aktivera("Fönster", ["fonster"], () => ({
         värde: "200",
-        /** Byggår 2013 + ~40 år → fönsterbyte ca 2053. */
-        underhallNastaAr: "2053",
+        underhallNastaAr: sailorNastaAr(40),
         underhallIntervallAr: "40",
         underhallPrisEnhet: "total",
         underhallKostnadKr: String(sailorFonsterEntreprenadKr),
+        underhallUtförtAr: String(SAILOR_BYGGAR),
       })),
       valdaDeltyper: ["alu-kldd"],
       fonsterDorrRegister: {
@@ -356,10 +366,11 @@ export function byggSailorKomponentUtkast(): {
     Tak: {
       ...aktivera("Tak", ["takyta"], () => ({
         värde: "950",
-        underhallNastaAr: String(planStartAr + 8),
+        underhallNastaAr: sailorNastaAr(25),
         underhallIntervallAr: "25",
         underhallPrisEnhet: "total",
         underhallKostnadKr: String(sailorTakEntreprenadKr),
+        underhallUtförtAr: String(SAILOR_BYGGAR),
       })),
       valdaDeltyper: ["bandlaggd-plat"],
     },
@@ -368,18 +379,19 @@ export function byggSailorKomponentUtkast(): {
         r.id === "lagenhetsdorrar"
           ? {
               värde: "40",
-              underhallNastaAr: "2053",
+              underhallNastaAr: sailorNastaAr(40),
               underhallIntervallAr: "40",
               underhallPrisEnhet: "total",
               underhallKostnadKr: String(sailorLagenhetsDorrEntreprenadKr),
+              underhallUtförtAr: String(SAILOR_BYGGAR),
             }
           : {
               värde: "3",
-              /** Byggår 2013 + FAR linhiss ~40 år → modernisering ca 2053. */
-              underhallNastaAr: "2053",
+              underhallNastaAr: sailorNastaAr(40),
               underhallIntervallAr: "40",
               underhallPrisEnhet: "total",
               underhallKostnadKr: String(sailorHissEntreprenadKr),
+              underhallUtförtAr: String(SAILOR_BYGGAR),
             },
       ),
       hissRegister: {
@@ -393,28 +405,31 @@ export function byggSailorKomponentUtkast(): {
         (r) => {
           if (r.id === "stambyte") {
             return {
-              underhallNastaAr: String(planStartAr + 25),
+              underhallNastaAr: sailorNastaAr(50),
               underhallIntervallAr: "50",
               underhallPrisEnhet: "total",
               underhallKostnadKr: String(sailorStambyteEntreprenadKr),
+              underhallUtförtAr: String(SAILOR_BYGGAR),
             };
           }
           if (r.id === "spolning-avlopp") {
             return {
               värde: "3",
-              underhallNastaAr: String(planStartAr),
+              underhallNastaAr: sailorNastaAr(10),
               underhallIntervallAr: "10",
               underhallPrisEnhet: "total",
               underhallKostnadKr: "45000",
+              underhallUtförtAr: String(SAILOR_BYGGAR),
             };
           }
           if (r.id === "filmning-avlopp") {
             return {
               värde: "3",
-              underhallNastaAr: String(planStartAr),
+              underhallNastaAr: sailorNastaAr(10),
               underhallIntervallAr: "10",
               underhallPrisEnhet: "total",
               underhallKostnadKr: "28000",
+              underhallUtförtAr: String(SAILOR_BYGGAR),
             };
           }
           return {};
@@ -435,18 +450,20 @@ export function byggSailorKomponentUtkast(): {
         if (r.id === "undercentral") {
           return {
             värde: "1",
-            underhallNastaAr: "2038",
+            underhallNastaAr: sailorNastaAr(50),
             underhallIntervallAr: "50",
             underhallPrisEnhet: "total",
             underhallKostnadKr: "1200000",
+            underhallUtförtAr: String(SAILOR_BYGGAR),
           };
         }
         if (r.id === "varmestammar") {
           return {
-            underhallNastaAr: "2055",
-            underhallIntervallAr: "50",
+            underhallNastaAr: sailorNastaAr(40),
+            underhallIntervallAr: "40",
             underhallPrisEnhet: "total",
             underhallKostnadKr: "2800000",
+            underhallUtförtAr: String(SAILOR_BYGGAR),
           };
         }
         return {};
@@ -458,18 +475,18 @@ export function byggSailorKomponentUtkast(): {
         if (r.id === "aggregat") {
           return {
             värde: "2",
-            /** Byggår 2013 + FAR ~20 år → byte ca 2033, sedan vart 20:e år. */
-            underhallNastaAr: "2033",
+            underhallNastaAr: sailorNastaAr(20),
             underhallIntervallAr: "20",
             underhallPrisEnhet: "total",
             underhallKostnadKr: String(sailorAggregatEntreprenadKr),
+            underhallUtförtAr: String(SAILOR_BYGGAR),
           };
         }
         if (r.id === "filterbyte") {
           // 36 859 kr inkl. moms → exkl. 29 487, moms 7 372 (25 %)
           return {
             värde: "2",
-            underhallNastaAr: String(planStartAr),
+            underhallNastaAr: String(SAILOR_PLAN_START_AR),
             underhallIntervallAr: "1",
             underhallPrisEnhet: "total",
             underhallKostnadKr: "29487",
@@ -484,19 +501,20 @@ export function byggSailorKomponentUtkast(): {
     },
     Elcentral: aktivera("Elcentral", ["central"], () => ({
       värde: "3",
-      underhallNastaAr: "2040",
+      underhallNastaAr: sailorNastaAr(50),
       underhallIntervallAr: "50",
       underhallPrisEnhet: "total",
-      underhallKostnadKr: "1050000",
+      underhallKostnadKr: String(SAILOR_ELCENTRAL_ENTREPRENAD_KR),
+      underhallUtförtAr: String(SAILOR_BYGGAR),
     })),
     Balkonger: {
       ...aktivera("Balkonger", [BALKONGER_UNDERKOMPONENT_ID], () => ({
         värde: "36",
-        /** Byggår 2013 + balkongintervall ~25 år → 2038, 2063. */
-        underhallNastaAr: "2038",
+        underhallNastaAr: sailorNastaAr(25),
         underhallIntervallAr: "25",
         underhallPrisEnhet: "total",
         underhallKostnadKr: String(sailorBalkongEntreprenadKr),
+        underhallUtförtAr: String(SAILOR_BYGGAR),
       })),
       valdaDeltyper: ["betong"],
       balkongRegister: {
@@ -505,10 +523,11 @@ export function byggSailorKomponentUtkast(): {
     },
     "Styr och övervakning": aktivera("Styr och övervakning", ["system"], () => ({
       värde: "1",
-      underhallNastaAr: "2035",
+      underhallNastaAr: sailorNastaAr(40),
       underhallIntervallAr: "40",
       underhallPrisEnhet: "total",
       underhallKostnadKr: "500000",
+      underhallUtförtAr: String(SAILOR_BYGGAR),
     })),
     [KOMPLEMENT_BYGGNAD_NAMN]: {
       ...aktivera(

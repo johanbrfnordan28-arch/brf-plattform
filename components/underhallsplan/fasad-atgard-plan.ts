@@ -13,7 +13,10 @@ import {
 import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
-import type { UnderhallKostnadPerArRad } from "@/components/underhallsplan/underhall-plan-ar";
+import {
+  forstaAtgardArIPlan,
+  type UnderhallKostnadPerArRad,
+} from "@/components/underhallsplan/underhall-plan-ar";
 import { summeraUnderhallPerAr } from "@/components/underhallsplan/underhall-plan-ar";
 import type { UnderhallAtgard } from "@/components/underhallsplan/underhall-budget";
 
@@ -52,9 +55,11 @@ export function expanderaTillfallePerAr(
   if (intervall < 1 || tillfalle.atgarder.length === 0) return [];
 
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
-  let ar = parseAr(tillfalle.nastaAr) || planStartAr;
-  if (ar < planStartAr) ar = planStartAr;
-
+  let ar = forstaAtgardArIPlan(
+    parseAr(tillfalle.nastaAr) || planStartAr,
+    intervall,
+    planStartAr,
+  );
   const rader: UnderhallKostnadPerArRad[] = [];
   while (ar <= planSlutAr) {
     let summaKr = 0;
@@ -97,8 +102,11 @@ export function samlaFasadAtgardBudgetPoster(
     const intervall = parseAr(tillfalle.intervallAr);
     if (intervall < 1 || tillfalle.atgarder.length === 0) continue;
 
-    let ar = parseAr(tillfalle.nastaAr) || planStartAr;
-    if (ar < planStartAr) ar = planStartAr;
+    let ar = forstaAtgardArIPlan(
+      parseAr(tillfalle.nastaAr) || planStartAr,
+      intervall,
+      planStartAr,
+    );
 
     const tillfalleTitel = tillfalle.titel.trim();
 
