@@ -21,30 +21,30 @@ type ModulDef = {
 /** Samma 12 moduler på Styrelse-Navet och i föreningen (4×3). */
 const foreningModules: ModulDef[] = [
   {
-    title: "Årshjul & kalender",
+    title: "Årshjul",
     description:
-      "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
+      "Översikt över året med påminnelser — så planeringen av styrelsearbetet blir mer överskådlig.",
     path: "/arshjul",
     icon: "📅",
   },
   {
     title: "Föreningsinformation",
     description:
-      "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument i mappar.",
+      "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument — samlade och sökbara.",
     path: "/foreningsinformation",
     icon: "📁",
   },
   {
     title: "Medlemmar",
     description:
-      "Renoveringsanmälan, utskick och lägenhetsarkiv med mappar per lägenhet.",
+      "Renoveringsanmälan, utskick och lägenhetsarkiv med aktuell information och historik per lägenhet.",
     path: "/medlemmar",
     icon: "👥",
   },
   {
     title: "Underhållsplan",
     description:
-      "Bygg upp föreningens komponentregister, renoveringshistorik och framtida underhåll i portalen.",
+      "Komponentregister, renoveringshistorik och framtida underhåll — beslutsunderlag som håller över tid.",
     path: "/underhallsplan",
     icon: "🔧",
   },
@@ -58,7 +58,7 @@ const foreningModules: ModulDef[] = [
   {
     title: "Rondering & avvikelser",
     description:
-      "Tydliga checklistor, signering och avvikelserapportering för städning och fastighetsskötsel.",
+      "Checklistor, signering och avvikelser — så städning och skötsel blir enklare att följa upp.",
     path: "/rondering",
     icon: "✅",
   },
@@ -72,7 +72,7 @@ const foreningModules: ModulDef[] = [
   {
     title: "Projekt",
     description:
-      "Projektmappar per år — skapa nytt projekt eller arkivera äldre med dokument.",
+      "Projektmappar per år — spara handlingar från pågående och avslutade projekt på ett ställe.",
     path: "/projekt",
     icon: "📐",
   },
@@ -86,7 +86,7 @@ const foreningModules: ModulDef[] = [
   {
     title: "Föreningsuppgifter",
     description:
-      "Grunduppgifter om föreningen — adress, styrelse och övriga fakta samlade på ett ställe.",
+      "Adress, styrelse och övriga fakta om föreningen — samlade på ett ställe.",
     path: "/uppgifter",
     icon: "🏢",
   },
@@ -99,13 +99,37 @@ const foreningModules: ModulDef[] = [
   {
     title: "Guider & tips",
     description:
-      "Korta AI-filmer om funktionerna samt råd om upphandling och entreprenörer.",
+      "Korta filmer och råd om funktionerna, upphandling och entreprenörer.",
     path: "/guider",
     icon: "🎬",
   },
 ];
 
 const featuredPublic = [
+  {
+    title: "Årshjul",
+    description:
+      "Årshjulet ger en tydlig översikt över året. Planeringen av styrelsearbetet blir mer överskådlig — med påminnelser, återkommande uppgifter och långsiktiga datum samlade på ett ställe.",
+    anchor: "#moduler",
+    icon: "📅",
+    bullets: [
+      "Se vad som ska göras — och när",
+      "Påminnelser för stämma, OVK och återkommande uppgifter",
+      "Mindre risk att något glöms bort mellan mandatperioder",
+    ],
+  },
+  {
+    title: "Lägenhetsarkiv",
+    description:
+      "Här sparas aktuell information och historik för respektive lägenhet. Handlingar från äldre projekt samlas på ett ställe — så styrelsen slipper leta i mejl och mappar när något behöver följas upp.",
+    anchor: "#moduler",
+    icon: "🏠",
+    bullets: [
+      "Aktuell status och historik per lägenhet",
+      "Gamla projekt och handlingar på samma ställe",
+      "Enklare uppföljning vid överlåtelse och renovering",
+    ],
+  },
   {
     title: "Underhållsplan",
     description:
@@ -184,12 +208,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:mt-5 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
             {isForening
               ? STYRELSEFLOW_NAMN
-              : "Alla hjälpmedel styrelsen behöver — samlade på ett ställe"}
+              : "Förenkla styrelsearbetet — från årshjul till lägenhetsarkiv"}
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "Styrelse-Navet förenklar styrelsearbetet med stöd, hjälpmedel, spårbarhet och råd — framtaget utifrån verkliga behov i bostadsrättsföreningar."}
+              : "Styrelse-Navet ger er översikt, struktur och spårbarhet. Mindre tid i mejl och mappar — mer tid på beslut som håller för föreningen."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -206,13 +230,13 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Underhåll, upphandling och dokument i samma portal
+                Årshjul, underhåll, upphandling och lägenhetsarkiv
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Framtaget ur verklig förvaltningsvardag
+                Framtaget ur verkliga behov i Brf-styrelser
               </li>
             </ul>
           )}
@@ -224,7 +248,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   href={`${base}/arshjul`}
                   className="rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
                 >
-                  Årshjul & kalender
+                  Årshjul
                 </Link>
                 <Link
                   href="#intro-film"
@@ -280,14 +304,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
                 På plattformen finns alla hjälpmedel som behövs för att förenkla
-                styrelsearbetet. Modulernas funktioner är framtagna och utvecklade
-                utifrån kända behov hos styrelser i bostadsrättsföreningar.
+                styrelsearbetet. Modulerna är framtagna utifrån kända behov hos
+                styrelser i bostadsrättsföreningar — inte som generiska
+                IT-funktioner.
               </p>
               <p className="mt-3 text-base leading-relaxed text-muted sm:text-lg">
-                Hur en styrelse arbetar har förändrats de senaste åren. Även
-                fastighetens behov förändras över tid. Styrelse-Navet erbjuder
-                stöd, hjälpmedel, spårbarhet och råd — så att ni har struktur när
-                förutsättningarna skiftar.
+                Styrelsearbetet har förändrats de senaste åren, och fastighetens
+                behov förändras över tid. Styrelse-Navet ger stöd, hjälpmedel,
+                spårbarhet och råd — så ni har struktur när förutsättningarna
+                skiftar.
               </p>
             </div>
             <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -298,11 +323,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 },
                 {
                   titel: "Hjälpmedel",
-                  text: "Moduler för underhåll, upphandling, dokument och mer — i samma miljö.",
+                  text: "Årshjul, lägenhetsarkiv, underhåll och upphandling — i samma miljö.",
                 },
                 {
                   titel: "Spårbarhet",
-                  text: "Beslut, underlag och historik som följer med över mandatperioder.",
+                  text: "Historik per lägenhet och projekt — underlag som följer med över tid.",
                 },
                 {
                   titel: "Råd",
@@ -389,17 +414,17 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Vanliga verktyg för styrelsen
               </h2>
               <p className="mt-2 text-muted">
-                Årshjulet samlar påminnelser och långsiktiga datum — t.ex. OVK och
-                stämma — så inget glöms bort.
+                Årshjulet ger översikt och gör planeringen av styrelsearbetet mer
+                överskådlig — med påminnelser för bland annat OVK och stämma.
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  title: "Årshjul & kalender",
+                  title: "Årshjul",
                   href: `${base}/arshjul`,
                   icon: "📅",
-                  text: "Påminnelser och tidslinje flera år framåt",
+                  text: "Översikt och planering flera år framåt",
                   accent: true,
                 },
                 {
@@ -458,15 +483,14 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Där styrelsen sparar mest tid
               </p>
               <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Två hörnstenar — samma portal
+                Fyra verktyg som gör skillnad i vardagen
               </h2>
               <p className="mt-2 text-muted">
-                Underhållsplan och upphandling är det de flesta styrelser behöver
-                först. Resten av modulerna bygger vidare på samma struktur när ni
-                är igång.
+                Översikt med årshjulet, historik i lägenhetsarkivet, långsiktig
+                underhållsplan och trygg upphandling — i samma portal.
               </p>
             </div>
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2">
               {featuredPublic.map((mod) => (
                 <div
                   key={mod.title}
@@ -503,7 +527,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   >
                     {mod.title === "Upphandling"
                       ? "Läs mer om upphandling →"
-                      : "Se alla moduler →"}
+                      : "Se modulerna →"}
                   </Link>
                 </div>
               ))}
@@ -515,12 +539,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       <section id="moduler" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 max-w-2xl">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-            Moduler
+            {isForening ? "Moduler" : "Tolv moduler — ett nav för styrelsen"}
           </h2>
           <p className="mt-2 text-muted">
             {isForening
               ? "Välj en modul för att arbeta i er förenings miljö."
-              : "Tolv verktyg i samma miljö — från årshjul och underhåll till rondering, dokument och juridik. Allt hänger ihop när grunden är på plats."}
+              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Allt hänger ihop — så styrelsen alltid vet var informationen finns."}
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -642,12 +666,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Kom igång
                 </p>
                 <h2 className="mt-2 text-xl font-bold text-foreground sm:text-2xl">
-                  Kom igång med er förening
+                  Skapa er förening — och börja använda plattformen
                 </h2>
                 <p className="mt-2 text-sm text-muted">
-                  Skapa er miljö på några minuter. Gemensamma
-                  plattformsuppdateringar slås ihop överallt — era ifyllda
-                  uppgifter behålls.
+                  Kom igång på några minuter. Gemensamma plattformsuppdateringar
+                  slås ihop överallt — era ifyllda uppgifter behålls.
                 </p>
               </div>
               <SkapaForeningPanel kompakt visaSnabbstart />
