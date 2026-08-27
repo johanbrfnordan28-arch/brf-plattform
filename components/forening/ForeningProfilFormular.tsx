@@ -16,7 +16,7 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { useHubbNamn } from "@/components/forening/useHubbNamn";
 import {
   appliceraKontaktPaGrund,
   planNamnFranKontakt,
@@ -32,6 +32,7 @@ function lasAktivProfilForFormular(): ForeningProfil | null {
 }
 
 export function ForeningProfilFormular() {
+  const hubbNamn = useHubbNamn();
   const [profil, setProfil] = useState<ForeningProfil | null>(null);
   const [redo, setRedo] = useState(false);
   const [redigerad, setRedigerad] = useState<ForeningProfil | null>(null);
@@ -202,7 +203,7 @@ export function ForeningProfilFormular() {
           href="/forening"
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
         >
-          Tillbaka till {STYRELSEFLOW_NAMN}
+          Tillbaka till {hubbNamn}
         </Link>
       </div>
 

@@ -5,7 +5,7 @@ import {
   InformationsFilmSpelare,
   type InformationsFilmScen,
 } from "@/components/InformationsFilmSpelare";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { useHubbNamn } from "@/components/forening/useHubbNamn";
 
 const scenesPublic: InformationsFilmScen[] = [
   {
@@ -26,28 +26,30 @@ const scenesPublic: InformationsFilmScen[] = [
   },
 ];
 
-const scenesForening: InformationsFilmScen[] = [
-  {
-    titel: `Välkommen till ${STYRELSEFLOW_NAMN}`,
-    text: "Här arbetar styrelsen i samma portal som medlemmarna ser — upphandling, underhållsplan, dokument och rondering på ett ställe.",
-  },
-  {
-    titel: "Modul för modul",
-    text: "Välj det ni behöver: underhållsplan med komponenter, guider med korta filmer, upphandling med tydliga steg.",
-  },
-  {
-    titel: "Underhållsplan i fokus",
-    text: "Bygg register, renoveringshistorik och budget. Besiktningar hamnar i rätt år — inte utspritt i kalkylark.",
-  },
-  {
-    titel: "Guider när ni behöver stöd",
-    text: "Korta filmer per funktion plus tips om upphandling och entreprenörer — tryck Spela och följ scenerna.",
-  },
-  {
-    titel: "Redo att börja",
-    text: "Öppna modulerna nedan eller gå till Guider & tips för fler filmer. Detta är en demo tills riktig video finns inlagd.",
-  },
-];
+function byggForeningScener(hubbNamn: string): InformationsFilmScen[] {
+  return [
+    {
+      titel: `Välkommen till ${hubbNamn}`,
+      text: "Här arbetar styrelsen i samma portal som medlemmarna ser — upphandling, underhållsplan, dokument och rondering på ett ställe.",
+    },
+    {
+      titel: "Modul för modul",
+      text: "Välj det ni behöver: underhållsplan med komponenter, guider med korta filmer, upphandling med tydliga steg.",
+    },
+    {
+      titel: "Underhållsplan i fokus",
+      text: "Bygg register, renoveringshistorik och budget. Besiktningar hamnar i rätt år — inte utspritt i kalkylark.",
+    },
+    {
+      titel: "Guider när ni behöver stöd",
+      text: "Korta filmer per funktion plus tips om upphandling och entreprenörer — tryck Spela och följ scenerna.",
+    },
+    {
+      titel: "Redo att börja",
+      text: "Öppna modulerna nedan eller gå till Guider & tips för fler filmer. Detta är en demo tills riktig video finns inlagd.",
+    },
+  ];
+}
 
 type FilmDemoProps = {
   variant?: "public" | "forening";
@@ -60,7 +62,8 @@ export function FilmDemo({
   layout = "banner",
 }: FilmDemoProps) {
   const isForening = variant === "forening";
-  const scener = isForening ? scenesForening : scenesPublic;
+  const hubbNamn = useHubbNamn();
+  const scener = isForening ? byggForeningScener(hubbNamn) : scenesPublic;
   const scenMs = isForening ? 6000 : 5000;
 
   if (!isForening && layout === "kort") {
@@ -81,7 +84,7 @@ export function FilmDemo({
           <div className="bg-primary-dark p-6 text-white sm:p-8">
             <p className="text-sm font-semibold text-white/75">
               {isForening
-                ? `Introduktion · ${STYRELSEFLOW_NAMN}`
+                ? `Introduktion · ${hubbNamn}`
                 : "Film & funktioner"}
             </p>
             <h2 className="mt-3 text-2xl font-bold sm:text-3xl">

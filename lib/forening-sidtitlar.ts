@@ -1,4 +1,4 @@
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { hamtaHubbNamn } from "@/lib/hubb-namn";
 import { hamtaAktivForeningsNamn } from "@/lib/forening-registry";
 
 /** Modulnamn per föreningssökväg — används i flikrubrik efter föreningens namn. */
@@ -25,13 +25,13 @@ export function hamtaForeningModulTitel(pathname: string): string | null {
   return FORENING_MODUL_TITLAR[normaliseraForeningSokvag(pathname)] ?? null;
 }
 
-/** Förstasidan = Styrelseflow. Övriga föreningssidor = «Föreningsnamn — Modul». */
+/** Förstasidan = hubbnamn (Styrelseflow / Brf Sailor). Övriga = «Föreningsnamn — Modul». */
 export function uppdateraForeningSidtitel(pathname: string): void {
   if (typeof document === "undefined") return;
 
   const path = normaliseraForeningSokvag(pathname);
   if (path === "/forening") {
-    document.title = STYRELSEFLOW_NAMN;
+    document.title = hamtaHubbNamn();
     return;
   }
 

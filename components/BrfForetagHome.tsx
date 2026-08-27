@@ -2,9 +2,9 @@ import Link from "next/link";
 import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
+import { ForeningHubbRubrik } from "@/components/forening/ForeningHubbRubrik";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
@@ -207,7 +207,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           )}
           <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:mt-5 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
             {isForening
-              ? STYRELSEFLOW_NAMN
+              ? <ForeningHubbRubrik />
               : "Förenkla styrelsearbetet — från årshjul till lägenhetsarkiv"}
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">

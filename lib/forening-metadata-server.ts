@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { GRUNDMALL_FORENING_ID, GRUNDMALL_NAMN } from "@/lib/forening-registry";
+import { hamtaHubbNamn } from "@/lib/hubb-namn";
 
 const COOKIE_AKTIV_ID = "brf_aktiv_fid";
 const COOKIE_PROFIL = "brf_senast_profil";
@@ -40,8 +40,10 @@ export async function hamtaAktivForeningsNamnServer(): Promise<string> {
 }
 
 export async function foreningForstasidaMetadata(): Promise<Metadata> {
+  const c = await cookies();
+  const aktivId = decodeCookieValue(c.get(COOKIE_AKTIV_ID)?.value ?? "");
   return {
-    title: STYRELSEFLOW_NAMN,
+    title: hamtaHubbNamn(aktivId || null),
     description: "Styrelseflöde för upphandling, underhållsplan och dokumentation.",
   };
 }
