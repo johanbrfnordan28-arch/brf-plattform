@@ -18,13 +18,14 @@ import type {
   Grunduppgifter,
   RenoveringSammanfattning,
 } from "@/components/underhallsplan/types";
+import type { FastighetsVarderingsUnderlag } from "@/components/underhallsplan/fastighets-vardering";
 
 export const UNDERHALLSPLAN_STATE_EVENT = "underhallsplan-state-uppdaterad";
 
 const STORAGE_KEY_BASE = "brf-underhallsplan-state";
 
-function storageKey(): string {
-  return foreningStorageKey(STORAGE_KEY_BASE);
+function storageKey(foreningId?: string): string {
+  return foreningStorageKey(STORAGE_KEY_BASE, foreningId);
 }
 const LAGER_VERSION = 1;
 
@@ -48,11 +49,16 @@ export type UnderhallsplanLagratState = {
   renoveringarLista: UtfördRenovering[];
   renoveringSammanfattning: RenoveringSammanfattning | null;
   krPerKvmAr: number;
+  /**
+   * Internt värderingsunderlag (taxering/mark/anskaffning).
+   * Får aldrig visas för föreningen — används bara för att beräkna komponentvärden.
+   */
+  varderingsUnderlag?: FastighetsVarderingsUnderlag;
 };
 
-export function harUnderhallsplanSparat(): boolean {
+export function harUnderhallsplanSparat(foreningId?: string): boolean {
   if (typeof window === "undefined") return false;
-  return Boolean(localStorage.getItem(storageKey()));
+  return Boolean(localStorage.getItem(storageKey(foreningId)));
 }
 
 function uppgraderaUnderhallsplanState(
@@ -89,6 +95,7 @@ function uppgraderaUnderhallsplanState(
     renoveringarLista: parsed.renoveringarLista ?? [],
     renoveringSammanfattning: parsed.renoveringSammanfattning ?? null,
     krPerKvmAr: parsed.krPerKvmAr ?? 0,
+    varderingsUnderlag: parsed.varderingsUnderlag,
   };
 }
 
@@ -131,6 +138,7 @@ export type SparaUnderhallsplanResult =
 
 export function sparaUnderhallsplanState(
   state: UnderhallsplanLagratState,
+  foreningId?: string,
 ): SparaUnderhallsplanResult {
   if (typeof window === "undefined") {
     return {
@@ -139,7 +147,10 @@ export function sparaUnderhallsplanState(
       message: localStorageFelMeddelande("unavailable"),
     };
   }
-  const result = safeSetLocalStorage(storageKey(), JSON.stringify(state));
+  const result = safeSetLocalStorage(
+    storageKey(foreningId),
+    JSON.stringify(state),
+  );
   if (!result.ok) {
     return {
       ok: false,

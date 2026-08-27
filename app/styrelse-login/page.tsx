@@ -1,53 +1,49 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContentSection } from "@/components/ContentSection";
-import { ModulePage } from "@/components/ModulePage";
-import { OppnaBefintligaForeningar } from "@/components/forening/OppnaBefintligaForeningar";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
+import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
+import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 export const metadata: Metadata = {
-  title: "Logga in styrelse — Styrelse-Navet",
-  description: "Öppna sparade föreningar eller skapa en ny testförening.",
+  title: `Logga in styrelse — ${BRF_NAVET_NAMN}`,
+  description:
+    "Logga in till testföreningarna 1–5 — Brf Nordan (4) och Bostadsrättsföreningen Sailor (5).",
 };
 
 export default function StyrelseLoginPage() {
   return (
-    <ModulePage
-      title="Logga in styrelse"
-      icon="🔐"
-      intro="Här öppnar ni era sparade föreningar — t.ex. Brf Sailor och Brf Nordan — eller skapar en ny. Föreningarna sparas i webbläsaren; växla mellan dem uppe till höger inne i Styrelseflow."
-    >
-      <ContentSection title="Öppna förening" plain>
-        <OppnaBefintligaForeningar />
-      </ContentSection>
-
-      <ContentSection title="Skapa ny förening" id="skapa-forening" plain>
-        <p className="mb-4 text-sm text-muted">
-          Har ni ingen sparad förening i den här webbläsaren? Skapa en ny nedan.
-          Ni kan ha flera föreningar och växla mellan dem i headern.
+    <main className="flex min-h-[calc(100vh-4rem)] flex-col justify-center bg-surface/40 py-12">
+      <div className="mb-10 px-4 text-center sm:px-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary-dark">
+          {BRF_NAVET_NAMN} · Testinloggning
         </p>
-        <SkapaForeningPanel visaSnabbstart />
-      </ContentSection>
-
-      <ContentSection title="Mer demo">
-        <p className="text-sm text-muted">
-          Investerarsidan har också genvägar till förifylld underhållsplan.
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Logga in till er förening
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-base text-muted">
+          Fem fasta testföreningar i ordning 1–5. Nummer 4 är Brf Nordan 28 och
+          nummer 5 är Bostadsrättsföreningen Sailor (återställd).
         </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/investerare"
-            className="inline-flex rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground hover:border-primary/50"
-          >
-            Investerardemo
-          </Link>
-          <Link
-            href="/forening"
-            className="inline-flex rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground hover:border-primary/50"
-          >
-            Gå till Styrelseflow
-          </Link>
-        </div>
-      </ContentSection>
-    </ModulePage>
+      </div>
+
+      <StyrelseLoginModul />
+
+      <p className="mt-10 text-center text-xs text-muted">
+        Vill ni skapa en egen förening utöver de fem?{" "}
+        <Link
+          href={PROVA_GRATIS_PATH}
+          className="font-medium text-primary-dark underline hover:no-underline"
+        >
+          Skapa ny förening
+        </Link>
+        {" · "}
+        <Link
+          href="/"
+          className="font-medium text-primary-dark underline hover:no-underline"
+        >
+          Till startsidan
+        </Link>
+      </p>
+    </main>
   );
 }

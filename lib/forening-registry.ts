@@ -1,4 +1,7 @@
-import { GRUNDMALL_FORENING_ID } from "@/lib/forening-konstanter";
+import {
+  arStandardTestForening,
+  GRUNDMALL_FORENING_ID,
+} from "@/lib/forening-konstanter";
 import {
   cookieHamtaAktivForeningId,
   cookieHamtaSenastProfil,
@@ -138,6 +141,11 @@ function taBortForeningFranLagring(foreningId: string): void {
   }
 }
 
+/** Tar bort all föreningspecifik data i localStorage (moduler, profil m.m.). */
+export function rensaForeningLocalStorage(foreningId: string): void {
+  taBortForeningFranLagring(foreningId);
+}
+
 /**
  * Behåller en förening per namn — tar bort dubbletter från registret och lagring.
  */
@@ -147,9 +155,14 @@ export function rengoraDubblettForeningar(): boolean {
   const registry = lasForeningRegistryInternt();
   const grupper = new Map<string, ForeningProfil[]>();
   const utanNamn: ForeningProfil[] = [];
+  const standardTest: ForeningProfil[] = [];
 
   for (const post of registry.poster) {
     if (post.id === GRUNDMALL_FORENING_ID) continue;
+    if (arStandardTestForening(post.id)) {
+      standardTest.push(post);
+      continue;
+    }
     const nyckel = normaliseraForeningsNamn(post.namn);
     if (!nyckel) {
       utanNamn.push(post);
@@ -161,7 +174,7 @@ export function rengoraDubblettForeningar(): boolean {
   }
 
   const aktivId = hamtaAktivForeningId();
-  const nyaPoster: ForeningProfil[] = [...utanNamn];
+  const nyaPoster: ForeningProfil[] = [...standardTest, ...utanNamn];
   const borttagna: string[] = [];
 
   for (const poster of grupper.values()) {

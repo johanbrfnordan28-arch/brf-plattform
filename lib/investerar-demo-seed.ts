@@ -14,12 +14,28 @@ import {
 import { normaliseraPlaninstallningar } from "@/components/underhallsplan/planinstallningar";
 import { synkaUnderhallsplanState } from "@/components/underhallsplan/komponentregister";
 import { skapaStandardSamfallighetsavgift } from "@/components/underhallsplan/samfallighetsavgift";
+import type { Grunduppgifter } from "@/components/underhallsplan/types";
+import {
+  appliceraSailorGrund,
+  arSailorForening,
+  SAILOR_PLAN_START_AR,
+  SAILOR_VARDERING_UNDERLAG,
+} from "@/lib/sailor-forening";
+import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
 
 export function byggLagratStateFranTestplan(
   id: TestplanId,
+  foreningsnamn?: string,
+  options?: { foreningId?: string; grundPatch?: Partial<Grunduppgifter> },
 ): UnderhallsplanLagratState {
   const plan = hamtaTestplan(id);
-  const grund = normaliseraGrund(plan.grund);
+  let grund = normaliseraGrund(plan.grund);
+  if (options?.grundPatch) {
+    grund = normaliseraGrund({ ...grund, ...options.grundPatch });
+  }
+  if (arSailorForening(options?.foreningId)) {
+    grund = normaliseraGrund(appliceraSailorGrund(grund));
+  }
   const synced = synkaUnderhallsplanState(
     plan.activeComponents,
     synkaUnderhallsplanState(
@@ -27,27 +43,58 @@ export function byggLagratStateFranTestplan(
       plan.komponentDetaljer ?? {},
     ).register,
   );
+  let varderingsUnderlag = undefined as
+    | typeof SAILOR_VARDERING_UNDERLAG
+    | undefined;
+  let planNotering = plan.planNotering ?? null;
+  let samfallighetsavgift = skapaStandardSamfallighetsavgift();
+  let krPerKvmAr = plan.krPerKvmAr;
+  let activeComponents = synced.activeComponents;
+  let komponentDetaljer = synced.register;
+  let besiktningar = plan.besiktningar;
+  const arSailor = Boolean(arSailorForening(options?.foreningId));
+
+  if (arSailor) {
+    const utkast = byggSailorKomponentUtkast();
+    varderingsUnderlag = SAILOR_VARDERING_UNDERLAG;
+    planNotering = utkast.planNotering;
+    samfallighetsavgift = utkast.samfallighetsavgift;
+    krPerKvmAr = utkast.krPerKvmAr;
+    activeComponents = utkast.activeComponents;
+    komponentDetaljer = utkast.komponentDetaljer;
+    besiktningar = utkast.besiktningar;
+  }
+
   const antalLgh = hamtaAntalLagenheterFranGrund(grund);
+  const titelBas = foreningsnamn?.trim() || plan.namn;
 
   return {
     version: 1,
     sparad: new Date().toISOString(),
     aktivTestplan: id,
-    planNamn: uppdateraPlanTitelMedLagenheter(plan.namn, antalLgh),
-    planNotering: plan.planNotering ?? null,
+    planNamn: uppdateraPlanTitelMedLagenheter(titelBas, antalLgh),
+    planNotering,
     grund,
-    planinstallningar: normaliseraPlaninstallningar(plan.planinstallningar),
+    planinstallningar: normaliseraPlaninstallningar(
+      arSailor
+        ? {
+            ...plan.planinstallningar,
+            planStartAr: String(SAILOR_PLAN_START_AR),
+          }
+        : plan.planinstallningar,
+    ),
     grundSaved: true,
     renoveringarSaved: false,
-    komponenterSaved: false,
-    besiktningarSaved: false,
-    activeComponents: synced.activeComponents,
-    komponentDetaljer: synced.register,
-    besiktningar: plan.besiktningar,
-    samfallighetsavgift: skapaStandardSamfallighetsavgift(),
+    komponenterSaved: arSailor,
+    besiktningarSaved: arSailor,
+    activeComponents,
+    komponentDetaljer,
+    besiktningar,
+    samfallighetsavgift,
     renoveringarLista: [],
     renoveringSammanfattning: null,
-    krPerKvmAr: plan.krPerKvmAr,
+    krPerKvmAr,
+    varderingsUnderlag,
   };
 }
 

@@ -100,6 +100,22 @@ export function planNamnFranKontakt(kontakt: StyrelseKontakt | null): string | n
   return kontakt?.foreningsnamn || null;
 }
 
+/** Startväg efter inloggning — uppgifter först om profilen saknar grundinfo. */
+export function behoverFyllaForeningsuppgifter(foreningId?: string): boolean {
+  if (typeof window === "undefined") return false;
+  const id = foreningId ?? lasAktivForeningId();
+  if (arGrundmallForening(id)) return false;
+  const profil = lasForeningProfil(id);
+  if (!profil || arGrundmallForening(profil.id)) return false;
+  return !profil.grundinfoPaborjad;
+}
+
+export function hamtaForeningStartPath(foreningId?: string): string {
+  return behoverFyllaForeningsuppgifter(foreningId)
+    ? "/forening/uppgifter"
+    : "/forening";
+}
+
 export function markeraGrundinfoPaborjad(): void {
   if (typeof window === "undefined") return;
   const profil = lasForeningProfil();

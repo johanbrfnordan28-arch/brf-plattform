@@ -13,6 +13,7 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { listaInloggningsTestForeningar } from "@/lib/testforeningar";
 
 export function ForeningVaxlare() {
   const [aktivId, setAktivId] = useState(GRUNDMALL_FORENING_ID);
@@ -22,7 +23,12 @@ export function ForeningVaxlare() {
   const ladda = useCallback(() => {
     const id = lasAktivForeningId();
     setAktivId(id);
-    let lista = listaAllaForeningerForVaxlare();
+    const standard = listaInloggningsTestForeningar();
+    const standardIds = new Set(standard.map((f) => f.id));
+    const ovriga = listaAllaForeningerForVaxlare().filter(
+      (f) => !standardIds.has(f.id),
+    );
+    let lista = [...standard, ...ovriga];
     if (id && !lista.some((f) => f.id === id)) {
       const profil = lasForeningProfil(id);
       lista = [
@@ -54,6 +60,7 @@ export function ForeningVaxlare() {
     if (id === aktivId) return;
     sattAktivForeningId(id);
     setAktivId(id);
+    window.location.assign("/forening");
   }
 
   if (!redo) {
@@ -81,6 +88,12 @@ export function ForeningVaxlare() {
           ))}
         </select>
       </label>
+      <Link
+        href="/styrelse-login"
+        className="text-xs font-medium text-primary-dark hover:underline"
+      >
+        Alla testföreningar
+      </Link>
       <Link
         href={PROVA_GRATIS_PATH}
         className="text-xs font-medium text-primary-dark hover:underline"

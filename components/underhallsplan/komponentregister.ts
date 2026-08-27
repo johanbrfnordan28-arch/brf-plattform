@@ -1,4 +1,5 @@
 import { standardUnderhallIntervallAr } from "@/components/underhallsplan/underhall-intervall";
+import { standardAvskrivningAr } from "@/components/underhallsplan/komponent-avskrivning";
 import {
   formateraFonsterDorrPoster,
   normaliseraFonsterDorrPost,
@@ -377,7 +378,23 @@ export type UnderkomponentRad = {
   /** Planerat underhåll — kan fyllas i senare */
   underhallNastaAr?: string;
   underhallIntervallAr?: string;
+  /**
+   * Nyttjandeperiod / avskrivningstid i år (K3-komponentavskrivning).
+   * Skiljt från underhållsintervall.
+   */
+  avskrivningAr?: string;
+  /**
+   * Uppskattad installationskostnad / komponentvärde vid byggår (kr).
+   * Visas för föreningen — härleds ofta från internt värderingsunderlag.
+   */
+  installationskostnadKr?: string;
   underhallKostnadKr?: string;
+  /**
+   * Ursprungligt belopp inkl. moms — sparas när moms tas bort så att avdraget kan visas/återställas.
+   */
+  underhallKostnadInklMomsKr?: string;
+  /** Moms som tagits bort från kostnaden och särredovisas (kr per tillfälle). */
+  underhallMomsAvdragenKr?: string;
   /** total | kvm | styck | blandad — styr hur kostnaden räknas ut. */
   underhallPrisEnhet?: string;
   /** Kr per m² (kvm/blandad) eller per styck (styck). */
@@ -508,17 +525,19 @@ export const måttenhetEtiketter: Record<Måttenhet, { etikett: string; enhet: s
 };
 
 export const foreslagnaKomponenter = [
+  "Stomme",
   "Fasad",
   "Fönster",
   "Tak",
   "Trapphus",
+  "VVS",
+  "Värmecentral",
+  "Ventilation",
+  "Elcentral",
+  "Balkonger",
+  "Styr och övervakning",
   "Brandskydd",
   "Källare",
-  "VVS",
-  "Ventilation",
-  "Värmecentral",
-  "Balkonger",
-  "Elcentral",
   "Mark och gård",
   "Komplement byggnad och P-platser",
 ] as const;
@@ -527,6 +546,42 @@ export const GAMLA_GARAGE_CARPORT_NAMN = "Garage / carport";
 export const KOMPLEMENT_BYGGNAD_NAMN = "Komplement byggnad och P-platser";
 
 const komponentMallar: Record<string, KomponentMall> = {
+  Stomme: {
+    namn: "Stomme",
+    deltypSektionTitel: "Stomme / grund",
+    deltyper: [
+      { id: "betong", etikett: "Betongstomme" },
+      { id: "tra-betonggrund", etikett: "Trästomme på betonggrund" },
+      { id: "blandat", etikett: "Blandat" },
+    ],
+    underkomponenter: [
+      {
+        id: "stomme",
+        etikett: "Stomme och grund",
+        defaultMåttenhet: "kvm",
+        måttHint:
+          "FAR: stomme och grund är den största komponenten (ca 60–70 % av anskaffningsvärdet). Ange boarea eller bruttoarea som underlag.",
+      },
+    ],
+  },
+  "Styr och övervakning": {
+    namn: "Styr och övervakning",
+    deltypSektionTitel: "Systemtyp",
+    deltyper: [
+      { id: "fastighetsautomation", etikett: "Fastighetsautomation" },
+      { id: "varme-styr", etikett: "Värme-/ventilationsstyrning" },
+      { id: "blandat", etikett: "Blandat" },
+    ],
+    underkomponenter: [
+      {
+        id: "system",
+        etikett: "Styr- och övervakningssystem",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "FAR: styr och övervakning (ca 1–2 %). Ange antal system eller 1 som klumpsumma.",
+      },
+    ],
+  },
   Fasad: {
     namn: "Fasad",
     deltypSektionTitel: "Fasadtyp / material",
@@ -770,6 +825,12 @@ const komponentMallar: Record<string, KomponentMall> = {
         detaljPanel: "ventilation-extra-lista",
       },
       { id: "aggregat", etikett: "Aggregat", defaultMåttenhet: "antal", måttHint: "Antal ventilationsaggregat." },
+      {
+        id: "filterbyte",
+        etikett: "Filterbyte",
+        defaultMåttenhet: "antal",
+        måttHint: "Filterbyte per år — kostnad för filter till ventilationsaggregat.",
+      },
       { id: "kanaler", etikett: "Kanaler / kanalnet", defaultMåttenhet: "kvm", måttHint: "Kanalyta eller schablon kvm." },
       { id: "don", etikett: "Don / ventiler", defaultMåttenhet: "antal", måttHint: "Antal don." },
     ],
@@ -1622,8 +1683,15 @@ function slåIhopVarmecentralUnderkomponent(
     måttenhet: källa.måttenhet || mallRad.måttenhet,
     värde: källa.värde || mallRad.värde,
     underhallIntervallAr: källa.underhallIntervallAr || mallRad.underhallIntervallAr,
+    avskrivningAr: källa.avskrivningAr || mallRad.avskrivningAr,
     underhallNastaAr: källa.underhallNastaAr || mallRad.underhallNastaAr,
+    installationskostnadKr:
+      källa.installationskostnadKr || mallRad.installationskostnadKr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
+    underhallKostnadInklMomsKr:
+      källa.underhallKostnadInklMomsKr || mallRad.underhallKostnadInklMomsKr,
+    underhallMomsAvdragenKr:
+      källa.underhallMomsAvdragenKr || mallRad.underhallMomsAvdragenKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
     underhallEnhetsprisKr: källa.underhallEnhetsprisKr || mallRad.underhallEnhetsprisKr,
     underhallPrisAntal: källa.underhallPrisAntal || mallRad.underhallPrisAntal,
@@ -1857,6 +1925,9 @@ function skapaUnderkomponentRadFranDef(
   const underhallIntervallAr = komponentNamn
     ? standardUnderhallIntervallAr(komponentNamn, def.id)
     : "";
+  const avskrivningAr = komponentNamn
+    ? standardAvskrivningAr(komponentNamn, def.id)
+    : "";
   return {
     id: def.id,
     etikett: def.etikett,
@@ -1865,7 +1936,9 @@ function skapaUnderkomponentRadFranDef(
     värde: "",
     ärEgen: false,
     underhallIntervallAr,
+    avskrivningAr: avskrivningAr || undefined,
     underhallNastaAr: "",
+    installationskostnadKr: "",
     underhallKostnadKr: "",
     underhallGarantiAr: "2",
     underhallAnsvarAr: "10",
@@ -1898,8 +1971,15 @@ function slåIhopFasadmaterialRad(
     måttenhet: källa.måttenhet || mallRad.måttenhet,
     värde: källa.värde || mallRad.värde,
     underhallIntervallAr: källa.underhallIntervallAr || mallRad.underhallIntervallAr,
+    avskrivningAr: källa.avskrivningAr || mallRad.avskrivningAr,
     underhallNastaAr: källa.underhallNastaAr || mallRad.underhallNastaAr,
+    installationskostnadKr:
+      källa.installationskostnadKr || mallRad.installationskostnadKr,
     underhallKostnadKr: källa.underhallKostnadKr || mallRad.underhallKostnadKr,
+    underhallKostnadInklMomsKr:
+      källa.underhallKostnadInklMomsKr || mallRad.underhallKostnadInklMomsKr,
+    underhallMomsAvdragenKr:
+      källa.underhallMomsAvdragenKr || mallRad.underhallMomsAvdragenKr,
     underhallPrisEnhet: källa.underhallPrisEnhet || mallRad.underhallPrisEnhet,
     underhallEnhetsprisKr: källa.underhallEnhetsprisKr || mallRad.underhallEnhetsprisKr,
     underhallPrisAntal: källa.underhallPrisAntal || mallRad.underhallPrisAntal,
@@ -1957,7 +2037,14 @@ export function synkaKomponentDetaljMedMall(
   const underkomponenter: UnderkomponentRad[] = [
     ...mall.underkomponenter.map((def) => {
       const rad = befintligMap.get(def.id);
-      if (rad) return { ...rad, etikett: def.etikett };
+      if (rad) {
+        const standardAvskr = standardAvskrivningAr(mall.namn, def.id);
+        return {
+          ...rad,
+          etikett: def.etikett,
+          avskrivningAr: rad.avskrivningAr?.trim() || standardAvskr || rad.avskrivningAr,
+        };
+      }
       return skapaUnderkomponentRadFranDef(def, mall.namn);
     }),
     ...dataIn.underkomponenter.filter((r) => r.ärEgen),
