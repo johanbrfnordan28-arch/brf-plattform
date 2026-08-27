@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { OppnaBefintligaForeningar } from "@/components/forening/OppnaBefintligaForeningar";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 
 export const metadata: Metadata = {
-  title: "Logga in styrelse — BRF Företag",
-  description: "Separat inloggning för föreningar och styrelser.",
+  title: "Logga in styrelse — Styrelse-Navet",
+  description: "Öppna sparade föreningar eller skapa en ny testförening.",
 };
 
 export default function StyrelseLoginPage() {
@@ -14,27 +15,30 @@ export default function StyrelseLoginPage() {
     <ModulePage
       title="Logga in styrelse"
       icon="🔐"
-      intro="Styrelsen kan skapa en eller flera förenings sidor och växla mellan dem. Plattformsuppdateringar slås ihop på alla föreningar utan att radera ifyllda uppgifter."
+      intro="Här öppnar ni era sparade föreningar — t.ex. Brf Sailor och Brf Nordan — eller skapar en ny. Föreningarna sparas i webbläsaren; växla mellan dem uppe till höger inne i Styrelseflow."
     >
-      <ContentSection title="Skapa vår förening" id="skapa-forening" plain>
+      <ContentSection title="Öppna förening" plain>
+        <OppnaBefintligaForeningar />
+      </ContentSection>
+
+      <ContentSection title="Skapa ny förening" id="skapa-forening" plain>
         <p className="mb-4 text-sm text-muted">
-          Tryck på den gröna knappen nedan för att skapa er föreningssida. Ni kan ha flera
-          föreningar i samma webbläsare — välj aktiv förening i headern efteråt.
+          Har ni ingen sparad förening i den här webbläsaren? Skapa en ny nedan.
+          Ni kan ha flera föreningar och växla mellan dem i headern.
         </p>
         <SkapaForeningPanel visaSnabbstart />
       </ContentSection>
 
-      <ContentSection title="Demo-inloggning">
-        <p>
-          I den riktiga versionen verifieras användaren med lösenord eller BankID.
-          I prototypen kan du gå direkt till föreningens sida genom knappen nedan.
+      <ContentSection title="Mer demo">
+        <p className="text-sm text-muted">
+          Investerarsidan har också genvägar till förifylld underhållsplan.
         </p>
-        <div className="flex flex-wrap gap-3">
+        <div className="mt-4 flex flex-wrap gap-3">
           <Link
             href="/investerare"
-            className="inline-flex rounded-lg bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary-dark"
+            className="inline-flex rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground hover:border-primary/50"
           >
-            Investerardemo (rekommenderat)
+            Investerardemo
           </Link>
           <Link
             href="/forening"

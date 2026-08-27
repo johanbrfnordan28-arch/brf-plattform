@@ -7,6 +7,7 @@ import {
   testplaner,
   testplanNordan28,
   testplanNordan30,
+  testplanSailor,
   type TestplanDefinition,
   type TestplanId,
 } from "@/components/underhallsplan/testplaner";
@@ -19,6 +20,12 @@ export const GENERISKA_DEMO_TESTPLANER: TestplanId[] = [
   "test-90",
   "test-sailor",
 ];
+
+function matcharSailor(foreningId: string, foreningNamn: string): boolean {
+  const id = foreningId.toLowerCase();
+  const namn = foreningNamn.toLowerCase();
+  return id.includes("sailor") || namn.includes("sailor");
+}
 
 function matcharNordan28(foreningId: string, foreningNamn: string): boolean {
   const id = foreningId.toLowerCase();
@@ -40,6 +47,7 @@ export function hamtaTillgangligaTestplaner(
   if (arGrundmallForening(id)) return testplaner;
 
   const namn = foreningNamn ?? lasForeningProfil(id)?.namn ?? "";
+  if (matcharSailor(id, namn)) return [testplanSailor];
   if (matcharNordan28(id, namn)) return [testplanNordan28];
   if (matcharNordan30(id, namn)) return [testplanNordan30];
 
