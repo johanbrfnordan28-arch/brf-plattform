@@ -73,13 +73,13 @@ export const SAILOR_PLAN_NOTERING = [
   "JM-bygge 2013, Gustavsberg 1:395.",
   "Planperiod från 2027.",
   "40 bostadsrätter, 2 756 kvm boyta, tomtyta 4 688 kvm, 50 badrum. Inga eldstäder (sotning ej aktuell).",
-  "40 p-platser varav 10 med motorvärmare och 10 med elbilsladdning — totalt 10 stolpar med två uttag på varje.",
-  "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras 2027.",
+  "40 p-platser varav 10 med motorvärmare och 10 med elbilsladdning — totalt 10 stolpar med två uttag på varje (installerade 2026).",
+  "Fasad: tunnputs — bättringsputs och ommålning planeras 2027 som investering i underhållsplanen.",
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
   "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som kostnadsfört underhåll.",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam). Filterbyte 1 gång/år.",
-  "10 stolpar med två uttag vardera (10 motorvärmare + 10 elbilsladdning), installerade 2026. Energideklaration utförd 2026. Offert radonmätning finns.",
+  "Energideklaration utförd 2026. Offert radonmätning finns.",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
   "Gemensam gård sköts av Farstadals samfällighetsförening — ingår inte i föreningens egna markåtgärder.",
@@ -331,17 +331,19 @@ export function byggSailorKomponentUtkast(): {
             {
               id: "sailor-fasad-1",
               titel: "Bättringsputs och ommålning (tunnputs)",
-              /** Tidigarelagt till planstart — tunnputs åtgärdas 2027. */
+              /** Planstart 2027 — räknas som investering (som stambyte/fönsterbyte). */
               nastaAr: String(SAILOR_PLAN_START_AR),
               intervallAr: "12",
-              atgarder: ["putsreparation", "ommalning", "fasadtvatt"],
+              atgarder: ["putsreparation", "ommalning"],
+              direktkostnad: false,
             },
           ],
         },
       },
       /**
-       * Löpande tunnputs — kostnadsförs i resultaträkningen (ingår ej i kr/m²).
-       * Totalt ca 1 195 000 kr per tillfälle (puts + ommålning + tvätt).
+       * Putsreparation + ommålning 2027 — investering i planen (ingår i
+       * planerade investeringar / avsättning), inte kostnadsfört underhåll.
+       * Totalt 1 100 000 kr per tillfälle (puts 420 tkr + ommålning 680 tkr).
        */
       fasadAtgardPrisRegister: {
         fasadmaterial: {
@@ -356,12 +358,6 @@ export function byggSailorKomponentUtkast(): {
             enhetsprisKr: "680000",
             mangd: "1800",
             totalKr: "680000",
-          },
-          fasadtvatt: {
-            prisEnhet: "total",
-            enhetsprisKr: "95000",
-            mangd: "1800",
-            totalKr: "95000",
           },
         },
       },

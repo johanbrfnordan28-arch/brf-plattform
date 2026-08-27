@@ -129,11 +129,9 @@ export function samlaFasadAtgardBudgetPoster(
           intervallAr: intervall,
           kalla: "register",
           underkomponentId: "fasadmaterial",
-          direktkostnad: arDirektkostnadUnderhall(
-            "Fasad",
-            "fasadmaterial",
-            atgardId,
-          ),
+          direktkostnad:
+            tillfalle.direktkostnad ??
+            arDirektkostnadUnderhall("Fasad", "fasadmaterial", atgardId),
         });
       }
       ar += intervall;
