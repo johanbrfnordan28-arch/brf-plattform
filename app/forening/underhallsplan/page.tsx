@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
-import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { TipsPanel } from "@/components/TipsPanel";
 import { UnderhallsplanWizard } from "@/components/underhallsplan/UnderhallsplanWizard";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
+import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    ...(await foreningModulMetadata("Underhållsplan")),
+    ...(await foreningModulMetadata("Underhåll")),
     description:
-      "Grunduppgifter och komponentregister för föreningens underhållsplan.",
+      "Bygg föreningens underhållsplan steg för steg — komponentregister, renoveringshistorik, besiktningar och 50-årsbudget.",
   };
 }
 
 export default function ForeningUnderhallsplanPage() {
   return (
     <ModulePage
-      title="Underhållsplan"
+      title="Underhåll"
       icon="🔧"
-      intro="Börja med steg 1 Grunduppgifter (boarea, lägenheter, adresser) — spara innan du går vidare. Styrelsens kontakt hämtas från Föreningsuppgifter."
+      intro="Här skapar ni föreningens egen underhållsplan — översiktlig och anpassad för er. Styrelsen ändrar fritt i er plan. Komponentregistret innehåller avskrivningstider som underlag till K3. Slutsidan är er summering, klar för stämman."
     >
+      <TipsPanel tips={tips.underhallsplan} />
       <UnderhallsplanWizard />
     </ModulePage>
   );

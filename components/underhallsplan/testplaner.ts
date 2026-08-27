@@ -22,9 +22,9 @@ import {
   synkaKomponentRegister,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import { appliceraFarK3PaPlan } from "@/components/underhallsplan/far-k3-synk";
 import {
   standardPlaninstallningar,
-  standardPlanLangdAr,
   type Planinstallningar,
 } from "@/components/underhallsplan/planinstallningar";
 import { sammanstallRenoveringar } from "@/components/underhallsplan/renoveringar";
@@ -39,10 +39,7 @@ export type TestplanId =
   | "test-1900"
   | "test-50"
   | "test-70"
-  | "test-90"
-  | "test-sailor"
-  | "test-nordan-28"
-  | "test-nordan-30";
+  | "test-90";
 
 export type TestplanDefinition = {
   id: TestplanId;
@@ -176,8 +173,8 @@ function besiktningarFor(p: BesiktningProfil): Besiktning[] {
 /** Sekelskifte — 15 lägenheter, ca 1908 */
 export const testplan1900: TestplanDefinition = {
   id: "test-1900",
-  kortNamn: "1900-tal · 15 lgh",
-  namn: "Brf Hagalund — sekelskifte (15 lägenheter)",
+  kortNamn: "1900-tal",
+  namn: "Brf Hagalund — sekelskifte",
   beskrivning:
     "Tegelhus från 1908 med träfönster och självdrag. Liten förening för att testa enkel skala och äldre byggnadsdelar.",
   planNotering:
@@ -185,7 +182,7 @@ export const testplan1900: TestplanDefinition = {
   grund: {
     boarea: "975",
     lokalyta: "95",
-    antalLagenheter: "15",
+    antalLagenheter: "",
     byggar: "1908",
     tomtstorlek: "1 100",
     antalVaningar: "4",
@@ -350,8 +347,8 @@ export const testplan1900: TestplanDefinition = {
 /** 50-tal — 25 lägenheter, ca 1955 */
 export const testplan50: TestplanDefinition = {
   id: "test-50",
-  kortNamn: "50-tal · 25 lgh",
-  namn: "Brf Tallvinden — 1950-tal (25 lägenheter)",
+  kortNamn: "50-tal",
+  namn: "Brf Tallvinden — 1950-tal",
   beskrivning:
     "Typisk folkhemsfastighet med putsad fasad, balkonger i betong och mekanisk frånluft. Stambyte genomfört på 90-talet.",
   planNotering:
@@ -359,7 +356,7 @@ export const testplan50: TestplanDefinition = {
   grund: {
     boarea: "1 375",
     lokalyta: "115",
-    antalLagenheter: "25",
+    antalLagenheter: "",
     byggar: "1955",
     tomtstorlek: "2 600",
     antalVaningar: "3",
@@ -370,24 +367,50 @@ export const testplan50: TestplanDefinition = {
     fastighetsbeteckning: "Göteborg Tallvinden 1:7",
   },
   activeComponents: [
+    "Stomme",
     "Fasad",
+    "Fönster",
     "Tak",
     "Trapphus",
     "Källare",
     "VVS",
     "Värmecentral",
     "Ventilation",
+    "Elcentral",
+    "Balkonger",
+    "Styr och övervakning",
     "Mark och gård",
   ],
-  komponentDetaljer: synkaKomponentRegister(
+  komponentDetaljer: appliceraFarK3PaPlan(
     [
+      "Stomme",
       "Fasad",
+      "Fönster",
       "Tak",
       "Trapphus",
       "Källare",
       "VVS",
       "Värmecentral",
       "Ventilation",
+      "Elcentral",
+      "Balkonger",
+      "Styr och övervakning",
+      "Mark och gård",
+    ],
+    synkaKomponentRegister(
+    [
+      "Stomme",
+      "Fasad",
+      "Fönster",
+      "Tak",
+      "Trapphus",
+      "Källare",
+      "VVS",
+      "Värmecentral",
+      "Ventilation",
+      "Elcentral",
+      "Balkonger",
+      "Styr och övervakning",
       "Mark och gård",
     ],
     {
@@ -541,6 +564,8 @@ export const testplan50: TestplanDefinition = {
       },
     },
   ),
+    { aktiveraVillkorliga: true, skrivOverAvskrivning: true },
+  ).komponentDetaljer,
   besiktningar: besiktningarFor({ lgh: 25, sotning: true, eldstader: 1 }),
   krPerKvmAr: 48,
   planinstallningar: testplaninstallningar(),
@@ -550,8 +575,8 @@ export const testplan50: TestplanDefinition = {
 /** 70-tal — 45 lägenheter, ca 1974 */
 export const testplan70: TestplanDefinition = {
   id: "test-70",
-  kortNamn: "70-tal · 45 lgh",
-  namn: "Brf Parklyckan — 1970-tal (45 lägenheter)",
+  kortNamn: "70-tal",
+  namn: "Brf Parklyckan — 1970-tal",
   beskrivning:
     "Flerbostadshus med hiss, balkonger och planerat stambyte. Bra för att testa medelstor skala och prissättning.",
   planNotering:
@@ -559,7 +584,7 @@ export const testplan70: TestplanDefinition = {
   grund: {
     boarea: "2 925",
     lokalyta: "210",
-    antalLagenheter: "45",
+    antalLagenheter: "",
     byggar: "1974",
     tomtstorlek: "4 500",
     antalVaningar: "6",
@@ -775,8 +800,8 @@ export const testplan70: TestplanDefinition = {
 /** 90-tal — 60 lägenheter, ca 1993 */
 export const testplan90: TestplanDefinition = {
   id: "test-90",
-  kortNamn: "90-tal · 60 lgh",
-  namn: "Brf Strandskatan — 1990-tal (60 lägenheter)",
+  kortNamn: "90-tal",
+  namn: "Brf Strandskatan — 1990-tal",
   beskrivning:
     "Nyare flerbostadshus med FTX, hiss och två huskroppar. Få större renoveringar — bra för nyare bestånd och större förening.",
   planNotering:
@@ -784,7 +809,7 @@ export const testplan90: TestplanDefinition = {
   grund: {
     boarea: "4 200",
     lokalyta: "265",
-    antalLagenheter: "60",
+    antalLagenheter: "",
     byggar: "1993",
     tomtstorlek: "5 800",
     antalVaningar: "4",
@@ -1024,550 +1049,11 @@ export const testplan90: TestplanDefinition = {
   ...renoveringarPaket("test-90"),
 };
 
-/** Nyproduktion 2013 — Brf Sailor, Publika vägen 25–29 */
-export const testplanSailor: TestplanDefinition = {
-  id: "test-sailor",
-  kortNamn: "2013 · Brf Sailor",
-  namn: "Brf Sailor — nyproduktion 2013 (36 lägenheter)",
-  beskrivning:
-    "Tre hus vid Publika vägen med FTX, aluminiumklädda fönster och underjordiskt garage. Nyare bestånd med begränsad renoveringshistorik — bra för att fylla i egna uppgifter.",
-  planNotering:
-    "Fasad: tunnputs. Tre huskroppar (nr 25, 27, 29). FTX från byggår. Planerat: OVK, underhåll tak och balkongkontroll.",
-  grund: {
-    boarea: "2 580",
-    lokalyta: "145",
-    antalLagenheter: "36",
-    byggar: "2013",
-    tomtstorlek: "3 400",
-    antalVaningar: "4",
-    antalByggnader: "3",
-    adresser: ["Publika vägen 25", "Publika vägen 27", "Publika vägen 29"],
-    uppvarmning: "Fjärrvärme",
-    ventilationssystem: "FTX — mekanisk till- och frånluft med värmeåtervinning",
-    fastighetsbeteckning: "Nacka Sailor 1:15",
-  },
-  activeComponents: [
-    "Fasad",
-    "Tak",
-    "Trapphus",
-    "Källare",
-    "VVS",
-    "Värmecentral",
-    "Ventilation",
-    "Mark och gård",
-    "Komplement byggnad och P-platser",
-  ],
-  komponentDetaljer: synkaKomponentRegister(
-    [
-      "Fasad",
-      "Tak",
-      "Trapphus",
-      "Källare",
-      "VVS",
-      "Värmecentral",
-      "Ventilation",
-      "Mark och gård",
-      "Komplement byggnad och P-platser",
-    ],
-    {
-      Fasad: {
-        ...skapaTomKomponentDetalj("Fasad"),
-        valdaDeltyper: ["tunnputs"],
-        underkomponenter: skapaTomKomponentDetalj("Fasad").underkomponenter.map(
-          (r) => {
-            if (r.id === "fasadmaterial")
-              return { ...r, aktiv: true, värde: "380" };
-            if (r.id === "fonster" || r.id === "dorrar" || r.id === "balkonger")
-              return { ...r, aktiv: true };
-            return r;
-          },
-        ),
-        fonsterDorrRegister: {
-          fonster: [
-            {
-              ...skapaTomFonsterDorrPost(),
-              modulmatt: "Publika 25",
-              material: "alu-kldd",
-              antal: "36",
-            },
-            {
-              ...skapaTomFonsterDorrPost(),
-              modulmatt: "Publika 27",
-              material: "alu-kldd",
-              antal: "36",
-            },
-            {
-              ...skapaTomFonsterDorrPost(),
-              modulmatt: "Publika 29",
-              material: "alu-kldd",
-              antal: "36",
-            },
-          ],
-          dorrar: [
-            {
-              ...skapaTomDorrPost(),
-              modulmatt: "Entré",
-              dorrMaterial: "aluminium",
-              antal: "3",
-              harKodlas: true,
-            },
-          ],
-        },
-        balkongRegister: {
-          balkonger: [
-            {
-              ...skapaTomBalkongPost("Balkonger väster", "utvandig-balkong"),
-              konstruktion: "konsol",
-              golvMaterial: "betong",
-              golvKvm: "72",
-            },
-            {
-              ...skapaTomBalkongPost("Balkonger syd", "utvandig-balkong"),
-              konstruktion: "konsol",
-              golvMaterial: "betong",
-              golvKvm: "68",
-            },
-          ],
-        },
-      },
-      Tak: {
-        ...skapaTomKomponentDetalj("Tak"),
-        valdaDeltyper: ["bandlaggd-plat"],
-        underkomponenter: skapaTomKomponentDetalj("Tak").underkomponenter.map(
-          (rad) =>
-            rad.id === "ventilationshuv"
-              ? { ...rad, aktiv: true, måttenhet: "antal", värde: "6" }
-              : rad,
-        ),
-      },
-      Trapphus: {
-        ...skapaTomKomponentDetalj("Trapphus"),
-        valdaDeltyper: ["tr2"],
-        underkomponenter: skapaTomKomponentDetalj("Trapphus").underkomponenter.map(
-          (rad) => {
-            if (rad.id === "hiss") return { ...rad, aktiv: true };
-            if (rad.id === "lagenhetsdorrar")
-              return { ...rad, aktiv: true, värde: "36" };
-            if (rad.id === "vaggar-malning")
-              return { ...rad, aktiv: true, värde: "520" };
-            return rad;
-          },
-        ),
-        hissRegister: {
-          hiss: [
-            { ...skapaTomHissPost("Hiss Publika 25"), marke: "kone", hissTyp: "motvikt" },
-            { ...skapaTomHissPost("Hiss Publika 27"), marke: "otis", hissTyp: "motvikt" },
-            { ...skapaTomHissPost("Hiss Publika 29"), marke: "schindler", hissTyp: "motvikt" },
-          ],
-        },
-      },
-      Källare: {
-        ...skapaTomKomponentDetalj("Källare"),
-        valdaDeltyper: ["uppvarmd"],
-        underkomponenter: skapaTomKomponentDetalj("Källare").underkomponenter.map(
-          (rad) => (rad.id === "tvattstuga" ? { ...rad, aktiv: true } : rad),
-        ),
-        tvattstugaRegister: {
-          tvattstuga: [
-            {
-              id: "tvatt-sailor-1",
-              namn: "Tvättstuga Publika 25–29",
-              utformning: "gemensam",
-              tvattmaskin: "3",
-              torktumlare: "3",
-              torkskap: "1",
-              mangel: "",
-              belysning: "12",
-              golvYtskikt: "klinker",
-              golvKvm: "28",
-              vaggarYtskikt: "kakel",
-              vaggarKvm: "42",
-            },
-          ],
-        },
-      },
-      VVS: {
-        ...skapaTomKomponentDetalj("VVS"),
-        valdaDeltyper: ["fjarrvarme"],
-        underkomponenter: skapaTomKomponentDetalj("VVS").underkomponenter.map(
-          (rad) => (rad.id === "stambyte" ? { ...rad, aktiv: true } : rad),
-        ),
-        vvsStambyteRegister: {
-          stambyte: stambyteData(36, {
-            vattenMaterial: "rostfritt-stal",
-            avloppMaterial: "plast-ljudklassad",
-          }),
-        },
-      },
-      Värmecentral: {
-        ...skapaTomKomponentDetalj("Värmecentral"),
-        valdaDeltyper: ["fjarrvarme"],
-        underkomponenter: skapaTomKomponentDetalj("Värmecentral").underkomponenter.map(
-          (rad) => {
-            if (rad.id === "undercentral")
-              return { ...rad, aktiv: true, värde: "1" };
-            if (rad.id === "radiatorer") return { ...rad, aktiv: true };
-            return rad;
-          },
-        ),
-        vvsRadiatorRegister: {
-          radiatorer: {
-            rorsystem: "blandat",
-            aldre: {
-              termostatAntal: "",
-              radiatorventilAntal: "",
-              radiatorkoppelAntal: "",
-              packboxAntal: "",
-              helRadiatorAntal: "",
-            },
-            nyare: {
-              termostatAntal: "36",
-              radiatorventilAntal: "36",
-              radiatorkoppelAntal: "",
-              packboxAntal: "",
-              helRadiatorAntal: "8",
-            },
-            varmerorMeter: "110",
-          },
-        },
-      },
-      Ventilation: {
-        ...skapaTomKomponentDetalj("Ventilation"),
-        valdaDeltyper: ["ftx"],
-      },
-      "Mark och gård": {
-        ...skapaTomKomponentDetalj("Mark och gård"),
-        valdaDeltyper: ["asfalt", "gras"],
-        underkomponenter: skapaTomKomponentDetalj("Mark och gård").underkomponenter.map(
-          (rad) =>
-            rad.id === "gard" ? { ...rad, aktiv: true, värde: "380" } : rad,
-        ),
-      },
-      "Komplement byggnad och P-platser": {
-        ...skapaTomKomponentDetalj("Komplement byggnad och P-platser"),
-        valdaDeltyper: ["kallare"],
-        underkomponenter: skapaTomKomponentDetalj(
-          "Komplement byggnad och P-platser",
-        ).underkomponenter.map((rad) => {
-          if (rad.id === "p-platser") return { ...rad, aktiv: true };
-          if (rad.id === "cykelrum") return { ...rad, aktiv: true, värde: "1" };
-          return rad;
-        }),
-        pPlatserRegister: {
-          "p-platser": {
-            motordvarmare: "",
-            elbilsladdare: "8",
-            "p-plats": "10",
-            garage: "24",
-            carport: "",
-          },
-        },
-      },
-    },
-  ),
-  besiktningar: besiktningarFor({
-    lgh: 36,
-    hiss: true,
-    antalHissar: 3,
-    ovkKr: 340,
-    ovkIntervall: 6,
-    ovkOffset: 0,
-  }),
-  krPerKvmAr: 32,
-  planinstallningar: testplaninstallningar(),
-  ...renoveringarPaket("test-sailor"),
-};
-
-/** Tidigt 1900-tal — Brf Nordan 28 */
-export const testplanNordan28: TestplanDefinition = {
-  id: "test-nordan-28",
-  kortNamn: "1900-tal · Nordan 28",
-  namn: "Brf Nordan 28 — tidigt 1900-tal (18 lägenheter)",
-  beskrivning:
-    "Tegelhus från tidigt 1900-tal med träfönster och självdrag. Används för att testa klumpsummor för tak och stambyte.",
-  planNotering:
-    "Fasad: tegel med putsband. Tak: tegel. Balkonger mot innergård — flera typer. Planerat: takomläggning och stambyte.",
-  grund: {
-    boarea: "1 150",
-    lokalyta: "70",
-    antalLagenheter: "18",
-    byggar: "1906",
-    tomtstorlek: "1 250",
-    antalVaningar: "4",
-    antalByggnader: "1",
-    adresser: ["Nordan 28"],
-    uppvarmning: "Fjärrvärme",
-    ventilationssystem: "S — självdragsventilation",
-    fastighetsbeteckning: "Stockholm Nordan 28:1",
-  },
-  activeComponents: [
-    "Fasad",
-    "Fönster",
-    "Balkonger",
-    "Tak",
-    "Trapphus",
-    "Källare",
-    "VVS",
-    "Ventilation",
-  ],
-  komponentDetaljer: synkaKomponentRegister(
-    ["Fasad", "Fönster", "Balkonger", "Tak", "Trapphus", "Källare", "VVS", "Ventilation"],
-    {
-      Fasad: {
-        ...skapaTomKomponentDetalj("Fasad"),
-        valdaDeltyper: ["tegel"],
-        underkomponenter: skapaTomKomponentDetalj("Fasad").underkomponenter.map((r) => {
-          if (r.id === "fasadmaterial")
-            return { ...r, aktiv: true, värde: "540" };
-          if (r.id === "dorrar") return { ...r, aktiv: true };
-          return r;
-        }),
-        fonsterDorrRegister: {
-          dorrar: [
-            {
-              ...skapaTomDorrPost(),
-              modulmatt: "10×21",
-              dorrMaterial: "ek",
-              antal: "2",
-              harKodlas: false,
-            },
-          ],
-        },
-      },
-      "Fönster": {
-        ...skapaTomKomponentDetalj("Fönster"),
-        valdaDeltyper: ["tra"],
-        underkomponenter: skapaTomKomponentDetalj("Fönster").underkomponenter.map((r) =>
-          r.id === "fonster" ? { ...r, aktiv: true } : r,
-        ),
-        fonsterDorrRegister: {
-          fonster: [
-            {
-              ...skapaTomFonsterDorrPost(),
-              modulmatt: "Kopplade 10×15",
-              material: "tra",
-              antal: "72",
-              traUnderhall: "renovering",
-            },
-          ],
-        },
-      },
-      Balkonger: {
-        ...skapaTomKomponentDetalj("Balkonger"),
-        valdaDeltyper: ["betong"],
-        underkomponenter: skapaTomKomponentDetalj("Balkonger").underkomponenter.map((r) =>
-          r.id === "balkonger" ? { ...r, aktiv: true } : r,
-        ),
-        balkongRegister: {
-          balkonger: [
-            {
-              ...skapaTomBalkongPost("Utvändiga balkonger gård", "utvandig-balkong"),
-              konstruktion: "konsol",
-              rakeLopmeter: "48",
-              golvKvm: "96",
-              delar: [
-                { delId: "balkongplatta", aktiv: true, mangd: "96" },
-                { delId: "tatskikt", aktiv: true, mangd: "96" },
-                { delId: "fallspackel", aktiv: true, mangd: "96" },
-              ],
-            },
-            {
-              ...skapaTomBalkongPost("Innerhörnsbalkonger norr", "innerhornsbalkong"),
-              konstruktion: "helgjuten",
-              rakeLopmeter: "22",
-              golvKvm: "38",
-              delar: [
-                { delId: "balkongplatta", aktiv: true, mangd: "38" },
-                { delId: "tatskikt", aktiv: true, mangd: "38" },
-                { delId: "fallspackel", aktiv: true, mangd: "38" },
-              ],
-            },
-            {
-              ...skapaTomBalkongPost("Innerhörnsbalkonger syd", "innerhornsbalkong"),
-              konstruktion: "helgjuten",
-              rakeLopmeter: "18",
-              golvKvm: "32",
-              delar: [
-                { delId: "balkongplatta", aktiv: true, mangd: "32" },
-                { delId: "tatskikt", aktiv: true, mangd: "32" },
-              ],
-            },
-          ],
-        },
-      },
-      Tak: {
-        ...skapaTomKomponentDetalj("Tak"),
-        valdaDeltyper: ["tegel"],
-        underkomponenter: skapaTomKomponentDetalj("Tak").underkomponenter.map((rad) =>
-          rad.id === "skorsten" ? { ...rad, aktiv: true, värde: "2" } : rad,
-        ),
-      },
-      VVS: {
-        ...skapaTomKomponentDetalj("VVS"),
-        valdaDeltyper: ["fjarrvarme"],
-        underkomponenter: skapaTomKomponentDetalj("VVS").underkomponenter.map((rad) =>
-          rad.id === "stambyte" ? { ...rad, aktiv: true } : rad,
-        ),
-        vvsStambyteRegister: {
-          stambyte: stambyteData(18, { vattenMaterial: "koppar", avloppMaterial: "gjutjarn" }),
-        },
-      },
-      Trapphus: {
-        ...skapaTomKomponentDetalj("Trapphus"),
-        valdaDeltyper: ["tr1"],
-      },
-      Källare: {
-        ...skapaTomKomponentDetalj("Källare"),
-        valdaDeltyper: ["uppvarmd"],
-      },
-      Ventilation: {
-        ...skapaTomKomponentDetalj("Ventilation"),
-        valdaDeltyper: ["s"],
-      },
-    },
-  ),
-  besiktningar: besiktningarFor({ lgh: 18, hiss: false, ovkKr: 320, ovkIntervall: 6, ovkOffset: 1 }),
-  krPerKvmAr: 46,
-  planinstallningar: testplaninstallningar(),
-  ...renoveringarPaket("test-nordan-28"),
-};
-
-/** Tidigt 1900-tal — Brf Nordan 30 */
-export const testplanNordan30: TestplanDefinition = {
-  id: "test-nordan-30",
-  kortNamn: "1900-tal · Nordan 30",
-  namn: "Brf Nordan 30 — tidigt 1900-tal (24 lägenheter)",
-  beskrivning:
-    "Större tegelhus från tidigt 1900-tal. Testar klumpsummor (tak + stambyte) och även balkonger som egen komponent.",
-  planNotering:
-    "Fasad: tegel/putsband. Balkonger mot gård. Planerat: tak och stambyte enligt historik.",
-  grund: {
-    boarea: "1 520",
-    lokalyta: "95",
-    antalLagenheter: "24",
-    byggar: "1909",
-    tomtstorlek: "1 520",
-    antalVaningar: "5",
-    antalByggnader: "1",
-    adresser: ["Nordan 30"],
-    uppvarmning: "Fjärrvärme",
-    ventilationssystem: "S — självdragsventilation",
-    fastighetsbeteckning: "Stockholm Nordan 30:1",
-  },
-  activeComponents: [
-    "Fasad",
-    "Fönster",
-    "Balkonger",
-    "Tak",
-    "Trapphus",
-    "Källare",
-    "VVS",
-    "Ventilation",
-  ],
-  komponentDetaljer: synkaKomponentRegister(
-    ["Fasad", "Fönster", "Balkonger", "Tak", "Trapphus", "Källare", "VVS", "Ventilation"],
-    {
-      Fasad: {
-        ...skapaTomKomponentDetalj("Fasad"),
-        valdaDeltyper: ["tegel"],
-        underkomponenter: skapaTomKomponentDetalj("Fasad").underkomponenter.map((r) => {
-          if (r.id === "fasadmaterial")
-            return { ...r, aktiv: true, värde: "540" };
-          if (r.id === "dorrar") return { ...r, aktiv: true };
-          return r;
-        }),
-        fonsterDorrRegister: {
-          dorrar: [
-            {
-              ...skapaTomDorrPost(),
-              modulmatt: "10×21",
-              dorrMaterial: "ek",
-              antal: "3",
-              harKodlas: false,
-            },
-          ],
-        },
-      },
-      "Fönster": {
-        ...skapaTomKomponentDetalj("Fönster"),
-        valdaDeltyper: ["tra"],
-        underkomponenter: skapaTomKomponentDetalj("Fönster").underkomponenter.map((r) =>
-          r.id === "fonster" ? { ...r, aktiv: true } : r,
-        ),
-        fonsterDorrRegister: {
-          fonster: [
-            {
-              ...skapaTomFonsterDorrPost(),
-              modulmatt: "Kopplade 10×15",
-              material: "tra",
-              antal: "96",
-              traUnderhall: "renovering",
-            },
-          ],
-        },
-      },
-      Balkonger: {
-        ...skapaTomKomponentDetalj("Balkonger"),
-        valdaDeltyper: ["betong"],
-        underkomponenter: skapaTomKomponentDetalj("Balkonger").underkomponenter.map((r) =>
-          r.id === "balkonger" ? { ...r, aktiv: true } : r,
-        ),
-        balkongRegister: {
-          balkonger: [
-            {
-              ...skapaTomBalkongPost("Balkonger gård", "utvandig-balkong"),
-              konstruktion: "tillbyggd",
-              golvMaterial: "betong",
-              golvKvm: "68",
-            },
-          ],
-        },
-      },
-      Tak: {
-        ...skapaTomKomponentDetalj("Tak"),
-        valdaDeltyper: ["tegel"],
-        underkomponenter: skapaTomKomponentDetalj("Tak").underkomponenter.map((rad) =>
-          rad.id === "skorsten" ? { ...rad, aktiv: true, värde: "3" } : rad,
-        ),
-      },
-      VVS: {
-        ...skapaTomKomponentDetalj("VVS"),
-        valdaDeltyper: ["fjarrvarme"],
-        underkomponenter: skapaTomKomponentDetalj("VVS").underkomponenter.map((rad) =>
-          rad.id === "stambyte" ? { ...rad, aktiv: true } : rad,
-        ),
-        vvsStambyteRegister: {
-          stambyte: stambyteData(24, { vattenMaterial: "koppar", avloppMaterial: "gjutjarn" }),
-        },
-      },
-      Trapphus: {
-        ...skapaTomKomponentDetalj("Trapphus"),
-        valdaDeltyper: ["tr1"],
-      },
-      Källare: {
-        ...skapaTomKomponentDetalj("Källare"),
-        valdaDeltyper: ["uppvarmd"],
-      },
-      Ventilation: {
-        ...skapaTomKomponentDetalj("Ventilation"),
-        valdaDeltyper: ["s"],
-      },
-    },
-  ),
-  besiktningar: besiktningarFor({ lgh: 24, hiss: false, ovkKr: 320, ovkIntervall: 6, ovkOffset: 1 }),
-  krPerKvmAr: 46,
-  planinstallningar: testplaninstallningar(),
-  ...renoveringarPaket("test-nordan-30"),
-};
-
 export const testplaner: TestplanDefinition[] = [
   testplan1900,
   testplan50,
   testplan70,
   testplan90,
-  testplanSailor,
-  testplanNordan28,
-  testplanNordan30,
 ];
 
 const testplanMap: Record<TestplanId, TestplanDefinition> = {
@@ -1575,9 +1061,6 @@ const testplanMap: Record<TestplanId, TestplanDefinition> = {
   "test-50": testplan50,
   "test-70": testplan70,
   "test-90": testplan90,
-  "test-sailor": testplanSailor,
-  "test-nordan-28": testplanNordan28,
-  "test-nordan-30": testplanNordan30,
 };
 
 export function hamtaTestplan(id: TestplanId): TestplanDefinition {

@@ -120,7 +120,7 @@ function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void
   );
 }
 
-/** Återställer Sailors underhållsplan till den korrekta versionen (årsredovisning 2024). */
+/** Tvingar tillbaka gårdagens korrekta Sailor-plan (årsredovisning 2024 + sista justeringar). */
 function aterstallSailorUnderhallsplan(): void {
   if (typeof window === "undefined") return;
   const namn =

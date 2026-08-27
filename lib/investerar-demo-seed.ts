@@ -36,7 +36,7 @@ export function byggLagratStateFranTestplan(
   if (arSailorForening(options?.foreningId)) {
     grund = normaliseraGrund(appliceraSailorGrund(grund));
   }
-  const synced = synkaUnderhallsplanState(
+  let synced = synkaUnderhallsplanState(
     plan.activeComponents,
     synkaUnderhallsplanState(
       plan.activeComponents,
@@ -51,10 +51,9 @@ export function byggLagratStateFranTestplan(
   let krPerKvmAr = plan.krPerKvmAr;
   let activeComponents = synced.activeComponents;
   let komponentDetaljer = synced.register;
-  let besiktningar = plan.besiktningar;
-  const arSailor = Boolean(arSailorForening(options?.foreningId));
 
-  if (arSailor) {
+  let besiktningar = plan.besiktningar;
+  if (arSailorForening(options?.foreningId)) {
     const utkast = byggSailorKomponentUtkast();
     varderingsUnderlag = SAILOR_VARDERING_UNDERLAG;
     planNotering = utkast.planNotering;
@@ -64,9 +63,9 @@ export function byggLagratStateFranTestplan(
     komponentDetaljer = utkast.komponentDetaljer;
     besiktningar = utkast.besiktningar;
   }
-
   const antalLgh = hamtaAntalLagenheterFranGrund(grund);
   const titelBas = foreningsnamn?.trim() || plan.namn;
+  const arSailor = Boolean(arSailorForening(options?.foreningId));
 
   return {
     version: 1,
@@ -76,7 +75,7 @@ export function byggLagratStateFranTestplan(
     planNotering,
     grund,
     planinstallningar: normaliseraPlaninstallningar(
-      arSailor
+      arSailorForening(options?.foreningId)
         ? {
             ...plan.planinstallningar,
             planStartAr: String(SAILOR_PLAN_START_AR),
@@ -100,7 +99,7 @@ export function byggLagratStateFranTestplan(
 
 /** Skriver demo-underhållsplan till localStorage (endast webbläsare). */
 export function forberedInvesterarDemo(
-  id: TestplanId = "test-sailor",
+  id: TestplanId = "test-90",
 ): void {
   if (typeof window === "undefined") return;
   sparaUnderhallsplanState(byggLagratStateFranTestplan(id));

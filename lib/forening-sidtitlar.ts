@@ -4,7 +4,7 @@ import { hamtaAktivForeningsNamn } from "@/lib/forening-registry";
 /** Modulnamn per föreningssökväg — används i flikrubrik efter föreningens namn. */
 export const FORENING_MODUL_TITLAR: Record<string, string> = {
   "/forening/uppgifter": "Föreningsuppgifter",
-  "/forening/underhallsplan": "Underhållsplan",
+  "/forening/underhallsplan": "Underhåll",
   "/forening/juridik": "Juridik",
   "/forening/foreningsinformation": "Föreningsinformation",
   "/forening/arshjul": "Årshjul",

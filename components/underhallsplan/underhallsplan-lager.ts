@@ -24,8 +24,8 @@ export const UNDERHALLSPLAN_STATE_EVENT = "underhallsplan-state-uppdaterad";
 
 const STORAGE_KEY_BASE = "brf-underhallsplan-state";
 
-function storageKey(foreningId?: string): string {
-  return foreningStorageKey(STORAGE_KEY_BASE, foreningId);
+function storageKey(): string {
+  return foreningStorageKey(STORAGE_KEY_BASE);
 }
 const LAGER_VERSION = 1;
 
@@ -58,7 +58,10 @@ export type UnderhallsplanLagratState = {
 
 export function harUnderhallsplanSparat(foreningId?: string): boolean {
   if (typeof window === "undefined") return false;
-  return Boolean(localStorage.getItem(storageKey(foreningId)));
+  const key = foreningId
+    ? foreningStorageKey(STORAGE_KEY_BASE, foreningId)
+    : storageKey();
+  return Boolean(localStorage.getItem(key));
 }
 
 function uppgraderaUnderhallsplanState(
@@ -147,10 +150,10 @@ export function sparaUnderhallsplanState(
       message: localStorageFelMeddelande("unavailable"),
     };
   }
-  const result = safeSetLocalStorage(
-    storageKey(foreningId),
-    JSON.stringify(state),
-  );
+  const key = foreningId
+    ? foreningStorageKey(STORAGE_KEY_BASE, foreningId)
+    : storageKey();
+  const result = safeSetLocalStorage(key, JSON.stringify(state));
   if (!result.ok) {
     return {
       ok: false,

@@ -123,7 +123,9 @@ const kataloger: Record<string, UnderhallAtgardKatalogPost[]> = {
   "typ-ovrigt": typKatalog("typ-ovrigt", "Större åtgärd", "Löpande underhåll"),
 };
 
-const TYP_TILL_UK: Partial<Record<RenoveringAtgardTyp, string>> = {
+export const RENOVERING_ATGARD_TILL_UNDERKOMPONENT: Partial<
+  Record<RenoveringAtgardTyp, string>
+> = {
   stambyte: "stambyte",
   stamspolning: "spolning-avlopp",
   tak: "takyta",
@@ -136,6 +138,8 @@ const TYP_TILL_UK: Partial<Record<RenoveringAtgardTyp, string>> = {
   trapphus: "vaggar-malning",
   brandskydd: "branddorrar",
 };
+
+const TYP_TILL_UK = RENOVERING_ATGARD_TILL_UNDERKOMPONENT;
 
 export function hamtaUnderhallTillfallenPlanNyckel(
   komponentNamn: string,
