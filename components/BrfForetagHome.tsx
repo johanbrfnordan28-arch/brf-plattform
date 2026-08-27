@@ -695,7 +695,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
               <div className="grid items-stretch gap-6 sm:grid-cols-2">
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-[#eef6f0] p-6 shadow-sm sm:p-8">
-                  <h3 className="text-xl font-bold text-foreground">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                    Provperiod
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-foreground">
                     Prova gratis 30 dagar
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
