@@ -679,8 +679,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             id="priser"
             className="scroll-mt-24 border-t border-border"
           >
-            <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 sm:pt-20">
-              <div className="mb-6 max-w-2xl">
+            <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+              <div className="mb-10 max-w-2xl">
                 <p className="text-sm font-semibold text-primary-dark">
                   Pris & avtal
                 </p>
@@ -692,19 +692,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   ettårsavtal — med 30&nbsp;% rabatt mot månadsdebitering.
                 </p>
               </div>
-            </div>
 
-            <div id="intro-film" className="scroll-mt-24">
-              <FilmDemo variant="public" />
-            </div>
-
-            <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
-              <div className="grid items-stretch gap-6 lg:grid-cols-2">
-                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-                    Rekommenderas att börja här
-                  </p>
-                  <h3 className="mt-2 text-xl font-bold text-foreground">
+              <div className="grid items-stretch gap-6 sm:grid-cols-2">
+                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-[#eef6f0] p-6 shadow-sm sm:p-8">
+                  <h3 className="text-xl font-bold text-foreground">
                     Prova gratis 30 dagar
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
@@ -734,6 +725,29 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     <li>Automatisk förlängning</li>
                     <li>Uppsägningstid 6 månader</li>
                   </ul>
+                </div>
+
+                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Film & funktioner
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-foreground">
+                    Se och förstå funktionerna
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
+                    Korta scener visar hur underhållsplan, upphandling och
+                    övriga moduler fungerar i praktiken. Tryck spela i rutan
+                    bredvid.
+                  </p>
+                  <p className="mt-6 text-sm text-primary-dark">
+                    Demo utan ljud — ca 20 sekunder
+                  </p>
+                </div>
+                <div
+                  id="intro-film"
+                  className="flex h-full min-h-[18rem] scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-3 shadow-sm sm:p-4"
+                >
+                  <FilmDemo variant="public" layout="kort" />
                 </div>
               </div>
             </div>
