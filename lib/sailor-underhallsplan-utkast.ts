@@ -77,7 +77,7 @@ export const SAILOR_PLAN_NOTERING = [
   "Fasad: tunnputs — bättringsputs och ommålning planeras 2027 som investering i underhållsplanen.",
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
-  "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som kostnadsfört underhåll.",
+  "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som periodiskt underhåll (kostnadsförs direkt).",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam). Filterbyte 1 gång/år.",
   "Energideklaration utförd 2026. Offert radonmätning finns.",
   "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",

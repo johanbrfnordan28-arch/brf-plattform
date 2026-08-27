@@ -266,10 +266,11 @@ export function UnderhallsplanBudget({
         {FORKLARING_ARSBUDGET_VS_PLAN}
       </p>
       <p className="mt-3 text-sm leading-relaxed text-muted">
-        Planperiod {planStartAr}–{planSlutAr} ({planLangdAr} år). Tabellen visar
-        vad som ska budgeteras det året — avsättning, besiktningar och
-        kostnadsfört underhåll (t.ex. spolning/filmning). Investeringar som kan
-        aktiveras och skrivas av visas i egen kolumn.
+        Planperiod {planStartAr}–{planSlutAr} ({planLangdAr} år). Tabellen är
+        underlag till budgeten: avsättning, besiktningar och{" "}
+        {PLAN_BEGREPP.direktkostnader.toLowerCase()} (drift som kostnadsförs
+        direkt). {PLAN_BEGREPP.investeringarPlan} — investeringar i fastigheten
+        — visas i egen kolumn.
       </p>
 
       {!unlocked && (
@@ -281,21 +282,25 @@ export function UnderhallsplanBudget({
       <div className={`mt-6 space-y-6 ${lockedClass}`}>
         <div>
           <p className="text-sm font-semibold text-foreground">
-            Tabell — utgifter i årsbudgeten ({planStartAr}–{planSlutAr})
+            Tabell — underlag till årsbudgeten ({planStartAr}–{planSlutAr})
           </p>
           <div className="mt-3 max-h-[28rem] overflow-auto rounded-xl border border-border">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="sticky top-0 z-10 bg-background text-muted shadow-sm">
                 <tr>
                   <th className="px-4 py-2 font-medium">År</th>
-                  <th className="px-4 py-2 font-medium">Poster (årsbudget)</th>
+                  <th className="px-4 py-2 font-medium">Poster (budget)</th>
                   <th className="px-4 py-2 font-medium text-right">Avsättning</th>
                   <th className="px-4 py-2 font-medium text-right">Besiktning</th>
                   <th className="px-4 py-2 font-medium text-right">
                     {PLAN_BEGREPP.direktkostnaderKort}
                   </th>
-                  <th className="px-4 py-2 font-medium text-right">Summa årsbudget</th>
-                  <th className="px-4 py-2 font-medium text-right">Investering (plan)</th>
+                  <th className="px-4 py-2 font-medium text-right">
+                    Summa budgetunderlag
+                  </th>
+                  <th className="px-4 py-2 font-medium text-right">
+                    {PLAN_BEGREPP.investeringarPlan}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -323,7 +328,7 @@ export function UnderhallsplanBudget({
                               {" · "}
                               {p.namn}: {formatKr(p.belopp)}
                               <span className="ml-1 text-[10px] uppercase tracking-wide text-amber-800/80">
-                                kostnadsfört
+                                kostnadsförs direkt
                               </span>
                             </li>
                           ))}
@@ -457,11 +462,13 @@ export function UnderhallsplanBudget({
         {investeringSummeradPerAr.length > 0 && (
           <div className="rounded-xl border border-violet-200/80 bg-violet-50/30 px-4 py-3">
             <p className="text-sm font-semibold text-violet-950">
-              Investering per år — summerat
+              {PLAN_BEGREPP.investeringarPlan} per år — summerat
             </p>
             <p className="mt-1 text-xs text-muted">
-              Avskrivningsbara åtgärder det året — kolumnen Investering (plan).
-              Kostnadsfört underhåll redovisas separat ovan.
+              Investeringar i fastigheten det året — kolumnen{" "}
+              {PLAN_BEGREPP.investeringarPlan}.{" "}
+              {PLAN_BEGREPP.direktkostnader} (drift som kostnadsförs direkt)
+              redovisas separat ovan.
             </p>
             <div className="mt-3 space-y-3">
               {investeringSummeradPerAr.map((grupp) => (
@@ -489,7 +496,7 @@ export function UnderhallsplanBudget({
         {atgarderFranHistorik.length > 0 && (
           <div className="rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3">
             <p className="text-sm font-semibold text-violet-950">
-              Planerade investeringar — från renoveringshistorik
+              {PLAN_BEGREPP.investeringarPlan} — från renoveringshistorik
             </p>
             <p className="mt-1 text-xs text-muted">
               Nästa förekomst beräknas från senaste utförda åtgärd, intervall,
@@ -524,7 +531,7 @@ export function UnderhallsplanBudget({
         {atgarderFranRegister.length > 0 && (
           <div className="rounded-xl border border-violet-200/80 bg-violet-50/40 px-4 py-3">
             <p className="text-sm font-semibold text-violet-950">
-              Planerade investeringar — från registret
+              {PLAN_BEGREPP.investeringarPlan} — från registret
             </p>
             <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm text-muted">
               {atgarderFranRegister.map((a, i) => (
@@ -560,7 +567,7 @@ export function UnderhallsplanBudget({
 
         <div>
           <p className="text-sm font-semibold text-foreground">
-            Avsättning i årsbudgeten (kr/m² och år)
+            Avsättning i budgetunderlaget (kr/m² och år)
           </p>
           <p className="mt-1 text-xs text-muted">
             Typisk nivå för bostadsrättsföreningar är ungefär{" "}
@@ -568,7 +575,8 @@ export function UnderhallsplanBudget({
               {TYPISK_AVSATTNING_KR_PER_KVM.lage}–{TYPISK_AVSATTNING_KR_PER_KVM.hog}{" "}
               kr/m²/år
             </strong>
-            . Kolumnen <em>Investering (plan)</em> visar när större åtgärder sker —
+            . Kolumnen <em>{PLAN_BEGREPP.investeringarPlan}</em> visar när
+            investeringar i fastigheten (t.ex. fönster- eller takbyte) sker —
             orimligt höga åtgärdskostnader ska justeras i steg 3/slutsidan, inte
             genom att höja avsättningen till flera miljoner per år.
           </p>
@@ -579,7 +587,8 @@ export function UnderhallsplanBudget({
                 Koppling till planerade kostnader
               </p>
               <p className="mt-1 text-sm text-foreground">
-                Summa investeringar i planen ({planStartAr}–{planSlutAr}):{" "}
+                Summa {PLAN_BEGREPP.investeringarPlan.toLowerCase()} i planen (
+                {planStartAr}–{planSlutAr}):{" "}
                 <strong>{formatKr(summaInvesteringPlan)}</strong>
               </p>
               {obegransadKrPerKvmAr != null && (

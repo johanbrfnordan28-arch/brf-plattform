@@ -358,7 +358,7 @@ export function arDirektkostnadUnderhall(
 }
 
 export const DIREKTKOSTNAD_FORKLARING =
-  "Kostnadsförs i resultaträkningen det år åtgärden utförs — aktiveras inte som anläggningstillgång och skrivs därför inte av (K3).";
+  "Periodiskt underhåll (drift) — kostnadsförs direkt i resultaträkningen det år åtgärden utförs. Aktiveras inte som anläggningstillgång och skrivs därför inte av (K3).";
 
 /** Effektiv avskrivningstid — sparad eller standard. */
 export function effektivAvskrivningAr(

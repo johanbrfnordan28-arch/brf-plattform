@@ -1,32 +1,41 @@
 /**
- * Användarvänd begreppsavgränsning (bokföringsnära):
- * - Underhållsplanen = större åtgärder som kan aktiveras och skrivas av (K3).
- * - Årsbudgeten = poster som kostnadsförs det år de förfaller
- *   (avsättning, besiktningar, kostnadsfört underhåll t.ex. spolning/filmning).
+ * Användarvänd begreppsavgränsning — underlag till föreningens budget:
+ * - Planerat underhåll = investeringar i fastigheten (fönsterbyte, takbyte, stambyte m.m.).
+ * - Periodiskt underhåll = driftkostnader som kostnadsförs direkt det år de utförs.
  */
 
 export const PLAN_BEGREPP = {
   underhallsplan: "Underhållsplan",
-  arsbudgetSteg: "Utgifter i årsbudgeten",
-  arsbudgetStegKort: "Årsbudget",
+  arsbudgetSteg: "Underlag till årsbudgeten",
+  arsbudgetStegKort: "Budgetunderlag",
   avsattning: "Avsättning",
   besiktningar: "Besiktningar",
-  /** Underhåll som kostnadsförs i resultaträkningen (ej aktiveras). */
-  direktkostnader: "Kostnadsfört underhåll",
+  /**
+   * Periodiskt underhåll / drift — kostnadsförs direkt i resultaträkningen.
+   * (Tekniskt samma post som tidigare «kostnadsfört underhåll».)
+   */
+  direktkostnader: "Periodiskt underhåll",
   /** Kort kolumnrubrik */
-  direktkostnaderKort: "Kostnadsfört",
-  investeringarPlan: "Planerade investeringar",
-  utgifterArsbudget: "Summa utgifter i årsbudgeten",
+  direktkostnaderKort: "Periodiskt",
+  /**
+   * Planerat underhåll — investeringar i fastigheten enligt planen.
+   */
+  investeringarPlan: "Planerat underhåll",
+  utgifterArsbudget: "Summa i budgetunderlaget",
 } as const;
 
-export const FORKLARING_ARSBUDGET_VS_PLAN = `Underhållsplanen beskriver större åtgärder (t.ex. stambyte, fasadbyte) som i bokföringen normalt aktiveras och skrivs av över komponentens nyttjandeperiod (K3) — inte som en jämn kostnad varje år.
+export const FORKLARING_ARSBUDGET_VS_PLAN = `Detta är underlag till föreningens årsbudget. Här syns två typer av underhåll sida vid sida:
 
-Här sammanställs poster som ska tas upp i föreningens årliga budget och som kostnadsförs det år de utförs: avsättning per kvm och år, besiktningar, samt kostnadsfört underhåll (t.ex. avloppsspolning och filmning). Planerade investeringar som kan aktiveras visas separat.`;
+• Planerat underhåll — investeringar i fastigheten, t.ex. fönsterbyte, takbyte, stambyte och större fasadåtgärder. I bokföringen (K3) aktiveras de normalt som anläggningstillgång och skrivs av över tiden.
 
-export const FORKLARING_AVSATTNING = `Avsättningen (kr/m² och år) är en jämn post som normalt budgeteras varje år i föreningen.`;
+• Periodiskt underhåll — driftkostnader med återkommande intervall, t.ex. avloppsspolning och filmning. De kostnadsförs direkt det år de utförs och aktiveras inte.
 
-export const FORKLARING_DIREKTKOSTNAD = `Kostnadsfört underhåll är löpande åtgärder med intervall (spolning, filmning, målning m.m.) som kostnadsförs i resultaträkningen det år de utförs. De aktiveras inte som anläggningstillgång och skrivs därför inte av över tid enligt K3 — till skillnad från aktiverade investeringar/komponentutbyten.`;
+Avsättning per m² och år samt besiktningar hör till budgetunderlaget tillsammans med det periodiska underhållet.`;
 
-export const FORKLARING_INVESTERING = `Beloppet avser planerad investering/komponentåtgärd enligt underhållsplanen. I bokföringen (K3) aktiveras större åtgärder normalt som anläggningstillgång och skrivs av över komponentens nyttjandeperiod — det ska inte förväxlas med kostnadsfört underhåll i resultaträkningen.`;
+export const FORKLARING_AVSATTNING = `Avsättningen (kr/m² och år) är en jämn post som budgeteras varje år — så att medel finns när planerat underhåll (investeringar i fastigheten) ska genomföras.`;
+
+export const FORKLARING_DIREKTKOSTNAD = `Periodiskt underhåll är återkommande driftkostnader (t.ex. spolning, filmning och liknande). De kostnadsförs direkt i resultaträkningen det år de utförs — de aktiveras inte som anläggningstillgång och skrivs därför inte av enligt K3.`;
+
+export const FORKLARING_INVESTERING = `Planerat underhåll är investeringar i fastigheten enligt underhållsplanen — t.ex. fönsterbyte, takbyte, stambyte och större fasadåtgärder. I bokföringen (K3) aktiveras de normalt och skrivs av över komponentens nyttjandeperiod. Det ska inte förväxlas med periodiskt underhåll, som kostnadsförs direkt.`;
 
 export const FORKLARING_K3 = `Från 2026 ska bostadsrättsföreningar tillämpa K3. Här ser ni uppskattade installationsvärden per komponent och en enkel avskrivningstid. Ta bort komponenter som inte är aktuella i steg 3.`;

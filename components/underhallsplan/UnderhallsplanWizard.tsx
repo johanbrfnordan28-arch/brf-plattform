@@ -10,6 +10,7 @@ import { TestplanValjare } from "@/components/underhallsplan/TestplanValjare";
 import { UnderhallsplanBudget } from "@/components/underhallsplan/UnderhallsplanBudget";
 import { KommandeProjektSteg } from "@/components/underhallsplan/KommandeProjektSteg";
 import { UnderhallsplanSlutsida } from "@/components/underhallsplan/UnderhallsplanSlutsida";
+import { PLAN_BEGREPP } from "@/components/underhallsplan/plan-terminologi";
 import {
   skapaStandardBesiktningar,
   synkaNastaBesiktningFranUtfört,
@@ -264,7 +265,7 @@ const WIZARD_STEG_META: Record<
   register: { stegNummer: 3, titel: "Kommande underhåll" },
   besiktningar: { stegNummer: 4, titel: "Schema besiktningar" },
   bildstod: { stegNummer: 5, titel: "Bildstöd" },
-  arsbudget: { stegNummer: 6, titel: "Utgifter i årsbudgeten" },
+  arsbudget: { stegNummer: 6, titel: PLAN_BEGREPP.arsbudgetSteg },
   slutsida: { stegNummer: 7, titel: "Slutsida" },
   kommandeProjekt: { stegNummer: 8, titel: "Kommande projekt" },
 };
@@ -1922,7 +1923,7 @@ export function UnderhallsplanWizard() {
         {...stegPanelNavProps("besiktningar")}
         summary={
           besiktningarSaved
-            ? "Sparat — gå vidare till bildstöd (steg 5) eller utgifter i årsbudgeten (steg 6)."
+            ? "Sparat — gå vidare till bildstöd (steg 5) eller underlag till årsbudgeten (steg 6)."
             : "Intervall, nästa år och pris — senast utfört fylls i steg 2."
         }
       >
@@ -1978,7 +1979,7 @@ export function UnderhallsplanWizard() {
             onClick={() => stangOchOppnaSteg("arsbudget")}
             className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
           >
-            Öppna steg 6 (årsbudget)
+            Öppna steg 6 (budgetunderlag)
           </button>
         </div>
       </StegPanel>
@@ -1986,11 +1987,11 @@ export function UnderhallsplanWizard() {
       <StegPanel
         id="arsbudget"
         stegNummer={6}
-        titel="Utgifter i årsbudgeten"
+        titel={PLAN_BEGREPP.arsbudgetSteg}
         isOpen={openSteg === "arsbudget"}
         onToggle={toggleSteg}
         {...stegPanelNavProps("arsbudget")}
-        summary="Avsättning kr/m²/år och besiktningar det år de utförs — skilt från investeringar i underhållsplanen."
+        summary="Underlag till budgeten: avsättning, besiktningar och periodiskt underhåll (kostnadsförs direkt). Planerat underhåll — investeringar i fastigheten — visas separat."
       >
         <UnderhallsplanBudget
           unlocked={besiktningarSaved}

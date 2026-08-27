@@ -23,7 +23,7 @@ export type PlanUtgiftspost = {
   komponent: string;
 };
 
-/** Årsvis uppdelning: utgifter i årsbudgeten vs investeringar enligt plan. */
+/** Årsvis uppdelning: underlag till årsbudgeten vs planerat underhåll (investeringar). */
 export type PlanUtgiftsArRad = {
   ar: number;
   /** Jämn avsättning kr/m²/år — budgeteras varje år. */
@@ -31,21 +31,21 @@ export type PlanUtgiftsArRad = {
   /** Besiktningar m.m. det år de utförs. */
   besiktningar: number;
   /**
-   * Kostnadsfört underhåll det år det utförs
-   * (spolning, filmning, målning m.m. — aktiveras ej / skrivs ej av).
+   * Periodiskt underhåll det år det utförs
+   * (spolning, filmning m.m. — kostnadsförs direkt, aktiveras ej).
    */
   direktkostnader: number;
-  /** Planerade investeringar/åtgärder enligt underhållsplanen det året. */
+  /** Planerat underhåll / investeringar i fastigheten enligt planen det året. */
   investeringPlan: number;
-  /** Avsättning + besiktningar + kostnadsfört underhåll — årsbudget. */
+  /** Avsättning + besiktningar + periodiskt underhåll — underlag till årsbudgeten. */
   utgifterArsbudget: number;
-  /** Investering + utgifter i årsbudget (kassaflöde totalt det året). */
+  /** Planerat underhåll + budgetunderlag (kassaflöde totalt det året). */
   totaltKassaflode: number;
   /** Besiktningar och samfällighet — med komponent. */
   besiktningPoster: PlanUtgiftspost[];
-  /** Kostnadsfört underhåll — med komponent. */
+  /** Periodiskt underhåll — med komponent. */
   direktkostnadPoster: PlanUtgiftspost[];
-  /** Planerade investeringar det året — med komponent. */
+  /** Planerat underhåll det året — med komponent. */
   investeringPoster: PlanUtgiftspost[];
 };
 
@@ -84,14 +84,14 @@ export function filtreraInvesteringAtgarder(
   return atgarder.filter((a) => !arAtgardDirektkostnad(a));
 }
 
-/** Kostnadsfört underhåll (resultaträkning, ej aktivering). */
+/** Periodiskt underhåll (kostnadsförs direkt — aktiveras ej). */
 export function filtreraDirektkostnadAtgarder(
   atgarder: UnderhallAtgard[],
 ): UnderhallAtgard[] {
   return atgarder.filter((a) => arAtgardDirektkostnad(a));
 }
 
-/** Summerar planerade investeringsbelopp (exkl. kostnadsfört underhåll). */
+/** Summerar planerat underhåll / investeringar (exkl. periodiskt underhåll). */
 export function summaPlaneradeInvesteringar(
   atgarder: UnderhallAtgard[],
   planStartAr: number,

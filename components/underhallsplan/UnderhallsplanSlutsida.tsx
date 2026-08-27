@@ -554,7 +554,8 @@ export function UnderhallsplanSlutsida({
                 {formatKr(medelArsbudget)}
               </p>
               <p className="text-xs text-muted">
-                Avsättning + besiktningar + kostnadsfört underhåll
+                Avsättning + besiktningar +{" "}
+                {PLAN_BEGREPP.direktkostnader.toLowerCase()}
               </p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
@@ -567,12 +568,12 @@ export function UnderhallsplanSlutsida({
             </div>
             <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
               <p className="text-xs font-medium uppercase text-amber-900/80">
-                Summa kostnadsfört underhåll
+                Summa {PLAN_BEGREPP.direktkostnader.toLowerCase()}
               </p>
               <p className="mt-1 text-xl font-bold text-amber-950">
                 {formatKrStor(summaDirektkostnader)}
               </p>
-              <p className="text-xs text-muted">Kostnadsförs — aktiveras ej</p>
+              <p className="text-xs text-muted">Kostnadsförs direkt — aktiveras ej</p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase text-muted">
@@ -586,20 +587,21 @@ export function UnderhallsplanSlutsida({
           </div>
 
           <p className="mt-6 text-sm font-medium text-foreground">
-            Summa utgifter i årsbudgeten ({planLangdAr} år):{" "}
+            Summa i budgetunderlaget ({planLangdAr} år):{" "}
             {formatKrStor(summaArsbudget)}
             {(summaInvestering > 0 || summaDirektkostnader > 0) && (
               <span className="mt-1 block font-normal text-muted">
                 {summaDirektkostnader > 0 && (
                   <>
-                    Kostnadsfört underhåll: {formatKrStor(summaDirektkostnader)}
+                    {PLAN_BEGREPP.direktkostnader} (kostnadsförs direkt):{" "}
+                    {formatKrStor(summaDirektkostnader)}
                     {summaInvestering > 0 ? " · " : ""}
                   </>
                 )}
                 {summaInvestering > 0 && (
                   <>
-                    Planerade investeringar (aktiveras/avskrivs):{" "}
-                    {formatKrStor(summaInvestering)}
+                    {PLAN_BEGREPP.investeringarPlan} (investeringar i
+                    fastigheten): {formatKrStor(summaInvestering)}
                   </>
                 )}{" "}
                 · Kassaflöde totalt: {formatKrStor(summaKassaflode)}
@@ -617,19 +619,20 @@ export function UnderhallsplanSlutsida({
             />
           ) : (
             <p className="text-sm text-muted">
-              Fyll i årsbudget (steg 6) och komponentregister för att visa diagram.
+              Fyll i budgetunderlaget (steg 6) och komponentregister för att visa
+              diagram.
             </p>
           )}
         </PrintSida>
 
-        <PrintSida sidnummer={3} titel="Utgifter och investeringar per år">
+        <PrintSida sidnummer={3} titel="Budgetunderlag och planerat underhåll per år">
           <h3 className="text-lg font-semibold text-foreground">
             Årsvis översikt
           </h3>
           <p className="mt-1 text-sm text-muted">
-            Kolumnen {PLAN_BEGREPP.utgifterArsbudget} är det som ska in i
-            föreningens årsbudget det året. Investeringar enligt planen visas
-            separat.
+            Kolumnen {PLAN_BEGREPP.utgifterArsbudget} är underlag till
+            föreningens årsbudget det året. {PLAN_BEGREPP.investeringarPlan}{" "}
+            (investeringar i fastigheten) visas separat.
           </p>
           <div className="mt-4 max-h-[36rem] overflow-auto rounded-xl border border-border">
             <table className="w-full min-w-[640px] text-left text-sm">
@@ -715,7 +718,7 @@ export function UnderhallsplanSlutsida({
                     <span className="font-bold text-primary-dark">
                       {formatKr(rad.utgifterArsbudget)}
                       <span className="ml-1 text-xs font-normal text-muted">
-                        årsbudget
+                        budgetunderlag
                       </span>
                     </span>
                   </div>
@@ -757,8 +760,9 @@ export function UnderhallsplanSlutsida({
               Utgifter per komponent
             </h3>
             <p className="mt-1 text-sm text-muted">
-              Besiktningar, kostnadsfört underhåll och investeringar med vilken
-              komponent i planen som avses.
+              Besiktningar, {PLAN_BEGREPP.direktkostnader.toLowerCase()} och{" "}
+              {PLAN_BEGREPP.investeringarPlan.toLowerCase()} med vilken komponent
+              i planen som avses.
             </p>
             <div className="mt-4 space-y-3">
               {utgiftsRader
@@ -799,7 +803,7 @@ export function UnderhallsplanSlutsida({
                             {" · "}
                             {p.namn}: {formatKr(p.belopp)}
                             <span className="ml-1 text-[10px] uppercase tracking-wide text-amber-800/80">
-                              kostnadsfört
+                              kostnadsförs direkt
                             </span>
                           </li>
                         ))}
@@ -827,8 +831,8 @@ export function UnderhallsplanSlutsida({
                   r.investeringPoster.length === 0,
               ) && (
                 <p className="text-sm text-muted">
-                  Inga besiktningar, kostnadsfört underhåll eller investeringar
-                  schemalagda i perioden.
+                  Inga besiktningar, periodiskt underhåll eller planerat
+                  underhåll schemalagda i perioden.
                 </p>
               )}
             </div>

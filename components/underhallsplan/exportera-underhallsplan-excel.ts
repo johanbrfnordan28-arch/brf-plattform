@@ -139,9 +139,9 @@ function byggUtgifterBlad(rader: PlanUtgiftsArRad[]): string {
     cellString("År"),
     cellString("Avsättning kr"),
     cellString("Besiktning m.m. kr"),
-    cellString("Kostnadsfört underhåll kr"),
-    cellString("Utgifter årsbudget kr"),
-    cellString("Investering plan kr"),
+    cellString("Periodiskt underhåll kr"),
+    cellString("Summa budgetunderlag kr"),
+    cellString("Planerat underhåll kr"),
     cellString("Kassaflöde totalt kr"),
   ]);
   const body = rader.map((r) =>
@@ -183,7 +183,7 @@ function byggPosterBlad(rader: PlanUtgiftsArRad[]): string {
       body.push(
         row([
           cellNumber(r.ar),
-          cellString("Kostnadsfört underhåll"),
+          cellString("Periodiskt underhåll"),
           cellString(p.komponent),
           cellString(p.namn),
           cellNumber(p.belopp),
@@ -194,7 +194,7 @@ function byggPosterBlad(rader: PlanUtgiftsArRad[]): string {
       body.push(
         row([
           cellNumber(r.ar),
-          cellString("Investering"),
+          cellString("Planerat underhåll"),
           cellString(p.komponent),
           cellString(p.namn),
           cellNumber(p.belopp),
