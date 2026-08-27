@@ -184,12 +184,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:mt-5 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
             {isForening
               ? STYRELSEFLOW_NAMN
-              : "Plattformen som ger styrelsen kontroll — från underhåll till upphandling"}
+              : "Alla hjälpmedel styrelsen behöver — samlade på ett ställe"}
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
               ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "Byggd och utvecklad av personer med över 25 års erfarenhet av teknisk förvaltning, upphandling, projektledning och skadeutredning. Mindre tid i mejl och mappar — mer tid på beslut som håller."}
+              : "Styrelse-Navet förenklar styrelsearbetet med stöd, hjälpmedel, spårbarhet och råd — framtaget utifrån verkliga behov i bostadsrättsföreningar."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -267,6 +267,65 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
       {!isForening && (
         <section
+          id="plattformen"
+          className="scroll-mt-24 border-b border-border bg-surface/60"
+        >
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold text-primary-dark">
+                För styrelser i bostadsrättsföreningar
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+                Hjälpmedel som följer styrelsearbetet — och fastigheten
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
+                På plattformen finns alla hjälpmedel som behövs för att förenkla
+                styrelsearbetet. Modulernas funktioner är framtagna och utvecklade
+                utifrån kända behov hos styrelser i bostadsrättsföreningar.
+              </p>
+              <p className="mt-3 text-base leading-relaxed text-muted sm:text-lg">
+                Hur en styrelse arbetar har förändrats de senaste åren. Även
+                fastighetens behov förändras över tid. Styrelse-Navet erbjuder
+                stöd, hjälpmedel, spårbarhet och råd — så att ni har struktur när
+                förutsättningarna skiftar.
+              </p>
+            </div>
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  titel: "Stöd",
+                  text: "Vägledning i vardagen — från årshjul till beslut inför stämma.",
+                },
+                {
+                  titel: "Hjälpmedel",
+                  text: "Moduler för underhåll, upphandling, dokument och mer — i samma miljö.",
+                },
+                {
+                  titel: "Spårbarhet",
+                  text: "Beslut, underlag och historik som följer med över mandatperioder.",
+                },
+                {
+                  titel: "Råd",
+                  text: "Guider och tips grundade i hur styrelser faktiskt arbetar.",
+                },
+              ].map((punkt) => (
+                <li
+                  key={punkt.titel}
+                  className="border-l-2 border-primary/50 pl-4"
+                >
+                  <h3 className="font-semibold text-foreground">{punkt.titel}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">
+                    {punkt.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {!isForening && (
+        <section
           id="erfarenhet"
           className="scroll-mt-24 border-b border-border bg-[#eef6f0]/70"
         >
@@ -294,26 +353,6 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 </li>
               ))}
             </ul>
-          </div>
-        </section>
-      )}
-
-      {!isForening && (
-        <section
-          id="skapa-forening"
-          className="scroll-mt-24 border-b border-border bg-surface/80"
-        >
-          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-            <div className="mb-6 max-w-2xl">
-              <h2 className="text-xl font-bold text-foreground sm:text-2xl">
-                Kom igång med er förening
-              </h2>
-              <p className="mt-2 text-sm text-muted">
-                Skapa er miljö på några minuter. Gemensamma plattformsuppdateringar
-                slås ihop överallt — era ifyllda uppgifter behålls.
-              </p>
-            </div>
-            <SkapaForeningPanel kompakt visaSnabbstart />
           </div>
         </section>
       )}
@@ -592,83 +631,114 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       )}
 
       {!isForening ? (
-        <section id="priser" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <div className="mb-10 max-w-2xl">
-            <p className="text-sm font-semibold text-primary-dark">Pris & avtal</p>
-            <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-              Börja gratis — väx när ni är redo
-            </h2>
-            <p className="mt-2 text-muted">
-              Testa plattformen utan kostnad. När ni ser värdet väljer ni avtal —
-              med tydlig besparing på längre bindningstid.
-            </p>
-          </div>
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-                Rekommenderas att börja här
-              </p>
-              <h3 className="mt-2 text-xl font-bold text-foreground">
-                Prova gratis 30 dagar
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Testa underhållsplan, upphandling och övriga moduler utan kostnad.
-                Ingen kortuppgift krävs i demo — ni ser hur plattformen passar er
-                förening.
-              </p>
-              <Link
-                href={PROVA_GRATIS_PATH}
-                className="brf-knapp-gron mt-6 px-5 py-2.5 text-sm"
-              >
-                Vi vill pröva gratis i 30 dagar
-              </Link>
+        <>
+          <section
+            id="skapa-forening"
+            className="scroll-mt-24 border-t border-border bg-surface/80"
+          >
+            <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+              <div className="mb-6 max-w-2xl">
+                <p className="text-sm font-semibold text-primary-dark">
+                  Kom igång
+                </p>
+                <h2 className="mt-2 text-xl font-bold text-foreground sm:text-2xl">
+                  Kom igång med er förening
+                </h2>
+                <p className="mt-2 text-sm text-muted">
+                  Skapa er miljö på några minuter. Gemensamma
+                  plattformsuppdateringar slås ihop överallt — era ifyllda
+                  uppgifter behålls.
+                </p>
+              </div>
+              <SkapaForeningPanel kompakt visaSnabbstart />
             </div>
-            <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Ettårsavtal
+          </section>
+
+          <section
+            id="priser"
+            className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20"
+          >
+            <div className="mb-10 max-w-2xl">
+              <p className="text-sm font-semibold text-primary-dark">
+                Pris & avtal
               </p>
-              <h3 className="mt-2 text-xl font-bold text-foreground">
-                Spara 30&nbsp;%
-              </h3>
-              <p className="mt-1 text-sm text-primary-dark">
-                mot månadsdebitering
+              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+                Börja gratis — väx när ni är redo
+              </h2>
+              <p className="mt-2 text-muted">
+                Testa plattformen utan kostnad. När ni ser värdet väljer ni avtal
+                — med tydlig besparing på längre bindningstid.
               </p>
-              <ul className="mt-4 space-y-2 text-sm text-muted">
-                <li>Fakturering kvartalsvis</li>
-                <li>Automatisk förlängning</li>
-                <li>Uppsägningstid 6 månader</li>
-              </ul>
-              <Link
-                href="#intro-film"
-                className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
-              >
-                Se filmerna för pris →
-              </Link>
             </div>
-            <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Tvåårsavtal
-              </p>
-              <h3 className="mt-2 text-xl font-bold text-foreground">
-                Spara upp till 60&nbsp;%
-              </h3>
-              <p className="mt-1 text-sm text-primary-dark">
-                mot månadsdebitering
-              </p>
-              <ul className="mt-4 space-y-2 text-sm text-muted">
-                <li>Bäst för föreningar som planerar långsiktigt</li>
-                <li>Passar när underhållsplan ska leva över mandatperioder</li>
-                <li>Samma moduler och support som övriga avtal</li>
-              </ul>
-              <Link
-                href="#intro-film"
-                className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
-              >
-                Se filmerna för pris →
-              </Link>
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                  Rekommenderas att börja här
+                </p>
+                <h3 className="mt-2 text-xl font-bold text-foreground">
+                  Prova gratis 30 dagar
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Testa underhållsplan, upphandling och övriga moduler utan
+                  kostnad. Ingen kortuppgift krävs i demo — ni ser hur
+                  plattformen passar er förening.
+                </p>
+                <Link
+                  href={PROVA_GRATIS_PATH}
+                  className="brf-knapp-gron mt-6 px-5 py-2.5 text-sm"
+                >
+                  Vi vill pröva gratis i 30 dagar
+                </Link>
+              </div>
+              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Ettårsavtal
+                </p>
+                <h3 className="mt-2 text-xl font-bold text-foreground">
+                  Spara 30&nbsp;%
+                </h3>
+                <p className="mt-1 text-sm text-primary-dark">
+                  mot månadsdebitering
+                </p>
+                <ul className="mt-4 space-y-2 text-sm text-muted">
+                  <li>Fakturering kvartalsvis</li>
+                  <li>Automatisk förlängning</li>
+                  <li>Uppsägningstid 6 månader</li>
+                </ul>
+                <Link
+                  href="#intro-film"
+                  className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
+                >
+                  Se filmerna för pris →
+                </Link>
+              </div>
+              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  Tvåårsavtal
+                </p>
+                <h3 className="mt-2 text-xl font-bold text-foreground">
+                  Spara upp till 60&nbsp;%
+                </h3>
+                <p className="mt-1 text-sm text-primary-dark">
+                  mot månadsdebitering
+                </p>
+                <ul className="mt-4 space-y-2 text-sm text-muted">
+                  <li>Bäst för föreningar som planerar långsiktigt</li>
+                  <li>
+                    Passar när underhållsplan ska leva över mandatperioder
+                  </li>
+                  <li>Samma moduler och support som övriga avtal</li>
+                </ul>
+                <Link
+                  href="#intro-film"
+                  className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
+                >
+                  Se filmerna för pris →
+                </Link>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </>
       ) : (
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
