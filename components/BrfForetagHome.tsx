@@ -393,17 +393,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               <span className="font-semibold text-primary-dark">−30&nbsp;%</span>
               <span className="text-muted"> på ettårsavtal vs månadsdebitering</span>
             </p>
-            <p>
-              <span className="font-semibold text-primary-dark">−60&nbsp;%</span>
-              <span className="text-muted"> på tvåårsavtal vs månadsdebitering</span>
-            </p>
           </div>
         </section>
       )}
 
-      <div id="intro-film">
-        <FilmDemo variant={isForening ? "forening" : "public"} />
-      </div>
+      {isForening && (
+        <div id="intro-film">
+          <FilmDemo variant="forening" />
+        </div>
+      )}
 
       {isForening && (
         <section className="border-b border-border bg-[#eef6f0]/50">
@@ -679,85 +677,64 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
           <section
             id="priser"
-            className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20"
+            className="scroll-mt-24 border-t border-border"
           >
-            <div className="mb-10 max-w-2xl">
-              <p className="text-sm font-semibold text-primary-dark">
-                Pris & avtal
-              </p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Börja gratis — väx när ni är redo
-              </h2>
-              <p className="mt-2 text-muted">
-                Testa plattformen utan kostnad. När ni ser värdet väljer ni avtal
-                — med tydlig besparing på längre bindningstid.
-              </p>
+            <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 sm:pt-20">
+              <div className="mb-6 max-w-2xl">
+                <p className="text-sm font-semibold text-primary-dark">
+                  Pris & avtal
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+                  Börja gratis — väx när ni är redo
+                </h2>
+                <p className="mt-2 text-muted">
+                  Testa plattformen utan kostnad. När ni ser värdet väljer ni
+                  ettårsavtal — med 30&nbsp;% rabatt mot månadsdebitering.
+                </p>
+              </div>
             </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              <div className="rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-                  Rekommenderas att börja här
-                </p>
-                <h3 className="mt-2 text-xl font-bold text-foreground">
-                  Prova gratis 30 dagar
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Testa underhållsplan, upphandling och övriga moduler utan
-                  kostnad. Ingen kortuppgift krävs i demo — ni ser hur
-                  plattformen passar er förening.
-                </p>
-                <Link
-                  href={PROVA_GRATIS_PATH}
-                  className="brf-knapp-gron mt-6 px-5 py-2.5 text-sm"
-                >
-                  Vi vill pröva gratis i 30 dagar
-                </Link>
-              </div>
-              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  Ettårsavtal
-                </p>
-                <h3 className="mt-2 text-xl font-bold text-foreground">
-                  Spara 30&nbsp;%
-                </h3>
-                <p className="mt-1 text-sm text-primary-dark">
-                  mot månadsdebitering
-                </p>
-                <ul className="mt-4 space-y-2 text-sm text-muted">
-                  <li>Fakturering kvartalsvis</li>
-                  <li>Automatisk förlängning</li>
-                  <li>Uppsägningstid 6 månader</li>
-                </ul>
-                <Link
-                  href="#intro-film"
-                  className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
-                >
-                  Se filmerna för pris →
-                </Link>
-              </div>
-              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  Tvåårsavtal
-                </p>
-                <h3 className="mt-2 text-xl font-bold text-foreground">
-                  Spara upp till 60&nbsp;%
-                </h3>
-                <p className="mt-1 text-sm text-primary-dark">
-                  mot månadsdebitering
-                </p>
-                <ul className="mt-4 space-y-2 text-sm text-muted">
-                  <li>Bäst för föreningar som planerar långsiktigt</li>
-                  <li>
-                    Passar när underhållsplan ska leva över mandatperioder
-                  </li>
-                  <li>Samma moduler och support som övriga avtal</li>
-                </ul>
-                <Link
-                  href="#intro-film"
-                  className="mt-6 inline-flex text-sm font-medium text-primary hover:text-primary-dark"
-                >
-                  Se filmerna för pris →
-                </Link>
+
+            <div id="intro-film" className="scroll-mt-24">
+              <FilmDemo variant="public" />
+            </div>
+
+            <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
+              <div className="grid items-stretch gap-6 lg:grid-cols-2">
+                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border-2 border-primary bg-[#eef6f0] p-6 shadow-sm sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                    Rekommenderas att börja här
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-foreground">
+                    Prova gratis 30 dagar
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
+                    Testa underhållsplan, upphandling och övriga moduler utan
+                    kostnad. Ingen kortuppgift krävs i demo — ni ser hur
+                    plattformen passar er förening.
+                  </p>
+                  <Link
+                    href={PROVA_GRATIS_PATH}
+                    className="brf-knapp-gron mt-6 self-start px-5 py-2.5 text-sm"
+                  >
+                    Vi vill pröva gratis i 30 dagar
+                  </Link>
+                </div>
+                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Ettårsavtal
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-foreground">
+                    Spara 30&nbsp;%
+                  </h3>
+                  <p className="mt-1 text-sm text-primary-dark">
+                    mot månadsdebitering
+                  </p>
+                  <ul className="mt-4 flex-1 space-y-2 text-sm text-muted">
+                    <li>Fakturering kvartalsvis</li>
+                    <li>Automatisk förlängning</li>
+                    <li>Uppsägningstid 6 månader</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </section>
