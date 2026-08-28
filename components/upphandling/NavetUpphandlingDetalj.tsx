@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, type ReactNode } from "react";
 import {
   anmalIntresse,
   arAnbudstidStangd,
@@ -14,6 +14,25 @@ import {
 } from "@/components/upphandling/navet-upphandling-lager";
 
 type Props = { upphandlingId: string };
+
+function InfoRad({
+  etikett,
+  children,
+}: {
+  etikett: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+        {etikett}
+      </dt>
+      <dd className="mt-1.5 text-sm leading-relaxed text-foreground whitespace-pre-line">
+        {children}
+      </dd>
+    </div>
+  );
+}
 
 export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
   const [teaser, setTeaser] = useState<NavetPubliceradTeaser | null | undefined>(
@@ -84,6 +103,10 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
   }
 
   const stangd = arAnbudstidStangd(teaser.sistaAnbudsdag);
+  const ortEtikett =
+    [teaser.ort !== "—" ? teaser.ort : null, teaser.stadsdel || null]
+      .filter(Boolean)
+      .join(" · ") || "Anges vid förfrågan";
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#e8f0ea_0%,#f6f9f7_30%,#f4faf6_100%)]">
@@ -122,7 +145,7 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
         <header className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
             {teaser.kategoriNamn}
-            {teaser.ort && teaser.ort !== "—" ? ` · ${teaser.ort}` : ""}
+            {ortEtikett !== "Anges vid förfrågan" ? ` · ${ortEtikett}` : ""}
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {teaser.titel}
@@ -135,10 +158,10 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
         <dl className="mt-8 grid gap-4 rounded-2xl border border-border bg-white/90 p-5 sm:grid-cols-3 sm:p-6">
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-              Ort
+              Ort / stadsdel
             </dt>
             <dd className="mt-1 text-base font-semibold text-foreground">
-              {teaser.ort && teaser.ort !== "—" ? teaser.ort : "Anges i underlag"}
+              {ortEtikett}
             </dd>
           </div>
           <div>
@@ -164,30 +187,46 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
             <h2 className="text-lg font-semibold text-foreground">
               Projektinformation
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted">
-              Den publika informationen är avsiktligt begränsad. Detaljerat
-              förfrågningsunderlag, ritningar och anbudsformulär delas endast med
-              entreprenörer som Styrelse-Navet bjuder in. Kontaktuppgifter till
-              föreningen visas inte här.
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Här finns basinformation om projektet. Fullständiga handlingar
+              (ritningar, AF-del m.m.) läggs inte upp här — de mejlas till
+              inbjudna entreprenörer. Anbud kan lämnas via mejl till
+              Styrelse-Navet.
             </p>
-            <ul className="mt-5 space-y-2 text-sm text-foreground/90">
+
+            <dl className="mt-6 space-y-5">
+              {teaser.stadsdel ? (
+                <InfoRad etikett="Stadsdel">{teaser.stadsdel}</InfoRad>
+              ) : null}
+              <InfoRad etikett="Fastigheten">
+                {teaser.fastighetsInfo ||
+                  "Basinformation om fastigheten kompletteras av Styrelse-Navet."}
+              </InfoRad>
+              <InfoRad etikett="Vad som ska utföras">
+                {teaser.omfattning ||
+                  "Omfattningen beskrivs i underlaget som mejlas till inbjudna."}
+              </InfoRad>
+            </dl>
+
+            <ul className="mt-6 space-y-2 border-t border-border/70 pt-5 text-sm text-foreground/90">
               <li className="flex gap-2">
                 <span className="text-primary" aria-hidden>
                   •
                 </span>
-                Omfattning och krav finns i underlaget efter inbjudan
+                Inga handlingar publiceras på den här sidan
               </li>
               <li className="flex gap-2">
                 <span className="text-primary" aria-hidden>
                   •
                 </span>
-                Anbud lämnas till Styrelse-Navet — inte direkt till föreningen
+                Förfrågningsunderlag mejlas ut till dem vi bjuder in
               </li>
               <li className="flex gap-2">
                 <span className="text-primary" aria-hidden>
                   •
                 </span>
-                Andra anbudsgivare ser varken er anmälan eller ert anbud
+                Anbud mejlas in till Styrelse-Navet — andra anbudsgivare ser
+                varken er anmälan eller ert anbud
               </li>
             </ul>
           </div>
@@ -197,8 +236,8 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
               Intresserad av att lämna offert?
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Anmäl intresse så återkommer vi med eventuell inbjudan till
-              underlaget.
+              Anmäl intresse så återkommer vi. Underlag och anbudsprocess
+              hanteras via mejl.
             </p>
 
             {stangd ? (
@@ -211,8 +250,8 @@ export function NavetUpphandlingDetalj({ upphandlingId }: Props) {
                   Tack — er intresseanmälan är mottagen.
                 </p>
                 <p className="mt-1 text-sm text-muted">
-                  Om ni blir utvalda mejlar vi en personlig länk till
-                  förfrågningsunderlaget.
+                  Om ni blir utvalda mejlar vi förfrågningsunderlaget. Anbud
+                  lämnas sedan via mejl till Styrelse-Navet.
                 </p>
                 <button
                   type="button"

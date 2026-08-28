@@ -15,6 +15,15 @@ export type NavetPubliceradTeaser = {
   gruppId: UpphandlingsGruppId;
   titel: string;
   ort: string;
+  /** Stadsdel / område — visas publikt i projektinformationen. */
+  stadsdel: string;
+  /**
+   * Basinformation om fastigheten (byggår, typ, ungefärlig storlek m.m.).
+   * Inga handlingar — endast text.
+   */
+  fastighetsInfo: string;
+  /** Vad som ska utföras / omfattning av uppdraget. */
+  omfattning: string;
   sistaAnbudsdag: string;
   publicerad: string;
   /** Intern referens — visas inte publikt. */
@@ -56,6 +65,8 @@ export type NavetInbjudan = {
   forstaOppning?: string;
 };
 
+export type NavetAnbudKanal = "portal" | "email";
+
 export type NavetAnbud = {
   id: string;
   upphandlingId: string;
@@ -65,6 +76,8 @@ export type NavetAnbud = {
   anbudSummaKr: number;
   meddelande: string;
   inlamnad: string;
+  /** portal = via inbjudningslänk; email = registrerat manuellt från inkommet mejl. */
+  kanal: NavetAnbudKanal;
 };
 
 /** Intresseanmälan från entreprenör — synlig endast internt inför inbjudan. */
@@ -87,6 +100,50 @@ export type NavetUpphandlingLager = {
   anbud: NavetAnbud[];
   intressen: NavetIntresse[];
 };
+
+function normaliseraTeaser(
+  raw: Partial<NavetPubliceradTeaser> &
+    Pick<
+      NavetPubliceradTeaser,
+      | "id"
+      | "kategoriId"
+      | "kategoriNamn"
+      | "gruppId"
+      | "titel"
+      | "ort"
+      | "sistaAnbudsdag"
+      | "publicerad"
+      | "foreningIntern"
+      | "kortBeskrivning"
+    >,
+): NavetPubliceradTeaser {
+  return {
+    ...raw,
+    stadsdel: (raw.stadsdel ?? "").trim(),
+    fastighetsInfo: (raw.fastighetsInfo ?? "").trim(),
+    omfattning: (raw.omfattning ?? "").trim(),
+  };
+}
+
+function normaliseraAnbud(
+  raw: Partial<NavetAnbud> &
+    Pick<
+      NavetAnbud,
+      | "id"
+      | "upphandlingId"
+      | "entreprenorId"
+      | "entreprenorNamn"
+      | "epost"
+      | "anbudSummaKr"
+      | "meddelande"
+      | "inlamnad"
+    >,
+): NavetAnbud {
+  return {
+    ...raw,
+    kanal: raw.kanal === "email" ? "email" : "portal",
+  };
+}
 
 function tomtLager(): NavetUpphandlingLager {
   return {
@@ -116,7 +173,11 @@ export function lasNavetUpphandlingLager(): NavetUpphandlingLager {
     if (!raw) return tomtLager();
     const parsed = JSON.parse(raw) as Partial<NavetUpphandlingLager>;
     return {
-      publicerade: Array.isArray(parsed.publicerade) ? parsed.publicerade : [],
+      publicerade: Array.isArray(parsed.publicerade)
+        ? parsed.publicerade.map((u) =>
+            normaliseraTeaser(u as Parameters<typeof normaliseraTeaser>[0]),
+          )
+        : [],
       underlag: Array.isArray(parsed.underlag) ? parsed.underlag : [],
       entreprenorer: Array.isArray(parsed.entreprenorer)
         ? parsed.entreprenorer
@@ -124,7 +185,11 @@ export function lasNavetUpphandlingLager(): NavetUpphandlingLager {
       inbjudningar: Array.isArray(parsed.inbjudningar)
         ? parsed.inbjudningar
         : [],
-      anbud: Array.isArray(parsed.anbud) ? parsed.anbud : [],
+      anbud: Array.isArray(parsed.anbud)
+        ? parsed.anbud.map((a) =>
+            normaliseraAnbud(a as Parameters<typeof normaliseraAnbud>[0]),
+          )
+        : [],
       intressen: Array.isArray(parsed.intressen) ? parsed.intressen : [],
     };
   } catch {
@@ -164,6 +229,9 @@ export function publiceraTillNavet(input: {
   gruppId: UpphandlingsGruppId;
   titel: string;
   ort: string;
+  stadsdel?: string;
+  fastighetsInfo?: string;
+  omfattning?: string;
   sistaAnbudsdag: string;
   foreningIntern: string;
   kortBeskrivning: string;
@@ -172,18 +240,21 @@ export function publiceraTillNavet(input: {
 }): NavetPubliceradTeaser {
   const lager = lasNavetUpphandlingLager();
   const befintlig = lager.publicerade.find((u) => u.id === input.id);
-  const teaser: NavetPubliceradTeaser = {
+  const teaser = normaliseraTeaser({
     id: input.id,
     kategoriId: input.kategoriId,
     kategoriNamn: input.kategoriNamn,
     gruppId: input.gruppId,
     titel: input.titel.trim(),
     ort: input.ort.trim(),
+    stadsdel: input.stadsdel ?? befintlig?.stadsdel ?? "",
+    fastighetsInfo: input.fastighetsInfo ?? befintlig?.fastighetsInfo ?? "",
+    omfattning: input.omfattning ?? befintlig?.omfattning ?? "",
     sistaAnbudsdag: input.sistaAnbudsdag,
     publicerad: befintlig?.publicerad ?? new Date().toISOString(),
     foreningIntern: input.foreningIntern.trim(),
     kortBeskrivning: input.kortBeskrivning.trim(),
-  };
+  });
 
   lager.publicerade = [
     ...lager.publicerade.filter((u) => u.id !== teaser.id),
@@ -346,10 +417,13 @@ export function hamtaInbjudningarFor(upphandlingId: string): NavetInbjudan[] {
   );
 }
 
-/** Skapa namngiven upphandling från intern yta (underlag kan fyllas på senare). */
+/** Skapa namngiven upphandling från intern yta (underlag mejlas ut — ingen publik uppladdning). */
 export function skapaNavetUpphandling(input: {
   titel: string;
   ort?: string;
+  stadsdel?: string;
+  fastighetsInfo?: string;
+  omfattning?: string;
   sistaAnbudsdag?: string;
   foreningIntern?: string;
   kortBeskrivning?: string;
@@ -372,11 +446,14 @@ export function skapaNavetUpphandling(input: {
     gruppId: "entreprenad",
     titel,
     ort: (input.ort ?? "").trim() || "—",
+    stadsdel: (input.stadsdel ?? "").trim(),
+    fastighetsInfo: (input.fastighetsInfo ?? "").trim(),
+    omfattning: (input.omfattning ?? "").trim(),
     sistaAnbudsdag: (input.sistaAnbudsdag ?? "").trim(),
     foreningIntern: (input.foreningIntern ?? "").trim() || "Intern",
     kortBeskrivning:
       (input.kortBeskrivning ?? "").trim() ||
-      "Upphandling via Styrelse-Navet. Förfrågningsunderlag endast för inbjudna entreprenörer.",
+      "Upphandling via Styrelse-Navet. Förfrågningsunderlag mejlas till inbjudna entreprenörer.",
     dokument: [],
     internAnteckning: "",
   });
@@ -389,6 +466,9 @@ export function uppdateraNavetTeaser(
       NavetPubliceradTeaser,
       | "titel"
       | "ort"
+      | "stadsdel"
+      | "fastighetsInfo"
+      | "omfattning"
       | "sistaAnbudsdag"
       | "foreningIntern"
       | "kortBeskrivning"
@@ -407,6 +487,9 @@ export function uppdateraNavetTeaser(
     gruppId: befintlig.gruppId,
     titel: patch.titel ?? befintlig.titel,
     ort: patch.ort ?? befintlig.ort,
+    stadsdel: patch.stadsdel ?? befintlig.stadsdel,
+    fastighetsInfo: patch.fastighetsInfo ?? befintlig.fastighetsInfo,
+    omfattning: patch.omfattning ?? befintlig.omfattning,
     sistaAnbudsdag: patch.sistaAnbudsdag ?? befintlig.sistaAnbudsdag,
     foreningIntern: patch.foreningIntern ?? befintlig.foreningIntern,
     kortBeskrivning: patch.kortBeskrivning ?? befintlig.kortBeskrivning,
@@ -472,7 +555,7 @@ export function mailtoInbjudan(input: {
 }): string {
   const amne = encodeURIComponent(`Inbjudan till upphandling: ${input.titel}`);
   const kropp = encodeURIComponent(
-    `Hej,\n\nNi inbjuds att ta del av förfrågningsunderlaget och lämna anbud för "${input.titel}" via Styrelse-Navet.\n\nÖppna underlaget här (länken är personlig — dela den inte):\n${input.lank}\n\nÖvriga anbudsgivare ser varken er inbjudan eller ert anbud.\n\nMed vänlig hälsning\nStyrelse-Navet`,
+    `Hej,\n\nNi inbjuds att lämna anbud för "${input.titel}" via Styrelse-Navet.\n\nFörfrågningsunderlaget skickas i detta mejl (eller bifogas separat). Handlingar publiceras inte på den publika sidan.\n\nReferenslänk (personlig — dela den inte):\n${input.lank}\n\nLämna anbud via mejl till Styrelse-Navet. Övriga anbudsgivare ser varken er inbjudan eller ert anbud.\n\nMed vänlig hälsning\nStyrelse-Navet`,
   );
   return `mailto:${encodeURIComponent(input.epost)}?subject=${amne}&body=${kropp}`;
 }
@@ -503,6 +586,7 @@ export function lamnaNavetAnbud(input: {
     anbudSummaKr: Math.round(input.anbudSummaKr),
     meddelande: input.meddelande.trim(),
     inlamnad: new Date().toISOString(),
+    kanal: "portal",
   };
 
   lager.anbud = [
@@ -512,6 +596,77 @@ export function lamnaNavetAnbud(input: {
         !(
           a.upphandlingId === anbud.upphandlingId &&
           a.entreprenorId === anbud.entreprenorId
+        ),
+    ),
+  ];
+  sparaLager(lager);
+  return anbud;
+}
+
+/**
+ * Registrera anbud som kommit in via mejl (endast intern yta).
+ * Handlingar/underlag mejlas ut separat — här sparas bara anbudsdata.
+ */
+export function registreraMejlAnbud(input: {
+  upphandlingId: string;
+  epost: string;
+  foretagsnamn: string;
+  anbudSummaKr: number;
+  meddelande?: string;
+}): NavetAnbud {
+  const epost = input.epost.trim().toLowerCase();
+  const foretagsnamn = input.foretagsnamn.trim() || epost;
+  if (!input.upphandlingId || !epost) {
+    throw new Error("Ange upphandling och e-post.");
+  }
+  if (!Number.isFinite(input.anbudSummaKr) || input.anbudSummaKr <= 0) {
+    throw new Error("Ange ett giltigt anbudsbelopp.");
+  }
+
+  const lager = lasNavetUpphandlingLager();
+  if (!lager.publicerade.some((u) => u.id === input.upphandlingId)) {
+    throw new Error("Upphandlingen hittades inte.");
+  }
+
+  let entreprenor = lager.entreprenorer.find(
+    (e) => e.epost.toLowerCase() === epost,
+  );
+  if (!entreprenor) {
+    entreprenor = {
+      id: skapaId("ent"),
+      epost,
+      foretagsnamn,
+      status: "godkand",
+      skapad: new Date().toISOString(),
+    };
+    lager.entreprenorer = [...lager.entreprenorer, entreprenor];
+  } else if (foretagsnamn && foretagsnamn !== entreprenor.foretagsnamn) {
+    entreprenor = { ...entreprenor, foretagsnamn };
+    lager.entreprenorer = lager.entreprenorer.map((e) =>
+      e.id === entreprenor!.id ? entreprenor! : e,
+    );
+  }
+
+  const anbud: NavetAnbud = {
+    id: skapaId("anbud"),
+    upphandlingId: input.upphandlingId,
+    entreprenorId: entreprenor.id,
+    entreprenorNamn: entreprenor.foretagsnamn,
+    epost: entreprenor.epost,
+    anbudSummaKr: Math.round(input.anbudSummaKr),
+    meddelande: (input.meddelande ?? "").trim(),
+    inlamnad: new Date().toISOString(),
+    kanal: "email",
+  };
+
+  lager.anbud = [
+    anbud,
+    ...lager.anbud.filter(
+      (a) =>
+        !(
+          a.upphandlingId === anbud.upphandlingId &&
+          a.epost.toLowerCase() === epost &&
+          a.kanal === "email"
         ),
     ),
   ];
@@ -590,7 +745,10 @@ export const NAVET_EXEMPEL_ID = "navet-exempel-fasad-sodermalm";
 
 export function sakraExempelNavetUpphandling(): void {
   const lager = lasNavetUpphandlingLager();
-  if (lager.publicerade.some((u) => u.id === NAVET_EXEMPEL_ID)) return;
+  const befintlig = lager.publicerade.find((u) => u.id === NAVET_EXEMPEL_ID);
+  if (befintlig?.stadsdel && befintlig.omfattning && befintlig.fastighetsInfo) {
+    return;
+  }
 
   publiceraTillNavet({
     id: NAVET_EXEMPEL_ID,
@@ -599,26 +757,21 @@ export function sakraExempelNavetUpphandling(): void {
     gruppId: "entreprenad",
     titel: "Fasadrenovering och ommålning — Brf Exempel Södermalm",
     ort: "Stockholm",
+    stadsdel: "Södermalm",
+    fastighetsInfo:
+      "Flerbostadshus från 1930-talet med putsad fasad. Ungefär 2 400 kvm fasadyta, ca 40 lägenheter. Föreningsnamn och adress lämnas i underlaget.",
+    omfattning:
+      "Renovering av putsad fasad inklusive bättring, ommålning och ställning. Omfattning och tekniska krav specificeras i förfrågningsunderlaget som mejlas till inbjudna entreprenörer.",
     sistaAnbudsdag: "2026-11-30",
     foreningIntern: "Brf Exempel Södermalm (demo)",
     kortBeskrivning:
-      "Renovering av putsad fasad inkl. bättring, ommålning och ställning för ett flerbostadshus från 1930-talet. Omfattning ca 2 400 kvm fasadyta. Detaljerat förfrågningsunderlag, AF-del och ritningar delas med inbjudna entreprenörer.",
-    dokument: [
-      {
-        etikett: "Administrativa föreskrifter",
-        filnamn: "AF_Fasad_Exempel_Sodermalm.pdf",
-      },
-      {
-        etikett: "Teknisk beskrivning",
-        filnamn: "TB_Fasadputs_ommalning.pdf",
-      },
-      {
-        etikett: "Anbudsformulär",
-        filnamn: "Anbudsformular_fasad.pdf",
-      },
-    ],
+      "Putsfasadrenovering och ommålning i Södermalm. Basinformation och omfattning i projektinformationen — handlingar mejlas till inbjudna.",
+    dokument: befintlig
+      ? lager.underlag.find((u) => u.upphandlingId === NAVET_EXEMPEL_ID)
+          ?.dokument ?? []
+      : [],
     internAnteckning:
-      "Exempelprojekt för publik demo. Hanteras manuellt tills upphandlingssidan är färdigutvecklad.",
+      "Exempelprojekt för publik demo. Handlingar mejlas ut; anbud kan registreras från inkommande mejl.",
   });
 }
 
@@ -630,8 +783,11 @@ export function sokNavetUpphandlingar(sokord: string): NavetPubliceradTeaser[] {
     const hay = [
       u.titel,
       u.ort,
+      u.stadsdel,
       u.kategoriNamn,
       u.kortBeskrivning,
+      u.fastighetsInfo,
+      u.omfattning,
     ]
       .join(" ")
       .toLowerCase();

@@ -57,7 +57,15 @@ export function AktuellaUpphandlingarSida() {
     const q = sokord.trim().toLowerCase();
     if (!q) return lista;
     return lista.filter((u) => {
-      const hay = [u.titel, u.ort, u.kategoriNamn, u.kortBeskrivning]
+      const hay = [
+        u.titel,
+        u.ort,
+        u.stadsdel,
+        u.kategoriNamn,
+        u.kortBeskrivning,
+        u.fastighetsInfo,
+        u.omfattning,
+      ]
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
@@ -160,6 +168,7 @@ export function AktuellaUpphandlingarSida() {
                         <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
                           {upph.kategoriNamn}
                           {upph.ort && upph.ort !== "—" ? ` · ${upph.ort}` : ""}
+                          {upph.stadsdel ? ` · ${upph.stadsdel}` : ""}
                         </p>
                         <h3 className="mt-1.5 text-xl font-semibold text-foreground group-hover:text-primary-dark">
                           {upph.titel}
@@ -205,7 +214,7 @@ export function AktuellaUpphandlingarSida() {
               {
                 n: "1",
                 t: "Läs projektet",
-                d: "Se omfattning, ort och tidsplan i projektinformationen.",
+                d: "Se stadsdel, basinformation om fastigheten och vad som ska utföras — utan handlingar på sidan.",
               },
               {
                 n: "2",
@@ -214,8 +223,8 @@ export function AktuellaUpphandlingarSida() {
               },
               {
                 n: "3",
-                t: "Få inbjudan",
-                d: "Utvalda får unik länk till underlag och kan lämna anbud — under tiden hanteras allt manuellt.",
+                t: "Få underlag och lämna anbud",
+                d: "Utvalda får underlaget via mejl och lämnar anbud via mejl till Styrelse-Navet.",
               },
             ].map((steg) => (
               <li key={steg.n} className="text-sm">

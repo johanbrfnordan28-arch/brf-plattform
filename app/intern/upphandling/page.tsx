@@ -7,7 +7,7 @@ import { InternNavetUpphandlingPanel } from "@/components/upphandling/InternNave
 export const metadata: Metadata = {
   title: "Intern upphandling — Styrelse-Navet",
   description:
-    "Låst yta för att skapa upphandlingar, ladda upp underlag, bjuda in entreprenörer och ta emot anbud.",
+    "BankID-låst yta för projektinformation, mejlade underlag och registrering av inkomna anbud.",
 };
 
 export default function InternUpphandlingPage() {
@@ -15,14 +15,14 @@ export default function InternUpphandlingPage() {
     <ModulePage
       title="Intern upphandling"
       icon="🔐"
-      intro="Låst yta bakom Styrelse-Navet. Här skapar ni upphandlingen, laddar upp handlingar (även i efterhand), mejlar inbjudningar och ser inkomna anbud — utan att anbudsgivare ser varandra."
+      intro="Låst yta bakom Styrelse-Navet med BankID. Här lägger ni in projektinformation (stadsdel, fastighet, omfattning), mejlar underlag och registrerar anbud som kommit in via mejl — utan att anbudsgivare ser varandra."
     >
       <p className="mb-6 text-sm text-muted">
         <Link href="/intern" className="font-medium text-primary">
           ← Tillbaka till intern portal
         </Link>
       </p>
-      <ContentSection title="Upphandlingsarkiv">
+      <ContentSection title="Projekt och anbud">
         <InternNavetUpphandlingPanel />
       </ContentSection>
     </ModulePage>
