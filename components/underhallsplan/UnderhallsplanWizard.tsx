@@ -1400,10 +1400,10 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan.
-              Den ska bli enkel och anpassad för just er förening. Öppna
-              grundmallen för att se den centrala mallen; importera saknade
-              komponenter i steg 3.
+              Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan —
+              anpassad för just er fastighet. Öppna grundmallen för att se den
+              centrala mallen. I steg 3 importerar ni saknade delar och tar bort
+              det som inte är aktuellt, så planen blir mer överskådlig.
             </>
           )}
         </p>
@@ -1432,8 +1432,8 @@ export function UnderhallsplanWizard() {
                 3.
               </span>
               <span>
-                <strong>Steg 7 — Summering</strong> visar utkast av 50-årsbudgeten.
-                Justera kostnader där så planen blir överskådlig.
+                <strong>Steg 7 — Summering</strong> ger underlag till årsbudgeten.
+                Justera kostnader där — summeringen är klar till styrelsemötet.
               </span>
             </li>
           </ul>
@@ -1742,10 +1742,10 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Stäng av eller ta bort det som inte ingår så planen blir enkel och
-              anpassad för er. Er förenings plan är egen — uppdateringar i
-              grundmallen påverkar inte det ni redan sparat. Saknas något kan ni
-              importera från grundmallen nedan.
+              Anpassa planen för er fastighet: ta bort delar som inte är aktuella
+              och importera saknade från grundmallen. Då blir planen mer
+              överskådlig. Uppdateringar i grundmallen skriver inte över det ni
+              redan sparat.
             </>
           )}
         </p>
@@ -1835,9 +1835,10 @@ export function UnderhallsplanWizard() {
             className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
           >
             <p className="text-xs text-muted">
-              Centrala uppdateringar görs i grundmallen. Här kan ni bara hämta in
-              komponenter som saknas i er plan — befintliga priser och tillfällen
-              behålls.
+              Centrala uppdateringar görs i grundmallen. Här hämtar ni in
+              komponenter som saknas — och tar bort det som inte är aktuellt för
+              er fastighet (knappen «Ta bort» på varje del ovan). Befintliga
+              priser och tillfällen behålls vid import.
             </p>
             <button
               type="button"

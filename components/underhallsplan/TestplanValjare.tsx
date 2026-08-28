@@ -29,8 +29,9 @@ export function TestplanValjare({
         Det här är grunden som nya föreningsplaner utgår från. Epokmallarna
         (sekelskifte, 50-, 70- och 90-tal) är centrala arbetsverktyg — inte
         färdiga föreningsplaner. Endast ni centralt ska ändra här; styrelserna
-        bygger och ändrar i sin egen plan och kan öppna grundmallen
-        skrivskyddat samt importera saknade delar.
+        bygger och ändrar i sin egen plan. De kan öppna grundmallen skrivskyddat,
+        importera saknade delar och ta bort det som inte är aktuellt för deras
+        fastighet.
       </p>
       <div className="mt-4 rounded-xl border border-amber-300/70 bg-amber-50/80 px-4 py-3">
         <p className="text-sm font-semibold text-amber-950">

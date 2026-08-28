@@ -29,7 +29,8 @@ export function ForeningPlanLagePanel({
       <p className="mt-2 text-sm leading-relaxed text-foreground">
         Styrelsen bygger och ändrar <strong>er egen</strong> plan här. Öppna
         grundmallen när ni vill se den centrala mallen — den kan ni inte ändra,
-        bara titta på och importera saknade delar från (steg 3).
+        bara titta på. I steg 3 importerar ni saknade delar och tar bort det som
+        inte är aktuellt för er fastighet, så planen blir mer överskådlig.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -85,8 +86,8 @@ export function ForeningPlanLagePanel({
         </div>
       ) : (
         <p className="mt-3 text-xs text-muted">
-          Aktiv: er förenings underhållsplan. «Gå till slutsida» öppnar den
-          summering styrelsen byggt — inte grundmallen.
+          Aktiv: er förenings underhållsplan. «Gå till slutsida» öppnar
+          summeringen — redo för styrelsemötet för beslut.
         </p>
       )}
     </div>

@@ -348,7 +348,7 @@ export function UnderhallsplanSlutsida({
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/90">
           {arCentralGrundmall
             ? "Sammanfattning av den centrala grunden. Ändringar här görs bara centralt — föreningar bygger egen plan och kan importera saknade delar."
-            : "Sammanfattning av föreningens egen underhållsplan: avsättning, utgifter och planerade tider. Anpassad för er — lämpligt att skriva ut eller spara som PDF."}
+            : "Sammanfattning av föreningens egen underhållsplan: avsättning, utgifter och planerade tider. Summeringen är klar till styrelsemötet — skriv ut eller spara som PDF inför beslut."}
         </p>
         {planNotering && (
           <p className="mt-4 max-w-2xl rounded-lg bg-white/10 px-4 py-3 text-sm leading-relaxed text-white/95">
@@ -1055,8 +1055,8 @@ export function UnderhallsplanSlutsida({
             </div>
           ) : (
             <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-              Aktivera komponenter i steg 3. Ta bort sådant som inte är aktuellt
-              för er förening.
+              Aktivera komponenter i steg 3. Ta bort delar som inte är aktuella
+              för er fastighet — så blir planen mer överskådlig.
             </p>
           )}
 

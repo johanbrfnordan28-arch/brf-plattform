@@ -9,22 +9,22 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "💡",
       titel: "Adresser före fasader",
-      text: "I steg 1: planinställningar, uppgifter och adresser först. Fasader per byggnad öppnas först när byggnader lagts in — då blir planen mer överskådlig.",
+      text: "I steg 1: börja med planinställningar, uppgifter och adresser. Fasader per byggnad öppnas när byggnader lagts in — då blir planen lättare att överblicka.",
     },
     {
       ikon: "📥",
       titel: "Er plan, er kontroll",
-      text: "Styrelsen ändrar fritt i föreningens underhållsplan. Öppna grundmallen skrivskyddat för att se den, och importera saknade delar i steg 3 — utan att er sparade plan skrivs över automatiskt.",
+      text: "Styrelsen styr innehållet i föreningens underhållsplan. Importera saknade delar från grundmallen i steg 3, och ta bort delar som inte är aktuella för er fastighet — så blir planen mer överskådlig. Er sparade plan skrivs inte över automatiskt.",
     },
     {
       ikon: "📐",
       titel: "K3 och avskrivningstider",
-      text: "Från 2026 gäller K3 för BRF. I komponentregistret anges avskrivningstid per del — underlag till anläggningsregistret, skilt från underhållsintervall. Se slutsidans K3-avsnitt.",
+      text: "Från 2026 gäller K3 för BRF. I komponentregistret anges avskrivningstid per del — underlag till anläggningsregistret, skilt från underhållsintervall. Se K3-avsnittet på slutsidan.",
     },
     {
       ikon: "📋",
-      titel: "Redo för stämman",
-      text: "Slutsidan genererar en 50-årsbudget med avsättningsförslag — enkel att skriva ut eller spara som PDF till stämmounderlaget.",
+      titel: "Redo för styrelsemötet",
+      text: "Slutsidan summerar planen med underlag till årsbudgeten och avsättningsförslag. Skriv ut eller spara som PDF — redo för styrelsemötet för beslut.",
     },
   ],
 
