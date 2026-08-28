@@ -8,7 +8,7 @@ type ModuleCardProps = {
 };
 
 const cardClassName =
-  "group flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm transition-all";
+  "group flex h-full min-h-[15rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm transition-all";
 
 export function ModuleCard({ title, description, href, icon }: ModuleCardProps) {
   const body = (
