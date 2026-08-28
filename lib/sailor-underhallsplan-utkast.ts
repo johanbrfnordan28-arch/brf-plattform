@@ -732,7 +732,7 @@ export function byggSailorKomponentUtkast(): {
     SAILOR_PLAN_START_AR,
     standardPlanLangdAr,
   );
-  /** Jämn avsättning = periodens investeringar (inkl. upphandling/projektledning) / (yta × år). */
+  /** Jämn avsättning = periodens investeringar (inkl. upphandling/projektledning) / (bostadsyta × planlängd). */
   const krPerKvmAr =
     beraknaRekommenderadKrPerKvmAr(
       summaInvesteringKr,

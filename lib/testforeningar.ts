@@ -176,6 +176,8 @@ function synkaSailorUnderhallsplanGrund(): void {
             planLangdAr: "50",
           }),
           planStartAr: String(SAILOR_PLAN_START_AR),
+          upphandlingProcent: "3",
+          projektledningProcent: "7",
         }),
         grundSaved: true,
         komponenterSaved: true,
