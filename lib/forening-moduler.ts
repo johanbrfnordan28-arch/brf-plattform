@@ -20,9 +20,9 @@ export const FORENING_MODULER: ForeningModulDef[] = [
   },
   {
     id: "foreningsinformation",
-    title: "Föreningsinformation",
+    title: "Styrning och Dokument",
     description:
-      "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument — samlade och sökbara.",
+      "Styrelsearkiv, stadgar, protokoll och övriga dokument — samlade och sökbara.",
     path: "/foreningsinformation",
     icon: "📁",
   },
