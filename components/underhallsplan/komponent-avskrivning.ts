@@ -256,6 +256,28 @@ const rekommendationer: Record<
       hint: "Källargolv — underhåll.",
     },
   },
+  "Komplement byggnad och P-platser": {
+    cykelrum: {
+      rekommenderadAvskrivningAr: 40,
+      arK3Komponent: true,
+      hint: "Cykelförråd som komplementbyggnad — plåttak/stomme ca 40 år; löpande målning av träväggar är underhåll.",
+    },
+    soprum: {
+      rekommenderadAvskrivningAr: 40,
+      arK3Komponent: true,
+      hint: "Soprum som komplementbyggnad (ev. med undercentral) — plåttak/stomme ca 40 år.",
+    },
+    forrad: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Förråd — underhåll; inte egen FAR Tabell 1-komponent.",
+    },
+    "p-platser": {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "P-platser / laddstolpar — underhåll; laddinfrastruktur kan aktiveras separat.",
+    },
+  },
   Brandskydd: {
     sba: {
       rekommenderadAvskrivningAr: 0,

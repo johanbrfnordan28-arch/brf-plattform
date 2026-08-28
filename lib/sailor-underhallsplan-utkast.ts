@@ -637,7 +637,30 @@ export function byggSailorKomponentUtkast(): {
               underhallMomsAvdragenKr: "87350",
             };
           }
-          // Cykelförråd respektive soprum — oisolerade komplementbyggnader
+          if (r.id === "cykelrum") {
+            return {
+              värde: "1",
+              avskrivningAr: "40",
+              installationskostnadKr: "480000",
+              underhallNastaAr: sailorNastaAr(12),
+              underhallIntervallAr: "12",
+              underhallPrisEnhet: "total",
+              underhallKostnadKr: "85000",
+              underhallUtförtAr: String(SAILOR_BYGGAR),
+            };
+          }
+          if (r.id === "soprum") {
+            return {
+              värde: "1",
+              avskrivningAr: "40",
+              installationskostnadKr: "620000",
+              underhallNastaAr: sailorNastaAr(12),
+              underhallIntervallAr: "12",
+              underhallPrisEnhet: "total",
+              underhallKostnadKr: "95000",
+              underhallUtförtAr: String(SAILOR_BYGGAR),
+            };
+          }
           return { värde: "1" };
         },
       ),

@@ -967,19 +967,19 @@ const komponentMallar: Record<string, KomponentMall> = {
     underkomponenter: [
       {
         id: "soprum",
-        etikett: "Soprum",
+        etikett: "Soprum — komplementbyggnad",
         defaultMåttenhet: "antal",
         måttHint:
-          "Väggar, golv och tak med material och åtgärd — samt kärl, vatten/avlopp och eventuellt rum för undercentral.",
+          "Fristående eller markplan: oisolerad byggnad med väggar, golv och tak. Ange inventarier (kärl, vatten/avlopp) och eventuellt rum för undercentral.",
         detaljPanel: "lokal-komplement-val",
         lokalTyp: "soprum",
       },
       {
         id: "cykelrum",
-        etikett: "Cykelförråd",
+        etikett: "Cykelförråd — komplementbyggnad",
         defaultMåttenhet: "antal",
         måttHint:
-          "Väggar, golv och tak med material och åtgärd — samt ställ, belysning och ventilation.",
+          "Fristående eller markplan: oisolerad byggnad med väggar, golv och tak. Ange ställ och övriga inventarier.",
         detaljPanel: "lokal-komplement-val",
         lokalTyp: "cykelforrad",
       },
@@ -2864,12 +2864,16 @@ export function formateraKomponentSammanfattning(
               rad.värde,
             )
           : "";
-      const combined = [ytskiktText, forradText, inventarText]
+      const byggnad =
+        rad.id === "cykelrum" || rad.id === "soprum"
+          ? "oisolerad komplementbyggnad"
+          : "";
+      const combined = [byggnad, ytskiktText, forradText, inventarText]
         .filter(Boolean)
         .join(" · ");
       if (combined) delar.push(`${rad.etikett}: ${combined}`);
       else if (rad.värde.trim()) {
-        delar.push(`${rad.etikett}: ${rad.värde.trim()} rum`);
+        delar.push(`${rad.etikett}: ${rad.värde.trim()} st`);
       }
       continue;
     }
