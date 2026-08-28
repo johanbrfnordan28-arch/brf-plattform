@@ -3,107 +3,15 @@ import { FilmDemo } from "@/components/FilmDemo";
 import { ModuleCard } from "@/components/ModuleCard";
 import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningHubbRubrik } from "@/components/forening/ForeningHubbRubrik";
+import { ForeningSnabbvagar } from "@/components/forening/ForeningSnabbvagar";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { FORENING_MODULER } from "@/lib/forening-moduler";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
   mode: "public" | "forening";
 };
-
-type ModulDef = {
-  title: string;
-  description: string;
-  path: string;
-  icon: string;
-};
-
-/** Samma 12 moduler på Styrelse-Navet och i föreningen (4×3). */
-const foreningModules: ModulDef[] = [
-  {
-    title: "Årshjul",
-    description:
-      "Översikt över året med påminnelser — så planeringen av styrelsearbetet blir mer överskådlig.",
-    path: "/arshjul",
-    icon: "📅",
-  },
-  {
-    title: "Föreningsinformation",
-    description:
-      "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument — samlade och sökbara.",
-    path: "/foreningsinformation",
-    icon: "📁",
-  },
-  {
-    title: "Medlemmar",
-    description:
-      "Renoveringsanmälan, utskick och lägenhetsarkiv med aktuell information och historik per lägenhet.",
-    path: "/medlemmar",
-    icon: "👥",
-  },
-  {
-    title: "Underhållsplan",
-    description:
-      "Komponentregister, renoveringshistorik och framtida underhåll — beslutsunderlag som håller över tid.",
-    path: "/underhallsplan",
-    icon: "🔧",
-  },
-  {
-    title: "Energi & drift",
-    description:
-      "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
-    path: "/energi",
-    icon: "⚡",
-  },
-  {
-    title: "Rondering & avvikelser",
-    description:
-      "Checklistor, signering och avvikelser — så städning och skötsel blir enklare att följa upp.",
-    path: "/rondering",
-    icon: "✅",
-  },
-  {
-    title: "Upphandling",
-    description:
-      "Aktuella uppdrag via Styrelse-Navet — underlag till inbjudna entreprenörer, anbud till oss.",
-    path: "/upphandling",
-    icon: "📋",
-  },
-  {
-    title: "Projekt",
-    description:
-      "Projektmappar per år — spara handlingar från pågående och avslutade projekt på ett ställe.",
-    path: "/projekt",
-    icon: "📐",
-  },
-  {
-    title: "Entreprenörer",
-    description:
-      "Egna kontakter och rekommenderade entreprenörer — sök, lägg till och ta bort.",
-    path: "/entreprenorer",
-    icon: "🏗️",
-  },
-  {
-    title: "Föreningsuppgifter",
-    description:
-      "Adress, styrelse och övriga fakta om föreningen — samlade på ett ställe.",
-    path: "/uppgifter",
-    icon: "🏢",
-  },
-  {
-    title: "Juridik",
-    description: "Vägledning och mallar för styrelseärenden och avtal.",
-    path: "/juridik",
-    icon: "⚖️",
-  },
-  {
-    title: "Guider & tips",
-    description:
-      "Korta filmer och råd om funktionerna, upphandling och entreprenörer.",
-    path: "/guider",
-    icon: "🎬",
-  },
-];
 
 const featuredPublic = [
   {
@@ -179,7 +87,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
   const base = mode === "forening" ? "/forening" : "";
   const isForening = mode === "forening";
 
-  const modules = foreningModules.map((mod) => ({
+  const modules = FORENING_MODULER.map((mod) => ({
     title: mod.title,
     description: mod.description,
     icon: mod.icon,
@@ -206,9 +114,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </p>
           )}
           <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:mt-5 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-            {isForening
-              ? <ForeningHubbRubrik />
-              : "Förenkla styrelsearbetet — från årshjul till lägenhetsarkiv"}
+            {isForening ? (
+              <ForeningHubbRubrik />
+            ) : (
+              "Förenkla styrelsearbetet — från årshjul till lägenhetsarkiv"
+            )}
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
@@ -251,16 +161,16 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Årshjul
                 </Link>
                 <Link
-                  href="#intro-film"
+                  href="#moduler"
                   className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-3 text-sm font-medium text-primary-dark transition-colors hover:bg-[#e2f0e6]"
                 >
-                  Se kort film (30 sek)
+                  Alla moduler
                 </Link>
                 <Link
-                  href="#moduler"
+                  href="#intro-film"
                   className="rounded-lg border border-border bg-surface px-5 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
                 >
-                  Alla moduler
+                  Se kort film (30 sek)
                 </Link>
               </>
             ) : (
@@ -370,7 +280,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </div>
             <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {erfarenhetOmraden.map((omrade) => (
-                <li key={omrade.titel} className="border-l-2 border-primary/50 pl-4">
+                <li
+                  key={omrade.titel}
+                  className="border-l-2 border-primary/50 pl-4"
+                >
                   <h3 className="font-semibold text-foreground">{omrade.titel}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">
                     {omrade.text}
@@ -386,95 +299,26 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         <section className="border-b border-border bg-surface">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-4 py-4 text-center text-sm sm:px-6">
             <p>
-              <span className="font-semibold text-primary-dark">30 dagar gratis</span>
+              <span className="font-semibold text-primary-dark">
+                30 dagar gratis
+              </span>
               <span className="text-muted"> — testa hela plattformen</span>
             </p>
             <p>
               <span className="font-semibold text-primary-dark">−30&nbsp;%</span>
-              <span className="text-muted"> på ettårsavtal vs månadsdebitering</span>
+              <span className="text-muted">
+                {" "}
+                på ettårsavtal vs månadsdebitering
+              </span>
             </p>
           </div>
         </section>
       )}
 
-      {isForening && (
-        <div id="intro-film">
-          <FilmDemo variant="forening" />
-        </div>
-      )}
-
-      {isForening && (
-        <section className="border-b border-border bg-[#eef6f0]/50">
-          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-            <div className="mb-8 max-w-2xl">
-              <p className="text-sm font-semibold text-primary-dark">Snabbvägar</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Vanliga verktyg för styrelsen
-              </h2>
-              <p className="mt-2 text-muted">
-                Årshjulet ger översikt och gör planeringen av styrelsearbetet mer
-                överskådlig — med påminnelser för bland annat OVK och stämma.
-              </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                {
-                  title: "Årshjul",
-                  href: `${base}/arshjul`,
-                  icon: "📅",
-                  text: "Översikt och planering flera år framåt",
-                  accent: true,
-                },
-                {
-                  title: "Underhållsplan",
-                  href: `${base}/underhallsplan`,
-                  icon: "🔧",
-                  text: "Komponenter, besiktningar och budget",
-                },
-                {
-                  title: "Upphandling",
-                  href: `${base}/upphandling`,
-                  icon: "📋",
-                  text: "Mallar och publicering via oss",
-                },
-                {
-                  title: "Projekt",
-                  href: `${base}/projekt`,
-                  icon: "📐",
-                  text: "Projektmappar och checklistor",
-                },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`group flex flex-col rounded-2xl border p-5 shadow-sm transition-all hover:shadow-md ${
-                    item.accent
-                      ? "border-primary bg-white hover:border-primary-dark"
-                      : "border-border bg-surface hover:border-primary/40"
-                  }`}
-                >
-                  <span className="text-2xl" aria-hidden>
-                    {item.icon}
-                  </span>
-                  <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary-dark">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 flex-1 text-sm text-muted">{item.text}</p>
-                  <span className="mt-3 text-sm font-medium text-primary-dark">
-                    Öppna →
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {isForening && <ForeningSnabbvagar />}
 
       {!isForening && (
-        <section
-          id="fokus"
-          className="border-b border-border bg-surface/40"
-        >
+        <section id="fokus" className="border-b border-border bg-surface/40">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
             <div className="mb-10 max-w-2xl">
               <p className="text-sm font-semibold text-primary-dark">
@@ -534,14 +378,17 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </section>
       )}
 
-      <section id="moduler" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+      <section
+        id="moduler"
+        className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20"
+      >
         <div className="mb-10 max-w-2xl">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
             {isForening ? "Moduler" : "Tolv moduler — ett nav för styrelsen"}
           </h2>
           <p className="mt-2 text-muted">
             {isForening
-              ? "Välj en modul för att arbeta i er förenings miljö."
+              ? "Välj en modul för att arbeta i er förenings miljö. De fyra överst kan ni själva välja och flytta om."
               : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Allt hänger ihop — så styrelsen alltid vet var informationen finns."}
           </p>
         </div>
@@ -565,7 +412,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               <p className="mt-2 text-muted">
                 En egen yta för aktuella projekt — skiljd från övriga
                 styrelsemoduler. Entreprenörer ser projektinformation och kan
-                anmäla intresse. Underlag och anbud hanteras av oss, konfidentiellt.
+                anmäla intresse. Underlag och anbud hanteras av oss,
+                konfidentiellt.
               </p>
             </div>
 
@@ -594,8 +442,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
                     Steg {item.steg}
                   </p>
-                  <h3 className="mt-2 font-semibold text-foreground">{item.titel}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{item.text}</p>
+                  <h3 className="mt-2 font-semibold text-foreground">
+                    {item.titel}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">
+                    {item.text}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -630,16 +482,19 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Upphandlingar
               </h2>
               <p className="mt-2 text-muted">
-                Förbered underlag i modulen. Publicering och anbudshantering sker via
-                Styrelse-Navet — inkomna anbud syns inte här och anbudsgivare ser
-                inte varandra.
+                Förbered underlag i modulen. Publicering och anbudshantering
+                sker via Styrelse-Navet — inkomna anbud syns inte här och
+                anbudsgivare ser inte varandra.
               </p>
             </div>
             <div className="rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
-              <h3 className="font-semibold text-primary-dark">Öppna upphandlingsmodulen</h3>
+              <h3 className="font-semibold text-primary-dark">
+                Öppna upphandlingsmodulen
+              </h3>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Skapa beskrivning och underlag. När ni är redo publicerar ni via oss —
-                entreprenörer bjuds in och anbud hanteras manuellt utanför föreningsvyn.
+                Skapa beskrivning och underlag. När ni är redo publicerar ni via
+                oss — entreprenörer bjuds in och anbud hanteras manuellt utanför
+                föreningsvyn.
               </p>
               <Link
                 href={`${base}/upphandling`}
@@ -675,10 +530,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </div>
           </section>
 
-          <section
-            id="priser"
-            className="scroll-mt-24 border-t border-border"
-          >
+          <section id="priser" className="scroll-mt-24 border-t border-border">
             <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
               <div className="mb-10 max-w-2xl">
                 <p className="text-sm font-semibold text-primary-dark">
@@ -757,32 +609,40 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </section>
         </>
       ) : (
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-              <p className="text-sm font-semibold text-primary-dark">Er förening</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground">
-                Rondering som styrelsen kan följa upp
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                Schema, checklistor och signering samlat så att utebliven rondering
-                eller städning blir svårare att missa.
-              </p>
+        <>
+          <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-sm font-semibold text-primary-dark">
+                  Er förening
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-foreground">
+                  Rondering som styrelsen kan följa upp
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Schema, checklistor och signering samlat så att utebliven
+                  rondering eller städning blir svårare att missa.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border bg-[#e8f3ec] p-6 sm:p-8">
+                <p className="text-sm font-semibold text-primary-dark">
+                  Pris & avtal
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-foreground">
+                  Tydlig avtalsmodell
+                </h2>
+                <ul className="mt-4 space-y-2 text-sm text-muted">
+                  <li>Avtalstid: 1 år</li>
+                  <li>Automatisk förlängning</li>
+                  <li>Fakturering kvartalsvis</li>
+                  <li>Uppsägningstid: 6 månader</li>
+                </ul>
+              </div>
             </div>
-            <div className="rounded-2xl border border-border bg-[#e8f3ec] p-6 sm:p-8">
-              <p className="text-sm font-semibold text-primary-dark">Pris & avtal</p>
-              <h2 className="mt-2 text-2xl font-bold text-foreground">
-                Tydlig avtalsmodell
-              </h2>
-              <ul className="mt-4 space-y-2 text-sm text-muted">
-                <li>Avtalstid: 1 år</li>
-                <li>Automatisk förlängning</li>
-                <li>Fakturering kvartalsvis</li>
-                <li>Uppsägningstid: 6 månader</li>
-              </ul>
-            </div>
-          </div>
-        </section>
+          </section>
+
+          <FilmDemo variant="forening" />
+        </>
       )}
     </main>
   );
