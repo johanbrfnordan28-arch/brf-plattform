@@ -4,7 +4,7 @@ import type { Grunduppgifter } from "@/components/underhallsplan/types";
 /** Bostadsrättsföreningen Sailor — fast testförenings-id. */
 export const SAILOR_FORENING_ID = "test-forening-5";
 
-/** Visningsnamn på hubben (/forening) i stället för «Styrelseflow». */
+/** Visningsnamn på hubben (/forening) om profilnamn saknas. */
 export const SAILOR_HUBB_NAMN = "Brf Sailor";
 
 /** Underhållsplanen för Sailor börjar detta kalenderår. */
