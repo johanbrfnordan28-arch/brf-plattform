@@ -25,6 +25,11 @@ import {
   synkaUnderhallsplanState,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import { skapaTomLokalInventar } from "@/components/underhallsplan/lokal-inventar";
+import {
+  skapaTomLokalYtskikt,
+  type LokalYtskiktDelRad,
+} from "@/components/underhallsplan/lokal-ytskikt";
 import { skapaTomPPlatserData } from "@/components/underhallsplan/p-platser";
 import {
   beraknaRekommenderadKrPerKvmAr,
@@ -80,7 +85,7 @@ export const SAILOR_PLAN_NOTERING = [
   "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som periodiskt underhåll (kostnadsförs direkt).",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam). Filterbyte 1 gång/år.",
   "Energideklaration utförd 2026. Offert radonmätning finns.",
-  "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
+  "Två oisolerade komplementbyggnader i markplan: cykelförråd och soprum (miljörum) med separat rum för fjärrvärmeundercentral. Plåttak, träväggar och golv av släta betongplattor. Soprummet har sopkärl samt vatten och avlopp för spolning av ytan.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
   "Gemensam gård sköts av Farstadals samfällighetsförening — ingår inte i föreningens egna markåtgärder.",
 ].join(" ");
@@ -114,6 +119,70 @@ function aktivera(
       return { ...r, aktiv: true, ...(extra?.(r) ?? {}) };
     }),
   };
+}
+
+/** Oisolerad komplementbyggnad: plåttak, träväggar, släta betongplattor. */
+function sailorKomplementYtskikt(): LokalYtskiktDelRad[] {
+  return skapaTomLokalYtskikt().map((rad) => {
+    if (rad.delId === "golv") {
+      return {
+        ...rad,
+        aktiv: true,
+        materialId: "betongplattor",
+        atgardId: "underhall",
+        kvm: "",
+      };
+    }
+    if (rad.delId === "vaggar") {
+      return {
+        ...rad,
+        aktiv: true,
+        materialId: "tra",
+        atgardId: "malning",
+        kvm: "",
+      };
+    }
+    if (rad.delId === "tak") {
+      return {
+        ...rad,
+        aktiv: true,
+        materialId: "bandlagd-plat",
+        atgardId: "underhall",
+        kvm: "",
+      };
+    }
+    return rad;
+  });
+}
+
+function sailorSoprumInventar() {
+  return skapaTomLokalInventar("soprum").map((rad) => {
+    if (rad.delId === "sortering") {
+      return { ...rad, aktiv: true, antal: "1" };
+    }
+    if (rad.delId === "vatten-avlopp") {
+      return { ...rad, aktiv: true, antal: "1" };
+    }
+    if (rad.delId === "golvbrunn") {
+      return { ...rad, aktiv: true, antal: "1" };
+    }
+    if (rad.delId === "undercentral-rum") {
+      return { ...rad, aktiv: true, antal: "1" };
+    }
+    if (rad.delId === "diskbank") {
+      return { ...rad, aktiv: true, antal: "1" };
+    }
+    return rad;
+  });
+}
+
+function sailorCykelforradInventar() {
+  return skapaTomLokalInventar("cykelforrad").map((rad) => {
+    if (rad.delId === "cykelstall" || rad.delId === "belysning") {
+      return { ...rad, aktiv: true, antal: "1" };
+    }
+    return rad;
+  });
 }
 
 function byggSailorBesiktningar(): Besiktning[] {
@@ -568,10 +637,19 @@ export function byggSailorKomponentUtkast(): {
               underhallMomsAvdragenKr: "87350",
             };
           }
+          // Cykelförråd respektive soprum — oisolerade komplementbyggnader
           return { värde: "1" };
         },
       ),
       valdaDeltyper: ["mark"],
+      lokalYtskiktRegister: {
+        cykelrum: sailorKomplementYtskikt(),
+        soprum: sailorKomplementYtskikt(),
+      },
+      lokalInventarRegister: {
+        cykelrum: sailorCykelforradInventar(),
+        soprum: sailorSoprumInventar(),
+      },
       pPlatserRegister: {
         [P_PLATSER_ID]: {
           ...skapaTomPPlatserData(),

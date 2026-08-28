@@ -71,6 +71,10 @@ import {
   lasGrundmallUnderhallsplanState,
 } from "@/components/underhallsplan/importera-fran-grundmall";
 import {
+  appliceraImporteradeKomponentVarden,
+  type ImporteradUnderhallsplanExcel,
+} from "@/components/underhallsplan/importera-underhallsplan-excel";
+import {
   ForeningPlanLagePanel,
   type ForeningPlanLage,
 } from "@/components/underhallsplan/ForeningPlanLagePanel";
@@ -1112,6 +1116,56 @@ export function UnderhallsplanWizard() {
     setKomponenterSaved(false);
   }
 
+  function importeraFranExcel(data: ImporteradUnderhallsplanExcel) {
+    if (skrivskyddad) return;
+    if (Object.keys(data.grundPatch).length > 0) {
+      setGrund((current) =>
+        normaliseraGrund({
+          ...current,
+          ...data.grundPatch,
+          adresser: data.grundPatch.adresser ?? current.adresser,
+        }),
+      );
+      setGrundSaved(false);
+    }
+    if (data.krPerKvmAr != null) {
+      setKrPerKvmAr(begransaAvsattningKrPerKvmAr(data.krPerKvmAr));
+    }
+    if (data.planNotering != null) {
+      setPlanNotering(data.planNotering);
+    }
+    if (data.planNamn?.trim()) {
+      setPlanNamn(data.planNamn.trim());
+    }
+    if (data.planStartAr != null || data.planSlutAr != null) {
+      setPlaninstallningar((current) => {
+        const start =
+          data.planStartAr != null
+            ? normaliseraPlanStartAr(String(data.planStartAr))
+            : normaliseraPlanStartAr(current.planStartAr);
+        const slut =
+          data.planSlutAr != null
+            ? data.planSlutAr
+            : start + normaliseraPlanLangdAr(current.planLangdAr) - 1;
+        const langd = Math.max(
+          minPlanLangdAr,
+          Math.min(maxPlanLangdAr, slut - start + 1),
+        );
+        return normaliseraPlaninstallningar({
+          ...current,
+          planStartAr: String(start),
+          planLangdAr: String(langd),
+        });
+      });
+    }
+    if (data.komponentVarden.length > 0) {
+      setKomponentDetaljer((current) =>
+        appliceraImporteradeKomponentVarden(current, data.komponentVarden),
+      );
+      setKomponenterSaved(false);
+    }
+  }
+
   function addCustomComponent() {
     const trimmed = customComponent.trim();
     if (!trimmed || !renoveringarSaved || activeComponents.includes(trimmed)) return;
@@ -2047,6 +2101,7 @@ export function UnderhallsplanWizard() {
           planKostnader={planKostnader}
           varderingsUnderlag={varderingsUnderlag}
           onKostnadJustering={skrivskyddad ? undefined : justeraTillfalleKostnad}
+          onImporteraFranExcel={skrivskyddad ? undefined : importeraFranExcel}
           visaSomCentralGrundmall={skrivskyddad || arCentralGrundmall}
         />
         <div className="mt-6 print:hidden">

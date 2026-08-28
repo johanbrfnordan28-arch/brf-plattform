@@ -970,13 +970,13 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Soprum",
         defaultMåttenhet: "antal",
         måttHint:
-          "Väggar, golv och tak med material och åtgärd — samt kärl, belysning och ventilation.",
+          "Väggar, golv och tak med material och åtgärd — samt kärl, vatten/avlopp och eventuellt rum för undercentral.",
         detaljPanel: "lokal-komplement-val",
         lokalTyp: "soprum",
       },
       {
         id: "cykelrum",
-        etikett: "Cykelrum",
+        etikett: "Cykelförråd",
         defaultMåttenhet: "antal",
         måttHint:
           "Väggar, golv och tak med material och åtgärd — samt ställ, belysning och ventilation.",

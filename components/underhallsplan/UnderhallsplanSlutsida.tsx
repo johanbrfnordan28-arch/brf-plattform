@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
 import { hamtaAktivForeningsNamn, arGrundmallForening } from "@/lib/forening-registry";
 import { formatKr } from "@/components/underhallsplan/besiktningar";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 import { laddaNerUnderhallsplanExcel } from "@/components/underhallsplan/exportera-underhallsplan-excel";
+import {
+  lasUnderhallsplanExcelFil,
+  type ImporteradUnderhallsplanExcel,
+} from "@/components/underhallsplan/importera-underhallsplan-excel";
 import {
   beraknaPlanAvsattning,
   beraknaPlanUtgiftsRader,
@@ -85,6 +89,8 @@ type UnderhallsplanSlutsidaProps = {
     tillfalleId: string,
     nyKostnadKr: number,
   ) => void;
+  /** Importera grunddata/avsättning/notering/komponentvärden från Excel. */
+  onImporteraFranExcel?: (data: ImporteradUnderhallsplanExcel) => void;
   /** Visar central grundmall-rubrik (även när förening tittar skrivskyddat). */
   visaSomCentralGrundmall?: boolean;
 };
@@ -137,8 +143,12 @@ export function UnderhallsplanSlutsida({
   planKostnader,
   varderingsUnderlag = null,
   onKostnadJustering,
+  onImporteraFranExcel,
   visaSomCentralGrundmall = false,
 }: UnderhallsplanSlutsidaProps) {
+  const excelInputRef = useRef<HTMLInputElement>(null);
+  const [excelStatus, setExcelStatus] = useState<string | null>(null);
+  const [excelFel, setExcelFel] = useState<string | null>(null);
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const grundNorm = normaliseraGrund(grund);
   const avsattningsYtaM2 = hamtaAvsattningsYtaM2(grundNorm);
@@ -333,6 +343,21 @@ export function UnderhallsplanSlutsida({
       },
       `${foreningsNamn}-underhallsplan`,
     );
+  }
+
+  async function onExcelFilVald(fil: File | null) {
+    setExcelFel(null);
+    setExcelStatus(null);
+    if (!fil || !onImporteraFranExcel) return;
+    try {
+      const data = await lasUnderhallsplanExcelFil(fil);
+      onImporteraFranExcel(data);
+      setExcelStatus(data.meddelande);
+    } catch (error) {
+      setExcelFel(
+        error instanceof Error ? error.message : "Kunde inte importera Excel.",
+      );
+    }
   }
 
   return (
@@ -1251,10 +1276,41 @@ export function UnderhallsplanSlutsida({
           >
             Ladda ner Excel
           </button>
-          <p className="self-center text-xs text-muted">
-            PDF via utskriftsdialogen. Excel-filen innehåller grunddata, utgifter
-            per år, poster med komponent samt åtgärder.
+          {onImporteraFranExcel && (
+            <>
+              <input
+                ref={excelInputRef}
+                type="file"
+                accept=".xls,application/vnd.ms-excel,text/xml"
+                className="hidden"
+                onChange={(e) => {
+                  void onExcelFilVald(e.target.files?.[0] ?? null);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => excelInputRef.current?.click()}
+                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+              >
+                Ladda upp plan från Excel
+              </button>
+            </>
+          )}
+          <p className="basis-full self-center text-xs text-muted sm:basis-auto">
+            PDF via utskriftsdialogen. Excel: ladda ner, redigera grunddata och
+            komponentvärden, ladda sedan upp igen.
           </p>
+          {excelStatus && (
+            <p className="basis-full text-sm text-primary-dark" role="status">
+              {excelStatus}
+            </p>
+          )}
+          {excelFel && (
+            <p className="basis-full text-sm text-red-700" role="alert">
+              {excelFel}
+            </p>
+          )}
         </div>
       </div>
     </section>
