@@ -206,6 +206,7 @@ export const FAR_REGISTER_KOMPONENTER = [
   "Elcentral",
   "Balkonger",
   "Styr och övervakning",
+  "Komplement byggnad och P-platser",
 ] as const;
 
 export function farAndelText(k: FarK3Komponent): string {

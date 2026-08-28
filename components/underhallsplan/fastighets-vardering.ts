@@ -10,7 +10,10 @@ import {
   type FarK3Komponent,
   type FarK3KomponentId,
 } from "@/components/underhallsplan/far-k3-komponenter";
-import { effektivAvskrivningAr } from "@/components/underhallsplan/komponent-avskrivning";
+import {
+  arK3AvskrivningsKomponent,
+  effektivAvskrivningAr,
+} from "@/components/underhallsplan/komponent-avskrivning";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
 import { sammanstallRegisterKostnader } from "@/components/underhallsplan/register-kostnad";
 
@@ -24,7 +27,8 @@ export type FastighetsVarderingsUnderlag = {
 };
 
 export type KomponentInstallationsRad = {
-  farId: FarK3KomponentId;
+  /** FAR-id, eller register-k3 för övriga K3-delar i registret (t.ex. komplementbyggnad). */
+  farId: FarK3KomponentId | "register-k3";
   etikett: string;
   komponent: string;
   underkomponentId: string;
@@ -118,7 +122,8 @@ function hittaRegisterKoppling(
 }
 
 /**
- * Beräknar uppskattade installationsvärden för aktiva FAR-komponenter.
+ * Beräknar uppskattade installationsvärden för aktiva FAR-komponenter
+ * samt övriga K3-underkomponenter i registret (t.ex. komplementbyggnader).
  * Prioritet: manuellt sparat → registeruppskattning → FAR-andel av byggnadsanskaffning.
  */
 export function beraknaKomponentInstallationsvarden(
@@ -187,6 +192,39 @@ export function beraknaKomponentInstallationsvarden(
       kalla,
       iRegistret: true,
     });
+  }
+
+  const redan = new Set(
+    rader.map((r) => `${r.komponent}|${r.underkomponentId}`),
+  );
+
+  /** Övriga K3-delar i registret som inte ingår i FAR Tabell 1 (t.ex. komplementbyggnader). */
+  for (const komponentNamn of activeComponents) {
+    const data = komponentDetaljer[komponentNamn];
+    if (!data) continue;
+    for (const uk of data.underkomponenter) {
+      if (!uk.aktiv && !uk.ärEgen) continue;
+      const nyckel = `${komponentNamn}|${uk.id}`;
+      if (redan.has(nyckel)) continue;
+      if (!arK3AvskrivningsKomponent(komponentNamn, uk.id)) continue;
+
+      const manuellt = parseKr(uk.installationskostnadKr);
+      rader.push({
+        farId: "register-k3",
+        etikett: uk.etikett,
+        komponent: komponentNamn,
+        underkomponentId: uk.id,
+        installationskostnadKr: manuellt,
+        avskrivningAr: effektivAvskrivningAr(
+          komponentNamn,
+          uk.id,
+          uk.avskrivningAr,
+        ),
+        kalla: manuellt > 0 ? "manuellt" : "register-uppskattning",
+        iRegistret: true,
+      });
+      redan.add(nyckel);
+    }
   }
 
   return rader;
