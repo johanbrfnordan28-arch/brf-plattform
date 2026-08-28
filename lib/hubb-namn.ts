@@ -1,13 +1,19 @@
 import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
-import { hamtaAktivForeningId } from "@/lib/forening-registry";
+import {
+  arGrundmallForening,
+  hamtaAktivForeningId,
+  hamtaAktivForeningsNamn,
+  lasForeningProfil,
+  GRUNDMALL_NAMN,
+} from "@/lib/forening-registry";
 import {
   arSailorForening,
   SAILOR_HUBB_NAMN,
 } from "@/lib/sailor-forening";
 
 /**
- * Hubbnamn på /forening: normalt «Styrelseflow»,
- * för Brf Sailor «Brf Sailor».
+ * Hubbnamn högst upp på /forening: föreningens eget namn
+ * (köpt sida eller testversion). Sailor fallback «Brf Sailor».
  */
 export function hamtaHubbNamn(foreningId?: string | null): string {
   const id =
@@ -16,6 +22,16 @@ export function hamtaHubbNamn(foreningId?: string | null): string {
         ? hamtaAktivForeningId()
         : null
       : foreningId;
+
+  if (typeof window !== "undefined") {
+    if (id && !arGrundmallForening(id)) {
+      const profilNamn = lasForeningProfil(id)?.namn?.trim();
+      if (profilNamn) return profilNamn;
+    }
+    const aktivNamn = hamtaAktivForeningsNamn().trim();
+    if (aktivNamn && aktivNamn !== GRUNDMALL_NAMN) return aktivNamn;
+  }
+
   if (arSailorForening(id)) return SAILOR_HUBB_NAMN;
   return STYRELSEFLOW_NAMN;
 }

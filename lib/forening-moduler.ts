@@ -107,15 +107,13 @@ export const FORENING_MODULER: ForeningModulDef[] = [
   },
 ];
 
-/** Standard: fyra vanliga verktyg (samma som i den fulla modulistan). */
-export const STANDARD_SNABBVAG_IDS = [
-  "arshjul",
-  "underhallsplan",
-  "upphandling",
-  "projekt",
-] as const;
-
 export const SNABBVAG_ANTAL = 4;
+
+/** Standard: de fyra översta modulerna i 12-listan. */
+export const STANDARD_SNABBVAG_IDS = FORENING_MODULER.slice(
+  0,
+  SNABBVAG_ANTAL,
+).map((m) => m.id);
 
 export function hamtaModul(id: string): ForeningModulDef | undefined {
   return FORENING_MODULER.find((m) => m.id === id);

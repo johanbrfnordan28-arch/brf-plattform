@@ -11,7 +11,7 @@ import {
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
-const STORAGE_BASE = "brf-snabbvagar-moduler";
+const STORAGE_BASE = "brf-snabbvagar-moduler-v2";
 
 export const SNABBVAGAR_EVENT = "brf-snabbvagar-uppdaterad";
 

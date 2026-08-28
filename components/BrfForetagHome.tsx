@@ -388,7 +388,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </h2>
           <p className="mt-2 text-muted">
             {isForening
-              ? "Välj en modul för att arbeta i er förenings miljö. De fyra överst kan ni själva välja och flytta om."
+              ? "Välj en modul för att arbeta i er förenings miljö. Snabbvägarna visar de fyra översta — ni kan flytta om och byta."
               : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Allt hänger ihop — så styrelsen alltid vet var informationen finns."}
           </p>
         </div>

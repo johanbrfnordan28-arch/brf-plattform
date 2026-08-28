@@ -25,7 +25,7 @@ export function hamtaForeningModulTitel(pathname: string): string | null {
   return FORENING_MODUL_TITLAR[normaliseraForeningSokvag(pathname)] ?? null;
 }
 
-/** Förstasidan = hubbnamn (Styrelseflow / Brf Sailor). Övriga = «Föreningsnamn — Modul». */
+/** Förstasidan = föreningens namn. Övriga = «Föreningsnamn — Modul». */
 export function uppdateraForeningSidtitel(pathname: string): void {
   if (typeof document === "undefined") return;
 

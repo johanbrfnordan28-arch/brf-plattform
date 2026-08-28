@@ -63,8 +63,8 @@ export function ForeningSnabbvagar() {
               Vanliga verktyg för styrelsen
             </h2>
             <p className="mt-2 text-muted">
-              Samma moduler som i listan nedan — välj vilka fyra som visas här
-              först och flytta om ordningen.
+              Samma moduler som i listan nedan — standard är de fyra översta.
+              Flytta om ordningen eller byt ut mot andra moduler.
             </p>
           </div>
           <button
