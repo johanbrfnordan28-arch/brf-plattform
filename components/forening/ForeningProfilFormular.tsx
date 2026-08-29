@@ -38,6 +38,7 @@ export function ForeningProfilFormular() {
   const [redigerad, setRedigerad] = useState<ForeningProfil | null>(null);
   const [sparad, setSparad] = useState(false);
   const [sparFel, setSparFel] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   const laddaProfil = useCallback(() => {
     setProfil(lasAktivProfilForFormular());
@@ -54,6 +55,7 @@ export function ForeningProfilFormular() {
     setRedigerad(null);
     setSparad(false);
     setSparFel(null);
+    setServerStatus(null);
   }, [profil?.id]);
 
   const visningsProfil = redigerad ?? profil;
@@ -87,9 +89,10 @@ export function ForeningProfilFormular() {
 
   function spara() {
     setSparFel(null);
+    setServerStatus(null);
     const uppdaterad = { ...visningsProfil, grundinfoPaborjad: true } as ForeningProfil;
     try {
-      sparaForeningProfil(uppdaterad);
+      sparaForeningProfil(uppdaterad, { synkaServer: false });
       const kontakt = styrelseKontaktFranProfil(uppdaterad);
       const plan = lasUnderhallsplanState();
       if (plan) {
@@ -104,6 +107,17 @@ export function ForeningProfilFormular() {
       setProfil(uppdaterad);
       setRedigerad(null);
       setSparad(true);
+
+      void import("@/lib/forening-server-sync").then(
+        async ({ synkaForeningTillServer }) => {
+          const resultat = await synkaForeningTillServer(uppdaterad);
+          setServerStatus(
+            resultat.ok
+              ? "Sparat lokalt och på servern."
+              : `Sparat lokalt. Server: ${resultat.fel}`,
+          );
+        },
+      );
     } catch (e) {
       setSparFel(
         e instanceof Error ? e.message : "Kunde inte spara — försök igen.",
@@ -209,8 +223,8 @@ export function ForeningProfilFormular() {
 
       {sparad && (
         <p className="mt-3 text-sm text-primary-dark" role="status">
-          Sparat. Nästa steg: godkänn avtalet nedan så blir {visningsProfil.namn}{" "}
-          kund — därefter loggar ni in via «Logga in till er BRF».
+          {serverStatus ??
+            "Sparat lokalt. Synkar till servern … Nästa steg: godkänn avtalet nedan."}
         </p>
       )}
     </div>

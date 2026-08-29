@@ -65,11 +65,19 @@ git push -u origin main
 4. Klicka **Deploy**. Efter några minuter får ni en URL, t.ex. `https://brf-plattform.vercel.app`.
 5. Varje push till `main` kan automatiskt publicera en ny version (kan stängas av under Project Settings).
 
-Inga miljövariabler (`.env`) behövs i nuläget — appen kör helt i webbläsaren med `localStorage` för demodata.
+### Serverlagring (förening + avtal)
+
+1. Kopiera `.env.example` till `.env` (SQLite lokalt).
+2. Kör `npm run db:migrate` (eller `npm run db:push`).
+3. Starta `npm run dev` — skapa/spara förening och godkänn avtal synkas till databasen via `/api/foreningar`.
+
+**Produktion (Postgres):** byt `provider` i `prisma/schema.prisma` till `postgresql`, sätt `DATABASE_URL` till Neon/Supabase/Vercel Postgres, kör `npx prisma migrate deploy`.
+
+Webbläsaren sparar fortfarande lokalt; servern speglar profil och avtal. Riktig styrelseinloggning är nästa steg.
 
 ### Viktigt vid test på Vercel
 
-- **Data sparas per webbläsare** — varje testare får sin egen förening lokalt, inget delas mellan användare.
+- **Data sparas per webbläsare** — och synkas till servern när databasen är konfigurerad.
 - **Juridikmodulen** är gemensam demo-data i alla sessioner (avsiktligt).
 - Testa styrelseflödet via `/prova-gratis` eller `/forening` på den publika URL:en.
 

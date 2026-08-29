@@ -1,0 +1,35 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Lokalt: SQLite (file:./dev.db)
+// Produktion: byt provider till "postgresql" och sätt DATABASE_URL
+//   t.ex. Neon/Supabase/Vercel Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Förening som sparats på servern (speglas från webbläsaren).
+model Forening {
+  id                   String    @id
+  namn                 String
+  /// Normaliserat namn för unikhet / sök (gemener, utan accenter).
+  namnNyckel           String    @unique
+  organisationsnummer  String    @default("")
+  epost                String    @default("")
+  postadress           String    @default("")
+  ort                  String    @default("")
+  kontaktperson        String    @default("")
+  grundinfoPaborjad    Boolean   @default(false)
+  avtalGodkant         Boolean   @default(false)
+  avtalGodkantTidpunkt DateTime?
+  /// Hemlig nyckel — krävs för att uppdatera (tills riktig styrelseinloggning finns).
+  accessNyckelHash     String
+  skapadTidpunkt       DateTime  @default(now())
+  uppdateradTidpunkt   DateTime  @updatedAt
+}

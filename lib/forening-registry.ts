@@ -664,7 +664,7 @@ export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
 
 export function sparaForeningProfil(
   profil: ForeningProfil,
-  val?: { tyst?: boolean },
+  val?: { tyst?: boolean; synkaServer?: boolean },
 ): void {
   const normaliserad = normaliseraForeningProfil(profil);
   const registry = lasForeningRegistry();
@@ -680,6 +680,18 @@ export function sparaForeningProfil(
   }
   if (!val?.tyst) {
     window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  }
+
+  const skaSynka =
+    val?.synkaServer !== false &&
+    normaliserad.id !== GRUNDMALL_FORENING_ID &&
+    !arStandardTestForening(normaliserad.id);
+  if (skaSynka) {
+    void import("@/lib/forening-server-sync")
+      .then(({ synkaForeningTillServer }) =>
+        synkaForeningTillServer(normaliserad),
+      )
+      .catch(() => {});
   }
 }
 
@@ -725,7 +737,7 @@ export function skapaNyForening(namn: string): ForeningProfil {
   markeraPendingAktivForening(id);
   markeraNyssSkapadForening(id);
 
-  sparaForeningProfil(profil, { tyst: true });
+  sparaForeningProfil(profil, { tyst: true, synkaServer: false });
   sattAktivForeningId(id, { tyst: true });
   window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
 
@@ -737,6 +749,11 @@ export function skapaNyForening(namn: string): ForeningProfil {
       );
     }
   }
+
+  // Spegla till server i bakgrunden (blockerar inte skapandet).
+  void import("@/lib/forening-server-sync")
+    .then(({ synkaForeningTillServer }) => synkaForeningTillServer(profil))
+    .catch(() => {});
 
   return profil;
 }

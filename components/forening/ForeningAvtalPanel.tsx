@@ -40,6 +40,7 @@ export function ForeningAvtalPanel() {
   const [bekraftat, setBekraftat] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
   const [sparar, setSparar] = useState(false);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   const ladda = useCallback(() => {
     setProfil(lasForeningProfil(lasAktivForeningId()));
@@ -103,14 +104,28 @@ export function ForeningAvtalPanel() {
 
   function godkänn() {
     setFel(null);
+    setServerStatus(null);
     if (!bekraftat) {
       setFel("Bekräfta att ni godkänner avtalsvillkoren.");
       return;
     }
     setSparar(true);
     try {
-      godkannForeningsAvtal(profil!.id);
+      const uppdaterad = godkannForeningsAvtal(profil!.id);
       setBekraftat(false);
+      void import("@/lib/forening-server-sync").then(
+        async ({ synkaAvtalTillServer }) => {
+          const resultat = await synkaAvtalTillServer(
+            uppdaterad.id,
+            uppdaterad,
+          );
+          setServerStatus(
+            resultat.ok
+              ? "Avtalet sparat lokalt och på servern."
+              : `Avtalet sparat lokalt. Server: ${resultat.fel}`,
+          );
+        },
+      );
     } catch (e) {
       setFel(e instanceof Error ? e.message : "Kunde inte spara avtalet.");
     } finally {
@@ -182,6 +197,12 @@ export function ForeningAvtalPanel() {
       >
         {sparar ? "Sparar …" : "Godkänn avtal och bli kund"}
       </button>
+
+      {serverStatus && (
+        <p className="mt-3 text-sm text-primary-dark" role="status">
+          {serverStatus}
+        </p>
+      )}
     </div>
   );
 }

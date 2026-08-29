@@ -101,7 +101,7 @@ export function godkannForeningsAvtal(foreningId?: string): ForeningProfil {
     avtalGodkant: true,
     avtalGodkantTidpunkt: new Date().toISOString(),
   });
-  sparaForeningProfil(uppdaterad);
+  sparaForeningProfil(uppdaterad, { synkaServer: false });
   window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
   return uppdaterad;
 }
