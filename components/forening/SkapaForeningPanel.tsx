@@ -11,12 +11,13 @@ type Props = {
 };
 
 const DEMO_FORENINGS_NAMN = "Brf Testförening";
+const BRF_PREFIX = "Brf ";
 
 export function SkapaForeningPanel({
   kompakt = false,
   visaSnabbstart = false,
 }: Props) {
-  const [namn, setNamn] = useState("");
+  const [namn, setNamn] = useState(BRF_PREFIX);
   const [fel, setFel] = useState<string | null>(null);
   const [skapar, setSkapar] = useState(false);
   const [skapatNamn, setSkapatNamn] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export function SkapaForeningPanel({
       setFel("Bocka i rutan: du tillhör styrelsen (eller har mandat).");
       return;
     }
-    if (!trimmatNamn) {
+    if (!trimmatNamn || trimmatNamn.toLowerCase() === "brf") {
       setFel("Döp föreningen — t.ex. Brf Solsidan 1.");
       return;
     }
