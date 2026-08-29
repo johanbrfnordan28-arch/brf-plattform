@@ -12,11 +12,10 @@ import {
   arEgenTestForening,
   arEndastEgnaForeningar,
   filtreraForeningarPaSok,
+  föreslaSokExempel,
   INLOGGNING_BRF_PREFIX,
   listaInloggningsForeningar,
-  MIN_SOK_BOKSTAVER_EFTER_BRF,
   normaliseraBrfSoktext,
-  sokKräverFlerBokstaver,
 } from "@/lib/forening-inloggning";
 import { arSailorForening } from "@/lib/sailor-forening";
 import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
@@ -161,7 +160,6 @@ export function StyrelseLoginModul() {
   );
 
   const endastEgna = arEndastEgnaForeningar(foreningar);
-  const vantarPaBokstaver = sokKräverFlerBokstaver(sok, foreningar);
 
   function loggaIn(id: string) {
     markeraPendingAktivForening(id);
@@ -199,9 +197,10 @@ export function StyrelseLoginModul() {
         <p className="mb-4 text-center text-sm text-muted">
           {endastEgna ? (
             <>
-              Börja med <strong className="text-foreground">Brf</strong> och
-              skriv minst {MIN_SOK_BOKSTAVER_EFTER_BRF} bokstäver till — då visas
-              er sparade testförening. Övriga demoföreningar syns inte.
+              Er sparade testförening visas nedan. Skriv vidare efter{" "}
+              <strong className="text-foreground">Brf</strong> för att filtrera
+              (t.ex. «{föreslaSokExempel(foreningar[0]?.namn ?? "Brf St")}»).
+              Övriga demoföreningar syns inte.
             </>
           ) : (
             <>
@@ -235,11 +234,9 @@ export function StyrelseLoginModul() {
 
         <p className="mt-2 text-center text-xs text-muted">
           {endastEgna
-            ? vantarPaBokstaver
-              ? `Skriv minst ${MIN_SOK_BOKSTAVER_EFTER_BRF} bokstäver efter Brf för att visa er förening`
-              : filtrerade.length === 1
-                ? "1 träff"
-                : `${filtrerade.length} träffar`
+            ? filtrerade.length === 1
+              ? "1 sparad testförening"
+              : `${filtrerade.length} av ${foreningar.length} sparade`
             : `${foreningar.length} demoföreningar — skapa er egen via Pröva gratis så syns bara den`}
         </p>
 
@@ -249,23 +246,17 @@ export function StyrelseLoginModul() {
           className="mt-4 max-h-[28rem] space-y-3 overflow-y-auto overscroll-contain pr-1"
           role="listbox"
         >
-          {vantarPaBokstaver ? (
-            <li className="rounded-2xl border border-dashed border-primary/30 bg-[#eef6f0]/50 px-5 py-8 text-center">
-              <p className="text-sm font-medium text-foreground">
-                Fortsätt skriva efter «Brf »
-              </p>
-              <p className="mt-2 text-sm text-muted">
-                Er sparade testförening visas först när ni lagt in minst{" "}
-                {MIN_SOK_BOKSTAVER_EFTER_BRF} bokstäver (t.ex. början av
-                föreningsnamnet).
-              </p>
-            </li>
-          ) : filtrerade.length === 0 ? (
+          {filtrerade.length === 0 ? (
             <li className="rounded-2xl border border-dashed border-border bg-white px-5 py-8 text-center">
               <p className="text-sm font-medium text-foreground">
                 Ingen förening matchar «{sok.trim()}»
               </p>
               <p className="mt-2 text-sm text-muted">
+                {endastEgna && foreningar.length > 0 ? (
+                  <>
+                    Rensa sökningen till «Brf » för att se alla sparade, eller{" "}
+                  </>
+                ) : null}
                 Kontrollera stavningen, eller{" "}
                 <Link
                   href={PROVA_GRATIS_PATH}
@@ -336,9 +327,10 @@ export function StyrelseLoginModul() {
             </p>
             <p className="mt-1 text-sm text-muted">
               Från Styrelse-Navets startsida:{" "}
+              <strong className="text-foreground">Testföreningar</strong> eller{" "}
               <strong className="text-foreground">Logga in styrelse</strong>.
-              Skriv Brf + minst två bokstäver av föreningsnamnet — då visas bara
-              er sparade testförening, inte övriga demoföreningar.
+              Er sparade testförening visas direkt — övriga demoföreningar syns
+              inte när ni har skapat en egen.
             </p>
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
               <code className="flex-1 text-xs font-mono text-foreground">

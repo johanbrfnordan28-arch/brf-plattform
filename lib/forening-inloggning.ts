@@ -3,9 +3,13 @@
  */
 
 import { GRUNDMALL_FORENING_ID } from "@/lib/forening-konstanter";
+import { cookieHamtaSenastProfil } from "@/lib/forening-lagring";
 import {
   listaForeningar,
   normaliseraForeningsNamn,
+  repareraForeningRegistry,
+  SENAST_SKAPAD_PROFIL_KEY,
+  sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import {
@@ -17,8 +21,8 @@ import {
 export const INLOGGNING_BRF_PREFIX = "Brf ";
 
 /**
- * Minsta antal bokstäver efter «Brf » innan skapade föreningar visas.
- * (t.ex. «Brf So» → 2 tecken)
+ * Minsta antal bokstäver efter «Brf » innan listan filtreras strikt.
+ * (Behålls för tipstexter — skapade föreningar visas direkt.)
  */
 export const MIN_SOK_BOKSTAVER_EFTER_BRF = 2;
 
@@ -28,14 +32,114 @@ export function arEgenTestForening(foreningId: string): boolean {
   );
 }
 
+/** Jämförelsetext utan «brf» och utan mellanslag (Stora huset ≈ Storahuset). */
+function kollapsaNamn(text: string): string {
+  return normaliseraForeningsNamn(text)
+    .replace(/^brf\s+/, "")
+    .replace(/\s+/g, "");
+}
+
+function matcharNamn(foreningsNamn: string, soktext: string): boolean {
+  const namn = normaliseraForeningsNamn(foreningsNamn);
+  const namnUtanBrf = namn.replace(/^brf\s+/, "");
+  const namnKollaps = kollapsaNamn(foreningsNamn);
+
+  const q = normaliseraForeningsNamn(soktext);
+  const qUtanBrf = q.replace(/^brf\s+/, "").trim();
+  if (!qUtanBrf) return true;
+  const qKollaps = kollapsaNamn(soktext);
+
+  if (
+    namn.includes(q) ||
+    namnUtanBrf.includes(qUtanBrf) ||
+    namnUtanBrf.startsWith(qUtanBrf) ||
+    namnKollaps.includes(qKollaps) ||
+    namnKollaps.startsWith(qKollaps)
+  ) {
+    return true;
+  }
+
+  // Matcha mot enskilda ord (t.ex. «21» eller «stora»)
+  const ord = namnUtanBrf.split(/\s+/).filter(Boolean);
+  return ord.some(
+    (o) =>
+      o.startsWith(qUtanBrf) || o.includes(qUtanBrf) || qUtanBrf.includes(o),
+  );
+}
+
+function lasSenastSkapadProfilerFranLagring(): ForeningProfil[] {
+  if (typeof window === "undefined") return [];
+  const kandidater: ForeningProfil[] = [];
+  const rawLista: Array<string | null> = [];
+
+  try {
+    rawLista.push(sessionStorage.getItem(SENAST_SKAPAD_PROFIL_KEY));
+  } catch {
+    /* ignore */
+  }
+  rawLista.push(cookieHamtaSenastProfil());
+
+  for (const raw of rawLista) {
+    if (!raw) continue;
+    try {
+      const profil = JSON.parse(raw) as ForeningProfil;
+      if (
+        profil?.id &&
+        arEgenTestForening(profil.id) &&
+        typeof profil.namn === "string" &&
+        profil.namn.trim()
+      ) {
+        kandidater.push(profil);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return kandidater;
+}
+
+/**
+ * Säkerställer att skapade profiler finns i registret innan listning.
+ * Senast skapade kan saknas i registret efter sidbyte — återställ från
+ * sessionStorage/cookie utan att kräva foreningId i URL.
+ */
+function synkaEgnaForeningarFranLagring(): void {
+  if (typeof window === "undefined") return;
+  repareraForeningRegistry();
+
+  for (const profil of lasSenastSkapadProfilerFranLagring()) {
+    const finns = listaForeningar().some((p) => p.id === profil.id);
+    if (finns) continue;
+    try {
+      sparaForeningProfil(profil, { tyst: true });
+    } catch {
+      /* localStorage full — listan kan ändå visa profilen via fallback */
+    }
+  }
+}
+
 /** Endast föreningar som styrelsen skapat (prova gratis). */
 export function listaEgnaTestForeningar(): ForeningProfil[] {
-  return listaForeningar()
-    .filter(
-      (f) =>
-        arEgenTestForening(f.id) && f.namn.trim().length > 0,
-    )
-    .sort((a, b) => a.namn.localeCompare(b.namn, "sv"));
+  synkaEgnaForeningarFranLagring();
+
+  const sedda = new Set<string>();
+  const resultat: ForeningProfil[] = [];
+
+  for (const f of listaForeningar()) {
+    if (!arEgenTestForening(f.id) || !f.namn.trim()) continue;
+    if (sedda.has(f.id)) continue;
+    sedda.add(f.id);
+    resultat.push(f);
+  }
+
+  // Senast skapade kan saknas i registret tillfälligt — lägg till i listan.
+  for (const profil of lasSenastSkapadProfilerFranLagring()) {
+    if (sedda.has(profil.id)) continue;
+    resultat.push(profil);
+    sedda.add(profil.id);
+  }
+
+  return resultat.sort((a, b) => a.namn.localeCompare(b.namn, "sv"));
 }
 
 /**
@@ -69,46 +173,44 @@ export function arEndastEgnaForeningar(foreningar: ForeningProfil[]): boolean {
 }
 
 /**
- * true när skapade föreningar finns i listan men användaren
- * inte skrivit tillräckligt många bokstäver ännu.
+ * Föreslå kort söktext baserat på föreningsnamn (t.ex. «Brf St»).
+ */
+export function föreslaSokExempel(namn: string): string {
+  const trimmat = namn.trim();
+  if (!trimmat) return "Brf St";
+  const utanBrf = trimmat.replace(/^brf\s+/i, "").trim();
+  const del = utanBrf.slice(0, Math.min(4, Math.max(2, utanBrf.length))) || "St";
+  return trimmat.toLowerCase().startsWith("brf")
+    ? `${INLOGGNING_BRF_PREFIX}${del}`
+    : del;
+}
+
+/**
+ * Tidigare: skapade föreningar doldes tills minst 2 bokstäver skrivits.
+ * Det gjorde att Testföreningar såg tomt ut. Skapade visas nu direkt.
  */
 export function sokKräverFlerBokstaver(
-  soktext: string,
-  foreningar: ForeningProfil[],
+  _soktext: string,
+  _foreningar: ForeningProfil[],
 ): boolean {
-  if (!arEndastEgnaForeningar(foreningar)) return false;
-  return hamtaSokSuffix(soktext).length < MIN_SOK_BOKSTAVER_EFTER_BRF;
+  return false;
 }
 
 /**
  * Filtrerar på bokstäver efter «Brf ».
- * Skapade föreningar visas först när minst MIN_SOK_BOKSTAVER_EFTER_BRF tecken skrivits.
+ * Tomt / enbart «Brf» → hela listan.
+ * Matchar även namn med/utan mellanslag (Stora huset ≈ Storahuset).
  */
 export function filtreraForeningarPaSok(
   foreningar: ForeningProfil[],
   soktext: string,
 ): ForeningProfil[] {
-  if (sokKräverFlerBokstaver(soktext, foreningar)) {
-    return [];
-  }
-
   const q = soktext.trim();
   if (!q || normaliseraForeningsNamn(q) === "brf") {
     return foreningar;
   }
 
-  const nyckel = normaliseraForeningsNamn(q);
-  const nyckelUtanBrf = nyckel.replace(/^brf\s+/, "");
-
-  return foreningar.filter((f) => {
-    const namn = normaliseraForeningsNamn(f.namn);
-    const namnUtanBrf = namn.replace(/^brf\s+/, "");
-    return (
-      namn.includes(nyckel) ||
-      namnUtanBrf.includes(nyckelUtanBrf) ||
-      namnUtanBrf.startsWith(nyckelUtanBrf)
-    );
-  });
+  return foreningar.filter((f) => matcharNamn(f.namn, q));
 }
 
 /** Säkerställer att söktexten börjar med «Brf » (behåller användarens fortsättning). */
