@@ -21,9 +21,8 @@ export default function StyrelseLoginPage() {
           Logga in till er förening
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-base text-muted">
-          Här hittar styrelsen sparade testföreningar i den här webbläsaren.
-          Börja med Brf och lägg till bokstäver — urvalet minskar så ni kan
-          rulla till rätt förening.
+          Har ni skapat en testförening visas den först när ni skriver Brf +
+          fler bokstäver. Övriga demoföreningar döljs då.
         </p>
       </div>
 
