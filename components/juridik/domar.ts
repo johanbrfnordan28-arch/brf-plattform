@@ -13,7 +13,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "Gränsen mellan föreningens och medlemmens underhållsansvar för golv, väggar och tak i lägenheten.",
     vägledning:
-      "Domar i denna mapp handlar ofta om vad som räknas som ytskikt, när medlemmen ska stå för renovering och när föreningen kan kräva åtgärd. Ladda upp aktuell dom så styrelsen kan läsa hela texten.",
+      "Här ingår bland annat Högsta domstolens avgörande T 175-19 (NJA 2019 s. 1013) om läckande yttertak och vem som bekostar spackling och målning. Domar i mappen handlar ofta om vad som räknas som ytskikt, när medlemmen ska stå för renovering och när föreningen kan kräva åtgärd. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
   },
   {
     id: "rokkanaler",
