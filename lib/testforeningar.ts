@@ -95,6 +95,8 @@ function tomStandardProfil(id: string, namn: string): ForeningProfil {
     ort: "",
     kontaktperson: "",
     grundinfoPaborjad: false,
+    avtalGodkant: false,
+    avtalGodkantTidpunkt: "",
   };
   if (arSailorForening(id)) {
     return { ...bas, ...SAILOR_PROFIL };

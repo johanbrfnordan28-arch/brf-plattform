@@ -144,12 +144,13 @@ export function listaEgnaTestForeningar(): ForeningProfil[] {
 
 /**
  * Inloggningslista:
- * - Finns skapade testföreningar → endast dem (inga övriga demoföreningar).
+ * - Finns skapade testföreningar (utan avtal) → endast dem.
  * - Annars → fasta demoföreningar (tom webbläsare / plattformstest).
+ * Kundföreningar (godkänt avtal) syns under /kund-login i stället.
  */
 export function listaInloggningsForeningar(): ForeningProfil[] {
-  const egna = listaEgnaTestForeningar();
-  if (egna.length > 0) return egna;
+  const egnaTest = listaEgnaTestForeningar().filter((f) => !f.avtalGodkant);
+  if (egnaTest.length > 0) return egnaTest;
   return listaInloggningsTestForeningar();
 }
 

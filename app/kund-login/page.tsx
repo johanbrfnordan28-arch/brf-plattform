@@ -4,42 +4,42 @@ import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import {
   KUND_LOGIN_KNAPP_RUBRIK,
-  KUND_LOGIN_PATH,
+  TEST_LOGIN_PATH,
 } from "@/lib/forening-kund";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 export const metadata: Metadata = {
-  title: `Testperiod — ${BRF_NAVET_NAMN}`,
+  title: `${KUND_LOGIN_KNAPP_RUBRIK} — ${BRF_NAVET_NAMN}`,
   description:
-    "Logga in på er testförening under provperioden. När avtalet är godkänt använder ni kundinloggningen.",
+    "Logga in till er BRF med tecknat avtal. Endast er förening syns — inte andra föreningars uppgifter.",
 };
 
-export default function StyrelseLoginPage() {
+export default function KundLoginPage() {
   return (
     <main className="flex min-h-[calc(100vh-4rem)] flex-col justify-center bg-surface/40 py-12">
       <div className="mb-10 px-4 text-center sm:px-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-primary-dark">
-          {BRF_NAVET_NAMN} · Testperiod
+          {BRF_NAVET_NAMN} · Kundinloggning
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Logga in på er testförening
+          {KUND_LOGIN_KNAPP_RUBRIK}
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-base text-muted">
-          Här syns skapade testföreningar (utan avtal) och demos. När ni
-          godkänt avtalet på föreningssidan loggar ni in via{" "}
-          <strong className="text-foreground">{KUND_LOGIN_KNAPP_RUBRIK}</strong>.
+          För styrelser med tecknat avtal. Här visas bara er förening — demos
+          och andras testföreningar döljs. Varje föreningssida anpassas efter er
+          aktiva förening.
         </p>
       </div>
 
-      <StyrelseLoginModul lage="test" />
+      <StyrelseLoginModul lage="kund" />
 
       <p className="mt-10 text-center text-xs text-muted">
-        Redan kund?{" "}
+        Fortfarande i testperiod?{" "}
         <Link
-          href={KUND_LOGIN_PATH}
+          href={TEST_LOGIN_PATH}
           className="font-medium text-primary-dark underline hover:no-underline"
         >
-          {KUND_LOGIN_KNAPP_RUBRIK}
+          Öppna testperiod
         </Link>
         {" · "}
         <Link

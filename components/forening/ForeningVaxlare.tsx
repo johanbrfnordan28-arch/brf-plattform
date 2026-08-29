@@ -7,6 +7,13 @@ import {
   listaEgnaTestForeningar,
 } from "@/lib/forening-inloggning";
 import {
+  arAktivKundForening,
+  arKundForening,
+  KUND_LOGIN_PATH,
+  listaKundForeningar,
+  TEST_LOGIN_PATH,
+} from "@/lib/forening-kund";
+import {
   FORENING_AKTIV_EVENT,
   GRUNDMALL_FORENING_ID,
   hamtaAktivForeningsNamn,
@@ -29,17 +36,20 @@ function tomProfil(id: string, namn: string): ForeningProfil {
     ort: "",
     kontaktperson: "",
     grundinfoPaborjad: false,
+    avtalGodkant: false,
+    avtalGodkantTidpunkt: "",
   };
 }
 
 /**
- * När ni är inloggade på en skapad testförening syns bara den.
- * Demoföreningar (Test 1–3, Nordan, Sailor) visas inte.
+ * Växlare: när ni är inloggade på en skapad förening (test eller kund)
+ * syns bara den — aldrig andra föreningars namn eller data.
  */
 export function ForeningVaxlare() {
   const [aktivId, setAktivId] = useState(GRUNDMALL_FORENING_ID);
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [redo, setRedo] = useState(false);
+  const [arKund, setArKund] = useState(false);
 
   const ladda = useCallback(() => {
     const id = lasAktivForeningId();
@@ -48,22 +58,22 @@ export function ForeningVaxlare() {
     const aktivProfil =
       lasForeningProfil(id) ??
       tomProfil(id, hamtaAktivForeningsNamn());
+    const kundAktiv = arKundForening(aktivProfil) || arAktivKundForening(id);
+    setArKund(kundAktiv);
 
     let lista: ForeningProfil[];
 
-    if (arEgenTestForening(id)) {
-      // Inloggad på skapad förening → endast den (inga övriga testföreningar).
+    if (arEgenTestForening(id) || kundAktiv) {
+      // Inloggad på skapad förening → endast den (inga övriga).
       lista = [aktivProfil];
     } else {
       const egna = listaEgnaTestForeningar();
       if (egna.length > 0) {
-        // Finns skapade föreningar men aktiv är demo/grundmall → visa bara egna.
         lista = egna;
         if (!lista.some((f) => f.id === id) && id !== GRUNDMALL_FORENING_ID) {
           lista = [...lista, aktivProfil];
         }
       } else {
-        // Inga skapade → demoföreningar för plattformstest.
         lista = listaInloggningsTestForeningar();
         if (id && !lista.some((f) => f.id === id)) {
           lista = [...lista, aktivProfil];
@@ -102,13 +112,16 @@ export function ForeningVaxlare() {
   return (
     <div className="flex flex-col items-end gap-1">
       <label className="flex flex-col items-end gap-1 text-xs text-muted">
-        <span className="font-medium">Aktiv förening</span>
+        <span className="font-medium">
+          {arKund ? "Er förening" : "Aktiv förening"}
+        </span>
         {endastEn ? (
           <span
             className="max-w-[14rem] truncate rounded-lg border border-border bg-white px-2 py-1.5 text-sm font-medium text-foreground sm:max-w-[18rem]"
             title={foreningar[0]?.namn}
           >
             {foreningar[0]?.namn ?? hamtaAktivForeningsNamn()}
+            {arKund ? " · Kund" : ""}
           </span>
         ) : (
           <select
@@ -120,33 +133,46 @@ export function ForeningVaxlare() {
             {foreningar.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.namn}
+                {arKundForening(f) ? " (kund)" : ""}
               </option>
             ))}
           </select>
         )}
       </label>
-      {!egenAktiv && (
+      {arKund ? (
+        <>
+          {listaKundForeningar().length > 1 && (
+            <Link
+              href={KUND_LOGIN_PATH}
+              className="text-xs font-medium text-primary-dark hover:underline"
+            >
+              Byt kundförening
+            </Link>
+          )}
+        </>
+      ) : egenAktiv ? (
         <Link
-          href="/styrelse-login"
+          href={TEST_LOGIN_PATH}
+          className="text-xs font-medium text-primary-dark hover:underline"
+        >
+          Logga in på annan förening
+        </Link>
+      ) : (
+        <Link
+          href={TEST_LOGIN_PATH}
           className="text-xs font-medium text-primary-dark hover:underline"
         >
           Byt förening via inloggning
         </Link>
       )}
-      {egenAktiv && (
+      {!arKund && (
         <Link
-          href="/styrelse-login"
+          href={PROVA_GRATIS_PATH}
           className="text-xs font-medium text-primary-dark hover:underline"
         >
-          Logga in på annan förening
+          + Ny förening
         </Link>
       )}
-      <Link
-        href={PROVA_GRATIS_PATH}
-        className="text-xs font-medium text-primary-dark hover:underline"
-      >
-        + Ny förening
-      </Link>
     </div>
   );
 }

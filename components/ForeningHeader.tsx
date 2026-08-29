@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ForeningVaxlare } from "@/components/forening/ForeningVaxlare";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
-import { GRUNDMALL_NAMN } from "@/lib/forening-registry";
+import { arAktivKundForening } from "@/lib/forening-kund";
+import { FORENING_AKTIV_EVENT, GRUNDMALL_NAMN } from "@/lib/forening-registry";
 
 const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
@@ -33,10 +35,20 @@ const nav = [
 export function ForeningHeader() {
   const pathname = usePathname();
   const foreningsNamn = useAktivForeningsNamn();
+  const [arKund, setArKund] = useState(false);
   const initial =
     foreningsNamn === GRUNDMALL_NAMN
       ? "G"
       : foreningsNamn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
+
+  useEffect(() => {
+    function ladda() {
+      setArKund(arAktivKundForening());
+    }
+    ladda();
+    window.addEventListener(FORENING_AKTIV_EVENT, ladda);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
@@ -73,13 +85,13 @@ export function ForeningHeader() {
         <div className="flex flex-wrap items-center justify-end gap-2">
           <ForeningVaxlare />
           <span className="hidden rounded-full border border-primary/30 bg-[#e2f0e6] px-3 py-1 text-xs font-medium text-primary-dark lg:inline-flex">
-            Inloggad styrelse
+            {arKund ? "Kund · er förening" : "Inloggad styrelse"}
           </span>
           <Link
             href="/"
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
           >
-            BRF Företag
+            Styrelse-Navet
           </Link>
           <Link
             href="/"

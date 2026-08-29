@@ -47,7 +47,41 @@ export type ForeningProfil = {
   kontaktperson: string;
   /** Styrelsen har börjat fylla grunduppgifter (underhållsplan eller här). */
   grundinfoPaborjad: boolean;
+  /**
+   * Styrelsen har godkänt ettårsavtalet — föreningen är kund.
+   * Inloggning sker då via «Logga in till er BRF», inte testperiod.
+   */
+  avtalGodkant: boolean;
+  /** ISO-tidpunkt när avtalet godkändes (tom sträng om ej kund). */
+  avtalGodkantTidpunkt: string;
 };
+
+/** Säkerställer nya fält för profiler sparade innan avtal/kund fanns. */
+export function normaliseraForeningProfil(
+  raw: Partial<ForeningProfil> & Pick<ForeningProfil, "id" | "namn">,
+): ForeningProfil {
+  return {
+    id: raw.id,
+    namn: typeof raw.namn === "string" ? raw.namn : "",
+    skapadTidpunkt:
+      typeof raw.skapadTidpunkt === "string" ? raw.skapadTidpunkt : "",
+    organisationsnummer:
+      typeof raw.organisationsnummer === "string"
+        ? raw.organisationsnummer
+        : "",
+    epost: typeof raw.epost === "string" ? raw.epost : "",
+    postadress: typeof raw.postadress === "string" ? raw.postadress : "",
+    ort: typeof raw.ort === "string" ? raw.ort : "",
+    kontaktperson:
+      typeof raw.kontaktperson === "string" ? raw.kontaktperson : "",
+    grundinfoPaborjad: Boolean(raw.grundinfoPaborjad),
+    avtalGodkant: Boolean(raw.avtalGodkant),
+    avtalGodkantTidpunkt:
+      typeof raw.avtalGodkantTidpunkt === "string"
+        ? raw.avtalGodkantTidpunkt
+        : "",
+  };
+}
 
 type ForeningRegistry = {
   version: 1;
@@ -69,13 +103,15 @@ function normaliseraRegistry(raw: unknown): ForeningRegistry {
   if (!Array.isArray(o.poster)) return tomtRegistry();
   return {
     version: 1,
-    poster: o.poster.filter(
-      (p): p is ForeningProfil =>
-        typeof p === "object" &&
-        p != null &&
-        typeof p.id === "string" &&
-        typeof p.namn === "string",
-    ),
+    poster: o.poster
+      .filter(
+        (p): p is ForeningProfil =>
+          typeof p === "object" &&
+          p != null &&
+          typeof (p as ForeningProfil).id === "string" &&
+          typeof (p as ForeningProfil).namn === "string",
+      )
+      .map((p) => normaliseraForeningProfil(p)),
   };
 }
 
@@ -252,7 +288,7 @@ export function repareraForeningRegistry(): boolean {
       if (!raw) continue;
       const profil = JSON.parse(raw) as ForeningProfil;
       if (typeof profil.namn !== "string" || !profil.namn.trim()) continue;
-      registry.poster.push({ ...profil, id });
+      registry.poster.push(normaliseraForeningProfil({ ...profil, id }));
       ids.add(id);
       andrat = true;
     } catch {
@@ -435,7 +471,7 @@ export function aktiveraForeningVidSidladdning(): ForeningProfil | null {
 }
 
 function tomProfil(id: string, namn: string): ForeningProfil {
-  return {
+  return normaliseraForeningProfil({
     id,
     namn,
     skapadTidpunkt: new Date().toISOString(),
@@ -445,7 +481,9 @@ function tomProfil(id: string, namn: string): ForeningProfil {
     ort: "",
     kontaktperson: "",
     grundinfoPaborjad: false,
-  };
+    avtalGodkant: false,
+    avtalGodkantTidpunkt: "",
+  });
 }
 
 /**
@@ -596,7 +634,7 @@ export function webblasarenKanSparaIData(): boolean {
 export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
   const id = foreningId ?? hamtaAktivForeningId();
   if (id === GRUNDMALL_FORENING_ID) {
-    return {
+    return normaliseraForeningProfil({
       id: GRUNDMALL_FORENING_ID,
       namn: GRUNDMALL_NAMN,
       skapadTidpunkt: "",
@@ -606,7 +644,9 @@ export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
       ort: "",
       kontaktperson: "",
       grundinfoPaborjad: true,
-    };
+      avtalGodkant: false,
+      avtalGodkantTidpunkt: "",
+    });
   }
   const key = profilStorageKey(id);
   try {
@@ -614,9 +654,9 @@ export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
     if (!raw) {
       const reg = lasForeningRegistry();
       const post = reg.poster.find((p) => p.id === id);
-      return post ?? null;
+      return post ? normaliseraForeningProfil(post) : null;
     }
-    return JSON.parse(raw) as ForeningProfil;
+    return normaliseraForeningProfil(JSON.parse(raw) as ForeningProfil);
   } catch {
     return null;
   }
@@ -626,14 +666,15 @@ export function sparaForeningProfil(
   profil: ForeningProfil,
   val?: { tyst?: boolean },
 ): void {
+  const normaliserad = normaliseraForeningProfil(profil);
   const registry = lasForeningRegistry();
-  const idx = registry.poster.findIndex((p) => p.id === profil.id);
-  if (idx >= 0) registry.poster[idx] = profil;
-  else registry.poster.push(profil);
+  const idx = registry.poster.findIndex((p) => p.id === normaliserad.id);
+  if (idx >= 0) registry.poster[idx] = normaliserad;
+  else registry.poster.push(normaliserad);
   sparaRegistry(registry);
 
-  const key = profilStorageKey(profil.id);
-  const result = safeSetLocalStorage(key, JSON.stringify(profil));
+  const key = profilStorageKey(normaliserad.id);
+  const result = safeSetLocalStorage(key, JSON.stringify(normaliserad));
   if (!result.ok) {
     throw new Error(localStorageFelMeddelande(result.error));
   }

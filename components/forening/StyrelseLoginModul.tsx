@@ -17,6 +17,13 @@ import {
   listaInloggningsForeningar,
   normaliseraBrfSoktext,
 } from "@/lib/forening-inloggning";
+import {
+  arKundForening,
+  KUND_LOGIN_KNAPP_RUBRIK,
+  KUND_LOGIN_PATH,
+  listaKundForeningar,
+  TEST_LOGIN_PATH,
+} from "@/lib/forening-kund";
 import { arSailorForening } from "@/lib/sailor-forening";
 import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
 import {
@@ -25,7 +32,7 @@ import {
 } from "@/lib/testforeningar";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
-const INLOGGNING_PATH = "/styrelse-login";
+export type LoginLage = "test" | "kund";
 
 function initial(namn: string): string {
   return namn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
@@ -46,18 +53,21 @@ function formatDatum(iso: string): string {
 
 interface ForeningKortProps {
   forening: ForeningProfil;
+  lage: LoginLage;
   onLoggaIn: () => void;
   onBekraftaRensa?: () => void;
 }
 
 function ForeningKort({
   forening,
+  lage,
   onLoggaIn,
   onBekraftaRensa,
 }: ForeningKortProps) {
   const ini = initial(forening.namn);
   const egen = arEgenTestForening(forening.id);
-  const visaTestperiod = !arSailorForening(forening.id);
+  const kund = arKundForening(forening);
+  const visaDemo = !egen && !arSailorForening(forening.id);
 
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-border bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -69,12 +79,16 @@ function ForeningKort({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-lg font-bold text-foreground">{forening.namn}</p>
-            {egen ? (
+            {kund ? (
               <span className="rounded-full border border-primary/40 bg-[#eef6f0] px-2 py-0.5 text-xs font-semibold text-primary-dark">
-                Er testförening
+                Kund
               </span>
-            ) : visaTestperiod ? (
-              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+            ) : egen ? (
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                Testperiod
+              </span>
+            ) : visaDemo ? (
+              <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-muted">
                 Demo
               </span>
             ) : null}
@@ -83,7 +97,12 @@ function ForeningKort({
             {forening.skapadTidpunkt && (
               <span>Skapad {formatDatum(forening.skapadTidpunkt)}</span>
             )}
-            {forening.grundinfoPaborjad && (
+            {kund && forening.avtalGodkantTidpunkt && (
+              <span className="font-medium text-primary-dark">
+                Avtal {formatDatum(forening.avtalGodkantTidpunkt)}
+              </span>
+            )}
+            {!kund && forening.grundinfoPaborjad && (
               <span className="font-medium text-primary-dark">
                 ✓ Föreningsuppgifter sparade
               </span>
@@ -105,11 +124,11 @@ function ForeningKort({
 
       <div className="flex items-center justify-between border-t border-border/60 bg-surface/40 px-5 py-2.5">
         <p className="text-xs text-muted">
-          {egen
-            ? "Sparad i den här webbläsaren — syns när ni söker på namnet"
-            : visaTestperiod
-              ? "Fast demoförening för test"
-              : "Data sparas lokalt i webbläsaren"}
+          {lage === "kund"
+            ? "Endast er förening — andra föreningars uppgifter syns inte"
+            : egen
+              ? "Sparad i den här webbläsaren — godkänn avtal för att bli kund"
+              : "Fast demoförening för test"}
         </p>
         {onBekraftaRensa && (
           <button
@@ -125,16 +144,24 @@ function ForeningKort({
   );
 }
 
-export function StyrelseLoginModul() {
+type StyrelseLoginModulProps = {
+  /** test = testperiod/demo · kund = endast föreningar med tecknat avtal */
+  lage?: LoginLage;
+};
+
+export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [sok, setSok] = useState(INLOGGNING_BRF_PREFIX);
   const [rensaId, setRensaId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const listaRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
 
   function ladda() {
-    setForeningar(listaInloggningsForeningar());
+    setForeningar(
+      lage === "kund" ? listaKundForeningar() : listaInloggningsForeningar(),
+    );
   }
 
   useEffect(() => {
@@ -142,7 +169,8 @@ export function StyrelseLoginModul() {
     setHydrated(true);
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ladda beror av lage
+  }, [lage]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -160,8 +188,10 @@ export function StyrelseLoginModul() {
   );
 
   const endastEgna = arEndastEgnaForeningar(foreningar);
+  const arKundLage = lage === "kund";
 
   function loggaIn(id: string) {
+    // Kundläge: aktivera bara den valda föreningen — aldrig andras data.
     markeraPendingAktivForening(id);
     sattAktivForeningId(id);
     window.location.assign(hamtaForeningStartPath(id));
@@ -192,15 +222,39 @@ export function StyrelseLoginModul() {
     <div className="mx-auto max-w-lg space-y-5 px-4">
       <section>
         <p className="mb-1 text-center text-sm font-medium text-foreground">
-          Logga in på er testförening
+          {arKundLage
+            ? KUND_LOGIN_KNAPP_RUBRIK
+            : "Logga in på er testförening"}
         </p>
         <p className="mb-4 text-center text-sm text-muted">
-          {endastEgna ? (
+          {arKundLage ? (
+            foreningar.length === 0 ? (
+              <>
+                Här visas bara föreningar med tecknat avtal. Skapa en testförening,
+                spara uppgifterna och godkänn avtalet på föreningssidan — sedan
+                syns den här.
+              </>
+            ) : (
+              <>
+                Endast er förening med tecknat avtal. Andra föreningar och demos
+                visas inte. Skriv vidare efter{" "}
+                <strong className="text-foreground">Brf</strong> för att filtrera
+                {foreningar[0]
+                  ? ` (t.ex. «${föreslaSokExempel(foreningar[0].namn)}»)`
+                  : ""}
+                .
+              </>
+            )
+          ) : endastEgna ? (
             <>
-              Er sparade testförening visas nedan. Skriv vidare efter{" "}
-              <strong className="text-foreground">Brf</strong> för att filtrera
-              (t.ex. «{föreslaSokExempel(foreningar[0]?.namn ?? "Brf St")}»).
-              Övriga demoföreningar syns inte.
+              Er testförening visas nedan. När ni godkänt avtal loggar ni in via{" "}
+              <Link
+                href={KUND_LOGIN_PATH}
+                className="font-medium text-primary-dark underline hover:no-underline"
+              >
+                {KUND_LOGIN_KNAPP_RUBRIK}
+              </Link>{" "}
+              i stället.
             </>
           ) : (
             <>
@@ -233,11 +287,17 @@ export function StyrelseLoginModul() {
         </label>
 
         <p className="mt-2 text-center text-xs text-muted">
-          {endastEgna
-            ? filtrerade.length === 1
-              ? "1 sparad testförening"
-              : `${filtrerade.length} av ${foreningar.length} sparade`
-            : `${foreningar.length} demoföreningar — skapa er egen via Pröva gratis så syns bara den`}
+          {arKundLage
+            ? foreningar.length === 0
+              ? "Inga kundföreningar i den här webbläsaren ännu"
+              : filtrerade.length === 1
+                ? "1 förening med avtal"
+                : `${filtrerade.length} av ${foreningar.length} med avtal`
+            : endastEgna
+              ? filtrerade.length === 1
+                ? "1 sparad testförening"
+                : `${filtrerade.length} av ${foreningar.length} sparade`
+              : `${foreningar.length} demoföreningar — skapa er egen via Pröva gratis`}
         </p>
 
         <ul
@@ -249,22 +309,41 @@ export function StyrelseLoginModul() {
           {filtrerade.length === 0 ? (
             <li className="rounded-2xl border border-dashed border-border bg-white px-5 py-8 text-center">
               <p className="text-sm font-medium text-foreground">
-                Ingen förening matchar «{sok.trim()}»
+                {arKundLage && foreningar.length === 0
+                  ? "Ingen kundförening ännu"
+                  : `Ingen förening matchar «${sok.trim()}»`}
               </p>
               <p className="mt-2 text-sm text-muted">
-                {endastEgna && foreningar.length > 0 ? (
+                {arKundLage ? (
                   <>
-                    Rensa sökningen till «Brf » för att se alla sparade, eller{" "}
+                    Gå till er testförening, spara uppgifterna och{" "}
+                    <Link
+                      href="/forening/uppgifter"
+                      className="font-medium text-primary-dark underline hover:no-underline"
+                    >
+                      godkänn avtalet
+                    </Link>
+                    , eller{" "}
+                    <Link
+                      href={PROVA_GRATIS_PATH}
+                      className="font-medium text-primary-dark underline hover:no-underline"
+                    >
+                      skapa en testförening
+                    </Link>
+                    .
                   </>
-                ) : null}
-                Kontrollera stavningen, eller{" "}
-                <Link
-                  href={PROVA_GRATIS_PATH}
-                  className="font-medium text-primary-dark underline hover:no-underline"
-                >
-                  skapa er testförening
-                </Link>
-                .
+                ) : (
+                  <>
+                    Kontrollera stavningen, eller{" "}
+                    <Link
+                      href={PROVA_GRATIS_PATH}
+                      className="font-medium text-primary-dark underline hover:no-underline"
+                    >
+                      skapa er testförening
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             </li>
           ) : (
@@ -302,9 +381,10 @@ export function StyrelseLoginModul() {
                 <li key={f.id} role="option">
                   <ForeningKort
                     forening={f}
+                    lage={lage}
                     onLoggaIn={() => loggaIn(f.id)}
                     onBekraftaRensa={
-                      arStandardTestForening(f.id)
+                      !arKundLage && arStandardTestForening(f.id)
                         ? () => setRensaId(f.id)
                         : undefined
                     }
@@ -323,27 +403,40 @@ export function StyrelseLoginModul() {
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">
-              Hur hittar ni er förening nästa gång?
+              {arKundLage
+                ? "Varje föreningssida är bara er egen"
+                : "Från test till kund"}
             </p>
             <p className="mt-1 text-sm text-muted">
-              Från Styrelse-Navets startsida:{" "}
-              <strong className="text-foreground">Testföreningar</strong> eller{" "}
-              <strong className="text-foreground">Logga in styrelse</strong>.
-              Er sparade testförening visas direkt — övriga demoföreningar syns
-              inte när ni har skapat en egen.
+              {arKundLage ? (
+                <>
+                  När ni loggar in aktiveras endast den valda föreningen.
+                  Moduler, dokument och uppgifter är isolerade — andras data
+                  syns inte.
+                </>
+              ) : (
+                <>
+                  1) Skapa testförening · 2) Spara föreningsuppgifter · 3)
+                  Godkänn avtal på föreningssidan · 4) Logga in via{" "}
+                  <strong className="text-foreground">
+                    {KUND_LOGIN_KNAPP_RUBRIK}
+                  </strong>
+                  .
+                </>
+              )}
             </p>
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
               <code className="flex-1 text-xs font-mono text-foreground">
                 {typeof window !== "undefined"
-                  ? `${window.location.origin}${INLOGGNING_PATH}`
-                  : INLOGGNING_PATH}
+                  ? `${window.location.origin}${inloggningsPath}`
+                  : inloggningsPath}
               </code>
               <button
                 type="button"
                 onClick={() => {
                   if (typeof navigator !== "undefined") {
                     navigator.clipboard.writeText(
-                      `${window.location.origin}${INLOGGNING_PATH}`,
+                      `${window.location.origin}${inloggningsPath}`,
                     );
                   }
                 }}
@@ -352,11 +445,6 @@ export function StyrelseLoginModul() {
                 Kopiera
               </button>
             </div>
-            <p className="mt-1.5 text-xs text-muted">
-              Data sparas i webbläsaren på den här datorn. Fyll i och spara
-              föreningsuppgifter inne på föreningssidan så är ni lätta att hitta
-              igen.
-            </p>
           </div>
         </div>
       </div>

@@ -580,6 +580,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     <li>Automatisk förlängning</li>
                     <li>Uppsägningstid 6 månader</li>
                   </ul>
+                  <Link
+                    href="/kund-login"
+                    className="mt-6 self-start rounded-lg border border-primary px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                  >
+                    Logga in till er BRF
+                  </Link>
                 </div>
 
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
@@ -637,6 +643,16 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   <li>Fakturering kvartalsvis</li>
                   <li>Uppsägningstid: 6 månader</li>
                 </ul>
+                <Link
+                  href="/forening/uppgifter#avtal"
+                  className="brf-knapp-gron mt-6 inline-flex px-5 py-2.5 text-sm"
+                >
+                  Godkänn avtal och bli kund
+                </Link>
+                <p className="mt-3 text-xs text-muted">
+                  När avtalet är godkänt loggar ni in via «Logga in till er BRF»
+                  — endast er förenings uppgifter visas.
+                </p>
               </div>
             </div>
           </section>

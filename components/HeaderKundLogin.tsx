@@ -3,17 +3,23 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
-import { antalEgnaTestForeningar } from "@/lib/forening-inloggning";
+import {
+  antalKundForeningar,
+  KUND_LOGIN_KNAPP_RUBRIK,
+  KUND_LOGIN_KNAPP_UNDERTEXT,
+  KUND_LOGIN_PATH,
+} from "@/lib/forening-kund";
 
 /**
- * Huvudmeny på Styrelse-Navet: tydlig inloggning + antal sparade (skapade) testföreningar.
+ * Publika knappen för föreningar med tecknat avtal («befintlig kund» med
+ * tydligare namn: Logga in till er BRF).
  */
-export function HeaderTestforeningarInfo() {
-  const [antalEgna, setAntalEgna] = useState<number | null>(null);
+export function HeaderKundLogin() {
+  const [antal, setAntal] = useState<number | null>(null);
 
   useEffect(() => {
     function ladda() {
-      setAntalEgna(antalEgnaTestForeningar());
+      setAntal(antalKundForeningar());
     }
     ladda();
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
@@ -25,20 +31,20 @@ export function HeaderTestforeningarInfo() {
   }, []);
 
   const undertext =
-    antalEgna == null
-      ? "Sök er testförening"
-      : antalEgna === 0
-        ? "Sök er testförening"
-        : antalEgna === 1
-          ? "1 sparad testförening"
-          : `${antalEgna} sparade testföreningar`;
+    antal == null
+      ? KUND_LOGIN_KNAPP_UNDERTEXT
+      : antal === 0
+        ? KUND_LOGIN_KNAPP_UNDERTEXT
+        : antal === 1
+          ? "1 förening med avtal"
+          : `${antal} föreningar med avtal`;
 
   return (
     <Link
-      href="/styrelse-login"
+      href={KUND_LOGIN_PATH}
       className="brf-knapp-gron flex flex-col items-start px-4 py-1.5 text-left leading-tight sm:items-center sm:text-center"
     >
-      <span className="text-sm font-semibold">Logga in styrelse</span>
+      <span className="text-sm font-semibold">{KUND_LOGIN_KNAPP_RUBRIK}</span>
       <span className="text-[11px] font-medium text-white/90">{undertext}</span>
     </Link>
   );

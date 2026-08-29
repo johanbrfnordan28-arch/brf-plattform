@@ -21,6 +21,8 @@ export const SAILOR_PROFIL = {
   ort: "134 39 Gustavsberg",
   kontaktperson: "Trazie Lindberg",
   grundinfoPaborjad: true,
+  avtalGodkant: false,
+  avtalGodkantTidpunkt: "",
 } as const;
 
 /**

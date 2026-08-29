@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { HeaderTestforeningarInfo } from "@/components/HeaderTestforeningarInfo";
+import { HeaderKundLogin } from "@/components/HeaderKundLogin";
+import { HeaderTestperiodLank } from "@/components/HeaderTestperiodLank";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { TEST_LOGIN_PATH } from "@/lib/forening-kund";
 
 const nav = [
   { href: "#moduler", label: "Moduler" },
   { href: "/upphandling", label: "Aktuella upphandlingar" },
   { href: "#intro-film", label: "Film & pris" },
   { href: "#priser", label: "Priser" },
-  { href: "/styrelse-login", label: "Testföreningar" },
+  { href: TEST_LOGIN_PATH, label: "Testperiod" },
 ];
 
 export function Header() {
@@ -44,7 +46,8 @@ export function Header() {
           >
             Pröva gratis 30 dagar
           </Link>
-          <HeaderTestforeningarInfo />
+          <HeaderTestperiodLank />
+          <HeaderKundLogin />
         </div>
       </div>
     </header>

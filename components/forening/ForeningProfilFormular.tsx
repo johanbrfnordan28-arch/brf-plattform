@@ -209,8 +209,8 @@ export function ForeningProfilFormular() {
 
       {sparad && (
         <p className="mt-3 text-sm text-primary-dark" role="status">
-          Sparat. {visningsProfil.namn} finns kvar i den här webbläsaren — logga
-          in via Styrelse-Navet → Logga in styrelse och sök på namnet.
+          Sparat. Nästa steg: godkänn avtalet nedan så blir {visningsProfil.namn}{" "}
+          kund — därefter loggar ni in via «Logga in till er BRF».
         </p>
       )}
     </div>
