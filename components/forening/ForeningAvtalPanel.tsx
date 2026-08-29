@@ -16,6 +16,8 @@ import {
   KUND_LOGIN_PATH,
 } from "@/lib/forening-kund";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
+import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 
 function formatDatum(iso: string): string {
   if (!iso) return "";
@@ -90,6 +92,7 @@ export function ForeningAvtalPanel() {
           på Styrelse-Navet — endast er förening syns, inga andra föreningars
           uppgifter.
         </p>
+        <ForeningPrisPanel variant="avtal" visaLankTillGrund />
         <Link
           href={KUND_LOGIN_PATH}
           className="mt-4 inline-flex rounded-lg border border-primary/40 bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
@@ -149,9 +152,16 @@ export function ForeningAvtalPanel() {
 
       <ul className="mt-4 space-y-1.5 text-sm text-muted">
         <li>Avtalstid: 1 år med automatisk förlängning</li>
-        <li>Fakturering kvartalsvis · 30 % rabatt mot månadsdebitering</li>
-        <li>Uppsägningstid: 6 månader</li>
+        <li>
+          Fakturering kvartalsvis i förskott · {ARSAVTAL_RABATT_PROCENT} % rabatt
+          mot månadsdebitering
+        </li>
+        <li>Uppsägningstid årsavtal: 6 månader</li>
+        <li>Månadsbetalning: ordinarie pris · 1 månads uppsägningstid</li>
+        <li>Alla priser exkl. moms</li>
       </ul>
+
+      <ForeningPrisPanel variant="avtal" />
 
       {!check.ok && (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">

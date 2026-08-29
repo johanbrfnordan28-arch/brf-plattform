@@ -6,7 +6,10 @@ import { ForeningHubbRubrik } from "@/components/forening/ForeningHubbRubrik";
 import { ForeningSnabbvagar } from "@/components/forening/ForeningSnabbvagar";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
+import { PublikPrisInfo } from "@/components/pris/PublikPrisInfo";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
+import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
@@ -305,7 +308,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               <span className="text-muted"> — testa hela plattformen</span>
             </p>
             <p>
-              <span className="font-semibold text-primary-dark">−30&nbsp;%</span>
+              <span className="font-semibold text-primary-dark">
+                −{ARSAVTAL_RABATT_PROCENT}&nbsp;%
+              </span>
               <span className="text-muted">
                 {" "}
                 på ettårsavtal vs månadsdebitering
@@ -541,7 +546,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 </h2>
                 <p className="mt-2 text-muted">
                   Testa plattformen utan kostnad. När ni ser värdet väljer ni
-                  ettårsavtal — med 30&nbsp;% rabatt mot månadsdebitering.
+                  ettårsavtal — med {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot
+                  månadsdebitering. Er kostnad beror på antal lägenheter och
+                  visas inne på föreningssidan när antalet är ifyllt.
                 </p>
               </div>
 
@@ -566,20 +573,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   </Link>
                 </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Ettårsavtal
-                  </p>
-                  <h3 className="mt-2 text-xl font-bold text-foreground">
-                    Spara 30&nbsp;%
-                  </h3>
-                  <p className="mt-1 text-sm text-primary-dark">
-                    mot månadsdebitering
-                  </p>
-                  <ul className="mt-4 flex-1 space-y-2 text-sm text-muted">
-                    <li>Fakturering kvartalsvis</li>
-                    <li>Automatisk förlängning</li>
-                    <li>Uppsägningstid 6 månader</li>
-                  </ul>
+                  <PublikPrisInfo />
                   <Link
                     href="/kund-login"
                     className="mt-6 self-start rounded-lg border border-primary px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
@@ -635,14 +629,16 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Pris & avtal
                 </p>
                 <h2 className="mt-2 text-2xl font-bold text-foreground">
-                  Tydlig avtalsmodell
+                  Er kostnad
                 </h2>
-                <ul className="mt-4 space-y-2 text-sm text-muted">
-                  <li>Avtalstid: 1 år</li>
-                  <li>Automatisk förlängning</li>
-                  <li>Fakturering kvartalsvis</li>
-                  <li>Uppsägningstid: 6 månader</li>
-                </ul>
+                <p className="mt-2 text-sm text-muted">
+                  Årsavtal med {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot
+                  månadsdebitering. Beloppet visas när antal lägenheter är
+                  ifyllt.
+                </p>
+                <div className="mt-4">
+                  <ForeningPrisPanel variant="hubb" />
+                </div>
                 <Link
                   href="/forening/uppgifter#avtal"
                   className="brf-knapp-gron mt-6 inline-flex px-5 py-2.5 text-sm"
