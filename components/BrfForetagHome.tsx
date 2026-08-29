@@ -8,6 +8,7 @@ import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRa
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 import { PublikPrisInfo } from "@/components/pris/PublikPrisInfo";
+import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
@@ -403,6 +404,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           ))}
         </div>
       </section>
+
+      <UnderhallsplanReklam lage={isForening ? "forening" : "public"} />
 
       {!isForening ? (
         <section
