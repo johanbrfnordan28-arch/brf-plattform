@@ -97,11 +97,11 @@ export function SkapaForeningPanel({
         Skapa vår förening
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Ni får en egen kopia av grundmallen med{" "}
-        <strong className="text-foreground">ert föreningsnamn</strong>. Föreningen
+        Ni får en egen sida med{" "}
+        <strong className="text-foreground">ert föreningsnamn</strong>. Den
         sparas i den här webbläsaren. Nästa gång: Styrelse-Navet →{" "}
-        <strong className="text-foreground">Logga in styrelse</strong> och sök
-        på namnet (Brf + bokstäver).
+        <strong className="text-foreground">Testperiod</strong> och sök på
+        namnet (Brf + minst tre bokstäver). Andra föreningar listas inte upp.
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
         <strong>Endast styrelsen</strong> ska skapa föreningens sida. Entreprenörer

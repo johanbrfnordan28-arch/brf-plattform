@@ -21,10 +21,10 @@ import {
 export const INLOGGNING_BRF_PREFIX = "Brf ";
 
 /**
- * Minsta antal bokstäver efter «Brf » innan listan filtreras strikt.
- * (Behålls för tipstexter — skapade föreningar visas direkt.)
+ * Minsta antal bokstäver efter «Brf » innan en skapad/kundförening visas.
+ * Skyddar så att flera sparade föreningar inte listas upp samtidigt.
  */
-export const MIN_SOK_BOKSTAVER_EFTER_BRF = 2;
+export const MIN_SOK_BOKSTAVER_EFTER_BRF = 3;
 
 export function arEgenTestForening(foreningId: string): boolean {
   return (
@@ -59,12 +59,9 @@ function matcharNamn(foreningsNamn: string, soktext: string): boolean {
     return true;
   }
 
-  // Matcha mot enskilda ord (t.ex. «21» eller «stora»)
+  // Matcha mot början av ord (inte lösa delträffar som avslöjar andra namn)
   const ord = namnUtanBrf.split(/\s+/).filter(Boolean);
-  return ord.some(
-    (o) =>
-      o.startsWith(qUtanBrf) || o.includes(qUtanBrf) || qUtanBrf.includes(o),
-  );
+  return ord.some((o) => o.startsWith(qUtanBrf) || namnKollaps.startsWith(qKollaps));
 }
 
 function lasSenastSkapadProfilerFranLagring(): ForeningProfil[] {
@@ -174,40 +171,41 @@ export function arEndastEgnaForeningar(foreningar: ForeningProfil[]): boolean {
 }
 
 /**
- * Föreslå kort söktext baserat på föreningsnamn (t.ex. «Brf St»).
+ * Föreslå generiskt sökexempel (utan att avslöja sparade föreningsnamn).
  */
-export function föreslaSokExempel(namn: string): string {
-  const trimmat = namn.trim();
-  if (!trimmat) return "Brf St";
-  const utanBrf = trimmat.replace(/^brf\s+/i, "").trim();
-  const del = utanBrf.slice(0, Math.min(4, Math.max(2, utanBrf.length))) || "St";
-  return trimmat.toLowerCase().startsWith("brf")
-    ? `${INLOGGNING_BRF_PREFIX}${del}`
-    : del;
+export function föreslaSokExempel(_namn?: string): string {
+  return "Brf Sol";
 }
 
 /**
- * Tidigare: skapade föreningar doldes tills minst 2 bokstäver skrivits.
- * Det gjorde att Testföreningar såg tomt ut. Skapade visas nu direkt.
+ * Skapade/kundföreningar visas först när styrelsen skrivit tillräckligt
+ * många bokstäver — annars syns alla sparade samtidigt.
  */
 export function sokKräverFlerBokstaver(
-  _soktext: string,
-  _foreningar: ForeningProfil[],
+  soktext: string,
+  foreningar: ForeningProfil[],
 ): boolean {
-  return false;
+  if (!arEndastEgnaForeningar(foreningar)) return false;
+  return hamtaSokSuffix(soktext).length < MIN_SOK_BOKSTAVER_EFTER_BRF;
 }
 
 /**
  * Filtrerar på bokstäver efter «Brf ».
- * Tomt / enbart «Brf» → hela listan.
- * Matchar även namn med/utan mellanslag (Stora huset ≈ Storahuset).
+ * För skapade/kund: tomt eller för kort → ingen lista (integritet).
+ * För demos: tomt / enbart «Brf» → hela demolistan.
  */
 export function filtreraForeningarPaSok(
   foreningar: ForeningProfil[],
   soktext: string,
 ): ForeningProfil[] {
+  if (sokKräverFlerBokstaver(soktext, foreningar)) {
+    return [];
+  }
+
   const q = soktext.trim();
   if (!q || normaliseraForeningsNamn(q) === "brf") {
+    // Visa aldrig hela listan med skapade/kund — bara demos.
+    if (arEndastEgnaForeningar(foreningar)) return [];
     return foreningar;
   }
 

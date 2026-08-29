@@ -42,7 +42,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <Link
             href={PROVA_GRATIS_PATH}
-            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
+            className="brf-knapp-neutral hidden px-3 py-2 text-sm sm:inline-flex"
           >
             Pröva gratis 30 dagar
           </Link>

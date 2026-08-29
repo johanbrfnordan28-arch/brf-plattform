@@ -13,9 +13,12 @@ import {
   arEndastEgnaForeningar,
   filtreraForeningarPaSok,
   föreslaSokExempel,
+  hamtaSokSuffix,
   INLOGGNING_BRF_PREFIX,
   listaInloggningsForeningar,
+  MIN_SOK_BOKSTAVER_EFTER_BRF,
   normaliseraBrfSoktext,
+  sokKräverFlerBokstaver,
 } from "@/lib/forening-inloggning";
 import {
   arKundForening,
@@ -94,19 +97,16 @@ function ForeningKort({
             ) : null}
           </div>
           <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
-            {forening.skapadTidpunkt && (
-              <span>Skapad {formatDatum(forening.skapadTidpunkt)}</span>
-            )}
-            {kund && forening.avtalGodkantTidpunkt && (
+            {kund && forening.avtalGodkantTidpunkt ? (
               <span className="font-medium text-primary-dark">
                 Avtal {formatDatum(forening.avtalGodkantTidpunkt)}
               </span>
-            )}
-            {!kund && forening.grundinfoPaborjad && (
+            ) : null}
+            {!kund && forening.grundinfoPaborjad ? (
               <span className="font-medium text-primary-dark">
                 ✓ Föreningsuppgifter sparade
               </span>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -125,9 +125,9 @@ function ForeningKort({
       <div className="flex items-center justify-between border-t border-border/60 bg-surface/40 px-5 py-2.5">
         <p className="text-xs text-muted">
           {lage === "kund"
-            ? "Endast er förening — andra föreningars uppgifter syns inte"
+            ? "Endast er förening öppnas — andras uppgifter syns inte"
             : egen
-              ? "Sparad i den här webbläsaren — godkänn avtal för att bli kund"
+              ? "Er testförening i den här webbläsaren"
               : "Fast demoförening för test"}
         </p>
         {onBekraftaRensa && (
@@ -188,10 +188,14 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   );
 
   const endastEgna = arEndastEgnaForeningar(foreningar);
+  const vantarPaSok = sokKräverFlerBokstaver(sok, foreningar);
   const arKundLage = lage === "kund";
+  const kvarAttSkriva = Math.max(
+    0,
+    MIN_SOK_BOKSTAVER_EFTER_BRF - hamtaSokSuffix(sok).length,
+  );
 
   function loggaIn(id: string) {
-    // Kundläge: aktivera bara den valda föreningen — aldrig andras data.
     markeraPendingAktivForening(id);
     sattAktivForeningId(id);
     window.location.assign(hamtaForeningStartPath(id));
@@ -211,7 +215,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     return (
       <div className="mx-auto max-w-lg animate-pulse space-y-3 px-4">
         <div className="h-12 rounded-2xl bg-border/40" />
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="h-24 rounded-2xl bg-border/40" />
         ))}
       </div>
@@ -228,39 +232,31 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         </p>
         <p className="mb-4 text-center text-sm text-muted">
           {arKundLage ? (
-            foreningar.length === 0 ? (
-              <>
-                Här visas bara föreningar med tecknat avtal. Skapa en testförening,
-                spara uppgifterna och godkänn avtalet på föreningssidan — sedan
-                syns den här.
-              </>
-            ) : (
-              <>
-                Endast er förening med tecknat avtal. Andra föreningar och demos
-                visas inte. Skriv vidare efter{" "}
-                <strong className="text-foreground">Brf</strong> för att filtrera
-                {foreningar[0]
-                  ? ` (t.ex. «${föreslaSokExempel(foreningar[0].namn)}»)`
-                  : ""}
-                .
-              </>
-            )
+            <>
+              Skriv er förenings namn efter{" "}
+              <strong className="text-foreground">Brf</strong> (minst{" "}
+              {MIN_SOK_BOKSTAVER_EFTER_BRF} bokstäver, t.ex. «{föreslaSokExempel()}»).
+              Då visas bara den förening som matchar — aldrig en lista över andra.
+            </>
           ) : endastEgna ? (
             <>
-              Er testförening visas nedan. När ni godkänt avtal loggar ni in via{" "}
+              Skriv er förenings namn efter{" "}
+              <strong className="text-foreground">Brf</strong> (minst{" "}
+              {MIN_SOK_BOKSTAVER_EFTER_BRF} bokstäver). Andra sparade föreningar
+              listas inte upp. När ni har avtal:{" "}
               <Link
                 href={KUND_LOGIN_PATH}
                 className="font-medium text-primary-dark underline hover:no-underline"
               >
                 {KUND_LOGIN_KNAPP_RUBRIK}
-              </Link>{" "}
-              i stället.
+              </Link>
+              .
             </>
           ) : (
             <>
               Börja med <strong className="text-foreground">Brf</strong> och
-              skriv fler bokstäver — listan filtreras. Har ni skapat en egen
-              testförening syns den i stället för demoföreningarna.
+              skriv fler bokstäver för att filtrera demoföreningar — eller skapa
+              er egen via Pröva gratis.
             </>
           )}
         </p>
@@ -287,17 +283,15 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         </label>
 
         <p className="mt-2 text-center text-xs text-muted">
-          {arKundLage
-            ? foreningar.length === 0
-              ? "Inga kundföreningar i den här webbläsaren ännu"
+          {vantarPaSok
+            ? `Skriv ${kvarAttSkriva} bokstav${kvarAttSkriva === 1 ? "" : "er"} till efter Brf`
+            : filtrerade.length === 0
+              ? endastEgna || arKundLage
+                ? "Ingen träff — kontrollera stavningen"
+                : "Ingen demoförening matchar"
               : filtrerade.length === 1
-                ? "1 förening med avtal"
-                : `${filtrerade.length} av ${foreningar.length} med avtal`
-            : endastEgna
-              ? filtrerade.length === 1
-                ? "1 sparad testförening"
-                : `${filtrerade.length} av ${foreningar.length} sparade`
-              : `${foreningar.length} demoföreningar — skapa er egen via Pröva gratis`}
+                ? "Träff — logga in på er förening"
+                : "Flera träffar — skriv fler bokstäver för att begränsa"}
         </p>
 
         <ul
@@ -306,29 +300,40 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           className="mt-4 max-h-[28rem] space-y-3 overflow-y-auto overscroll-contain pr-1"
           role="listbox"
         >
-          {filtrerade.length === 0 ? (
+          {vantarPaSok ? (
+            <li className="rounded-2xl border border-dashed border-amber-300/80 bg-amber-50/60 px-5 py-8 text-center">
+              <p className="text-sm font-medium text-amber-950">
+                Skriv föreningens namn
+              </p>
+              <p className="mt-2 text-sm text-amber-900/80">
+                Av integritetsskäl visas ingen lista över sparade föreningar.
+                Ange minst {MIN_SOK_BOKSTAVER_EFTER_BRF} bokstäver efter «Brf »
+                så dyker er förening upp.
+              </p>
+            </li>
+          ) : filtrerade.length === 0 ? (
             <li className="rounded-2xl border border-dashed border-border bg-white px-5 py-8 text-center">
               <p className="text-sm font-medium text-foreground">
-                {arKundLage && foreningar.length === 0
-                  ? "Ingen kundförening ännu"
+                {arKundLage && foreningar.length === 0 && !hamtaSokSuffix(sok)
+                  ? "Skriv föreningsnamnet för att logga in"
                   : `Ingen förening matchar «${sok.trim()}»`}
               </p>
               <p className="mt-2 text-sm text-muted">
                 {arKundLage ? (
                   <>
-                    Gå till er testförening, spara uppgifterna och{" "}
+                    Har ni inte tecknat avtal ännu? Öppna{" "}
                     <Link
-                      href="/forening/uppgifter"
+                      href={TEST_LOGIN_PATH}
                       className="font-medium text-primary-dark underline hover:no-underline"
                     >
-                      godkänn avtalet
+                      Testperiod
                     </Link>
-                    , eller{" "}
+                    , spara uppgifter och godkänn avtalet — eller{" "}
                     <Link
                       href={PROVA_GRATIS_PATH}
                       className="font-medium text-primary-dark underline hover:no-underline"
                     >
-                      skapa en testförening
+                      skapa er förening
                     </Link>
                     .
                   </>
@@ -356,8 +361,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
                     </p>
                     <p className="mt-1 text-sm text-red-700">
                       Underhållsplan, medlemmar och övriga uppgifter i den här
-                      testföreningen raderas. Föreningen finns kvar i listan så
-                      ni kan börja om.
+                      testföreningen raderas.
                     </p>
                     <div className="mt-4 flex gap-2">
                       <button
@@ -403,25 +407,19 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">
-              {arKundLage
-                ? "Varje föreningssida är bara er egen"
-                : "Från test till kund"}
+              För styrelsen — enkelt att komma tillbaka
             </p>
             <p className="mt-1 text-sm text-muted">
               {arKundLage ? (
                 <>
-                  När ni loggar in aktiveras endast den valda föreningen.
-                  Moduler, dokument och uppgifter är isolerade — andras data
-                  syns inte.
+                  Kom ihåg föreningsnamnet. Sök → logga in → bara er sida öppnas.
+                  Andra föreningar syns inte.
                 </>
               ) : (
                 <>
-                  1) Skapa testförening · 2) Spara föreningsuppgifter · 3)
-                  Godkänn avtal på föreningssidan · 4) Logga in via{" "}
-                  <strong className="text-foreground">
-                    {KUND_LOGIN_KNAPP_RUBRIK}
-                  </strong>
-                  .
+                  1) Skapa via Pröva gratis · 2) Spara uppgifter · 3) Godkänn
+                  avtal · 4) Logga in via {KUND_LOGIN_KNAPP_RUBRIK}. Under
+                  testperioden: sök på namnet här — utan att se andras föreningar.
                 </>
               )}
             </p>

@@ -11,7 +11,7 @@ import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 export const metadata: Metadata = {
   title: `${KUND_LOGIN_KNAPP_RUBRIK} — ${BRF_NAVET_NAMN}`,
   description:
-    "Logga in till er BRF med tecknat avtal. Endast er förening syns — inte andra föreningars uppgifter.",
+    "Sök och logga in till er BRF med tecknat avtal. Andra föreningar listas inte.",
 };
 
 export default function KundLoginPage() {
@@ -25,9 +25,8 @@ export default function KundLoginPage() {
           {KUND_LOGIN_KNAPP_RUBRIK}
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-base text-muted">
-          För styrelser med tecknat avtal. Här visas bara er förening — demos
-          och andras testföreningar döljs. Varje föreningssida anpassas efter er
-          aktiva förening.
+          Sök på er förenings namn. Här listas inte andra kunder eller
+          testföreningar — bara den förening som matchar sökningen.
         </p>
       </div>
 

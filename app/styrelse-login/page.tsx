@@ -11,23 +11,22 @@ import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 export const metadata: Metadata = {
   title: `Testperiod — ${BRF_NAVET_NAMN}`,
   description:
-    "Logga in på er testförening under provperioden. När avtalet är godkänt använder ni kundinloggningen.",
+    "Sök och logga in på er testförening. Andra sparade föreningar listas inte upp.",
 };
 
 export default function StyrelseLoginPage() {
   return (
     <main className="flex min-h-[calc(100vh-4rem)] flex-col justify-center bg-surface/40 py-12">
       <div className="mb-10 px-4 text-center sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary-dark">
+        <p className="text-xs font-semibold uppercase tracking-widest text-amber-800">
           {BRF_NAVET_NAMN} · Testperiod
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Logga in på er testförening
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-base text-muted">
-          Här syns skapade testföreningar (utan avtal) och demos. När ni
-          godkänt avtalet på föreningssidan loggar ni in via{" "}
-          <strong className="text-foreground">{KUND_LOGIN_KNAPP_RUBRIK}</strong>.
+          Sök på er förenings namn. Av integritetsskäl visas ingen lista över
+          alla sparade föreningar — bara den ni söker efter.
         </p>
       </div>
 
