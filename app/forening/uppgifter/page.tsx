@@ -19,13 +19,18 @@ export default function ForeningUppgifterPage() {
       intro="Här fyller styrelsen i kontaktuppgifter. De används automatiskt i dokument, städschema, egenkontroller, upphandlingsunderlag och underhållsplanen."
     >
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-5">
-        <p className="text-sm font-semibold text-primary-dark">Två steg för nya kunder</p>
+        <p className="text-sm font-semibold text-primary-dark">
+          Spara så föreningen finns kvar vid nästa inloggning
+        </p>
         <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
           <li>
-            <strong>Styrelsens kontakt</strong> — fyll i formuläret nedan och spara.
+            <strong>Spara föreningsuppgifter</strong> — fyll i formuläret nedan
+            och tryck Spara. Då märks föreningen som sparad och syns när
+            styrelsen söker från Styrelse-Navet.
           </li>
           <li>
-            <strong>Fastighetens grunduppgifter</strong> — boarea, lägenheter och adresser i{" "}
+            <strong>Fastighetens grunduppgifter</strong> — boarea, lägenheter och
+            adresser i{" "}
             <Link
               href="/forening/underhallsplan#grund"
               className="font-medium text-primary-dark underline hover:no-underline"

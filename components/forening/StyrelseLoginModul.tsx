@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FORENING_AKTIV_EVENT,
   markeraPendingAktivForening,
@@ -8,11 +9,19 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import {
-  listaInloggningsTestForeningar,
-  rensaStandardTestForening,
-} from "@/lib/testforeningar";
+  arEgenTestForening,
+  filtreraForeningarPaSok,
+  INLOGGNING_BRF_PREFIX,
+  listaInloggningsForeningar,
+  normaliseraBrfSoktext,
+} from "@/lib/forening-inloggning";
 import { arSailorForening } from "@/lib/sailor-forening";
 import { hamtaForeningStartPath } from "@/lib/styrelse-kontakt";
+import {
+  arStandardTestForening,
+  rensaStandardTestForening,
+} from "@/lib/testforeningar";
+import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 const INLOGGNING_PATH = "/styrelse-login";
 
@@ -36,11 +45,16 @@ function formatDatum(iso: string): string {
 interface ForeningKortProps {
   forening: ForeningProfil;
   onLoggaIn: () => void;
-  onBekraftaRensa: () => void;
+  onBekraftaRensa?: () => void;
 }
 
-function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProps) {
+function ForeningKort({
+  forening,
+  onLoggaIn,
+  onBekraftaRensa,
+}: ForeningKortProps) {
   const ini = initial(forening.namn);
+  const egen = arEgenTestForening(forening.id);
   const visaTestperiod = !arSailorForening(forening.id);
 
   return (
@@ -53,11 +67,15 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-lg font-bold text-foreground">{forening.namn}</p>
-            {visaTestperiod && (
-              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                Testperiod
+            {egen ? (
+              <span className="rounded-full border border-primary/40 bg-[#eef6f0] px-2 py-0.5 text-xs font-semibold text-primary-dark">
+                Er testförening
               </span>
-            )}
+            ) : visaTestperiod ? (
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                Demo
+              </span>
+            ) : null}
           </div>
           <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
             {forening.skapadTidpunkt && (
@@ -65,7 +83,7 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
             )}
             {forening.grundinfoPaborjad && (
               <span className="font-medium text-primary-dark">
-                ✓ Grunduppgifter ifyllda
+                ✓ Föreningsuppgifter sparade
               </span>
             )}
           </div>
@@ -85,17 +103,21 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
 
       <div className="flex items-center justify-between border-t border-border/60 bg-surface/40 px-5 py-2.5">
         <p className="text-xs text-muted">
-          {visaTestperiod
-            ? "All data sparas enbart i den här testföreningen"
-            : "Data sparas lokalt i webbläsaren för den här föreningen"}
+          {egen
+            ? "Sparad i den här webbläsaren — syns när ni söker på namnet"
+            : visaTestperiod
+              ? "Fast demoförening för test"
+              : "Data sparas lokalt i webbläsaren"}
         </p>
-        <button
-          type="button"
-          onClick={onBekraftaRensa}
-          className="text-xs text-muted hover:text-red-600"
-        >
-          Rensa all data
-        </button>
+        {onBekraftaRensa && (
+          <button
+            type="button"
+            onClick={onBekraftaRensa}
+            className="text-xs text-muted hover:text-red-600"
+          >
+            Rensa all data
+          </button>
+        )}
       </div>
     </div>
   );
@@ -103,11 +125,14 @@ function ForeningKort({ forening, onLoggaIn, onBekraftaRensa }: ForeningKortProp
 
 export function StyrelseLoginModul() {
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
+  const [sok, setSok] = useState(INLOGGNING_BRF_PREFIX);
   const [rensaId, setRensaId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const listaRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function ladda() {
-    setForeningar(listaInloggningsTestForeningar());
+    setForeningar(listaInloggningsForeningar());
   }
 
   useEffect(() => {
@@ -116,6 +141,23 @@ export function StyrelseLoginModul() {
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    inputRef.current?.focus();
+    const el = inputRef.current;
+    if (el) {
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
+    }
+  }, [hydrated]);
+
+  const filtrerade = useMemo(
+    () => filtreraForeningarPaSok(foreningar, sok),
+    [foreningar, sok],
+  );
+
+  const egnaAntal = foreningar.filter((f) => arEgenTestForening(f.id)).length;
 
   function loggaIn(id: string) {
     markeraPendingAktivForening(id);
@@ -129,10 +171,15 @@ export function StyrelseLoginModul() {
     ladda();
   }
 
+  function onSokChange(varde: string) {
+    setSok(normaliseraBrfSoktext(varde));
+  }
+
   if (!hydrated) {
     return (
       <div className="mx-auto max-w-lg animate-pulse space-y-3 px-4">
-        {Array.from({ length: 5 }).map((_, i) => (
+        <div className="h-12 rounded-2xl bg-border/40" />
+        {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-24 rounded-2xl bg-border/40" />
         ))}
       </div>
@@ -143,55 +190,111 @@ export function StyrelseLoginModul() {
     <div className="mx-auto max-w-lg space-y-5 px-4">
       <section>
         <p className="mb-1 text-center text-sm font-medium text-foreground">
-          Välj testförening
+          Logga in på er testförening
         </p>
         <p className="mb-4 text-center text-sm text-muted">
-          Fem separata testmiljöer — klicka{" "}
-          <strong className="font-medium text-foreground">Logga in</strong> för
-          att öppna er förening. Allt ni fyller i sparas bara i den valda
-          föreningen.
+          Börja med <strong className="text-foreground">Brf</strong> och skriv
+          fler bokstäver — listan filtreras. Rulla ner till rätt förening och
+          tryck Logga in.
         </p>
 
-        <ul className="space-y-4">
-          {foreningar.map((f) =>
-            rensaId === f.id ? (
-              <li key={f.id}>
-                <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-5">
-                  <p className="font-bold text-red-900">
-                    Rensa all data i {f.namn}?
-                  </p>
-                  <p className="mt-1 text-sm text-red-700">
-                    Underhållsplan, medlemmar och övriga uppgifter i den här
-                    testföreningen raderas. Föreningen finns kvar i listan så
-                    ni kan börja om.
-                  </p>
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => bekraftaRensa(f.id)}
-                      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                    >
-                      Ja, rensa all data
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRensaId(null)}
-                      className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-medium text-foreground"
-                    >
-                      Avbryt
-                    </button>
+        <label className="block">
+          <span className="sr-only">Sök förening</span>
+          <div className="flex overflow-hidden rounded-2xl border-2 border-primary/40 bg-white shadow-sm focus-within:border-primary">
+            <span className="flex items-center bg-[#eef6f0] px-3 text-sm font-semibold text-primary-dark">
+              Sök
+            </span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={sok}
+              onChange={(e) => onSokChange(e.target.value)}
+              placeholder={INLOGGNING_BRF_PREFIX}
+              autoComplete="off"
+              spellCheck={false}
+              className="min-w-0 flex-1 bg-transparent px-3 py-3 text-base font-medium text-foreground outline-none"
+              aria-controls="forening-sok-lista"
+              aria-expanded={filtrerade.length > 0}
+            />
+          </div>
+        </label>
+
+        <p className="mt-2 text-center text-xs text-muted">
+          {egnaAntal > 0
+            ? `${egnaAntal} egen${egnaAntal === 1 ? "" : "a"} testförening${egnaAntal === 1 ? "" : "ar"} + demoföreningar i den här webbläsaren`
+            : `${foreningar.length} föreningar i den här webbläsaren — skapa er egen via Pröva gratis`}
+          {filtrerade.length !== foreningar.length && (
+            <> · visar {filtrerade.length}</>
+          )}
+        </p>
+
+        <ul
+          id="forening-sok-lista"
+          ref={listaRef}
+          className="mt-4 max-h-[28rem] space-y-3 overflow-y-auto overscroll-contain pr-1"
+          role="listbox"
+        >
+          {filtrerade.length === 0 ? (
+            <li className="rounded-2xl border border-dashed border-border bg-white px-5 py-8 text-center">
+              <p className="text-sm font-medium text-foreground">
+                Ingen förening matchar «{sok.trim()}»
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                Kontrollera stavningen, eller{" "}
+                <Link
+                  href={PROVA_GRATIS_PATH}
+                  className="font-medium text-primary-dark underline hover:no-underline"
+                >
+                  skapa er testförening
+                </Link>
+                .
+              </p>
+            </li>
+          ) : (
+            filtrerade.map((f) =>
+              rensaId === f.id ? (
+                <li key={f.id}>
+                  <div className="rounded-2xl border-2 border-red-200 bg-red-50 p-5">
+                    <p className="font-bold text-red-900">
+                      Rensa all data i {f.namn}?
+                    </p>
+                    <p className="mt-1 text-sm text-red-700">
+                      Underhållsplan, medlemmar och övriga uppgifter i den här
+                      testföreningen raderas. Föreningen finns kvar i listan så
+                      ni kan börja om.
+                    </p>
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => bekraftaRensa(f.id)}
+                        className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                      >
+                        Ja, rensa all data
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRensaId(null)}
+                        className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-medium text-foreground"
+                      >
+                        Avbryt
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </li>
-            ) : (
-              <li key={f.id}>
-                <ForeningKort
-                  forening={f}
-                  onLoggaIn={() => loggaIn(f.id)}
-                  onBekraftaRensa={() => setRensaId(f.id)}
-                />
-              </li>
-            ),
+                </li>
+              ) : (
+                <li key={f.id} role="option">
+                  <ForeningKort
+                    forening={f}
+                    onLoggaIn={() => loggaIn(f.id)}
+                    onBekraftaRensa={
+                      arStandardTestForening(f.id)
+                        ? () => setRensaId(f.id)
+                        : undefined
+                    }
+                  />
+                </li>
+              ),
+            )
           )}
         </ul>
       </section>
@@ -203,11 +306,13 @@ export function StyrelseLoginModul() {
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">
-              Hur loggar du in nästa gång?
+              Hur hittar ni er förening nästa gång?
             </p>
             <p className="mt-1 text-sm text-muted">
-              Bokmärk den här sidan — samma fem testföreningar finns kvar och
-              ni loggar in med ett klick.
+              Från Styrelse-Navets startsida:{" "}
+              <strong className="text-foreground">Logga in styrelse</strong>.
+              Sök med Brf + bokstäver — er sparade testförening dyker upp. Bokmärk
+              gärna den här sidan.
             </p>
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
               <code className="flex-1 text-xs font-mono text-foreground">
@@ -230,8 +335,9 @@ export function StyrelseLoginModul() {
               </button>
             </div>
             <p className="mt-1.5 text-xs text-muted">
-              Data sparas i webbläsaren på den här datorn. Byter ni förening
-              i listan ovan påverkas inte de andra testföreningarna.
+              Data sparas i webbläsaren på den här datorn. Fyll i och spara
+              föreningsuppgifter inne på föreningssidan så är ni lätta att hitta
+              igen.
             </p>
           </div>
         </div>

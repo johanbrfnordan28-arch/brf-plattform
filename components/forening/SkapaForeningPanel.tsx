@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { skapaNyForening } from "@/lib/forening-registry";
 import { navigeraTillNyForening } from "@/lib/skapa-forening-navigering";
 
@@ -97,9 +96,11 @@ export function SkapaForeningPanel({
         Skapa vår förening
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Ni får en egen kopia av grundmallen — samma moduler som BRF Företag visar,
-        men med <strong className="text-foreground">ert föreningsnamn</strong> och
-        er egen data i webbläsaren (demo).
+        Ni får en egen kopia av grundmallen med{" "}
+        <strong className="text-foreground">ert föreningsnamn</strong>. Föreningen
+        sparas i den här webbläsaren. Nästa gång: Styrelse-Navet →{" "}
+        <strong className="text-foreground">Logga in styrelse</strong> och sök
+        på namnet (Brf + bokstäver).
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
         <strong>Endast styrelsen</strong> ska skapa föreningens sida. Entreprenörer
@@ -157,7 +158,7 @@ export function SkapaForeningPanel({
                 : "Skapar er förening …"}
             </p>
             <p className="mt-1 text-muted">
-              Ni skickas till {STYRELSEFLOW_NAMN} om ett ögonblick.
+              Ni skickas till er föreningssida — spara föreningsuppgifter där.
             </p>
           </div>
         )}

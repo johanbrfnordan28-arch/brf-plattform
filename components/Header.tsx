@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeaderTestforeningarInfo } from "@/components/HeaderTestforeningarInfo";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 const nav = [
@@ -6,6 +7,7 @@ const nav = [
   { href: "/upphandling", label: "Aktuella upphandlingar" },
   { href: "#intro-film", label: "Film & pris" },
   { href: "#priser", label: "Priser" },
+  { href: "/styrelse-login", label: "Testföreningar" },
 ];
 
 export function Header() {
@@ -40,14 +42,9 @@ export function Header() {
             href={PROVA_GRATIS_PATH}
             className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
           >
-            Pröva gratis
+            Pröva gratis 30 dagar
           </Link>
-          <Link
-            href="/styrelse-login"
-            className="brf-knapp-gron px-4 py-2 text-sm"
-          >
-            Logga in styrelse
-          </Link>
+          <HeaderTestforeningarInfo />
         </div>
       </div>
     </header>

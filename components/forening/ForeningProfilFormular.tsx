@@ -209,7 +209,8 @@ export function ForeningProfilFormular() {
 
       {sparad && (
         <p className="mt-3 text-sm text-primary-dark" role="status">
-          Sparat. Data ligger i den här webbläsaren under {visningsProfil.namn}.
+          Sparat. {visningsProfil.namn} finns kvar i den här webbläsaren — logga
+          in via Styrelse-Navet → Logga in styrelse och sök på namnet.
         </p>
       )}
     </div>
