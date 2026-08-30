@@ -21,7 +21,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "Ansvar för skorsten, rökkanal, inspektion och säkerhet kring eldstäder och kamin.",
     vägledning:
-      "Här samlas domar om vem som ansvarar för sotning, besiktning och fel som uppstår i samband med eldstäder. Styrelsen kan jämföra med föreningens stadgar och försäkring.",
+      "Här ingår bland annat Högsta domstolens avgörande Ö 3206-13 (NJA 2015 s. 566, »Trudhems skorstensstock«): rökkanal och skorstensstock hör till huset, inte till lägenheten, så medlem får inte ansluta kamin utan föreningens tillstånd. Domar i mappen handlar ofta om tillstånd vid installation, underhåll av rökgångar, sotning och brandskydd. Jämför alltid med era stadgar och försäkring — använd som underlag inför styrelsebeslut, inte som färdigt beslut.",
   },
   {
     id: "storningar",
