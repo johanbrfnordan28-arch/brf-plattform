@@ -8,6 +8,7 @@ export type ForeningServerDto = {
   organisationsnummer: string;
   epost: string;
   postadress: string;
+  postnummer: string;
   ort: string;
   kontaktperson: string;
   grundinfoPaborjad: boolean;
@@ -22,6 +23,7 @@ export type ForeningUpsertInput = {
   organisationsnummer?: string;
   epost?: string;
   postadress?: string;
+  postnummer?: string;
   ort?: string;
   kontaktperson?: string;
   grundinfoPaborjad?: boolean;
@@ -70,6 +72,7 @@ export function tillDto(rad: Forening): ForeningServerDto {
     organisationsnummer: rad.organisationsnummer,
     epost: rad.epost,
     postadress: rad.postadress,
+    postnummer: rad.postnummer,
     ort: rad.ort,
     kontaktperson: rad.kontaktperson,
     grundinfoPaborjad: rad.grundinfoPaborjad,
@@ -104,6 +107,7 @@ export async function skapaForeningPaServer(
       organisationsnummer: input.organisationsnummer?.trim() ?? "",
       epost: input.epost?.trim() ?? "",
       postadress: input.postadress?.trim() ?? "",
+      postnummer: input.postnummer?.trim() ?? "",
       ort: input.ort?.trim() ?? "",
       kontaktperson: input.kontaktperson?.trim() ?? "",
       grundinfoPaborjad: Boolean(input.grundinfoPaborjad),
@@ -157,6 +161,8 @@ export async function uppdateraForeningPaServer(
       epost: input.epost !== undefined ? input.epost.trim() : undefined,
       postadress:
         input.postadress !== undefined ? input.postadress.trim() : undefined,
+      postnummer:
+        input.postnummer !== undefined ? input.postnummer.trim() : undefined,
       ort: input.ort !== undefined ? input.ort.trim() : undefined,
       kontaktperson:
         input.kontaktperson !== undefined

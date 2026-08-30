@@ -15,6 +15,7 @@ export type StyrelseKontakt = {
   epost: string;
   kontaktperson: string;
   postadress: string;
+  postnummer: string;
   ort: string;
 };
 
@@ -27,6 +28,7 @@ export function styrelseKontaktFranProfil(
     epost: profil.epost.trim(),
     kontaktperson: profil.kontaktperson.trim(),
     postadress: profil.postadress.trim(),
+    postnummer: profil.postnummer.trim(),
     ort: profil.ort.trim(),
   };
 }
@@ -65,9 +67,9 @@ export function formateraStyrelseKontaktBlock(
   if (kontakt.organisationsnummer) {
     rader.push(`Org.nr: ${kontakt.organisationsnummer}`);
   }
-  if (kontakt.postadress || kontakt.ort) {
+  if (kontakt.postadress || kontakt.postnummer || kontakt.ort) {
     rader.push(
-      `Postadress: ${[kontakt.postadress, kontakt.ort].filter(Boolean).join(", ")}`,
+      `Postadress: ${[kontakt.postadress, [kontakt.postnummer, kontakt.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ")}`,
     );
   }
   if (kontakt.kontaktperson) {

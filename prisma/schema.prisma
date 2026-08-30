@@ -24,6 +24,7 @@ model Forening {
   epost                String    @default("")
   postadress           String    @default("")
   ort                  String    @default("")
+  postnummer           String    @default("")
   kontaktperson        String    @default("")
   grundinfoPaborjad    Boolean   @default(false)
   avtalGodkant         Boolean   @default(false)

@@ -48,6 +48,7 @@ function profilTillPayload(profil: ForeningProfil) {
     organisationsnummer: profil.organisationsnummer,
     epost: profil.epost,
     postadress: profil.postadress,
+    postnummer: profil.postnummer,
     ort: profil.ort,
     kontaktperson: profil.kontaktperson,
     grundinfoPaborjad: profil.grundinfoPaborjad,

@@ -14,24 +14,17 @@ import {
   hamtaAktivForeningsNamn,
   lasAktivForeningId,
   lasForeningProfil,
+  normaliseraForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 function tomProfil(id: string, namn: string): ForeningProfil {
-  return {
+  return normaliseraForeningProfil({
     id,
     namn,
     skapadTidpunkt: new Date().toISOString(),
-    organisationsnummer: "",
-    epost: "",
-    postadress: "",
-    ort: "",
-    kontaktperson: "",
-    grundinfoPaborjad: false,
-    avtalGodkant: false,
-    avtalGodkantTidpunkt: "",
-  };
+  });
 }
 
 /**

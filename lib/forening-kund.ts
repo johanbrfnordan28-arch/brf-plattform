@@ -63,8 +63,8 @@ export function kanGodkannaAvtal(profil: ForeningProfil): {
   const kontakt = styrelseKontaktFranProfil(profil);
   if (!arStyrelseKontaktKomplett(kontakt)) {
     if (!kontakt.epost) saknas.push("e-post");
-    if (!kontakt.kontaktperson) saknas.push("kontaktperson");
-    if (!kontakt.postadress) saknas.push("postadress");
+    if (!kontakt.kontaktperson) saknas.push("styrelsemedlem");
+    if (!kontakt.postadress) saknas.push("adress (grunduppgifter)");
   }
   if (!profil.organisationsnummer.trim()) {
     saknas.push("organisationsnummer");

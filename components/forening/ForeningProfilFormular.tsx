@@ -127,9 +127,16 @@ export function ForeningProfilFormular() {
 
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-      <p className="text-sm text-muted">
-        Uppgifterna sparas för <strong className="text-foreground">{profil.namn}</strong>{" "}
-        och används i dokument, städschema och underhållsplanen.
+      <h2 className="text-lg font-semibold text-foreground">
+        Föreningens identitet
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Namn och organisationsnummer anges vid uppstart och kan kompletteras
+        här. Adresser, styrelse och storlek fylls i under{" "}
+        <a href="#grunduppgifter" className="font-medium text-primary-dark underline">
+          grunduppgifter
+        </a>
+        .
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
@@ -161,33 +168,6 @@ export function ForeningProfilFormular() {
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
         </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">Kontaktperson</span>
-          <input
-            type="text"
-            value={visningsProfil.kontaktperson}
-            onChange={(e) => uppdatera("kontaktperson", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="font-medium text-foreground">Postadress</span>
-          <input
-            type="text"
-            value={visningsProfil.postadress}
-            onChange={(e) => uppdatera("postadress", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">Ort</span>
-          <input
-            type="text"
-            value={visningsProfil.ort}
-            onChange={(e) => uppdatera("ort", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
       </div>
 
       {sparFel && (
@@ -205,14 +185,14 @@ export function ForeningProfilFormular() {
           onClick={spara}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Spara föreningsuppgifter
+          Spara identitet
         </button>
-        <Link
-          href="/forening/underhallsplan#grund"
+        <a
+          href="#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
           Fortsätt till grunduppgifter
-        </Link>
+        </a>
         <Link
           href="/forening"
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
@@ -224,7 +204,7 @@ export function ForeningProfilFormular() {
       {sparad && (
         <p className="mt-3 text-sm text-primary-dark" role="status">
           {serverStatus ??
-            "Sparat lokalt. Synkar till servern … Nästa steg: godkänn avtalet nedan."}
+            "Sparat lokalt. Synkar till servern … Nästa steg: grunduppgifter nedan."}
         </p>
       )}
     </div>

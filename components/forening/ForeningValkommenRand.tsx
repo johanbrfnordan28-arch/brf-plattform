@@ -49,10 +49,10 @@ export function ForeningValkommenRand() {
           Spara föreningsuppgifter
         </Link>
         <Link
-          href="/forening/underhallsplan#grund"
+          href="/forening/uppgifter#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
-          Grunduppgifter fastighet
+          Grunduppgifter
         </Link>
         <Link
           href="/forening/arshjul"

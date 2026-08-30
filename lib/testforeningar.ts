@@ -3,6 +3,7 @@ import { byggLagratStateFranTestplan } from "@/lib/investerar-demo-seed";
 import {
   FORENING_AKTIV_EVENT,
   lasForeningProfil,
+  normaliseraForeningProfil,
   rensaForeningLocalStorage,
   repareraForeningRegistry,
   sparaForeningProfil,
@@ -85,31 +86,23 @@ export function hamtaStandardTestForeningTestplan(
 }
 
 function tomStandardProfil(id: string, namn: string): ForeningProfil {
-  const bas: ForeningProfil = {
+  const bas = normaliseraForeningProfil({
     id,
     namn,
     skapadTidpunkt: new Date().toISOString(),
-    organisationsnummer: "",
-    epost: "",
-    postadress: "",
-    ort: "",
-    kontaktperson: "",
-    grundinfoPaborjad: false,
-    avtalGodkant: false,
-    avtalGodkantTidpunkt: "",
-  };
+  });
   if (arSailorForening(id)) {
-    return { ...bas, ...SAILOR_PROFIL };
+    return normaliseraForeningProfil({ ...bas, ...SAILOR_PROFIL });
   }
   return bas;
 }
 
 function appliceraSailorProfil(profil: ForeningProfil): ForeningProfil {
-  return {
+  return normaliseraForeningProfil({
     ...profil,
     namn: "Bostadsrättsföreningen Sailor",
     ...SAILOR_PROFIL,
-  };
+  });
 }
 
 function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void {

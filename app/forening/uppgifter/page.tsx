@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ModulePage } from "@/components/ModulePage";
 import { ForeningAvtalPanel } from "@/components/forening/ForeningAvtalPanel";
+import { ForeningGrunduppgifterPanel } from "@/components/forening/ForeningGrunduppgifterPanel";
 import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 import { KUND_LOGIN_KNAPP_RUBRIK } from "@/lib/forening-kund";
@@ -10,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Föreningsuppgifter")),
     description:
-      "Kontakt, identifiering och godkännande av avtal för styrelsens förening.",
+      "Identitet, grunduppgifter, styrelse med BankID och godkännande av avtal.",
   };
 }
 
@@ -19,7 +20,7 @@ export default function ForeningUppgifterPage() {
     <ModulePage
       title="Föreningsuppgifter"
       icon="🏠"
-      intro="Här fyller styrelsen i kontaktuppgifter och kan godkänna avtalet så föreningen blir kund. Uppgifterna används i dokument, städschema, egenkontroller, upphandling och underhållsplanen — alltid isolerade till er förening."
+      intro="Här fyller styrelsen i föreningens identitet och grunduppgifter. Adresser, lägenheter och våningar kopieras till underhållsplanen. BankID kopplas på styrelsens medlemmar."
     >
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-5">
         <p className="text-sm font-semibold text-primary-dark">
@@ -27,28 +28,30 @@ export default function ForeningUppgifterPage() {
         </p>
         <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
           <li>
-            <strong>Spara föreningsuppgifter</strong> — fyll i formuläret och
-            tryck Spara.
+            <strong>Identitet</strong> — namn och organisationsnummer (ofta
+            redan ifyllda vid uppstart) plus e-post.
           </li>
           <li>
-            <strong>Godkänn avtal</strong> — längst ned på sidan. Då blir ni
-            kund och loggar in via «{KUND_LOGIN_KNAPP_RUBRIK}» på Styrelse-Navet.
-          </li>
-          <li>
-            <strong>Fastighetens grunduppgifter</strong> — boarea, lägenheter
-            och adresser i{" "}
+            <strong>Grunduppgifter</strong> — adresser, postnummer, ort, antal
+            lägenheter/våningar och styrelse. Synkas till{" "}
             <Link
               href="/forening/underhallsplan#grund"
               className="font-medium text-primary-dark underline hover:no-underline"
             >
-              underhållsplanen steg 1
+              underhållsplanen
             </Link>
             .
+          </li>
+          <li>
+            <strong>Godkänn avtal</strong> — längst ned. Då blir ni kund och
+            loggar in via «{KUND_LOGIN_KNAPP_RUBRIK}» på Styrelse-Navet.
           </li>
         </ol>
       </div>
 
       <ForeningProfilFormular />
+
+      <ForeningGrunduppgifterPanel />
 
       <div id="avtal" className="scroll-mt-24">
         <ForeningAvtalPanel />

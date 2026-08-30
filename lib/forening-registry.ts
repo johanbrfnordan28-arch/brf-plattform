@@ -13,6 +13,10 @@ import {
   localStorageFelMeddelande,
   safeSetLocalStorage,
 } from "@/lib/localStorage";
+import {
+  normaliseraStyrelseLedamoter,
+  type StyrelseLedamot,
+} from "@/lib/styrelse-ledamot";
 
 export const FORENING_REGISTRY_KEY = "brf-forening-registry";
 export const FORENING_AKTIV_ID_KEY = "brf-forening-aktiv-id";
@@ -36,15 +40,21 @@ export { GRUNDMALL_FORENING_ID } from "@/lib/forening-konstanter";
 /** Befintlig demo — oförändrade localStorage-nycklar utan prefix. */
 export const GRUNDMALL_NAMN = "Grundmall föreningar";
 
+export type { StyrelseLedamot };
+
 export type ForeningProfil = {
   id: string;
   namn: string;
   skapadTidpunkt: string;
   organisationsnummer: string;
   epost: string;
+  /** Gatadress / första fastighetsadress (speglas från grunduppgifter). */
   postadress: string;
+  postnummer: string;
   ort: string;
   kontaktperson: string;
+  /** Styrelsens medlemmar — BankID kopplas per person (demo tills riktig e-legitimation). */
+  styrelseledamoter: StyrelseLedamot[];
   /** Styrelsen har börjat fylla grunduppgifter (underhållsplan eller här). */
   grundinfoPaborjad: boolean;
   /**
@@ -71,9 +81,11 @@ export function normaliseraForeningProfil(
         : "",
     epost: typeof raw.epost === "string" ? raw.epost : "",
     postadress: typeof raw.postadress === "string" ? raw.postadress : "",
+    postnummer: typeof raw.postnummer === "string" ? raw.postnummer : "",
     ort: typeof raw.ort === "string" ? raw.ort : "",
     kontaktperson:
       typeof raw.kontaktperson === "string" ? raw.kontaktperson : "",
+    styrelseledamoter: normaliseraStyrelseLedamoter(raw.styrelseledamoter),
     grundinfoPaborjad: Boolean(raw.grundinfoPaborjad),
     avtalGodkant: Boolean(raw.avtalGodkant),
     avtalGodkantTidpunkt:
