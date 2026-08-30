@@ -122,6 +122,28 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "Efter att särskild granskare utsetts beslutade en senare stämma enhälligt att avsluta granskningen i förtid. HD upphävde beslutet: stämman saknade behörighet att ensam entlediga granskaren. Förtida upphörande kräver samtycke från samtliga berörda (bl.a. dem som biträdde begäran och relevanta tidigare medlemmar). Styrelsen bör känna till gränsen för vad stämman får besluta.",
   },
+  {
+    id: "hd-t-1559-18-gamla-vagen",
+    mappId: "medlemskap",
+    titel: "Lägenhetsförteckning — fel pantsättningsuppgifter ger skadestånd",
+    filnamn: "t-1559-18-gamla-vagen.pdf",
+    url: "/juridik/t-1559-18-gamla-vagen.pdf",
+    referens: "NJA 2019 s. 94 · Högsta domstolen T 1559-18 (Gamla vägen)",
+    meddelad: "2019-03-08",
+    sammanfattning:
+      "Inför ett köp lämnade föreningen ut ett utdrag ur lägenhetsförteckningen där två pantsättningar saknades. Köparen förlitade sig på utdraget och drabades senare när panthavarna krävde ut pant. HD slog fast att föreningen är skadeståndsskyldig — fel i utdraget presumeras bero på vårdslöshet om föreningen inte gör sannolikt att så inte är fallet. Styrelsen måste hålla lägenhetsförteckningen korrekt.",
+  },
+  {
+    id: "hd-o-5633-19-brf-tallen",
+    mappId: "medlemskap",
+    titel: "Dold ägare — kvarstad trots ensam registrering som medlem",
+    filnamn: "o-5633-19-brf-tallen.pdf",
+    url: "/juridik/o-5633-19-brf-tallen.pdf",
+    referens: "NJA 2020 s. 384 · Högsta domstolen Ö 5633-19 (Bostadsrätten i Brf Tallen)",
+    meddelad: "2020-04-02",
+    sammanfattning:
+      "En person köpte bostadsrätt i eget namn för en annan persons räkning och stod ensam som medlem i föreningens register. HD slog fast att bostadsrätt är lös egendom: den dolde ägaren blir ägare redan vid förvärvet, och bostadsrätten kan beläggas med kvarstad för dennes skulder. Att bara den öppne ägaren syns i medlemsregistret hindrar alltså inte kvarstad/utmätning mot den verkliga ägaren.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {

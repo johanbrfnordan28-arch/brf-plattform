@@ -79,6 +79,14 @@ export const domMappar: DomMappDefinition[] = [
     vägledning:
       "Här ingår bland annat HD T 1829-10 (NJA 2012 s. 198): föreningen har bevisbördan för att kvalificerad majoritet krävs vid beslut som menligt påverkar bostadsrätt. Samt HD T 6332-20 (NJA 2021 s. 776): stämman kan inte ensam avbryta särskild granskning i förtid utan samtycke från alla berörda. Domar i mappen handlar ofta om kallelse, röstning, klander och stämmans behörighet. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
   },
+  {
+    id: "medlemskap",
+    titel: "Medlemskap m.m.",
+    beskrivning:
+      "Medlemskap, lägenhetsförteckning, pantsättning och vem som räknas som ägare till bostadsrätten.",
+    vägledning:
+      "Här ingår bland annat HD T 1559-18 (NJA 2019 s. 94, »Gamla vägen«): felaktiga pantsättningsuppgifter i utdrag ur lägenhetsförteckningen kan ge skadeståndsskyldighet för föreningen. Samt HD Ö 5633-19 (NJA 2020 s. 384, »Bostadsrätten i Brf Tallen«): bostadsrätt köpt i eget namn för annans räkning kan beläggas med kvarstad för den dolde ägarens skulder. Domar i mappen handlar ofta om medlemsregister, pantsättning och ägarfrågor. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
+  },
 ];
 
 export function skapaDokumentId(): string {
