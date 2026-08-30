@@ -45,6 +45,17 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "En medlem anslöt en braskamin till en kanal i skorstensstocken utan föreningens tillstånd. HD slog fast att skorstensstock och rökkanal hör till huset — inte till lägenheten — även om kanalen bara betjänar den lägenheten. Ingrepp i rökkanal kräver därför föreningens godkännande; utan tillstånd var installationen olovlig och medlemmen fick återställa.",
   },
+  {
+    id: "hd-t-3372-20-grannhusets-vattenskada",
+    mappId: "grannfastighet",
+    titel: "Gårdsläckage — skada på grannfastighet (dagvattenledning)",
+    filnamn: "t-3372-20-grannhusets-vattenskada.pdf",
+    url: "/juridik/t-3372-20-grannhusets-vattenskada.pdf",
+    referens: "NJA 2021 s. 473 · Högsta domstolen T 3372-20 (Grannhusets vattenskada)",
+    meddelad: "2021-06-21",
+    sammanfattning:
+      "En trasig dagvattenledning på BRF:s fastighet (innergård) orsakade vatteninträngning och skador i grannens källare. HD slog fast att föreningen var skadeståndsskyldig: gammal anläggning kräver skälig kontroll och underhåll med hänsyn till grannarna (jordabalken). Att vänta tills läckaget syns räcker inte — oaktsam underlåtenhet kan ge ersättningsansvar även utan aktivt felhandlande.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {

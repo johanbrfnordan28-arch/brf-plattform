@@ -47,6 +47,14 @@ export const domMappar: DomMappDefinition[] = [
     vägledning:
       "Avgöranden om skadestånd, fördelning mellan förening och medlem och bevisning vid fuktskador. Styrelsen kan spara domar som liknar aktuella ärenden i huset.",
   },
+  {
+    id: "grannfastighet",
+    titel: "Skada på grannfastighet",
+    beskrivning:
+      "När läckage eller bristfällig anläggning på föreningens fastighet skadar granne — gård, dagvatten och grannelagsrätt.",
+    vägledning:
+      "Här ingår bland annat Högsta domstolens avgörande T 3372-20 (NJA 2021 s. 473, »Grannhusets vattenskada«): trasig dagvattenledning på BRF:s gård orsakade vatteninträngning hos grannen. Föreningen blev skadeståndsskyldig för att den inte i tillräcklig utsträckning kontrollerat en gammal anläggning — hänsynskravet i jordabalken. Domar i mappen handlar ofta om grannansvar, underhåll av ledningar på gården och när oaktsam underlåtenhet räcker för ersättning. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
+  },
 ];
 
 export function skapaDokumentId(): string {
