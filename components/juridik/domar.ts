@@ -55,6 +55,14 @@ export const domMappar: DomMappDefinition[] = [
     vägledning:
       "Här ingår bland annat Högsta domstolens avgörande T 3372-20 (NJA 2021 s. 473, »Grannhusets vattenskada«): trasig dagvattenledning på BRF:s gård orsakade vatteninträngning hos grannen. Föreningen blev skadeståndsskyldig för att den inte i tillräcklig utsträckning kontrollerat en gammal anläggning — hänsynskravet i jordabalken. Domar i mappen handlar ofta om grannansvar, underhåll av ledningar på gården och när oaktsam underlåtenhet räcker för ersättning. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
   },
+  {
+    id: "varmesystem",
+    titel: "Värmesystem",
+    beskrivning:
+      "Ansvar för radiatorer, värmeledningar och golvvärme — gränsen mellan förening och medlem.",
+    vägledning:
+      "Här ingår bland annat HD Ö 4023-05 (NJA 2006 s. 732): läckage från värmeledning/radiator är inte »vattenledningsskada« — undantaget i bostadsrättslagen gäller bara tappvatten. Samt HD T 2948-19 (NJA 2020 s. 822, »Knoppens golvvärmesystem«): vattenburen golvvärme under golvbeläggningen hörde till föreningens underhåll. Domar i mappen handlar ofta om värmeledningar, radiatorer och golvvärme. Jämför alltid med era stadgar — använd som underlag inför styrelsebeslut, inte som färdigt beslut.",
+  },
 ];
 
 export function skapaDokumentId(): string {

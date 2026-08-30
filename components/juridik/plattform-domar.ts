@@ -67,6 +67,28 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "Tidigare bostadsrättshavare tog bort fuktspärren i badrummet; vid duschning läckte vatten ut och skadade föreningens fastighet utanför lägenheten. HD slog fast att de nya ägarna inte hade strikt ansvar för skadan — skadestånd utanför lägenheten kräver vårdslöshet hos den som kravet riktas mot. Stadgar kan inte flytta över tidigare ägares skadeståndsansvar till köparen.",
   },
+  {
+    id: "hd-o-4023-05-varmeledningsskada",
+    mappId: "varmesystem",
+    titel: "Värmeledningsskada — inte samma som vattenledningsskada",
+    filnamn: "o-4023-05-varmeledningsskada.pdf",
+    url: "/juridik/o-4023-05-varmeledningsskada.pdf",
+    referens: "NJA 2006 s. 732 · Högsta domstolen Ö 4023-05",
+    meddelad: "2006-12-27",
+    sammanfattning:
+      "HD slog fast att begreppet »vattenledningsskada« i bostadsrättslagen bara avser tappvattenledningar — inte läckage från värmeledningar, radiatorer eller andra värmeanordningar. Undantaget där medlem bara svarar vid försummelse gäller alltså inte värmeskador. För skador från värmesystemet gäller huvudregeln om underhållsansvar (och stadgarna) i stället.",
+  },
+  {
+    id: "hd-t-2948-19-golvvarme",
+    mappId: "varmesystem",
+    titel: "Vattenburen golvvärme — underhåll under ytskiktet",
+    filnamn: "t-2948-19-golvvarme.pdf",
+    url: "/juridik/t-2948-19-golvvarme.pdf",
+    referens: "NJA 2020 s. 822 · Högsta domstolen T 2948-19 (Knoppens golvvärmesystem)",
+    meddelad: "2020-10-27",
+    sammanfattning:
+      "Ett vattenburet golvvärmesystem i duschrummet låg under golvbeläggningen. HD tolkade stadgarnas »lägenhetens golv« som ytskiktet — golvvärmen hörde därför till den del av huset som föreningen underhåller. Utgången beror på stadgarnas lydelse och hur systemet är installerat; jämför alltid med era egna stadgar.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {
