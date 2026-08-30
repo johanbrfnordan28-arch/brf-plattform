@@ -24,22 +24,6 @@ export const domMappar: DomMappDefinition[] = [
       "Här ingår bland annat Högsta domstolens avgörande Ö 3206-13 (NJA 2015 s. 566, »Trudhems skorstensstock«): rökkanal och skorstensstock hör till huset, inte till lägenheten, så medlem får inte ansluta kamin utan föreningens tillstånd. Domar i mappen handlar ofta om tillstånd vid installation, underhåll av rökgångar, sotning och brandskydd. Jämför alltid med era stadgar och försäkring — använd som underlag inför styrelsebeslut, inte som färdigt beslut.",
   },
   {
-    id: "storningar",
-    titel: "Störningar i bostaden",
-    beskrivning:
-      "När föreningen får ingripa vid störning, buller och brukande av lägenheten.",
-    vägledning:
-      "Mappen innehåller vägledande avgöranden om störningsärenden, varningar och i vissa fall åtgärder mot medlem. Ladda upp domar som är relevanta för er hantering.",
-  },
-  {
-    id: "tilltrade",
-    titel: "Tillträde till lägenhet",
-    beskrivning:
-      "Styrelsens och entreprenörers rätt att komma in vid underhåll, kontroll eller akut åtgärd.",
-    vägledning:
-      "Domar om avisering, nödtillträde och medlemmens skyldighet att medverka. Bra underlag inför stambyte, besiktning eller felanmälan.",
-  },
-  {
     id: "vatten-skador",
     titel: "Vatten- och fuktskador",
     beskrivning:
@@ -86,6 +70,14 @@ export const domMappar: DomMappDefinition[] = [
       "Medlemskap, lägenhetsförteckning, pantsättning och vem som räknas som ägare till bostadsrätten.",
     vägledning:
       "Här ingår bland annat HD T 1559-18 (NJA 2019 s. 94, »Gamla vägen«): felaktiga pantsättningsuppgifter i utdrag ur lägenhetsförteckningen kan ge skadeståndsskyldighet för föreningen. Samt HD Ö 5633-19 (NJA 2020 s. 384, »Bostadsrätten i Brf Tallen«): bostadsrätt köpt i eget namn för annans räkning kan beläggas med kvarstad för den dolde ägarens skulder. Domar i mappen handlar ofta om medlemsregister, pantsättning och ägarfrågor. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
+  },
+  {
+    id: "nybildning",
+    titel: "Nybildning och ombildning",
+    beskrivning:
+      "Ombildning till bostadsrätt, intresseanmälan, hembud och lagfart vid förvärv av fastigheten.",
+    vägledning:
+      "Här ingår bland annat Högsta domstolens avgörande Ö 1528-20 (NJA 2020 s. 1071, »Lagfarten i Solna«): felaktigt beviljad lagfart trots intresseanmälan enligt ombildningslagen undanröjdes eftersom beslutet inte fått laga kraft. Domar i mappen handlar ofta om ombildning, hembud och inskrivning. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
   },
 ];
 

@@ -144,6 +144,17 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "En person köpte bostadsrätt i eget namn för en annan persons räkning och stod ensam som medlem i föreningens register. HD slog fast att bostadsrätt är lös egendom: den dolde ägaren blir ägare redan vid förvärvet, och bostadsrätten kan beläggas med kvarstad för dennes skulder. Att bara den öppne ägaren syns i medlemsregistret hindrar alltså inte kvarstad/utmätning mot den verkliga ägaren.",
   },
+  {
+    id: "hd-o-1528-20-lagfarten-i-solna",
+    mappId: "nybildning",
+    titel: "Ombildning — felaktig lagfart undanröjd trots intresseanmälan",
+    filnamn: "o-1528-20-lagfarten-i-solna.pdf",
+    url: "/juridik/o-1528-20-lagfarten-i-solna.pdf",
+    referens: "NJA 2020 s. 1071 · Högsta domstolen Ö 1528-20 (Lagfarten i Solna)",
+    meddelad: "2020-12-18",
+    sammanfattning:
+      "Hyresgäster bildade BRF och anmälde intresse att köpa fastigheten enligt ombildningslagen. Ägaren sålde ändå till annat bolag; Lantmäteriet beviljade av misstag lagfart trots antecknad intresseanmälan. HD slog fast att undantaget som gör förvärvet giltigt trots lagfartsfel kräver att lagfartsbeslutet fått laga kraft. Eftersom föreningen överklagade i tid undanröjdes lagfarten.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {
