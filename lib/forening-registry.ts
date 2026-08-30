@@ -1,5 +1,6 @@
 import {
   arStandardTestForening,
+  AVVECKLADE_TESTFORENING_IDS,
   GRUNDMALL_FORENING_ID,
 } from "@/lib/forening-konstanter";
 import {
@@ -195,6 +196,32 @@ export function rensaForeningLocalStorage(foreningId: string): void {
 }
 
 /**
+ * Tar bort en förening från registret och all lokal lagring.
+ * Används bl.a. när avvecklade testföreningar rensas bort.
+ */
+export function taBortForeningFranRegistryOchLagring(foreningId: string): void {
+  if (typeof window === "undefined" || !foreningId) return;
+  if (foreningId === GRUNDMALL_FORENING_ID) return;
+
+  const registry = lasForeningRegistryInternt();
+  const innan = registry.poster.length;
+  registry.poster = registry.poster.filter((p) => p.id !== foreningId);
+  taBortForeningFranLagring(foreningId);
+
+  if (registry.poster.length !== innan) {
+    try {
+      sparaRegistry(registry);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (lasAktivForeningId() === foreningId) {
+    sattAktivForeningId(GRUNDMALL_FORENING_ID, { tyst: true });
+  }
+}
+
+/**
  * Behåller en förening per namn — tar bort dubbletter från registret och lagring.
  */
 export function rengoraDubblettForeningar(): boolean {
@@ -316,7 +343,16 @@ export function repareraForeningRegistry(): boolean {
     }
   }
 
+  rensaAvveckladeTestForeningar();
   return andrat || rengoraDubblettForeningar();
+}
+
+/** Tar bort gamla fasta testföreningar (Brf Test 1–3) från register och lagring. */
+function rensaAvveckladeTestForeningar(): void {
+  if (typeof window === "undefined") return;
+  for (const id of AVVECKLADE_TESTFORENING_IDS) {
+    taBortForeningFranRegistryOchLagring(id);
+  }
 }
 
 function sparaRegistry(registry: ForeningRegistry): void {

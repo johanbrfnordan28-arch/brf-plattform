@@ -1,4 +1,6 @@
-import { arStandardTestForening } from "@/lib/forening-konstanter";
+import {
+  arStandardTestForening,
+} from "@/lib/forening-konstanter";
 import { byggLagratStateFranTestplan } from "@/lib/investerar-demo-seed";
 import {
   FORENING_AKTIV_EVENT,
@@ -36,23 +38,8 @@ import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
 export { arStandardTestForening };
 export { SAILOR_FORENING_ID };
 
-/** Fem fasta testföreningar — alltid synliga vid inloggning, data isoleras per id. */
+/** Fasta demoföreningar — alltid synliga vid inloggning, data isoleras per id. */
 export const STANDARD_TESTFORENINGAR = [
-  {
-    id: "test-forening-1",
-    namn: "Brf Test 1",
-    testplanId: "test-1900" satisfies TestplanId,
-  },
-  {
-    id: "test-forening-2",
-    namn: "Brf Test 2",
-    testplanId: "test-90" satisfies TestplanId,
-  },
-  {
-    id: "test-forening-3",
-    namn: "Brf Test 3",
-    testplanId: "test-70" satisfies TestplanId,
-  },
   {
     id: "test-forening-4",
     namn: "Brf Nordan 28",
@@ -74,7 +61,7 @@ const TESTPLAN_PER_FORENING: Record<string, TestplanId> = Object.fromEntries(
   STANDARD_TESTFORENINGAR.map((t) => [t.id, t.testplanId]),
 );
 
-/** Startnamn «Brf Test N» eller äldre «Brf Test N — …» — byts ut mot rent startnamn. */
+/** Startnamn «Brf Test N» (äldre demoföreningar) — byts ut mot rent startnamn. */
 export function arStandardTestStartNamn(namn: string): boolean {
   return /^Brf Test \d+(\s*[—–-].*)?$/i.test(namn.trim());
 }
@@ -187,9 +174,10 @@ function synkaSailorUnderhallsplanGrund(): void {
 }
 
 /**
- * Säkerställer att alla fem testföreningar finns i registret.
+ * Säkerställer att demoföreningarna (Nordan 28 + Sailor) finns i registret.
  * Behåller användarens sparade namn/uppgifter — skriver bara över startnamn.
  * Sailor får alltid fasta kontakt- och grunduppgifter.
+ * Avvecklade testföreningar (Brf Test 1–3) rensas via repareraForeningRegistry.
  */
 export function sakraStandardTestForeningar(): ForeningProfil[] {
   if (typeof window === "undefined") {
