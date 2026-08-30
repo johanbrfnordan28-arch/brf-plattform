@@ -56,6 +56,17 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "En trasig dagvattenledning på BRF:s fastighet (innergård) orsakade vatteninträngning och skador i grannens källare. HD slog fast att föreningen var skadeståndsskyldig: gammal anläggning kräver skälig kontroll och underhåll med hänsyn till grannarna (jordabalken). Att vänta tills läckaget syns räcker inte — oaktsam underlåtenhet kan ge ersättningsansvar även utan aktivt felhandlande.",
   },
+  {
+    id: "hd-t-2062-06-fiolbackens-vattenskada",
+    mappId: "vatten-skador",
+    titel: "Våtrumsskada — ny ägare ansvarar inte för tidigare ägares fel",
+    filnamn: "t-2062-06-fiolbackens-vattenskada.pdf",
+    url: "/juridik/t-2062-06-fiolbackens-vattenskada.pdf",
+    referens: "NJA 2007 s. 709 · Högsta domstolen T 2062-06 (Fiolbackens vattenskada)",
+    meddelad: "2007-10-23",
+    sammanfattning:
+      "Tidigare bostadsrättshavare tog bort fuktspärren i badrummet; vid duschning läckte vatten ut och skadade föreningens fastighet utanför lägenheten. HD slog fast att de nya ägarna inte hade strikt ansvar för skadan — skadestånd utanför lägenheten kräver vårdslöshet hos den som kravet riktas mot. Stadgar kan inte flytta över tidigare ägares skadeståndsansvar till köparen.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {

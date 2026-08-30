@@ -45,7 +45,7 @@ export const domMappar: DomMappDefinition[] = [
     beskrivning:
       "Ansvar när läckage eller fukt uppstår mellan lägenheter eller från stammar.",
     vägledning:
-      "Avgöranden om skadestånd, fördelning mellan förening och medlem och bevisning vid fuktskador. Styrelsen kan spara domar som liknar aktuella ärenden i huset.",
+      "Här ingår bland annat Högsta domstolens avgörande T 2062-06 (NJA 2007 s. 709, »Fiolbackens vattenskada«): tidigare ägare tog bort fuktspärr i badrummet; nya medlemmar blev inte skadeståndsskyldiga mot föreningen för skadan utanför lägenheten. Domar i mappen handlar ofta om våtrum, läckage, fördelning mellan förening och medlem och när vårdslöshet krävs. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
   },
   {
     id: "grannfastighet",
