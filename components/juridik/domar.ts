@@ -63,6 +63,14 @@ export const domMappar: DomMappDefinition[] = [
     vägledning:
       "Här ingår bland annat HD Ö 4023-05 (NJA 2006 s. 732): läckage från värmeledning/radiator är inte »vattenledningsskada« — undantaget i bostadsrättslagen gäller bara tappvatten. Samt HD T 2948-19 (NJA 2020 s. 822, »Knoppens golvvärmesystem«): vattenburen golvvärme under golvbeläggningen hörde till föreningens underhåll. Domar i mappen handlar ofta om värmeledningar, radiatorer och golvvärme. Jämför alltid med era stadgar — använd som underlag inför styrelsebeslut, inte som färdigt beslut.",
   },
+  {
+    id: "forvaltning",
+    titel: "Förvaltning",
+    beskrivning:
+      "Avtal med förvaltare, reklamation, skadestånd och styrelsens uppföljning av ekonomiska tjänster.",
+    vägledning:
+      "Här ingår bland annat Högsta domstolens avgörande T 9030-23 (NJA 2025 s. 374, »Brf Ida«): en reklamationsfrist i förvaltningsavtalet ABFF 04 utan angiven påföljd innebar inte att föreningens skadeståndskrav föll. Domar i mappen handlar ofta om förvaltningsavtal, tidsfrister och när krav mot förvaltare behålls. Läs alltid avtalet noga — använd som underlag inför styrelsebeslut, inte som färdigt beslut.",
+  },
 ];
 
 export function skapaDokumentId(): string {

@@ -89,6 +89,17 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "Ett vattenburet golvvärmesystem i duschrummet låg under golvbeläggningen. HD tolkade stadgarnas »lägenhetens golv« som ytskiktet — golvvärmen hörde därför till den del av huset som föreningen underhåller. Utgången beror på stadgarnas lydelse och hur systemet är installerat; jämför alltid med era egna stadgar.",
   },
+  {
+    id: "hd-t-9030-23-brf-ida",
+    mappId: "forvaltning",
+    titel: "Förvaltningsavtal — reklamationsfrist utan påföljd faller inte kravet",
+    filnamn: "t-9030-23-brf-ida.pdf",
+    url: "/juridik/t-9030-23-brf-ida.pdf",
+    referens: "NJA 2025 s. 374 · Högsta domstolen T 9030-23 (Brf Ida)",
+    meddelad: "2025-04-24",
+    sammanfattning:
+      "Brf Ida krävde skadestånd av sin ekonomiska/administrativa förvaltare (HSB Malmö) enligt ABFF 04. Förvaltaren menade att kravet kom för sent enligt en tremånadersfrist i avtalet. HD slog fast att fristen — som inte anger någon påföljd om den missas — inte i sig innebär att rätten till skadestånd går förlorad. Vill man att kravet ska falla måste det stå uttryckligen i avtalet. Styrelsen bör ändå reklamera utan onödigt dröjsmål.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {
