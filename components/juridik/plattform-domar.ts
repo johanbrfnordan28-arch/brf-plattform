@@ -100,6 +100,28 @@ export const PLATTFORM_DOMAR: readonly PlattformDom[] = [
     sammanfattning:
       "Brf Ida krävde skadestånd av sin ekonomiska/administrativa förvaltare (HSB Malmö) enligt ABFF 04. Förvaltaren menade att kravet kom för sent enligt en tremånadersfrist i avtalet. HD slog fast att fristen — som inte anger någon påföljd om den missas — inte i sig innebär att rätten till skadestånd går förlorad. Vill man att kravet ska falla måste det stå uttryckligen i avtalet. Styrelsen bör ändå reklamera utan onödigt dröjsmål.",
   },
+  {
+    id: "hd-t-1829-10-stammobeslut-majoritet",
+    mappId: "foreningsstamma",
+    titel: "Stämmobeslut — bevisbörda vid kvalificerad majoritet",
+    filnamn: "t-1829-10-stammobeslut-majoritet.pdf",
+    url: "/juridik/t-1829-10-stammobeslut-majoritet.pdf",
+    referens: "NJA 2012 s. 198 · Högsta domstolen T 1829-10",
+    meddelad: "2012-04-11",
+    sammanfattning:
+      "Medlemmar ville bygga balkonger. Stämmoordföranden krävde kvalificerad majoritet och beslutet blev nej (8–7). HD slog fast att föreningen har utrednings- och bevisbördan för att förutsättningarna för kvalificerad majoritet enligt bostadsrättslagen är uppfyllda. Regleringen gäller även när åtgärden inte ändrar lägenheten fysiskt men ändå menligt påverkar en bostadsrättshavares rätt.",
+  },
+  {
+    id: "hd-t-6332-20-sarskild-granskare",
+    mappId: "foreningsstamma",
+    titel: "Stämman får inte avbryta särskild granskning i förtid",
+    filnamn: "t-6332-20-sarskild-granskare.pdf",
+    url: "/juridik/t-6332-20-sarskild-granskare.pdf",
+    referens: "NJA 2021 s. 776 · Högsta domstolen T 6332-20",
+    meddelad: "2021-10-29",
+    sammanfattning:
+      "Efter att särskild granskare utsetts beslutade en senare stämma enhälligt att avsluta granskningen i förtid. HD upphävde beslutet: stämman saknade behörighet att ensam entlediga granskaren. Förtida upphörande kräver samtycke från samtliga berörda (bl.a. dem som biträdde begäran och relevanta tidigare medlemmar). Styrelsen bör känna till gränsen för vad stämman får besluta.",
+  },
 ] as const;
 
 export function plattformDomarForMapp(mappId: string): PlattformDom[] {

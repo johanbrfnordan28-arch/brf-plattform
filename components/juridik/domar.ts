@@ -71,6 +71,14 @@ export const domMappar: DomMappDefinition[] = [
     vägledning:
       "Här ingår bland annat Högsta domstolens avgörande T 9030-23 (NJA 2025 s. 374, »Brf Ida«): en reklamationsfrist i förvaltningsavtalet ABFF 04 utan angiven påföljd innebar inte att föreningens skadeståndskrav föll. Domar i mappen handlar ofta om förvaltningsavtal, tidsfrister och när krav mot förvaltare behålls. Läs alltid avtalet noga — använd som underlag inför styrelsebeslut, inte som färdigt beslut.",
   },
+  {
+    id: "foreningsstamma",
+    titel: "Föreningsstämma",
+    beskrivning:
+      "Stämmobeslut, majoritetskrav, klander och vad stämman får — och inte får — besluta.",
+    vägledning:
+      "Här ingår bland annat HD T 1829-10 (NJA 2012 s. 198): föreningen har bevisbördan för att kvalificerad majoritet krävs vid beslut som menligt påverkar bostadsrätt. Samt HD T 6332-20 (NJA 2021 s. 776): stämman kan inte ensam avbryta särskild granskning i förtid utan samtycke från alla berörda. Domar i mappen handlar ofta om kallelse, röstning, klander och stämmans behörighet. Använd som underlag inför styrelsebeslut — inte som färdigt beslut.",
+  },
 ];
 
 export function skapaDokumentId(): string {
