@@ -15,7 +15,10 @@ function basUrlFranRequest(req: Request): string {
 export async function POST(req: Request) {
   if (!databasArKonfigurerad()) {
     return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
+      {
+        fel:
+          "Databasen är inte konfigurerad. Sätt DATABASE_URL (lokalt SQLite eller Postgres på Vercel).",
+      },
       { status: 503 },
     );
   }

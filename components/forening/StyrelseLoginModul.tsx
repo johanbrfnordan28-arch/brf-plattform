@@ -219,18 +219,40 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         fel?: string;
         foreningId?: string;
       };
-      if (!res.ok) {
-        setKontoFel(data.fel || "Inloggning misslyckades.");
-        return;
-      }
-      if (data.foreningId) {
+
+      if (res.ok && data.foreningId) {
         markeraPendingAktivForening(data.foreningId);
         sattAktivForeningId(data.foreningId);
         window.location.assign(hamtaForeningStartPath(data.foreningId));
         return;
       }
-      window.location.assign("/forening");
+
+      // Fallback: lokalt sparat konto (när servern saknar databas)
+      if (res.status === 503 || !res.ok) {
+        const { verifieraLokalKonto } = await import("@/lib/auth/lokal-konto");
+        const lokal = verifieraLokalKonto(epost, losenord);
+        if (lokal) {
+          markeraPendingAktivForening(lokal.foreningId);
+          sattAktivForeningId(lokal.foreningId);
+          window.location.assign(hamtaForeningStartPath(lokal.foreningId));
+          return;
+        }
+      }
+
+      setKontoFel(data.fel || "Inloggning misslyckades.");
     } catch {
+      try {
+        const { verifieraLokalKonto } = await import("@/lib/auth/lokal-konto");
+        const lokal = verifieraLokalKonto(epost, losenord);
+        if (lokal) {
+          markeraPendingAktivForening(lokal.foreningId);
+          sattAktivForeningId(lokal.foreningId);
+          window.location.assign(hamtaForeningStartPath(lokal.foreningId));
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
       setKontoFel("Kunde inte nå servern.");
     } finally {
       setKontoLaddar(false);

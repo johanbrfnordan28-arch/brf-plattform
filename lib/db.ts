@@ -5,9 +5,14 @@ import { PrismaClient } from "@prisma/client";
 /**
  * SQLite-sökväg måste fungera både för `prisma migrate` (relativt prisma/)
  * och Next.js (relativt projektroten). Postgres-URL:er lämnas orörda.
+ *
+ * Om DATABASE_URL saknas används lokal SQLite under prisma/ (utveckling).
+ * På Vercel/produktion: sätt DATABASE_URL till Postgres.
  */
 function normaliseraDatabaseUrl(): string | undefined {
-  const raw = process.env.DATABASE_URL?.trim();
+  const raw =
+    process.env.DATABASE_URL?.trim() ||
+    (process.env.NODE_ENV !== "production" ? "file:./dev.db" : undefined);
   if (!raw) return undefined;
   if (!raw.startsWith("file:")) return raw;
 
@@ -26,6 +31,7 @@ function normaliseraDatabaseUrl(): string | undefined {
     }
   }
 
+  // Skapa sökväg även om filen inte finns ännu (prisma db push skapar den).
   return `file:${path.resolve(process.cwd(), "prisma", path.basename(fil))}`;
 }
 

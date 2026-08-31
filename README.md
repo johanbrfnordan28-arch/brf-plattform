@@ -80,6 +80,8 @@ Webbläsaren sparar fortfarande lokalt; servern speglar profil, avtal och konton
 
 Tillfälliga adminlösenord skapas vid första inloggning och syns i mejl-outbox om SMTP saknas.
 
+**Viktigt på Vercel:** sätt `DATABASE_URL` till en Postgres-databas (Neon/Supabase/Vercel Postgres) och kör `npx prisma migrate deploy`. Utan databas skapas föreningen ändå lokalt i webbläsaren, men serverinloggning och mejl kräver `DATABASE_URL`.
+
 ### Viktigt vid test på Vercel
 
 - **Data sparas per webbläsare** — och synkas till servern när databasen är konfigurerad.
