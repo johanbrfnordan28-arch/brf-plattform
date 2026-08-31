@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ModulePage } from "@/components/ModulePage";
 import { ForeningAvtalPanel } from "@/components/forening/ForeningAvtalPanel";
 import { ForeningGrunduppgifterPanel } from "@/components/forening/ForeningGrunduppgifterPanel";
+import { ForeningInloggningsPanel } from "@/components/forening/ForeningInloggningsPanel";
 import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 import { KUND_LOGIN_KNAPP_RUBRIK } from "@/lib/forening-kund";
@@ -11,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Föreningsuppgifter")),
     description:
-      "Identitet, grunduppgifter, styrelse med BankID och godkännande av avtal.",
+      "Identitet, grunduppgifter, styrelse med BankID, inloggningar och godkännande av avtal.",
   };
 }
 
@@ -43,6 +44,10 @@ export default function ForeningUppgifterPage() {
             .
           </li>
           <li>
+            <strong>Inloggning</strong> — se vilka som har konto och när de
+            loggat in. Bara du ser ditt eget lösenord.
+          </li>
+          <li>
             <strong>Godkänn avtal</strong> — längst ned. Då blir ni kund och
             loggar in via «{KUND_LOGIN_KNAPP_RUBRIK}» på Styrelse-Navet.
           </li>
@@ -52,6 +57,10 @@ export default function ForeningUppgifterPage() {
       <ForeningProfilFormular />
 
       <ForeningGrunduppgifterPanel />
+
+      <div id="inloggning" className="scroll-mt-24">
+        <ForeningInloggningsPanel />
+      </div>
 
       <div id="avtal" className="scroll-mt-24">
         <ForeningAvtalPanel />

@@ -4,23 +4,31 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 
+type Statistik = {
+  totaltHandelser: number;
+  lyckade24Timmar: number;
+  lyckade7Dagar: number;
+  misslyckade7Dagar: number;
+  unikaAnvandare7Dagar: number;
+  antalStyrelseKonton: number;
+};
+
+type KontoRad = {
+  kontoId: string;
+  epost: string;
+  namn: string;
+  senasteInloggning: string | null;
+  foreningar: Array<{ id: string; namn: string; roll: string }>;
+};
+
 type Inloggning = {
   id: string;
   epost: string;
   typ: string;
-  foreningId: string | null;
-  foreningsNamn: string | null;
   lyckad: boolean;
-  ip: string;
+  foreningsNamn: string | null;
   tidpunkt: string;
-};
-
-type ForeningRad = {
-  id: string;
-  namn: string;
-  epost: string;
-  avtalGodkant: boolean;
-  medlemmar: Array<{ roll: string; epost: string; namn: string }>;
+  ip: string;
 };
 
 type MejlRad = {
@@ -32,12 +40,30 @@ type MejlRad = {
   skapadTidpunkt: string;
 };
 
+type MittLosenord = {
+  epost: string;
+  losenord: string | null;
+  meddelande?: string;
+};
+
+function formatTid(iso: string | null): string {
+  if (!iso) return "Aldrig";
+  try {
+    return new Date(iso).toLocaleString("sv-SE");
+  } catch {
+    return iso;
+  }
+}
+
 export function PlattformDashboard() {
   const [epost, setEpost] = useState<string | null>(null);
   const [forbjuden, setForbjuden] = useState(false);
+  const [statistik, setStatistik] = useState<Statistik | null>(null);
+  const [konton, setKonton] = useState<KontoRad[]>([]);
   const [inloggningar, setInloggningar] = useState<Inloggning[]>([]);
-  const [foreningar, setForeningar] = useState<ForeningRad[]>([]);
   const [mejl, setMejl] = useState<MejlRad[]>([]);
+  const [mittLosenord, setMittLosenord] = useState<MittLosenord | null>(null);
+  const [visaMittLosenord, setVisaMittLosenord] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
 
   const ladda = useCallback(async () => {
@@ -55,23 +81,32 @@ export function PlattformDashboard() {
     setEpost(session.epost || null);
     setForbjuden(false);
 
-    const [logRes, forRes, mejlRes] = await Promise.all([
-      fetch("/api/plattform/inloggningar?limit=80"),
-      fetch("/api/plattform/foreningar"),
+    const [statRes, mejlRes, losRes] = await Promise.all([
+      fetch("/api/plattform/statistik"),
       fetch("/api/plattform/mejl-outbox"),
+      fetch("/api/auth/mitt-losenord"),
     ]);
 
-    if (!logRes.ok || !forRes.ok || !mejlRes.ok) {
+    if (!statRes.ok || !mejlRes.ok) {
       setFel("Kunde inte ladda plattformsdata.");
       return;
     }
 
-    const logData = (await logRes.json()) as { inloggningar: Inloggning[] };
-    const forData = (await forRes.json()) as { foreningar: ForeningRad[] };
+    const statData = (await statRes.json()) as {
+      statistik: Statistik;
+      kontonMedInloggning: KontoRad[];
+      senasteInloggningar: Inloggning[];
+    };
     const mejlData = (await mejlRes.json()) as { mejl: MejlRad[] };
-    setInloggningar(logData.inloggningar || []);
-    setForeningar(forData.foreningar || []);
+    setStatistik(statData.statistik);
+    setKonton(statData.kontonMedInloggning || []);
+    setInloggningar(statData.senasteInloggningar || []);
     setMejl(mejlData.mejl || []);
+
+    if (losRes.ok) {
+      const losData = (await losRes.json()) as MittLosenord;
+      setMittLosenord(losData);
+    }
   }, []);
 
   useEffect(() => {
@@ -132,10 +167,108 @@ export function PlattformDashboard() {
         </p>
       ) : null}
 
+      {mittLosenord ? (
+        <section className="rounded-2xl border border-primary/30 bg-[#eef6f0] p-5 shadow-sm">
+          <h2 className="text-base font-bold text-foreground">
+            Ditt plattformslösenord
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Endast du som är inloggad ser detta — aldrig styrelsen eller andra
+            adminars lösenord.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <code className="rounded bg-white px-3 py-1.5 font-mono text-sm">
+              {visaMittLosenord && mittLosenord.losenord
+                ? mittLosenord.losenord
+                : "••••••••••••"}
+            </code>
+            <button
+              type="button"
+              onClick={() => setVisaMittLosenord((v) => !v)}
+              className="text-sm font-medium text-primary-dark underline"
+              disabled={!mittLosenord.losenord}
+            >
+              {visaMittLosenord ? "Dölj" : "Visa mitt lösenord"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {statistik ? (
+        <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {(
+            [
+              ["24 timmar", statistik.lyckade24Timmar],
+              ["7 dagar", statistik.lyckade7Dagar],
+              ["Unika (7 d)", statistik.unikaAnvandare7Dagar],
+              ["Misslyckade (7 d)", statistik.misslyckade7Dagar],
+              ["Styrelsekonton", statistik.antalStyrelseKonton],
+              ["Totalt i logg", statistik.totaltHandelser],
+            ] as const
+          ).map(([etikett, varde]) => (
+            <div
+              key={etikett}
+              className="rounded-2xl border border-border bg-white px-3 py-4 text-center shadow-sm"
+            >
+              <p className="text-2xl font-bold text-foreground">{varde}</p>
+              <p className="text-xs text-muted">{etikett}</p>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
       <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-foreground">Inloggningshistorik</h2>
+        <h2 className="text-lg font-bold text-foreground">
+          Vem har inloggning
+        </h2>
         <p className="mt-1 text-sm text-muted">
-          Visas bara här — aldrig för styrelsen.
+          Styrelsekonton per förening. Lösenord visas inte här.
+        </p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-border text-xs uppercase text-muted">
+              <tr>
+                <th className="py-2 pr-3">Namn</th>
+                <th className="py-2 pr-3">E-post</th>
+                <th className="py-2 pr-3">Förening / roll</th>
+                <th className="py-2">Senaste inloggning</th>
+              </tr>
+            </thead>
+            <tbody>
+              {konton.map((k) => (
+                <tr key={k.kontoId} className="border-b border-border/60">
+                  <td className="py-2 pr-3 font-medium">{k.namn || "—"}</td>
+                  <td className="py-2 pr-3">{k.epost}</td>
+                  <td className="py-2 pr-3">
+                    {k.foreningar.length === 0
+                      ? "—"
+                      : k.foreningar
+                          .map((f) => `${f.namn} (${f.roll})`)
+                          .join(", ")}
+                  </td>
+                  <td className="py-2 whitespace-nowrap">
+                    {formatTid(k.senasteInloggning)}
+                  </td>
+                </tr>
+              ))}
+              {konton.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-4 text-muted">
+                    Inga styrelsekonton ännu.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-foreground">
+          Inloggningsstatistik — vem och när
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Senaste händelserna (lyckade och misslyckade).
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
@@ -153,13 +286,11 @@ export function PlattformDashboard() {
               {inloggningar.map((rad) => (
                 <tr key={rad.id} className="border-b border-border/60">
                   <td className="py-2 pr-3 whitespace-nowrap">
-                    {new Date(rad.tidpunkt).toLocaleString("sv-SE")}
+                    {formatTid(rad.tidpunkt)}
                   </td>
                   <td className="py-2 pr-3">{rad.epost}</td>
                   <td className="py-2 pr-3">{rad.typ}</td>
-                  <td className="py-2 pr-3">
-                    {rad.foreningsNamn || rad.foreningId || "—"}
-                  </td>
+                  <td className="py-2 pr-3">{rad.foreningsNamn || "—"}</td>
                   <td className="py-2 pr-3">
                     {rad.lyckad ? "OK" : "Misslyckad"}
                   </td>
@@ -179,42 +310,9 @@ export function PlattformDashboard() {
       </section>
 
       <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold text-foreground">Föreningar</h2>
-        <ul className="mt-3 space-y-3">
-          {foreningar.map((f) => (
-            <li
-              key={f.id}
-              className="rounded-lg border border-border/80 bg-surface/40 px-3 py-3 text-sm"
-            >
-              <p className="font-semibold text-foreground">
-                {f.namn}{" "}
-                {f.avtalGodkant ? (
-                  <span className="text-xs font-medium text-primary-dark">
-                    · Kund
-                  </span>
-                ) : null}
-              </p>
-              <p className="text-muted">{f.epost || "—"}</p>
-              <ul className="mt-2 text-xs text-muted">
-                {f.medlemmar.map((m) => (
-                  <li key={`${f.id}-${m.epost}-${m.roll}`}>
-                    {m.roll}: {m.namn || "—"} ({m.epost})
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-          {foreningar.length === 0 ? (
-            <li className="text-sm text-muted">Inga föreningar på servern.</li>
-          ) : null}
-        </ul>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
         <h2 className="text-lg font-bold text-foreground">Mejl-outbox</h2>
         <p className="mt-1 text-sm text-muted">
-          När SMTP/Resend saknas sparas mejl här (t.ex. tillfälliga lösenord till
-          admin).
+          När SMTP/Resend saknas sparas mejl här (t.ex. tillfälliga lösenord).
         </p>
         <ul className="mt-3 space-y-3">
           {mejl.slice(0, 20).map((m) => (

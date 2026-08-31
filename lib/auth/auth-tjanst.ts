@@ -6,6 +6,7 @@ import {
   valideraLosenordStyrka,
   verifieraLosenord,
 } from "@/lib/auth/losenord";
+import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
 import { byggAterstallningsMejl, byggLosenordMejl, skickaMejl } from "@/lib/auth/mejl";
 import {
   skapaSessionToken,
@@ -100,6 +101,7 @@ export async function skapaForeningMedKonto(
           epostNyckel: epost,
           namn: skapareNamn,
           losnordHash: hashLosenord(tillfalligtLosenord),
+          losenordKuvert: krypteraLosenordForVisning(tillfalligtLosenord),
           typ: "STYRELSE",
           aktiv: true,
         },
@@ -228,6 +230,10 @@ export async function loggaInStyrelse(opts: {
   }
 
   const foreningId = medlemskap[0]!.foreningId;
+  await prisma.konto.update({
+    where: { id: konto.id },
+    data: { senasteInloggning: new Date() },
+  });
   await loggaInloggning({
     kontoId: konto.id,
     epost,
@@ -288,6 +294,10 @@ export async function loggaInPlattform(opts: {
     throw new Error("Fel e-post eller lösenord.");
   }
 
+  await prisma.konto.update({
+    where: { id: konto.id },
+    data: { senasteInloggning: new Date() },
+  });
   await loggaInloggning({
     kontoId: konto.id,
     epost,
@@ -324,7 +334,10 @@ export async function bytLosenord(opts: {
 
   await prisma.konto.update({
     where: { id: konto.id },
-    data: { losnordHash: hashLosenord(opts.nytt) },
+    data: {
+      losnordHash: hashLosenord(opts.nytt),
+      losenordKuvert: krypteraLosenordForVisning(opts.nytt),
+    },
   });
 }
 
@@ -380,7 +393,10 @@ export async function aterstallLosenordMedToken(opts: {
   await prisma.$transaction([
     prisma.konto.update({
       where: { id: rad.kontoId },
-      data: { losnordHash: hashLosenord(opts.nytt) },
+      data: {
+        losnordHash: hashLosenord(opts.nytt),
+        losenordKuvert: krypteraLosenordForVisning(opts.nytt),
+      },
     }),
     prisma.losnordAterstallning.update({
       where: { id: rad.id },

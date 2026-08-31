@@ -5,6 +5,7 @@ import {
   genereraTillfalligtLosenord,
   hashLosenord,
 } from "@/lib/auth/losenord";
+import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
 import { normaliseraEpost } from "@/lib/auth/epost";
 import {
   arPlattformAdminEpost,
@@ -40,6 +41,7 @@ export async function sakraPlattformAdminKonton(
               ? "Plattformsadmin"
               : "",
             losnordHash: hashLosenord(losenord),
+            losenordKuvert: krypteraLosenordForVisning(losenord),
             typ: "PLATTFORM",
             aktiv: true,
           },

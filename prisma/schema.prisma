@@ -48,9 +48,12 @@ model Konto {
   epostNyckel  String   @unique
   namn         String   @default("")
   losnordHash  String
+  /// Krypterat aktuellt lösenord — avkrypteras endast för den inloggade ägaren.
+  losenordKuvert String @default("")
   /// STYRELSE | PLATTFORM — PLATTFORM syns aldrig för styrelsen.
   typ          String
   aktiv        Boolean  @default(true)
+  senasteInloggning DateTime?
   skapadTidpunkt DateTime @default(now())
   uppdateradTidpunkt DateTime @updatedAt
 

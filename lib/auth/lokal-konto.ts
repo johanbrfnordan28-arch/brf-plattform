@@ -54,9 +54,17 @@ export function verifieraLokalKonto(
   epost: string,
   losenord: string,
 ): LokalKonto | null {
-  const nyckel = epost.trim().toLowerCase();
-  const hittad = lasAlla().find((k) => k.epost === nyckel);
+  const hittad = hamtaLokalKonto(epost);
   if (!hittad) return null;
   if (hittad.losenord !== losenord) return null;
   return hittad;
+}
+
+export function hamtaLokalKonto(epost: string): LokalKonto | null {
+  const nyckel = epost.trim().toLowerCase();
+  return lasAlla().find((k) => k.epost === nyckel) ?? null;
+}
+
+export function listaLokalaKontonForForening(foreningId: string): LokalKonto[] {
+  return lasAlla().filter((k) => k.foreningId === foreningId);
 }
