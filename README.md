@@ -73,7 +73,12 @@ git push -u origin main
 
 **Produktion (Postgres):** byt `provider` i `prisma/schema.prisma` till `postgresql`, sätt `DATABASE_URL` till Neon/Supabase/Vercel Postgres, kör `npx prisma migrate deploy`.
 
-Webbläsaren sparar fortfarande lokalt; servern speglar profil och avtal. Riktig styrelseinloggning är nästa steg.
+Webbläsaren sparar fortfarande lokalt; servern speglar profil, avtal och konton.
+**Inloggning:** e-post + lösenord (skickas vid skapande). Byt/glömt lösenord under `/konto/*`.
+**Avtal** signeras med BankID (demo tills riktig e-legitimation).
+**Plattformsadmin** (dolt för styrelsen): `/plattform-login` — inloggningshistorik och mejl-outbox.
+
+Tillfälliga adminlösenord skapas vid första inloggning och syns i mejl-outbox om SMTP saknas.
 
 ### Viktigt vid test på Vercel
 

@@ -14,6 +14,8 @@ export type ForeningServerDto = {
   grundinfoPaborjad: boolean;
   avtalGodkant: boolean;
   avtalGodkantTidpunkt: string;
+  avtalBankidTidpunkt: string;
+  avtalBankidNamn: string;
   skapadTidpunkt: string;
 };
 
@@ -80,6 +82,10 @@ export function tillDto(rad: Forening): ForeningServerDto {
     avtalGodkantTidpunkt: rad.avtalGodkantTidpunkt
       ? rad.avtalGodkantTidpunkt.toISOString()
       : "",
+    avtalBankidTidpunkt: rad.avtalBankidTidpunkt
+      ? rad.avtalBankidTidpunkt.toISOString()
+      : "",
+    avtalBankidNamn: rad.avtalBankidNamn ?? "",
     skapadTidpunkt: rad.skapadTidpunkt.toISOString(),
   };
 }

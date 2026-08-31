@@ -65,6 +65,9 @@ export type ForeningProfil = {
   avtalGodkant: boolean;
   /** ISO-tidpunkt när avtalet godkändes (tom sträng om ej kund). */
   avtalGodkantTidpunkt: string;
+  /** BankID-signering av avtal. */
+  avtalBankidTidpunkt: string;
+  avtalBankidNamn: string;
 };
 
 /** Säkerställer nya fält för profiler sparade innan avtal/kund fanns. */
@@ -93,6 +96,12 @@ export function normaliseraForeningProfil(
       typeof raw.avtalGodkantTidpunkt === "string"
         ? raw.avtalGodkantTidpunkt
         : "",
+    avtalBankidTidpunkt:
+      typeof raw.avtalBankidTidpunkt === "string"
+        ? raw.avtalBankidTidpunkt
+        : "",
+    avtalBankidNamn:
+      typeof raw.avtalBankidNamn === "string" ? raw.avtalBankidNamn : "",
   };
 }
 
@@ -759,7 +768,16 @@ export function arGrundmallForening(id?: string): boolean {
   return (id ?? hamtaAktivForeningId()) === GRUNDMALL_FORENING_ID;
 }
 
-export function skapaNyForening(namn: string): ForeningProfil {
+export function skapaNyForening(
+  namn: string,
+  val?: {
+    id?: string;
+    synkaServer?: boolean;
+    epost?: string;
+    kontaktperson?: string;
+    styrelseledamoter?: StyrelseLedamot[];
+  },
+): ForeningProfil {
   const trimmat = namn.trim();
   if (!trimmat) {
     throw new Error("Ange ett namn på föreningen.");
@@ -778,8 +796,20 @@ export function skapaNyForening(namn: string): ForeningProfil {
     throw new Error(localStorageFelMeddelande("unavailable"));
   }
 
-  const id = skapaForeningIdFranNamn(trimmat);
-  const profil = tomProfil(id, trimmat);
+  const id = val?.id?.trim() || skapaForeningIdFranNamn(trimmat);
+  if (lasForeningRegistry().poster.some((p) => p.id === id)) {
+    throw new Error("Förenings-id finns redan. Försök med ett annat namn.");
+  }
+
+  let profil = tomProfil(id, trimmat);
+  if (val?.epost || val?.kontaktperson || val?.styrelseledamoter) {
+    profil = normaliseraForeningProfil({
+      ...profil,
+      epost: val.epost ?? profil.epost,
+      kontaktperson: val.kontaktperson ?? profil.kontaktperson,
+      styrelseledamoter: val.styrelseledamoter ?? profil.styrelseledamoter,
+    });
+  }
 
   sparaSenastSkapadProfil(profil);
   markeraPendingAktivForening(id);
@@ -798,10 +828,11 @@ export function skapaNyForening(namn: string): ForeningProfil {
     }
   }
 
-  // Spegla till server i bakgrunden (blockerar inte skapandet).
-  void import("@/lib/forening-server-sync")
-    .then(({ synkaForeningTillServer }) => synkaForeningTillServer(profil))
-    .catch(() => {});
+  if (val?.synkaServer !== false) {
+    void import("@/lib/forening-server-sync")
+      .then(({ synkaForeningTillServer }) => synkaForeningTillServer(profil))
+      .catch(() => {});
+  }
 
   return profil;
 }

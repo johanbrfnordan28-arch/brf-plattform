@@ -154,6 +154,10 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const [sok, setSok] = useState(INLOGGNING_BRF_PREFIX);
   const [rensaId, setRensaId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [epost, setEpost] = useState("");
+  const [losenord, setLosenord] = useState("");
+  const [kontoFel, setKontoFel] = useState<string | null>(null);
+  const [kontoLaddar, setKontoLaddar] = useState(false);
   const listaRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
@@ -201,6 +205,38 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     window.location.assign(hamtaForeningStartPath(id));
   }
 
+  async function loggaInMedKonto(event: React.FormEvent) {
+    event.preventDefault();
+    setKontoFel(null);
+    setKontoLaddar(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ epost, losenord }),
+      });
+      const data = (await res.json()) as {
+        fel?: string;
+        foreningId?: string;
+      };
+      if (!res.ok) {
+        setKontoFel(data.fel || "Inloggning misslyckades.");
+        return;
+      }
+      if (data.foreningId) {
+        markeraPendingAktivForening(data.foreningId);
+        sattAktivForeningId(data.foreningId);
+        window.location.assign(hamtaForeningStartPath(data.foreningId));
+        return;
+      }
+      window.location.assign("/forening");
+    } catch {
+      setKontoFel("Kunde inte nå servern.");
+    } finally {
+      setKontoLaddar(false);
+    }
+  }
+
   function bekraftaRensa(id: string) {
     rensaStandardTestForening(id);
     setRensaId(null);
@@ -224,11 +260,69 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
 
   return (
     <div className="mx-auto max-w-lg space-y-5 px-4">
+      <section className="rounded-2xl border-2 border-primary/30 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-bold text-foreground">
+          Logga in med e-post och lösenord
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Lösenordet skickades när föreningen skapades.{" "}
+          <Link
+            href="/konto/glomt-losenord"
+            className="font-medium text-primary-dark underline hover:no-underline"
+          >
+            Glömt lösenord?
+          </Link>{" "}
+          ·{" "}
+          <Link
+            href="/konto/byt-losenord"
+            className="font-medium text-primary-dark underline hover:no-underline"
+          >
+            Byt lösenord
+          </Link>
+        </p>
+        <form onSubmit={loggaInMedKonto} className="mt-4 space-y-3">
+          <label className="block text-sm">
+            <span className="font-medium text-foreground">E-post</span>
+            <input
+              type="email"
+              value={epost}
+              onChange={(e) => setEpost(e.target.value)}
+              autoComplete="username"
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+              required
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-medium text-foreground">Lösenord</span>
+            <input
+              type="password"
+              value={losenord}
+              onChange={(e) => setLosenord(e.target.value)}
+              autoComplete="current-password"
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+              required
+            />
+          </label>
+          {kontoFel ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+              {kontoFel}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={kontoLaddar}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+          >
+            {kontoLaddar ? "Loggar in …" : "Logga in"}
+          </button>
+        </form>
+      </section>
+
       <section>
         <p className="mb-1 text-center text-sm font-medium text-foreground">
           {arKundLage
-            ? KUND_LOGIN_KNAPP_RUBRIK
-            : "Logga in på er testförening"}
+            ? "Eller öppna via föreningsnamn"
+            : "Eller öppna demoförening / sparad förening"}
         </p>
         <p className="mb-4 text-center text-sm text-muted">
           {arKundLage ? (

@@ -1,0 +1,111 @@
+"use client";
+
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+
+export function AterstallLosenordForm() {
+  const params = useSearchParams();
+  const tokenFranUrl = params.get("token") || "";
+  const [token, setToken] = useState(tokenFranUrl);
+  const [nytt, setNytt] = useState("");
+  const [bekrafta, setBekrafta] = useState("");
+  const [fel, setFel] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+  const [laddar, setLaddar] = useState(false);
+
+  async function skicka(e: React.FormEvent) {
+    e.preventDefault();
+    setFel(null);
+    if (nytt !== bekrafta) {
+      setFel("Lösenorden stämmer inte överens.");
+      return;
+    }
+    setLaddar(true);
+    try {
+      const res = await fetch("/api/auth/aterstall-losenord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, nytt }),
+      });
+      const data = (await res.json()) as { fel?: string };
+      if (!res.ok) {
+        setFel(data.fel || "Kunde inte återställa.");
+        return;
+      }
+      setOk(true);
+    } catch {
+      setFel("Kunde inte nå servern.");
+    } finally {
+      setLaddar(false);
+    }
+  }
+
+  if (ok) {
+    return (
+      <div className="mx-auto max-w-md rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <h1 className="text-xl font-bold text-foreground">Lösenordet är återställt</h1>
+        <Link
+          href="/styrelse-login"
+          className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
+        >
+          Logga in
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={skicka} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <h1 className="text-xl font-bold text-foreground">Välj nytt lösenord</h1>
+      {!tokenFranUrl ? (
+        <label className="block text-sm">
+          <span className="font-medium">Återställningstoken</span>
+          <input
+            type="text"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+            required
+          />
+        </label>
+      ) : null}
+      <label className="block text-sm">
+        <span className="font-medium">Nytt lösenord</span>
+        <input
+          type="password"
+          value={nytt}
+          onChange={(e) => setNytt(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+      </label>
+      <label className="block text-sm">
+        <span className="font-medium">Bekräfta</span>
+        <input
+          type="password"
+          value={bekrafta}
+          onChange={(e) => setBekrafta(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+      </label>
+      {fel ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          {fel}
+        </p>
+      ) : null}
+      <button
+        type="submit"
+        disabled={laddar || !token}
+        className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+      >
+        {laddar ? "Sparar …" : "Spara lösenord"}
+      </button>
+    </form>
+  );
+}

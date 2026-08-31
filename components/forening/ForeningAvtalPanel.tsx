@@ -6,6 +6,7 @@ import {
   FORENING_AKTIV_EVENT,
   lasAktivForeningId,
   lasForeningProfil,
+  sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import {
@@ -18,6 +19,7 @@ import {
 import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
+import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 
 function formatDatum(iso: string): string {
   if (!iso) return "";
@@ -33,19 +35,24 @@ function formatDatum(iso: string): string {
 }
 
 /**
- * Godkänn ettårsavtal på föreningssidan — testförening blir kund.
- * Endast den aktiva föreningens uppgifter används.
+ * Godkänn ettårsavtal — kräver BankID-signering.
  */
 export function ForeningAvtalPanel() {
   const [profil, setProfil] = useState<ForeningProfil | null>(null);
   const [redo, setRedo] = useState(false);
   const [bekraftat, setBekraftat] = useState(false);
+  const [signerNamn, setSignerNamn] = useState("");
+  const [bankidSteg, setBankidSteg] = useState<"idle" | "pagar" | "klar">(
+    "idle",
+  );
   const [fel, setFel] = useState<string | null>(null);
   const [sparar, setSparar] = useState(false);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   const ladda = useCallback(() => {
-    setProfil(lasForeningProfil(lasAktivForeningId()));
+    const p = lasForeningProfil(lasAktivForeningId());
+    setProfil(p);
+    setSignerNamn((nu) => nu || p?.kontaktperson || "");
     setRedo(true);
   }, []);
 
@@ -56,9 +63,7 @@ export function ForeningAvtalPanel() {
   }, [ladda]);
 
   if (!redo) {
-    return (
-      <p className="text-sm text-muted">Laddar avtalsstatus …</p>
-    );
+    return <p className="text-sm text-muted">Laddar avtalsstatus …</p>;
   }
 
   if (!profil || !arEgenTestForening(profil.id)) {
@@ -83,14 +88,14 @@ export function ForeningAvtalPanel() {
           {profil.namn} är kund
         </h3>
         <p className="mt-2 text-sm text-muted">
-          Ettårsavtal godkänt
+          Ettårsavtal signerat med BankID
+          {profil.avtalBankidNamn ? ` av ${profil.avtalBankidNamn}` : ""}
           {profil.avtalGodkantTidpunkt
             ? ` ${formatDatum(profil.avtalGodkantTidpunkt)}`
             : ""}
           . Nästa gång loggar styrelsen in via{" "}
           <strong className="text-foreground">{KUND_LOGIN_KNAPP_RUBRIK}</strong>{" "}
-          på Styrelse-Navet — endast er förening syns, inga andra föreningars
-          uppgifter.
+          på Styrelse-Navet.
         </p>
         <ForeningPrisPanel variant="avtal" visaLankTillGrund />
         <Link
@@ -105,32 +110,52 @@ export function ForeningAvtalPanel() {
 
   const check = kanGodkannaAvtal(profil);
 
-  function godkänn() {
+  async function signeraMedBankId() {
     setFel(null);
     setServerStatus(null);
     if (!bekraftat) {
       setFel("Bekräfta att ni godkänner avtalsvillkoren.");
       return;
     }
+    if (!signerNamn.trim()) {
+      setFel("Ange namn för BankID-signering.");
+      return;
+    }
     setSparar(true);
+    setBankidSteg("pagar");
     try {
+      await new Promise((r) => window.setTimeout(r, 1800));
+
       const uppdaterad = godkannForeningsAvtal(profil!.id);
-      setBekraftat(false);
-      void import("@/lib/forening-server-sync").then(
-        async ({ synkaAvtalTillServer }) => {
-          const resultat = await synkaAvtalTillServer(
-            uppdaterad.id,
-            uppdaterad,
-          );
-          setServerStatus(
-            resultat.ok
-              ? "Avtalet sparat lokalt och på servern."
-              : `Avtalet sparat lokalt. Server: ${resultat.fel}`,
-          );
-        },
+      const medBankid = {
+        ...uppdaterad,
+        avtalBankidNamn: signerNamn.trim(),
+        avtalBankidTidpunkt: new Date().toISOString(),
+      };
+      sparaForeningProfil(medBankid, { synkaServer: false });
+      setBankidSteg("klar");
+      setProfil(medBankid);
+
+      const access = hamtaServerAccessNyckel(medBankid.id);
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (access) headers["x-access-nyckel"] = access;
+
+      const res = await fetch(`/api/foreningar/${medBankid.id}/avtal-bankid`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ signerNamn: signerNamn.trim() }),
+      });
+      const data = (await res.json()) as { fel?: string };
+      setServerStatus(
+        res.ok
+          ? "Avtalet är signerat med BankID och sparat."
+          : `Signerat lokalt. Server: ${data.fel || "kunde inte synkas"}`,
       );
     } catch (e) {
-      setFel(e instanceof Error ? e.message : "Kunde inte spara avtalet.");
+      setBankidSteg("idle");
+      setFel(e instanceof Error ? e.message : "Kunde inte signera avtalet.");
     } finally {
       setSparar(false);
     }
@@ -142,12 +167,11 @@ export function ForeningAvtalPanel() {
         Bli kund
       </p>
       <h3 className="mt-1 text-lg font-bold text-foreground">
-        Godkänn avtal för {profil.namn}
+        Signera avtal med BankID för {profil.namn}
       </h3>
       <p className="mt-2 text-sm text-muted">
-        När ni sparat föreningsuppgifterna kan styrelsen godkänna ettårsavtalet.
-        Då blir föreningen kund och inloggning sker via «{KUND_LOGIN_KNAPP_RUBRIK}».
-        Endast er förenings data visas — aldrig andra föreningars.
+        Avtalet måste signeras med BankID. När signeringen är klar blir föreningen
+        kund och inloggning sker via «{KUND_LOGIN_KNAPP_RUBRIK}».
       </p>
 
       <ul className="mt-4 space-y-1.5 text-sm text-muted">
@@ -159,6 +183,7 @@ export function ForeningAvtalPanel() {
         <li>Uppsägningstid årsavtal: 6 månader</li>
         <li>Månadsbetalning: ordinarie pris · 1 månads uppsägningstid</li>
         <li>Alla priser exkl. moms</li>
+        <li>Signering sker med BankID</li>
       </ul>
 
       <ForeningPrisPanel variant="avtal" />
@@ -190,6 +215,20 @@ export function ForeningAvtalPanel() {
         </span>
       </label>
 
+      <label className="mt-4 block text-sm">
+        <span className="font-medium text-foreground">
+          Namn vid BankID-signering
+        </span>
+        <input
+          type="text"
+          value={signerNamn}
+          onChange={(e) => setSignerNamn(e.target.value)}
+          disabled={!check.ok || sparar}
+          placeholder="För- och efternamn"
+          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+        />
+      </label>
+
       {fel && (
         <p
           className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
@@ -201,12 +240,20 @@ export function ForeningAvtalPanel() {
 
       <button
         type="button"
-        onClick={godkänn}
+        onClick={() => void signeraMedBankId()}
         disabled={!check.ok || sparar}
         className="mt-4 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {sparar ? "Sparar …" : "Godkänn avtal och bli kund"}
+        {bankidSteg === "pagar"
+          ? "Öppnar BankID …"
+          : bankidSteg === "klar"
+            ? "Signerat"
+            : "Signera avtal med BankID"}
       </button>
+
+      <p className="mt-2 text-xs text-muted">
+        Demo: simulerad BankID-signering tills riktig e-legitimation kopplas in.
+      </p>
 
       {serverStatus && (
         <p className="mt-3 text-sm text-primary-dark" role="status">

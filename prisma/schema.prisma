@@ -29,8 +29,91 @@ model Forening {
   grundinfoPaborjad    Boolean   @default(false)
   avtalGodkant         Boolean   @default(false)
   avtalGodkantTidpunkt DateTime?
-  /// Hemlig nyckel — krävs för att uppdatera (tills riktig styrelseinloggning finns).
+  /// BankID-signering av avtal (ISO när signering slutfördes).
+  avtalBankidTidpunkt  DateTime?
+  avtalBankidNamn      String    @default("")
+  /// Hemlig nyckel — behålls för bakåtkompatibilitet tills alla flöden använder konto.
   accessNyckelHash     String
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
+
+  medlemmar            ForeningMedlem[]
+  inloggningar         InloggningsHistorik[]
+}
+
+/// Inloggningskonto — styrelseledamot eller dold plattformsadmin.
+model Konto {
+  id           String   @id
+  epost        String
+  epostNyckel  String   @unique
+  namn         String   @default("")
+  losnordHash  String
+  /// STYRELSE | PLATTFORM — PLATTFORM syns aldrig för styrelsen.
+  typ          String
+  aktiv        Boolean  @default(true)
+  skapadTidpunkt DateTime @default(now())
+  uppdateradTidpunkt DateTime @updatedAt
+
+  medlemskap   ForeningMedlem[]
+  aterstallningar LosnordAterstallning[]
+  inloggningar InloggningsHistorik[]
+}
+
+/// Styrelsemedlemskap i en förening (max 10 per förening i applikationslogik).
+model ForeningMedlem {
+  id         String   @id
+  foreningId String
+  kontoId    String
+  /// Ordförande, Sekreterare, Förvaltare, Projektledare, …
+  roll       String
+  skapadTidpunkt DateTime @default(now())
+
+  forening Forening @relation(fields: [foreningId], references: [id], onDelete: Cascade)
+  konto    Konto    @relation(fields: [kontoId], references: [id], onDelete: Cascade)
+
+  @@unique([foreningId, kontoId])
+  @@index([kontoId])
+}
+
+model LosnordAterstallning {
+  id         String   @id
+  kontoId    String
+  tokenHash  String   @unique
+  utgar      DateTime
+  anvand     Boolean  @default(false)
+  skapadTidpunkt DateTime @default(now())
+
+  konto Konto @relation(fields: [kontoId], references: [id], onDelete: Cascade)
+
+  @@index([kontoId])
+}
+
+/// Synlig endast för plattformsadmin — aldrig för styrelsen.
+model InloggningsHistorik {
+  id         String   @id
+  kontoId    String?
+  epost      String
+  /// STYRELSE | PLATTFORM
+  typ        String
+  foreningId String?
+  lyckad     Boolean
+  ip         String   @default("")
+  userAgent  String   @default("")
+  tidpunkt   DateTime @default(now())
+
+  konto    Konto?    @relation(fields: [kontoId], references: [id], onDelete: SetNull)
+  forening Forening? @relation(fields: [foreningId], references: [id], onDelete: SetNull)
+
+  @@index([tidpunkt])
+  @@index([epost])
+}
+
+/// Mejl som skulle skickats (dev/demo utan SMTP) — plattformsadmin kan se outbox.
+model MejlOutbox {
+  id       String   @id
+  till     String
+  amne     String
+  brodtext String
+  skickadVia String @default("outbox")
+  skapadTidpunkt DateTime @default(now())
 }

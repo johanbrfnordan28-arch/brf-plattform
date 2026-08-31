@@ -53,6 +53,18 @@ export function Footer() {
         </div>
         <p className="mt-8 text-xs text-muted">
           © {new Date().getFullYear()} {brand} — demoversion
+          {!isForening ? (
+            <>
+              {" · "}
+              <Link
+                href="/plattform-login"
+                className="text-muted/80 hover:text-muted"
+                aria-label="Plattformsinloggning"
+              >
+                ·
+              </Link>
+            </>
+          ) : null}
         </p>
       </div>
     </footer>

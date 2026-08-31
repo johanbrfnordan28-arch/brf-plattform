@@ -18,6 +18,7 @@ import {
 } from "@/lib/forening-registry";
 import {
   forstaKontaktpersonFranStyrelse,
+  MAX_STYRELSE_LEDAMOTER,
   skapaTomStyrelseLedamot,
   STYRELSE_ROLLER,
   type StyrelseLedamot,
@@ -124,7 +125,7 @@ export function ForeningGrunduppgifterPanel() {
 
   function uppdateraLedamot(
     id: string,
-    patch: Partial<Pick<StyrelseLedamot, "namn" | "roll">>,
+    patch: Partial<Pick<StyrelseLedamot, "namn" | "roll" | "epost">>,
   ) {
     setForm((current) => {
       if (!current) return current;
@@ -139,17 +140,19 @@ export function ForeningGrunduppgifterPanel() {
   }
 
   function laggTillLedamot() {
-    setForm((current) =>
-      current
-        ? {
-            ...current,
-            styrelseledamoter: [
-              ...current.styrelseledamoter,
-              skapaTomStyrelseLedamot(),
-            ],
-          }
-        : current,
-    );
+    setForm((current) => {
+      if (!current) return current;
+      if (current.styrelseledamoter.length >= MAX_STYRELSE_LEDAMOTER) {
+        return current;
+      }
+      return {
+        ...current,
+        styrelseledamoter: [
+          ...current.styrelseledamoter,
+          skapaTomStyrelseLedamot(),
+        ],
+      };
+    });
     setSparad(false);
   }
 
@@ -216,8 +219,14 @@ export function ForeningGrunduppgifterPanel() {
     setSparFel(null);
     try {
       const ledamoter = form.styrelseledamoter
-        .map((l) => ({ ...l, namn: l.namn.trim(), roll: l.roll.trim() || "Ledamot" }))
-        .filter((l) => l.namn || l.bankidKopplad);
+        .map((l) => ({
+          ...l,
+          namn: l.namn.trim(),
+          epost: l.epost.trim(),
+          roll: l.roll.trim() || "Ledamot",
+        }))
+        .filter((l) => l.namn || l.bankidKopplad || l.epost)
+        .slice(0, MAX_STYRELSE_LEDAMOTER);
 
       const kontaktperson =
         forstaKontaktpersonFranStyrelse(ledamoter) || profil.kontaktperson;
@@ -396,8 +405,9 @@ export function ForeningGrunduppgifterPanel() {
             </p>
           </div>
           <p className="mt-1 text-xs text-muted">
-            Inloggning till föreningen ska ske via BankID kopplat till styrelsen.
-            Demo: simulerad koppling tills riktig e-legitimation finns.
+            Upp till {MAX_STYRELSE_LEDAMOTER} personer med namngiven roll
+            (ordförande, sekreterare, förvaltare, projektledare m.fl.). Varje
+            person kan ha e-post för inloggning. Plattformsadmin syns aldrig här.
           </p>
           <ul className="mt-3 space-y-3">
             {form.styrelseledamoter.map((ledamot) => (
@@ -405,7 +415,7 @@ export function ForeningGrunduppgifterPanel() {
                 key={ledamot.id}
                 className="rounded-lg border border-border bg-white p-3 sm:p-4"
               >
-                <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto]">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block text-sm">
                     <span className="font-medium text-foreground">Namn</span>
                     <input
@@ -415,6 +425,18 @@ export function ForeningGrunduppgifterPanel() {
                         uppdateraLedamot(ledamot.id, { namn: e.target.value })
                       }
                       placeholder="För- och efternamn"
+                      className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="font-medium text-foreground">E-post</span>
+                    <input
+                      type="email"
+                      value={ledamot.epost}
+                      onChange={(e) =>
+                        uppdateraLedamot(ledamot.id, { epost: e.target.value })
+                      }
+                      placeholder="namn@exempel.se"
                       className="mt-1 w-full rounded-lg border border-border px-3 py-2"
                     />
                   </label>
@@ -482,9 +504,13 @@ export function ForeningGrunduppgifterPanel() {
           <button
             type="button"
             onClick={laggTillLedamot}
-            className="mt-3 text-sm font-medium text-primary-dark hover:underline"
+            disabled={form.styrelseledamoter.length >= MAX_STYRELSE_LEDAMOTER}
+            className="mt-3 text-sm font-medium text-primary-dark hover:underline disabled:cursor-not-allowed disabled:opacity-50"
           >
             + Lägg till styrelsemedlem
+            {form.styrelseledamoter.length >= MAX_STYRELSE_LEDAMOTER
+              ? ` (max ${MAX_STYRELSE_LEDAMOTER})`
+              : ""}
           </button>
         </section>
       </div>
