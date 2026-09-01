@@ -87,7 +87,7 @@ function tomStandardProfil(id: string, namn: string): ForeningProfil {
 function appliceraSailorProfil(profil: ForeningProfil): ForeningProfil {
   return normaliseraForeningProfil({
     ...profil,
-    namn: "Bostadsrättsföreningen Sailor",
+    namn: "Bostadsrättsföreningen Trazie",
     ...SAILOR_PROFIL,
   });
 }
@@ -118,7 +118,7 @@ function aterstallSailorUnderhallsplan(): void {
 
 const UNDERHALLSPLAN_KEY_BASE = "brf-underhallsplan-state";
 
-/** Uppdaterar Sailors grund och underhållsutkast även om planen redan sparats. */
+/** Uppdaterar Trazies grund och underhållsutkast även om planen redan sparats. */
 function synkaSailorUnderhallsplanGrund(): void {
   if (typeof window === "undefined") return;
   const key = foreningStorageKey(UNDERHALLSPLAN_KEY_BASE, SAILOR_FORENING_ID);
@@ -136,7 +136,7 @@ function synkaSailorUnderhallsplanGrund(): void {
     const grund = normaliseraGrund(appliceraSailorGrund(parsed.grund));
     const lgh = hamtaAntalLagenheterFranGrund(grund);
     const planNamn = uppdateraPlanTitelMedLagenheter(
-      parsed.planNamn?.trim() || "Bostadsrättsföreningen Sailor",
+      parsed.planNamn?.trim() || "Bostadsrättsföreningen Trazie",
       lgh,
     );
     const utkast = byggSailorKomponentUtkast();
@@ -174,9 +174,9 @@ function synkaSailorUnderhallsplanGrund(): void {
 }
 
 /**
- * Säkerställer att demoföreningarna (Nordan 28 + Sailor) finns i registret.
+ * Säkerställer att demoföreningarna (Nordan 28 + Trazie) finns i registret.
  * Behåller användarens sparade namn/uppgifter — skriver bara över startnamn.
- * Sailor får alltid fasta kontakt- och grunduppgifter.
+ * Trazie får alltid fasta kontakt- och grunduppgifter.
  * Avvecklade testföreningar (Brf Test 1–3) rensas via repareraForeningRegistry.
  */
 export function sakraStandardTestForeningar(): ForeningProfil[] {

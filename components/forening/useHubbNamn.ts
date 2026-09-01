@@ -10,7 +10,7 @@ function subscribeHubb(onStoreChange: () => void) {
   return () => window.removeEventListener(FORENING_AKTIV_EVENT, onStoreChange);
 }
 
-/** «Brf Nordan», «Brf Sailor» m.m. — aktiv förenings namn. */
+/** «Brf Nordan», «Brf Trazie» m.m. — aktiv förenings namn. */
 export function useHubbNamn(): string {
   return useSyncExternalStore(
     subscribeHubb,

@@ -1,5 +1,5 @@
 /**
- * Utkast till Brf Sailors underhållsplan — fasta fakta om fastigheten.
+ * Utkast till Brf Trazies underhållsplan — fasta fakta om fastigheten.
  * Taxering/anskaffning ligger i SAILOR_VARDERING_UNDERLAG (visas inte för föreningen).
  * Yta och ekonomi enligt årsredovisning 2024 (2 756 kvm, 40 bostadsrätter).
  */
@@ -256,7 +256,7 @@ function byggSailorBesiktningar(): Besiktning[] {
   });
 }
 
-/** Bygger Sailors komponentregister + samfällighet för underhållsplanen. */
+/** Bygger Trazies komponentregister + samfällighet för underhållsplanen. */
 export function byggSailorKomponentUtkast(): {
   activeComponents: string[];
   komponentDetaljer: Record<string, KomponentDetaljData>;

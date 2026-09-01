@@ -621,7 +621,7 @@ export function UnderhallsplanWizard() {
         grund,
         planNamn:
           planNamnFranForeningsnamn(
-            "Bostadsrättsföreningen Sailor",
+            "Bostadsrättsföreningen Trazie",
             lgh,
           ) ?? sparad.planNamn,
         planNotering: utkast.planNotering,

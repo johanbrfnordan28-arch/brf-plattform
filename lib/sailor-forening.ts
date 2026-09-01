@@ -1,22 +1,22 @@
 import type { FastighetsVarderingsUnderlag } from "@/components/underhallsplan/fastighets-vardering";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
-/** Bostadsrättsföreningen Sailor — fast testförenings-id. */
+/** Bostadsrättsföreningen Trazie — fast testförenings-id. */
 export const SAILOR_FORENING_ID = "test-forening-5";
 
 /** Visningsnamn på hubben (/forening) om profilnamn saknas. */
-export const SAILOR_HUBB_NAMN = "Brf Sailor";
+export const SAILOR_HUBB_NAMN = "Brf Trazie";
 
-/** Underhållsplanen för Sailor börjar detta kalenderår. */
+/** Underhållsplanen för Trazie börjar detta kalenderår. */
 export const SAILOR_PLAN_START_AR = 2027;
 
 /** Byggår enligt årsredovisning — åtgärdsår räknas härifrån + intervall. */
 export const SAILOR_BYGGAR = 2013;
 
-/** Profiluppgifter som alltid ska vara ifyllda för Sailor. */
+/** Profiluppgifter som alltid ska vara ifyllda för Trazie. */
 export const SAILOR_PROFIL = {
   organisationsnummer: "769623-8166",
-  epost: "styrelsen@brf-sailor.se",
+  epost: "styrelsen@brf-trazie.se",
   postadress: "Publikvägen 25",
   ort: "134 39 Gustavsberg",
   kontaktperson: "Trazie Lindberg",
@@ -70,7 +70,7 @@ export function arSailorForening(foreningId?: string | null): boolean {
   return foreningId === SAILOR_FORENING_ID;
 }
 
-/** Lägger Sailors fasta grunduppgifter ovanpå befintlig grund. */
+/** Lägger Trazies fasta grunduppgifter ovanpå befintlig grund. */
 export function appliceraSailorGrund(grund: Grunduppgifter): Grunduppgifter {
   return {
     ...grund,

@@ -13,7 +13,7 @@ import {
 
 /**
  * Hubbnamn högst upp på /forening: föreningens eget namn
- * (köpt sida eller testversion). Sailor fallback «Brf Sailor».
+ * (köpt sida eller testversion). Trazie fallback «Brf Trazie».
  */
 export function hamtaHubbNamn(foreningId?: string | null): string {
   const id =

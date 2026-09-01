@@ -1,7 +1,7 @@
 /** Delad konstant — undvik cirkulära importer mellan registry och kopiera-grundmall. */
 export const GRUNDMALL_FORENING_ID = "grundmall";
 
-/** Fasta id för demoföreningarna vid inloggning (Nordan 28 + Sailor). */
+/** Fasta id för demoföreningarna vid inloggning (Nordan 28 + Trazie). */
 export const STANDARD_TESTFORENING_IDS = [
   "test-forening-4",
   "test-forening-5",
