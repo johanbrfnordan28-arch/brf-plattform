@@ -47,7 +47,7 @@ export const STANDARD_TESTFORENINGAR = [
   },
   {
     id: SAILOR_FORENING_ID,
-    namn: "Bostadsrättsföreningen Sailor",
+    namn: "Bostadsrättsföreningen Trazie",
     testplanId: "test-50" satisfies TestplanId,
   },
 ] as const;
@@ -102,12 +102,12 @@ function seedTestForeningOmTom(foreningId: string, testplanId: TestplanId): void
   );
 }
 
-/** Tvingar tillbaka gårdagens korrekta Sailor-plan (årsredovisning 2024 + sista justeringar). */
+/** Tvingar tillbaka korrekt Trazie-plan (årsredovisning 2024 + sista justeringar). */
 function aterstallSailorUnderhallsplan(): void {
   if (typeof window === "undefined") return;
   const namn =
     lasForeningProfil(SAILOR_FORENING_ID)?.namn ||
-    "Bostadsrättsföreningen Sailor";
+    "Bostadsrättsföreningen Trazie";
   sparaUnderhallsplanState(
     byggLagratStateFranTestplan("test-50", namn, {
       foreningId: SAILOR_FORENING_ID,
