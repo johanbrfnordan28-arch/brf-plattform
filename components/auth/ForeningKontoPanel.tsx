@@ -29,11 +29,11 @@ export function ForeningKontoPanel() {
             <strong className="font-medium text-foreground">
               Spara/visa mitt lösenord
             </strong>{" "}
-            — se det lösenord som sparats för dig
+            — se det lösenord som sparats för dig (aldrig andras)
           </li>
           <li>
             <strong className="font-medium text-foreground">Byt lösenord</strong>{" "}
-            — byt och spara det nya automatiskt för visning
+            — nuvarande lösenord fylls i automatiskt när du är inloggad
           </li>
         </ul>
       </div>
