@@ -175,13 +175,39 @@ export function skapaRenoveringsMapp(
   const mappId = options?.id ?? Date.now();
   const name = options?.namn?.trim() || `${mall.standardNamn} ${ar}`;
 
+  // Renoveringsmapp får färdiga undermappar för badrum och kök direkt.
+  const startUndermappar =
+    mallId === "renovering" || mallId === "ovrigt"
+      ? (["badrum", "kok"] as const).map((typ) => ({
+          id: `${mappId}-${typ}`,
+          typ: typ as RenoveringsUndermappTyp,
+          dokument: [] as LagenhetsDokument[],
+        }))
+      : mallId === "badrum"
+        ? [
+            {
+              id: `${mappId}-badrum`,
+              typ: "badrum" as RenoveringsUndermappTyp,
+              dokument: [] as LagenhetsDokument[],
+            },
+          ]
+        : mallId === "kok"
+          ? [
+              {
+                id: `${mappId}-kok`,
+                typ: "kok" as RenoveringsUndermappTyp,
+                dokument: [] as LagenhetsDokument[],
+              },
+            ]
+          : [];
+
   return {
     id: mappId,
     name,
     mallId,
     ar,
     historisk: options?.historisk === true,
-    undermappar: [],
+    undermappar: startUndermappar,
     egenkontroller: [],
     medlemsKrav: skapaMedlemsKravForTyp(mallId),
   };

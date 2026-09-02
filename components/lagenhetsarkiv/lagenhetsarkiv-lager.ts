@@ -7,7 +7,7 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 
-const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v2";
+const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v3";
 
 export const LAGENHETSARKIV_EVENT = "lagenhetsarkiv-uppdaterad";
 
@@ -21,32 +21,33 @@ export type LagenhetsarkivState = {
 };
 
 export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
-  let badrum2024 = skapaRenoveringsMapp("badrum", {
+  let renovering2024 = skapaRenoveringsMapp("renovering", {
     id: 1,
-    namn: "Badrumsrenovering 2024",
+    namn: "Renoveringsmapp 2024",
     ar: 2024,
   });
-  // Lägg till handlingar-del med exempel-dokument
-  badrum2024 = {
-    ...badrum2024,
-    undermappar: [
-      {
-        id: `${badrum2024.id}-handlingar`,
-        typ: "handlingar",
-        dokument: [
-          {
-            id: skapaLagenhetsDokumentId(),
-            filnamn: "Renoveringsanmälan.pdf",
-            uppladdad: "2024-03-12",
-          },
-          {
-            id: skapaLagenhetsDokumentId(),
-            filnamn: "Intyg våtrum.pdf",
-            uppladdad: "2024-06-01",
-          },
-        ],
-      },
-    ],
+  // Lägg exempel-dokument i badrum-undermappen
+  renovering2024 = {
+    ...renovering2024,
+    undermappar: renovering2024.undermappar.map((u) =>
+      u.typ === "badrum"
+        ? {
+            ...u,
+            dokument: [
+              {
+                id: skapaLagenhetsDokumentId(),
+                filnamn: "Renoveringsanmälan.pdf",
+                uppladdad: "2024-03-12",
+              },
+              {
+                id: skapaLagenhetsDokumentId(),
+                filnamn: "Intyg våtrum.pdf",
+                uppladdad: "2024-06-01",
+              },
+            ],
+          }
+        : u,
+    ),
   };
 
   const apartments: ApartmentFolder[] = [
@@ -54,10 +55,12 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
       id: 1,
       lagenhetsnummer: "1001",
       basePages: [...lagenhetsBasSidor],
-      folders: [badrum2024],
+      folders: [renovering2024],
       adress: "Storgatan 1, lgh 1001",
       vaning: "3",
       boyta: "78",
+      andelstal: "0,7842",
+      antalRum: "3 rok",
       antalBadrum: "1",
       antalWC: "1",
       lagenhetsRum: {

@@ -66,7 +66,7 @@ export function ApartmentArchiveDemo() {
   const [nextApartmentNumber, setNextApartmentNumber] = useState(1002);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
-  const [valdMall, setValdMall] = useState<RenoveringsMallId>("badrum");
+  const [valdMall, setValdMall] = useState<RenoveringsMallId>("renovering");
   const [parallellaMallVal, setParallellaMallVal] = useState<RenoveringsMallId[]>(
     [],
   );
@@ -603,7 +603,12 @@ export function ApartmentArchiveDemo() {
 
               {oppen && (
                 <div className="space-y-6 border-t border-border px-4 pb-5 pt-4 sm:px-5">
-                  <LagenhetGrunduppgifterKort apartment={apartment} />
+                  <LagenhetGrunduppgifterKort
+                    apartment={apartment}
+                    onUppdatera={(patch) =>
+                      uppdateraLägenhet(apartment.id, (a) => ({ ...a, ...patch }))
+                    }
+                  />
 
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
@@ -716,9 +721,10 @@ export function ApartmentArchiveDemo() {
               Ny renoveringsmapp
             </h4>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Flera mappar kan läggas till per lägenhet — även historiska
-              renoveringar i efterhand. Ange år och typ så syns det i översikten
-              ovan.
+              Skapa en renoveringsmapp per projekt. Den får färdiga undermappar
+              för <strong className="font-medium text-foreground">Badrum</strong> och{" "}
+              <strong className="font-medium text-foreground">Kök</strong>. Flera
+              mappar kan läggas till — även historiska i efterhand.
             </p>
 
             {foreslagnaMallar.length > 0 && (

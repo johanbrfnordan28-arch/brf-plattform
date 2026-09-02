@@ -70,6 +70,7 @@ function byggSparPatch(
     balkong: string;
     kallareForrad: string;
     pPlats: string;
+    antalRum: string;
     antalBadrum: string;
     antalWC: string;
     lagenhetsRum: LagenhetsRumsInfo;
@@ -89,6 +90,7 @@ function byggSparPatch(
     balkong: data.balkong.trim() || undefined,
     kallareForrad: data.kallareForrad.trim() || undefined,
     pPlats: data.pPlats.trim() || undefined,
+    antalRum: data.antalRum.trim() || undefined,
     antalBadrum: data.antalBadrum.trim() || undefined,
     antalWC: data.antalWC.trim() || undefined,
     installationer: undefined,
@@ -103,7 +105,6 @@ function byggSparPatch(
     harEgenFlaktVentilation: undefined,
     harRokgasFlakt: undefined,
     ventilation: undefined,
-    antalRum: undefined,
   };
 }
 
@@ -627,6 +628,7 @@ export function LagenhetInfoPanel({
     normaliseraEldstader(apartment),
   );
   const [flakt, setFlakt] = useState<LagenhetFlakt>(normaliseraFlakt(apartment));
+  const [antalRum, setAntalRum] = useState(apartment.antalRum ?? "");
   const [antalBadrum, setAntalBadrum] = useState(apartment.antalBadrum ?? "");
   const [antalWC, setAntalWC] = useState(apartment.antalWC ?? "");
   const [lagenhetNotering, setLagenhetNotering] = useState(
@@ -648,6 +650,7 @@ export function LagenhetInfoPanel({
     setLagenhetsRum(normaliseraLagenhetsRum(apartment));
     setEldstader(normaliseraEldstader(apartment));
     setFlakt(normaliseraFlakt(apartment));
+    setAntalRum(apartment.antalRum ?? "");
     setAntalBadrum(apartment.antalBadrum ?? "");
     setAntalWC(apartment.antalWC ?? "");
     setLagenhetNotering(apartment.lagenhetNotering ?? "");
@@ -664,6 +667,7 @@ export function LagenhetInfoPanel({
     balkong: string;
     kallareForrad: string;
     pPlats: string;
+    antalRum: string;
     antalBadrum: string;
     antalWC: string;
     lagenhetsRum: LagenhetsRumsInfo;
@@ -682,6 +686,7 @@ export function LagenhetInfoPanel({
       balkong,
       kallareForrad,
       pPlats,
+      antalRum,
       antalBadrum,
       antalWC,
       lagenhetsRum,
@@ -862,6 +867,7 @@ export function LagenhetInfoPanel({
     balkong: string;
     kallareForrad: string;
     pPlats: string;
+    antalRum: string;
     antalBadrum: string;
     antalWC: string;
     lagenhetNotering: string;
@@ -876,6 +882,7 @@ export function LagenhetInfoPanel({
     if (felt.balkong !== undefined) setBalkong(felt.balkong);
     if (felt.kallareForrad !== undefined) setKallareForrad(felt.kallareForrad);
     if (felt.pPlats !== undefined) setPPlats(felt.pPlats);
+    if (felt.antalRum !== undefined) setAntalRum(felt.antalRum);
     if (felt.antalBadrum !== undefined) setAntalBadrum(felt.antalBadrum);
     if (felt.antalWC !== undefined) setAntalWC(felt.antalWC);
     if (felt.lagenhetNotering !== undefined) setLagenhetNotering(felt.lagenhetNotering);
@@ -956,7 +963,11 @@ export function LagenhetInfoPanel({
           </table>
         </div>
 
-        <Sektion titel="Grunduppgifter" beskrivning="Adress, yta och tillbehör">
+        <Sektion
+          titel="Grunduppgifter"
+          beskrivning="Adress, yta och tillbehör — syns i sammanställningen"
+          defaultOppen
+        >
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="sm:col-span-2">
               <label className={labelKlass}>Adress</label>
@@ -1015,6 +1026,16 @@ export function LagenhetInfoPanel({
                 value={uppmattYta}
                 onBlur={(e) => sparaGrund({ uppmattYta: e.target.value })}
                 onChange={(e) => setUppmattYta(e.target.value)}
+                className={inputKlass}
+              />
+            </div>
+            <div>
+              <label className={labelKlass}>Antal rum</label>
+              <input
+                value={antalRum}
+                onBlur={(e) => sparaGrund({ antalRum: e.target.value })}
+                onChange={(e) => setAntalRum(e.target.value)}
+                placeholder="t.ex. 3 rok"
                 className={inputKlass}
               />
             </div>

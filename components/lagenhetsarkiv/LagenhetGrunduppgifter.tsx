@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import {
   formatLagenhetEtikett,
@@ -35,6 +35,8 @@ export const GRUNDUPPGIFT_FALT: GrundFalt[] = [
   { key: "adress", etikett: "Adress", kort: "Adress" },
 ];
 
+const STRING_FALT = GRUNDUPPGIFT_FALT.map((f) => f.key);
+
 function ravarde(apartment: ApartmentFolder, key: keyof ApartmentFolder): string {
   const v = apartment[key];
   return typeof v === "string" ? v.trim() : "";
@@ -50,42 +52,76 @@ function formateraTal(n: number): string {
   return n.toLocaleString("sv-SE", { maximumFractionDigits: 2 });
 }
 
-function medEnhet(varde: string, enhet?: string): string {
-  if (!varde) return "—";
-  return enhet ? `${varde} ${enhet}` : varde;
-}
+const inputKlass =
+  "w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
 
-// ── Alltid synlig grunduppgiftsruta högst upp i lägenhetskortet ────────────────
-
-function ViktigStat({ etikett, varde }: { etikett: string; varde: string }) {
-  return (
-    <div className="rounded-lg border border-primary/30 bg-white px-3 py-2">
-      <p className="text-[11px] font-medium text-muted">{etikett}</p>
-      <p className="mt-0.5 text-base font-bold text-foreground">{varde || "—"}</p>
-    </div>
-  );
-}
+// ── Redigerbara grunduppgifter — sparas direkt till samma state som sammanställningen ─
 
 export function LagenhetGrunduppgifterKort({
   apartment,
+  onUppdatera,
 }: {
   apartment: ApartmentFolder;
+  onUppdatera: (patch: Partial<ApartmentFolder>) => void;
 }) {
-  const [oppen, setOppen] = useState(false);
-  const andelstal = ravarde(apartment, "andelstal");
-  const boyta = ravarde(apartment, "boyta");
-  const ovriga = GRUNDUPPGIFT_FALT.filter((f) => !f.viktig);
+  const [oppen, setOppen] = useState(true);
+  const [draft, setDraft] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      STRING_FALT.map((key) => [String(key), ravarde(apartment, key)]),
+    ),
+  );
+
+  const syncKey = STRING_FALT.map((key) => ravarde(apartment, key)).join("\0");
+
+  useEffect(() => {
+    setDraft(
+      Object.fromEntries(
+        STRING_FALT.map((key) => [String(key), ravarde(apartment, key)]),
+      ),
+    );
+    // Synka när lägenhet byts eller när värden uppdaterats utifrån (t.ex. InfoPanel).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncKey speglar apartment-fält
+  }, [apartment.id, syncKey]);
+
+  function setFalt(key: string, varde: string) {
+    setDraft((prev) => ({ ...prev, [key]: varde }));
+  }
+
+  function sparaFalt(key: keyof ApartmentFolder, varde: string) {
+    const trimmed = varde.trim();
+    const nuvarande = ravarde(apartment, key);
+    if (trimmed === nuvarande) return;
+    onUppdatera({ [key]: trimmed || undefined } as Partial<ApartmentFolder>);
+  }
+
+  function sparaAlla() {
+    const patch: Partial<ApartmentFolder> = {};
+    for (const f of GRUNDUPPGIFT_FALT) {
+      const trimmed = (draft[String(f.key)] ?? "").trim();
+      const nuvarande = ravarde(apartment, f.key);
+      if (trimmed !== nuvarande) {
+        (patch as Record<string, string | undefined>)[String(f.key)] =
+          trimmed || undefined;
+      }
+    }
+    if (Object.keys(patch).length > 0) onUppdatera(patch);
+  }
 
   return (
-    <div className="mt-3 rounded-xl border border-primary/20 bg-[#eef6f0]/50 p-3 sm:p-4">
+    <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/50 p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => setOppen((v) => !v)}
           aria-expanded={oppen}
-          className="text-left text-[11px] font-semibold uppercase tracking-wide text-primary-dark"
+          className="min-w-0 text-left"
         >
-          Grunduppgifter
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-dark">
+            Grunduppgifter
+          </p>
+          <p className="mt-0.5 text-xs text-muted">
+            Fyll i uppgifter här — de syns direkt i sammanställningen högst upp.
+          </p>
         </button>
         <OppnaStangKnapp
           oppen={oppen}
@@ -96,25 +132,39 @@ export function LagenhetGrunduppgifterKort({
       </div>
 
       {oppen && (
-        <>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:max-w-md">
-            <ViktigStat etikett="Andelstal" varde={andelstal} />
-            <ViktigStat
-              etikett="Boyta (BOA)"
-              varde={boyta ? `${boyta} m²` : ""}
-            />
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {GRUNDUPPGIFT_FALT.map((f) => {
+              const key = String(f.key);
+              return (
+                <label key={key} className="block min-w-0">
+                  <span
+                    className={`mb-1 block text-[11px] font-medium ${
+                      f.viktig ? "text-primary-dark" : "text-muted"
+                    }`}
+                  >
+                    {f.etikett}
+                    {f.enhet ? ` (${f.enhet})` : ""}
+                  </span>
+                  <input
+                    value={draft[key] ?? ""}
+                    onChange={(e) => setFalt(key, e.target.value)}
+                    onBlur={(e) => sparaFalt(f.key, e.target.value)}
+                    placeholder={f.viktig ? "Obligatoriskt för sammanställning" : ""}
+                    className={inputKlass}
+                  />
+                </label>
+              );
+            })}
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-4">
-            {ovriga.map((f) => (
-              <div key={String(f.key)} className="min-w-0">
-                <dt className="text-[11px] text-muted">{f.etikett}</dt>
-                <dd className="truncate text-sm text-foreground">
-                  {medEnhet(ravarde(apartment, f.key), f.enhet)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </>
+          <button
+            type="button"
+            onClick={sparaAlla}
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark"
+          >
+            Spara grunduppgifter
+          </button>
+        </div>
       )}
     </div>
   );
@@ -127,7 +177,7 @@ export function LagenhetsarkivSammanstallning({
 }: {
   apartments: ApartmentFolder[];
 }) {
-  const [oppen, setOppen] = useState(false);
+  const [oppen, setOppen] = useState(true);
 
   if (apartments.length === 0) return null;
 
@@ -146,6 +196,10 @@ export function LagenhetsarkivSammanstallning({
     if (harVarde) summor.set(String(f.key), sum);
   }
 
+  const ifyllda = apartments.filter((a) =>
+    GRUNDUPPGIFT_FALT.some((f) => ravarde(a, f.key)),
+  ).length;
+
   return (
     <div className="border-b border-border p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
@@ -159,8 +213,9 @@ export function LagenhetsarkivSammanstallning({
             Sammanställning
           </p>
           <p className="mt-1 text-sm text-muted">
-            {apartments.length} lägenheter — alla grunduppgifter, med andelstal
-            och yta i fokus.
+            {apartments.length} lägenheter
+            {ifyllda > 0 ? ` · ${ifyllda} med ifyllda uppgifter` : ""} — uppdateras
+            när du sparar grunduppgifter i respektive lägenhet.
           </p>
         </button>
         <OppnaStangKnapp
@@ -171,76 +226,76 @@ export function LagenhetsarkivSammanstallning({
         />
       </div>
       {oppen && (
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-[#eef6f0] text-left text-xs">
-              <th className="sticky left-0 z-10 bg-[#eef6f0] px-3 py-2 font-semibold text-foreground">
-                Lägenhet
-              </th>
-              {GRUNDUPPGIFT_FALT.map((f) => (
-                <th
-                  key={String(f.key)}
-                  className={`whitespace-nowrap px-3 py-2 font-semibold ${
-                    f.viktig ? "text-primary-dark" : "text-muted"
-                  }`}
-                >
-                  {f.kort}
-                  {f.enhet ? ` (${f.enhet})` : ""}
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-[#eef6f0] text-left text-xs">
+                <th className="sticky left-0 z-10 bg-[#eef6f0] px-3 py-2 font-semibold text-foreground">
+                  Lägenhet
                 </th>
+                {GRUNDUPPGIFT_FALT.map((f) => (
+                  <th
+                    key={String(f.key)}
+                    className={`whitespace-nowrap px-3 py-2 font-semibold ${
+                      f.viktig ? "text-primary-dark" : "text-muted"
+                    }`}
+                  >
+                    {f.kort}
+                    {f.enhet ? ` (${f.enhet})` : ""}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {apartments.map((a) => (
+                <tr key={a.id} className="border-b border-border last:border-0">
+                  <td className="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-foreground">
+                    {formatLagenhetEtikett(a.lagenhetsnummer)}
+                  </td>
+                  {GRUNDUPPGIFT_FALT.map((f) => {
+                    const varde = ravarde(a, f.key);
+                    return (
+                      <td
+                        key={String(f.key)}
+                        className={`whitespace-nowrap px-3 py-2 ${
+                          f.viktig
+                            ? "font-semibold text-foreground"
+                            : "text-muted"
+                        }`}
+                      >
+                        {varde || "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {apartments.map((a) => (
-              <tr key={a.id} className="border-b border-border last:border-0">
-                <td className="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-foreground">
-                  {formatLagenhetEtikett(a.lagenhetsnummer)}
-                </td>
-                {GRUNDUPPGIFT_FALT.map((f) => {
-                  const varde = ravarde(a, f.key);
-                  return (
-                    <td
-                      key={String(f.key)}
-                      className={`whitespace-nowrap px-3 py-2 ${
-                        f.viktig
-                          ? "font-semibold text-foreground"
-                          : "text-muted"
-                      }`}
-                    >
-                      {varde || "—"}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-          {summor.size > 0 && (
-            <tfoot>
-              <tr className="border-t-2 border-border bg-[#fafcfa]">
-                <td className="sticky left-0 z-10 bg-[#fafcfa] px-3 py-2 font-semibold text-foreground">
-                  Totalt
-                </td>
-                {GRUNDUPPGIFT_FALT.map((f) => {
-                  const s = summor.get(String(f.key));
-                  return (
-                    <td
-                      key={String(f.key)}
-                      className={`whitespace-nowrap px-3 py-2 ${
-                        f.viktig
-                          ? "font-bold text-primary-dark"
-                          : "font-medium text-muted"
-                      }`}
-                    >
-                      {s !== undefined ? formateraTal(s) : ""}
-                    </td>
-                  );
-                })}
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
+            </tbody>
+            {summor.size > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-border bg-[#fafcfa]">
+                  <td className="sticky left-0 z-10 bg-[#fafcfa] px-3 py-2 font-semibold text-foreground">
+                    Totalt
+                  </td>
+                  {GRUNDUPPGIFT_FALT.map((f) => {
+                    const s = summor.get(String(f.key));
+                    return (
+                      <td
+                        key={String(f.key)}
+                        className={`whitespace-nowrap px-3 py-2 ${
+                          f.viktig
+                            ? "font-bold text-primary-dark"
+                            : "font-medium text-muted"
+                        }`}
+                      >
+                        {s !== undefined ? formateraTal(s) : ""}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       )}
     </div>
   );
