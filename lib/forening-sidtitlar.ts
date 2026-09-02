@@ -10,6 +10,7 @@ export const FORENING_MODUL_TITLAR: Record<string, string> = {
   "/forening/arshjul": "Årshjul",
   "/forening/projekt": "Projekt",
   "/forening/medlemmar": "Medlemmar",
+  "/forening/konto": "Konto",
   "/forening/energi": "Energi & drift",
   "/forening/upphandling": "Upphandling",
   "/forening/entreprenorer": "Entreprenörer",

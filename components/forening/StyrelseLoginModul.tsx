@@ -293,14 +293,9 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
             className="font-medium text-primary-dark underline hover:no-underline"
           >
             Glömt lösenord?
-          </Link>{" "}
-          ·{" "}
-          <Link
-            href="/konto/byt-losenord"
-            className="font-medium text-primary-dark underline hover:no-underline"
-          >
-            Byt lösenord
           </Link>
+          . När du är inloggad byter du lösenord under{" "}
+          <strong className="font-medium text-foreground">Konto</strong>.
         </p>
         <form onSubmit={loggaInMedKonto} className="mt-4 space-y-3">
           <label className="block text-sm">

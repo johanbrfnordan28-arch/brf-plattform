@@ -155,8 +155,9 @@ export function SkapaForeningPanel({
             </p>
           )}
           <p className="mt-2 text-xs text-muted">
-            Spara lösenordet. Du kan byta det under Konto → Byt lösenord efter
-            inloggning.
+            Spara lösenordet. Efter inloggning byter du det under{" "}
+            <strong className="font-medium text-foreground">Konto</strong> i
+            menyn (Byt lösenord).
           </p>
         </div>
         <button

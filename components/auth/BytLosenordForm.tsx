@@ -2,8 +2,19 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { uppdateraLokalLosenord } from "@/lib/auth/lokal-konto";
 
-export function BytLosenordForm() {
+type BytLosenordFormProps = {
+  /** Om true: ingen egen sidtitel, mer kompakt. */
+  inbaddad?: boolean;
+  /** Anropas efter lyckat byte (t.ex. för att ladda om "visa lösenord"). */
+  onLyckat?: () => void;
+};
+
+export function BytLosenordForm({
+  inbaddad = false,
+  onLyckat,
+}: BytLosenordFormProps) {
   const [nuvarande, setNuvarande] = useState("");
   const [nytt, setNytt] = useState("");
   const [bekrafta, setBekrafta] = useState("");
@@ -26,15 +37,43 @@ export function BytLosenordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nuvarande, nytt }),
       });
-      const data = (await res.json()) as { fel?: string };
-      if (!res.ok) {
-        setFel(data.fel || "Kunde inte byta lösenord.");
+      const data = (await res.json()) as { fel?: string; ok?: boolean };
+
+      if (res.ok) {
+        setOk(true);
+        setNuvarande("");
+        setNytt("");
+        setBekrafta("");
+        onLyckat?.();
         return;
       }
-      setOk(true);
-      setNuvarande("");
-      setNytt("");
-      setBekrafta("");
+
+      // Lokal fallback när databas saknas (503) eller ej inloggad via server
+      if (res.status === 503 || res.status === 401) {
+        const sessionRes = await fetch("/api/auth/session");
+        const session = (await sessionRes.json()) as {
+          inloggad?: boolean;
+          epost?: string;
+        };
+        const epost = session.epost?.trim();
+        if (epost) {
+          const lokal = uppdateraLokalLosenord(epost, nuvarande, nytt);
+          if (lokal.ok) {
+            setOk(true);
+            setNuvarande("");
+            setNytt("");
+            setBekrafta("");
+            onLyckat?.();
+            return;
+          }
+          setFel(lokal.fel);
+          return;
+        }
+        // Försök lokal utan session — användaren kan ha lokalt konto
+        // men då behöver vi e-post. Visa tydligt fel.
+      }
+
+      setFel(data.fel || "Kunde inte byta lösenord.");
     } catch {
       setFel("Kunde inte nå servern.");
     } finally {
@@ -43,13 +82,29 @@ export function BytLosenordForm() {
   }
 
   return (
-    <form onSubmit={skicka} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
-      <h1 className="text-xl font-bold text-foreground">Byt lösenord</h1>
+    <form
+      id="byt-losenord"
+      onSubmit={skicka}
+      className={`space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm ${
+        inbaddad ? "" : "mx-auto max-w-md"
+      }`}
+    >
+      {inbaddad ? (
+        <h2 className="text-lg font-bold text-foreground">Byt lösenord</h2>
+      ) : (
+        <h1 className="text-xl font-bold text-foreground">Byt lösenord</h1>
+      )}
       <p className="text-sm text-muted">
-        Du måste vara inloggad.{" "}
-        <Link href="/styrelse-login" className="text-primary-dark underline">
-          Logga in
-        </Link>
+        Det nya lösenordet sparas automatiskt så att du kan visa det under Konto
+        → Spara/visa mitt lösenord.{" "}
+        {!inbaddad && (
+          <>
+            Du måste vara inloggad.{" "}
+            <Link href="/styrelse-login" className="text-primary-dark underline">
+              Logga in
+            </Link>
+          </>
+        )}
       </p>
       <label className="block text-sm">
         <span className="font-medium">Nuvarande lösenord</span>
@@ -87,13 +142,20 @@ export function BytLosenordForm() {
         />
       </label>
       {fel ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          role="alert"
+        >
           {fel}
         </p>
       ) : null}
       {ok ? (
-        <p className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark" role="status">
-          Lösenordet är bytt.
+        <p
+          className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark"
+          role="status"
+        >
+          Lösenordet är bytt och sparat — du kan visa det ovan under «Spara/visa
+          mitt lösenord».
         </p>
       ) : null}
       <button

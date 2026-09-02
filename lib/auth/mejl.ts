@@ -91,7 +91,7 @@ export function byggLosenordMejl(opts: {
       `E-post: ${opts.epost}`,
       `Tillfälligt lösenord: ${opts.losenord}`,
       "",
-      "Byt lösenord efter första inloggningen under Konto → Byt lösenord.",
+      "Byt lösenord efter första inloggningen under Konto i menyn.",
       "Glömt lösenordet? Använd «Glömt lösenord» på inloggningssidan.",
       "",
       "Vänliga hälsningar",

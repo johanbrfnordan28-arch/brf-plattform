@@ -50,6 +50,25 @@ export function sparaLokalKonto(konto: LokalKonto): void {
   sparaAlla([...ovriga, { ...konto, epost }]);
 }
 
+export function uppdateraLokalLosenord(
+  epost: string,
+  nuvarande: string,
+  nytt: string,
+): { ok: true } | { ok: false; fel: string } {
+  const konto = hamtaLokalKonto(epost);
+  if (!konto) {
+    return { ok: false, fel: "Inget lokalt konto hittades i den här webbläsaren." };
+  }
+  if (konto.losenord !== nuvarande) {
+    return { ok: false, fel: "Nuvarande lösenord stämmer inte." };
+  }
+  if (nytt.trim().length < 8) {
+    return { ok: false, fel: "Nytt lösenord måste vara minst 8 tecken." };
+  }
+  sparaLokalKonto({ ...konto, losenord: nytt });
+  return { ok: true };
+}
+
 export function verifieraLokalKonto(
   epost: string,
   losenord: string,

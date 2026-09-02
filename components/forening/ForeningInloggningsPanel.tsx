@@ -197,7 +197,7 @@ export function ForeningInloggningsPanel() {
       {minEpost ? (
         <div className="mt-4 rounded-lg border border-primary/30 bg-[#eef6f0] p-4">
           <p className="text-sm font-semibold text-primary-dark">
-            Ditt lösenord ({minEpost})
+            Spara / visa mitt lösenord ({minEpost})
           </p>
           <p className="mt-1 text-xs text-muted">{losenMeddelande}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -216,18 +216,18 @@ export function ForeningInloggningsPanel() {
               </>
             ) : (
               <p className="text-sm text-muted">
-                Inget lösenord att visa —{" "}
-                <Link href="/konto/byt-losenord" className="underline">
-                  byt lösenord
+                Inget lösenord sparat för visning —{" "}
+                <Link href="/forening/konto#byt-losenord" className="underline">
+                  byt lösenord under Konto
                 </Link>{" "}
-                så sparas det för visning här.
+                så sparas det här.
               </p>
             )}
             <Link
-              href="/konto/byt-losenord"
-              className="text-sm font-medium text-primary-dark underline"
+              href="/forening/konto"
+              className="rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
             >
-              Byt lösenord
+              Konto — byt lösenord
             </Link>
           </div>
         </div>

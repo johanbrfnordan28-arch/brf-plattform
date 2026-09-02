@@ -30,12 +30,18 @@ const nav = [
     label: "Uppgifter",
     aktivPa: (p: string) => p.startsWith("/forening/uppgifter"),
   },
+  {
+    href: "/forening/konto",
+    label: "Konto",
+    aktivPa: (p: string) => p.startsWith("/forening/konto"),
+  },
 ];
 
 export function ForeningHeader() {
   const pathname = usePathname();
   const foreningsNamn = useAktivForeningsNamn();
   const [arKund, setArKund] = useState(false);
+  const [loggarUt, setLoggarUt] = useState(false);
   const initial =
     foreningsNamn === GRUNDMALL_NAMN
       ? "G"
@@ -49,6 +55,16 @@ export function ForeningHeader() {
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
   }, []);
+
+  async function loggaUt() {
+    setLoggarUt(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* fortsätt till startsidan ändå */
+    }
+    window.location.href = "/";
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
@@ -88,17 +104,25 @@ export function ForeningHeader() {
             {arKund ? "Kund · er förening" : "Inloggad styrelse"}
           </span>
           <Link
-            href="/"
-            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
+            href="/forening/konto"
+            className="hidden rounded-lg border border-primary/40 bg-[#eef6f0] px-3 py-2 text-sm font-medium text-primary-dark transition-colors hover:border-primary sm:inline-flex"
           >
-            Styrelse-Navet
+            Byt lösenord
           </Link>
           <Link
             href="/"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark"
+            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark lg:inline-flex"
           >
-            Logga ut
+            Styrelse-Navet
           </Link>
+          <button
+            type="button"
+            disabled={loggarUt}
+            onClick={() => void loggaUt()}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark disabled:opacity-50"
+          >
+            {loggarUt ? "Loggar ut…" : "Logga ut"}
+          </button>
         </div>
       </div>
     </header>
