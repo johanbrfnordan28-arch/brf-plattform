@@ -7,7 +7,7 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 
-const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv";
+const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v2";
 
 export const LAGENHETSARKIV_EVENT = "lagenhetsarkiv-uppdaterad";
 
@@ -18,30 +18,36 @@ export function lagenhetsarkivStorageKey(): string {
 export type LagenhetsarkivState = {
   apartments: ApartmentFolder[];
   nextApartmentNumber: number;
-  activeApartmentId: number;
 };
 
 export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
-  const badrum2024 = skapaRenoveringsMapp("badrum", {
+  let badrum2024 = skapaRenoveringsMapp("badrum", {
     id: 1,
     namn: "Badrumsrenovering 2024",
     ar: 2024,
   });
-  const handlingar = badrum2024.undermappar.find((u) => u.typ === "handlingar");
-  if (handlingar) {
-    handlingar.dokument = [
+  // Lägg till handlingar-del med exempel-dokument
+  badrum2024 = {
+    ...badrum2024,
+    undermappar: [
       {
-        id: skapaLagenhetsDokumentId(),
-        filnamn: "Renoveringsanmälan.pdf",
-        uppladdad: "2024-03-12",
+        id: `${badrum2024.id}-handlingar`,
+        typ: "handlingar",
+        dokument: [
+          {
+            id: skapaLagenhetsDokumentId(),
+            filnamn: "Renoveringsanmälan.pdf",
+            uppladdad: "2024-03-12",
+          },
+          {
+            id: skapaLagenhetsDokumentId(),
+            filnamn: "Intyg våtrum.pdf",
+            uppladdad: "2024-06-01",
+          },
+        ],
       },
-      {
-        id: skapaLagenhetsDokumentId(),
-        filnamn: "Intyg våtrum.pdf",
-        uppladdad: "2024-06-01",
-      },
-    ];
-  }
+    ],
+  };
 
   const apartments: ApartmentFolder[] = [
     {
@@ -49,6 +55,40 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
       lagenhetsnummer: "1001",
       basePages: [...lagenhetsBasSidor],
       folders: [badrum2024],
+      adress: "Storgatan 1, lgh 1001",
+      vaning: "3",
+      boyta: "78",
+      antalBadrum: "1",
+      antalWC: "1",
+      lagenhetsRum: {
+        hall: {
+          besiktning: { status: "normalt", senastBesiktad: "2025-03-15" },
+          uppvarmning: { typ: "radiator", antal: "2" },
+        },
+        kok: {
+          senasteRenovering: { ar: "2019", harDokumentation: true },
+          lackagekydd: { diskmaskin: true, kylFrys: true },
+          besiktning: { status: "observera" },
+          uppvarmning: { typ: "golvvarme-vatten", antal: "1" },
+        },
+        badrum: {
+          senasteRenovering: { ar: "2024", harBilder: true },
+          besiktning: { status: "bra" },
+          kontrollpunkter: {
+            tatskiktGolvbrunn: "ok",
+            tappvatten: { plats: "rorschakt", lackageIndikering: true },
+          },
+          uppvarmning: { typ: "golvvarme-el", antal: "1" },
+        },
+        ovrigaRum: [],
+      },
+      eldstader: [
+        {
+          id: "eldstad-demo-1",
+          godkand: true,
+          eldningsforbud: false,
+        },
+      ],
     },
     ...["1002", "1003", "1004", "1005"].map((nr, index) => ({
       id: index + 2,
@@ -61,7 +101,6 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
   return {
     apartments,
     nextApartmentNumber: 1006,
-    activeApartmentId: 1,
   };
 }
 
@@ -76,7 +115,6 @@ export function skapaTomtLagenhetsarkiv(): LagenhetsarkivState {
       },
     ],
     nextApartmentNumber: 1002,
-    activeApartmentId: 1,
   };
 }
 
@@ -88,14 +126,9 @@ function normaliseraState(raw: unknown): LagenhetsarkivState | null {
     typeof data.nextApartmentNumber === "number" && data.nextApartmentNumber > 0
       ? data.nextApartmentNumber
       : 1002;
-  const activeApartmentId =
-    typeof data.activeApartmentId === "number"
-      ? data.activeApartmentId
-      : data.apartments[0].id;
   return {
     apartments: data.apartments,
     nextApartmentNumber,
-    activeApartmentId,
   };
 }
 
