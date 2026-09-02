@@ -17,7 +17,7 @@ export default function ForeningArshjulPage() {
     <ModulePage
       title="Årshjul"
       icon="📅"
-      intro="Årshjulet ger en tydlig översikt över året. Planeringen av styrelsearbetet blir mer överskådlig — med påminnelser för stämma, OVK, bokslut och egna uppgifter. Importera besiktningar från underhållsplanen så inget glöms bort."
+      intro="Styrelsemöten, byggmöten, garantbesiktning, OVK, sotning, energideklaration och radon — med månads- eller årsintervall. Hoppa över sommaren när ni inte har möten."
     >
       <ContentSection title="Styrelsens årshjul" plain>
         <ArshjulModul />
