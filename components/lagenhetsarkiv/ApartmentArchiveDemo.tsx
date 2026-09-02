@@ -871,7 +871,10 @@ export function ApartmentArchiveDemo() {
                   onClick={() => skapaParallellaMappar(apartment.id)}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
                 >
-                  Skapa {valdMallObj.etikett.toLowerCase()}-mapp
+                  Skapa{" "}
+                  {valdMall === "renovering"
+                    ? "renoveringsmapp"
+                    : `${valdMallObj.etikett.toLowerCase()}-mapp`}
                 </button>
               )}
               {apartment.folders.length > 0 && (
@@ -897,8 +900,8 @@ export function ApartmentArchiveDemo() {
             )}
             {apartment.folders.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">
-                Inga renoveringsmappar ännu. Skapa en mapp ovan och lägg till
-                delar steg för steg.
+                Inga renoveringsmappar ännu. Skapa en renoveringsmapp ovan — den
+                får färdiga undermappar för badrum och kök.
               </p>
             ) : (
               apartment.folders.map((mapp) => (
