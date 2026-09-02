@@ -38,13 +38,8 @@ import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
 export { arStandardTestForening };
 export { SAILOR_FORENING_ID };
 
-/** Fasta demoföreningar — alltid synliga vid inloggning, data isoleras per id. */
+/** Fast demoförening — alltid synlig vid inloggning, data isoleras per id. */
 export const STANDARD_TESTFORENINGAR = [
-  {
-    id: "test-forening-4",
-    namn: "Brf Nordan 28",
-    testplanId: "test-90" satisfies TestplanId,
-  },
   {
     id: SAILOR_FORENING_ID,
     namn: "Bostadsrättsföreningen Trazie",
@@ -174,10 +169,10 @@ function synkaSailorUnderhallsplanGrund(): void {
 }
 
 /**
- * Säkerställer att demoföreningarna (Nordan 28 + Trazie) finns i registret.
+ * Säkerställer att demoföreningen (Trazie) finns i registret.
  * Behåller användarens sparade namn/uppgifter — skriver bara över startnamn.
  * Trazie får alltid fasta kontakt- och grunduppgifter.
- * Avvecklade testföreningar (Brf Test 1–3) rensas via repareraForeningRegistry.
+ * Avvecklade testföreningar (Brf Test 1–3, Nordan 28) rensas via repareraForeningRegistry.
  */
 export function sakraStandardTestForeningar(): ForeningProfil[] {
   if (typeof window === "undefined") {
