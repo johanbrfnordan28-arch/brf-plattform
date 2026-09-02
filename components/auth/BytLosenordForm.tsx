@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import {
   hamtaLokalKonto,
   uppdateraLokalLosenord,
+  sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
+import { lasLokalSession, sparaLokalSession } from "@/lib/auth/lokal-session";
 
 type BytLosenordFormProps = {
   /** Om true: ingen egen sidtitel, mer kompakt. */
@@ -23,6 +25,7 @@ export function BytLosenordForm({
   onLyckat,
 }: BytLosenordFormProps) {
   const [epost, setEpost] = useState<string | null>(null);
+  const [foreningId, setForeningId] = useState<string | null>(null);
   const [nuvarande, setNuvarande] = useState("");
   const [nytt, setNytt] = useState("");
   const [bekrafta, setBekrafta] = useState("");
@@ -42,32 +45,45 @@ export function BytLosenordForm({
         const session = (await sessionRes.json()) as {
           inloggad?: boolean;
           epost?: string;
+          foreningId?: string | null;
         };
         if (!aktiv) return;
-        if (!session.inloggad || !session.epost) {
-          setEpost(null);
-          setHarSparatNuvarande(false);
-          return;
-        }
-        setEpost(session.epost);
 
-        const losRes = await fetch("/api/auth/mitt-losenord");
-        if (!aktiv) return;
-        if (losRes.ok) {
-          const data = (await losRes.json()) as {
-            losenord?: string | null;
-            lokalFallback?: boolean;
-          };
-          let sparat = data.losenord ?? null;
-          if (!sparat && data.lokalFallback) {
-            sparat = hamtaLokalKonto(session.epost)?.losenord ?? null;
+        let aktivEpost: string | null = null;
+        let aktivForening: string | null = null;
+
+        if (session.inloggad && session.epost) {
+          aktivEpost = session.epost.trim().toLowerCase();
+          aktivForening = session.foreningId ?? null;
+          setEpost(aktivEpost);
+          setForeningId(aktivForening);
+
+          const losRes = await fetch("/api/auth/mitt-losenord");
+          if (!aktiv) return;
+          let sparat: string | null = null;
+          if (losRes.ok) {
+            const data = (await losRes.json()) as {
+              losenord?: string | null;
+            };
+            sparat = data.losenord ?? null;
+          }
+          if (!sparat) {
+            sparat = hamtaLokalKonto(aktivEpost)?.losenord ?? null;
           }
           if (sparat) {
             setNuvarande(sparat);
             setHarSparatNuvarande(true);
           }
-        } else {
-          const lokal = hamtaLokalKonto(session.epost);
+          return;
+        }
+
+        const lokalSession = lasLokalSession();
+        if (lokalSession?.epost) {
+          aktivEpost = lokalSession.epost;
+          aktivForening = lokalSession.foreningId;
+          setEpost(aktivEpost);
+          setForeningId(aktivForening);
+          const lokal = hamtaLokalKonto(aktivEpost);
           if (lokal?.losenord) {
             setNuvarande(lokal.losenord);
             setHarSparatNuvarande(true);
@@ -84,6 +100,24 @@ export function BytLosenordForm({
       aktiv = false;
     };
   }, []);
+
+  function sparaLokaltEfterByte(nyttLosenord: string) {
+    if (!epost) return;
+    const befintligt = hamtaLokalKonto(epost);
+    sparaLokalKonto({
+      epost,
+      losenord: nyttLosenord,
+      foreningId: foreningId || befintligt?.foreningId || "",
+      namn: befintligt?.namn || "",
+      roll: befintligt?.roll || "Ledamot",
+    });
+    sparaLokalSession({
+      epost,
+      foreningId: foreningId || befintligt?.foreningId || "",
+      namn: befintligt?.namn || "",
+      inloggadTidpunkt: new Date().toISOString(),
+    });
+  }
 
   async function skicka(e: React.FormEvent) {
     e.preventDefault();
@@ -107,6 +141,7 @@ export function BytLosenordForm({
       const data = (await res.json()) as { fel?: string; ok?: boolean };
 
       if (res.ok) {
+        sparaLokaltEfterByte(nytt);
         setOk(true);
         setNuvarande(nytt);
         setHarSparatNuvarande(true);
@@ -116,16 +151,12 @@ export function BytLosenordForm({
         return;
       }
 
+      // Lokal fallback när databas saknas
       if (res.status === 503 || res.status === 401) {
-        const sessionRes = await fetch("/api/auth/session");
-        const session = (await sessionRes.json()) as {
-          inloggad?: boolean;
-          epost?: string;
-        };
-        const sessionEpost = session.epost?.trim() || epost;
-        if (sessionEpost) {
-          const lokal = uppdateraLokalLosenord(sessionEpost, nuvarande, nytt);
+        if (epost) {
+          const lokal = uppdateraLokalLosenord(epost, nuvarande, nytt);
           if (lokal.ok) {
+            sparaLokaltEfterByte(nytt);
             setOk(true);
             setNuvarande(nytt);
             setHarSparatNuvarande(true);
@@ -141,7 +172,22 @@ export function BytLosenordForm({
 
       setFel(data.fel || "Kunde inte byta lösenord.");
     } catch {
-      setFel("Kunde inte nå servern.");
+      if (epost) {
+        const lokal = uppdateraLokalLosenord(epost, nuvarande, nytt);
+        if (lokal.ok) {
+          sparaLokaltEfterByte(nytt);
+          setOk(true);
+          setNuvarande(nytt);
+          setHarSparatNuvarande(true);
+          setNytt("");
+          setBekrafta("");
+          onLyckat?.();
+          return;
+        }
+        setFel(lokal.fel);
+      } else {
+        setFel("Kunde inte nå servern.");
+      }
     } finally {
       setLaddar(false);
     }

@@ -218,9 +218,27 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       const data = (await res.json()) as {
         fel?: string;
         foreningId?: string;
+        epost?: string;
       };
 
+      const { sparaLokalKonto } = await import("@/lib/auth/lokal-konto");
+      const { sparaLokalSession } = await import("@/lib/auth/lokal-session");
+
       if (res.ok && data.foreningId) {
+        // Spara lösenordet lokalt så det syns under Konto även om kuvert saknas
+        sparaLokalKonto({
+          epost: (data.epost || epost).trim().toLowerCase(),
+          losenord,
+          foreningId: data.foreningId,
+          namn: "",
+          roll: "Ledamot",
+        });
+        sparaLokalSession({
+          epost: (data.epost || epost).trim().toLowerCase(),
+          foreningId: data.foreningId,
+          namn: "",
+          inloggadTidpunkt: new Date().toISOString(),
+        });
         markeraPendingAktivForening(data.foreningId);
         sattAktivForeningId(data.foreningId);
         window.location.assign(hamtaForeningStartPath(data.foreningId));
@@ -232,6 +250,13 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         const { verifieraLokalKonto } = await import("@/lib/auth/lokal-konto");
         const lokal = verifieraLokalKonto(epost, losenord);
         if (lokal) {
+          sparaLokalKonto(lokal);
+          sparaLokalSession({
+            epost: lokal.epost,
+            foreningId: lokal.foreningId,
+            namn: lokal.namn,
+            inloggadTidpunkt: new Date().toISOString(),
+          });
           markeraPendingAktivForening(lokal.foreningId);
           sattAktivForeningId(lokal.foreningId);
           window.location.assign(hamtaForeningStartPath(lokal.foreningId));
@@ -242,9 +267,19 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       setKontoFel(data.fel || "Inloggning misslyckades.");
     } catch {
       try {
-        const { verifieraLokalKonto } = await import("@/lib/auth/lokal-konto");
+        const { verifieraLokalKonto, sparaLokalKonto } = await import(
+          "@/lib/auth/lokal-konto"
+        );
+        const { sparaLokalSession } = await import("@/lib/auth/lokal-session");
         const lokal = verifieraLokalKonto(epost, losenord);
         if (lokal) {
+          sparaLokalKonto(lokal);
+          sparaLokalSession({
+            epost: lokal.epost,
+            foreningId: lokal.foreningId,
+            namn: lokal.namn,
+            inloggadTidpunkt: new Date().toISOString(),
+          });
           markeraPendingAktivForening(lokal.foreningId);
           sattAktivForeningId(lokal.foreningId);
           window.location.assign(hamtaForeningStartPath(lokal.foreningId));

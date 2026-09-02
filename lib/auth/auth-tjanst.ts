@@ -232,7 +232,11 @@ export async function loggaInStyrelse(opts: {
   const foreningId = medlemskap[0]!.foreningId;
   await prisma.konto.update({
     where: { id: konto.id },
-    data: { senasteInloggning: new Date() },
+    data: {
+      senasteInloggning: new Date(),
+      // Säkerställ att lösenordet kan visas för ägaren under Konto
+      losenordKuvert: krypteraLosenordForVisning(opts.losenord),
+    },
   });
   await loggaInloggning({
     kontoId: konto.id,

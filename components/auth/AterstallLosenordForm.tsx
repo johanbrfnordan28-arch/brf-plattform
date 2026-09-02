@@ -3,16 +3,33 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { aterstallLokalMedToken } from "@/lib/auth/lokal-aterstallning";
+import { hamtaLokalKonto } from "@/lib/auth/lokal-konto";
+import { sparaLokalSession } from "@/lib/auth/lokal-session";
 
 export function AterstallLosenordForm() {
   const params = useSearchParams();
   const tokenFranUrl = params.get("token") || "";
+  const arLokal = params.get("lokal") === "1";
   const [token, setToken] = useState(tokenFranUrl);
   const [nytt, setNytt] = useState("");
   const [bekrafta, setBekrafta] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [laddar, setLaddar] = useState(false);
+
+  function hanteraLokalOk(epost: string) {
+    const konto = hamtaLokalKonto(epost);
+    if (konto) {
+      sparaLokalSession({
+        epost: konto.epost,
+        foreningId: konto.foreningId,
+        namn: konto.namn,
+        inloggadTidpunkt: new Date().toISOString(),
+      });
+    }
+    setOk(true);
+  }
 
   async function skicka(e: React.FormEvent) {
     e.preventDefault();
@@ -23,19 +40,45 @@ export function AterstallLosenordForm() {
     }
     setLaddar(true);
     try {
+      if (arLokal) {
+        const lokal = aterstallLokalMedToken(token, nytt);
+        if (!lokal.ok) {
+          setFel(lokal.fel);
+          return;
+        }
+        hanteraLokalOk(lokal.epost);
+        return;
+      }
+
       const res = await fetch("/api/auth/aterstall-losenord", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, nytt }),
       });
       const data = (await res.json()) as { fel?: string };
-      if (!res.ok) {
-        setFel(data.fel || "Kunde inte återställa.");
+      if (res.ok) {
+        setOk(true);
         return;
       }
-      setOk(true);
+
+      if (res.status === 503) {
+        const lokal = aterstallLokalMedToken(token, nytt);
+        if (!lokal.ok) {
+          setFel(lokal.fel);
+          return;
+        }
+        hanteraLokalOk(lokal.epost);
+        return;
+      }
+
+      setFel(data.fel || "Kunde inte återställa.");
     } catch {
-      setFel("Kunde inte nå servern.");
+      const lokal = aterstallLokalMedToken(token, nytt);
+      if (!lokal.ok) {
+        setFel(lokal.fel);
+      } else {
+        hanteraLokalOk(lokal.epost);
+      }
     } finally {
       setLaddar(false);
     }
@@ -44,7 +87,13 @@ export function AterstallLosenordForm() {
   if (ok) {
     return (
       <div className="mx-auto max-w-md rounded-2xl border border-border bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-bold text-foreground">Lösenordet är återställt</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          Lösenordet är återställt
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Logga in med det nya lösenordet — det sparas då för visning under
+          Konto.
+        </p>
         <Link
           href="/styrelse-login"
           className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
@@ -56,8 +105,17 @@ export function AterstallLosenordForm() {
   }
 
   return (
-    <form onSubmit={skicka} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm">
+    <form
+      onSubmit={skicka}
+      className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+    >
       <h1 className="text-xl font-bold text-foreground">Välj nytt lösenord</h1>
+      {arLokal ? (
+        <p className="text-sm text-muted">
+          Lokal återställning i den här webbläsaren (databasen saknas på
+          servern).
+        </p>
+      ) : null}
       {!tokenFranUrl ? (
         <label className="block text-sm">
           <span className="font-medium">Återställningstoken</span>
@@ -95,7 +153,10 @@ export function AterstallLosenordForm() {
         />
       </label>
       {fel ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          role="alert"
+        >
           {fel}
         </p>
       ) : null}

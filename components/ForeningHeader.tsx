@@ -59,6 +59,8 @@ export function ForeningHeader() {
   async function loggaUt() {
     setLoggarUt(true);
     try {
+      const { rensaLokalSession } = await import("@/lib/auth/lokal-session");
+      rensaLokalSession();
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
       /* fortsätt till startsidan ändå */

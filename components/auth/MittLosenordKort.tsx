@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { hamtaLokalKonto } from "@/lib/auth/lokal-konto";
+import { lasLokalSession } from "@/lib/auth/lokal-session";
 
 type MittLosenordKortProps = {
   /** Visa kortare hjälptext. */
@@ -11,6 +12,7 @@ type MittLosenordKortProps = {
 
 /**
  * Visar det sparade lösenordet för den inloggade — aldrig andras.
+ * Fungerar med server-session eller lokal session (när DB saknas).
  */
 export function MittLosenordKort({ kompakt = false }: MittLosenordKortProps) {
   const [epost, setEpost] = useState<string | null>(null);
@@ -30,52 +32,54 @@ export function MittLosenordKort({ kompakt = false }: MittLosenordKortProps) {
         inloggad?: boolean;
         epost?: string;
       };
-      if (!session.inloggad || !session.epost) {
-        setEpost(null);
-        setLosenord(null);
-        setMeddelande(null);
-        setFel("Logga in för att se ditt sparade lösenord.");
+
+      let aktivEpost: string | null = null;
+
+      if (session.inloggad && session.epost) {
+        aktivEpost = session.epost.trim().toLowerCase();
+        setEpost(aktivEpost);
+
+        const losRes = await fetch("/api/auth/mitt-losenord");
+        if (losRes.ok) {
+          const data = (await losRes.json()) as {
+            losenord?: string | null;
+            meddelande?: string;
+            lokalFallback?: boolean;
+          };
+          let sparat = data.losenord ?? null;
+          if (!sparat) {
+            sparat = hamtaLokalKonto(aktivEpost)?.losenord ?? null;
+          }
+          setLosenord(sparat);
+          setMeddelande(
+            sparat
+              ? "Ditt lösenord är sparat och syns bara för dig."
+              : data.meddelande ||
+                  "Inget sparat lösenord — logga in igen eller byt lösenord så sparas det här.",
+          );
+          return;
+        }
+      }
+
+      // Lokal session (inloggning utan databas)
+      const lokalSession = lasLokalSession();
+      if (lokalSession?.epost) {
+        aktivEpost = lokalSession.epost;
+        setEpost(aktivEpost);
+        const lokal = hamtaLokalKonto(aktivEpost);
+        setLosenord(lokal?.losenord ?? null);
+        setMeddelande(
+          lokal?.losenord
+            ? "Ditt lösenord är sparat i den här webbläsaren (bara synligt för dig)."
+            : "Inget sparat lösenord hittades. Logga in med e-post och lösenord igen så sparas det.",
+        );
         return;
       }
-      setEpost(session.epost);
 
-      const losRes = await fetch("/api/auth/mitt-losenord");
-      if (losRes.ok) {
-        const data = (await losRes.json()) as {
-          losenord?: string | null;
-          meddelande?: string;
-          lokalFallback?: boolean;
-        };
-        if (data.lokalFallback) {
-          const lokal = hamtaLokalKonto(session.epost);
-          setLosenord(lokal?.losenord ?? null);
-          setMeddelande(
-            lokal
-              ? "Ditt lösenord är sparat i den här webbläsaren."
-              : data.meddelande ||
-                  "Inget sparat lösenord — byt lösenord så sparas det här.",
-          );
-        } else {
-          setLosenord(data.losenord ?? null);
-          setMeddelande(
-            data.meddelande ||
-              (data.losenord
-                ? "Ditt lösenord är sparat och syns bara för dig."
-                : "Inget sparat lösenord — byt lösenord så sparas det för visning här."),
-          );
-        }
-      } else {
-        const lokal = hamtaLokalKonto(session.epost);
-        if (lokal) {
-          setLosenord(lokal.losenord);
-          setMeddelande("Ditt lösenord är sparat i den här webbläsaren.");
-        } else {
-          setLosenord(null);
-          setMeddelande(
-            "Kunde inte hämta sparat lösenord. Byt lösenord så sparas det här.",
-          );
-        }
-      }
+      setEpost(null);
+      setLosenord(null);
+      setMeddelande(null);
+      setFel("Logga in för att se ditt sparade lösenord.");
     } catch {
       setFel("Kunde inte hämta lösenord.");
     } finally {
@@ -105,9 +109,9 @@ export function MittLosenordKort({ kompakt = false }: MittLosenordKortProps) {
       </h2>
       {!kompakt && (
         <p className="mt-1 text-sm text-muted">
-          När du skapar förening eller byter lösenord sparas det så att{" "}
+          När du loggar in eller byter lösenord sparas det så att{" "}
           <strong className="font-medium text-foreground">bara du</strong> kan
-          visa det här. Styrelsen ser aldrig andras lösenord.
+          visa det här. Andra i styrelsen ser aldrig ditt lösenord.
         </p>
       )}
 
@@ -154,10 +158,14 @@ export function MittLosenordKort({ kompakt = false }: MittLosenordKortProps) {
           ) : (
             <p className="text-sm text-muted">
               Inget lösenord sparat för visning ännu.{" "}
+              <Link href="/styrelse-login" className="font-medium underline">
+                Logga in med e-post och lösenord
+              </Link>{" "}
+              så sparas det, eller{" "}
               <a href="#byt-losenord" className="font-medium underline">
-                Byt lösenord
-              </a>{" "}
-              så sparas det här.
+                byt lösenord
+              </a>
+              .
             </p>
           )}
           {fel && epost ? (

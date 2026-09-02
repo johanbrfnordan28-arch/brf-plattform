@@ -75,6 +75,9 @@ export function ForeningInloggningsPanel() {
       typ?: string;
     };
 
+    const { lasLokalSession } = await import("@/lib/auth/lokal-session");
+    const lokalSession = lasLokalSession();
+
     if (session.inloggad && session.epost) {
       setMinEpost(session.epost);
       const losRes = await fetch("/api/auth/mitt-losenord");
@@ -84,19 +87,51 @@ export function ForeningInloggningsPanel() {
           meddelande?: string;
           lokalFallback?: boolean;
         };
-        if (losData.lokalFallback) {
-          const lokal = hamtaLokalKonto(session.epost);
-          setMittLosenord(lokal?.losenord ?? null);
-          setLosenMeddelande(
-            lokal
-              ? "Ditt lösenord (sparat i den här webbläsaren)."
-              : losData.meddelande || null,
-          );
-        } else {
-          setMittLosenord(losData.losenord ?? null);
-          setLosenMeddelande(losData.meddelande || null);
+        let sparat = losData.losenord ?? null;
+        if (!sparat) {
+          sparat = hamtaLokalKonto(session.epost)?.losenord ?? null;
         }
+        setMittLosenord(sparat);
+        setLosenMeddelande(
+          sparat
+            ? "Ditt lösenord är sparat och syns bara för dig."
+            : losData.meddelande ||
+                "Inget sparat lösenord — logga in igen så sparas det här.",
+        );
+      } else {
+        const lokal = hamtaLokalKonto(session.epost);
+        setMittLosenord(lokal?.losenord ?? null);
+        setLosenMeddelande(
+          lokal
+            ? "Ditt lösenord (sparat i den här webbläsaren)."
+            : "Kunde inte hämta lösenord.",
+        );
       }
+    } else if (lokalSession?.epost) {
+      setMinEpost(lokalSession.epost);
+      const lokal = hamtaLokalKonto(lokalSession.epost);
+      setMittLosenord(lokal?.losenord ?? null);
+      setLosenMeddelande(
+        lokal
+          ? "Ditt lösenord är sparat i den här webbläsaren (bara synligt för dig)."
+          : "Inget sparat lösenord — logga in med e-post och lösenord igen.",
+      );
+      setLokalLage(true);
+      const lokala = listaLokalaKontonForForening(id);
+      setMedlemmar(
+        lokala.map((k) => ({
+          kontoId: k.epost,
+          namn: k.namn,
+          epost: k.epost,
+          roll: k.roll,
+          aktiv: true,
+          senasteInloggning: null,
+          arJag: k.epost === lokalSession.epost,
+        })),
+      );
+      setHistorik([]);
+      setStatistik(null);
+      return;
     } else {
       // Inte serverinloggad — visa lokala konton för föreningen
       setMinEpost(null);
