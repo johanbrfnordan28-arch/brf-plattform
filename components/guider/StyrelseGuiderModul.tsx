@@ -29,9 +29,9 @@ export function StyrelseGuiderModul() {
           riktig video är det avsiktligt i demo — samma ruta kan senare visa en
           inspelad mp4-fil.
         </p>
-        <ul className="mt-6 grid gap-5 sm:grid-cols-2">
+        <ul className="mt-6 grid items-stretch gap-5 sm:grid-cols-2">
           {guideFilmer.map((film) => (
-            <li key={film.id}>
+            <li key={film.id} className="h-full">
               <KortGuideFilm film={film} />
             </li>
           ))}

@@ -39,6 +39,16 @@ export const lokalYtskiktDelar: LokalYtskiktDelMall[] = [
         ],
       },
       {
+        id: "betongplattor",
+        etikett: "Släta betongplattor",
+        beskrivning: "Golv av släta betongplattor — vanligt i oisolerade komplementbyggnader.",
+        atgarder: [
+          { id: "underhall", etikett: "Underhåll / kontroll" },
+          { id: "malning", etikett: "Målning" },
+          { id: "dammbindning", etikett: "Dammbindning" },
+        ],
+      },
+      {
         id: "klinker",
         etikett: "Klinker / sten",
         atgarder: [
