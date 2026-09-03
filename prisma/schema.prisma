@@ -1,17 +1,18 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 //
-// Lokalt: SQLite (file:./dev.db)
-// Produktion: byt provider till "postgresql" och sätt DATABASE_URL
-//   t.ex. Neon/Supabase/Vercel Postgres.
+// Produktion: Supabase / Neon / Vercel Postgres (postgresql).
+// Lokalt utan moln: tillfällig SQLite kräver separat schema — använd DATABASE_URL till Supabase.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  /// Direktanslutning (utan pooler) — används av Prisma Migrate.
+  directUrl = env("DIRECT_URL")
 }
 
 /// Förening som sparats på servern (speglas från webbläsaren).
