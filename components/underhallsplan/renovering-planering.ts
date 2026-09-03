@@ -13,7 +13,9 @@ import {
   fordelRenovering,
   type RenoveringFordelningKontext,
 } from "@/components/underhallsplan/renovering-fordelning";
+import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
+import { RENOVERING_ATGARD_TILL_UNDERKOMPONENT } from "@/components/underhallsplan/underhall-atgard-katalog";
 import type { UnderhallAtgard } from "@/components/underhallsplan/underhall-budget";
 
 export type { RenoveringAtgardTyp, RenoveringFordelningKontext };
@@ -302,6 +304,8 @@ export function genereraAtgarderFranHistorik(
           kostnader,
         );
 
+        const underkomponentId =
+          RENOVERING_ATGARD_TILL_UNDERKOMPONENT[del.atgardTyp];
         atgarder.push({
           komponent: del.komponent,
           del: del.del,
@@ -328,6 +332,11 @@ export function genereraAtgarderFranHistorik(
             kostnader,
           )}`,
           atgardTyp: del.atgardTyp,
+          underkomponentId,
+          direktkostnad: arDirektkostnadUnderhall(
+            del.komponent,
+            underkomponentId,
+          ),
         });
 
         ar += intervallAr;

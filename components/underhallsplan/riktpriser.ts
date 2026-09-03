@@ -4,6 +4,39 @@
  * Källa: branschintervall för renovering/byte, avrundat för planeringsändamål.
  */
 
+export type RiktprisEnhet = "kvm" | "styck" | "total";
+
+export type RiktprisSpec = {
+  enhet: RiktprisEnhet;
+  prisKr: number;
+};
+
+export const RIKT_VENTILATION_UNDERKOMPONENT_KR: Record<string, RiktprisSpec> = {
+  aggregat: { enhet: "styck", prisKr: 450_000 },
+  kanaler: { enhet: "kvm", prisKr: 850 },
+  don: { enhet: "styck", prisKr: 3_500 },
+  "extra-flaktar": { enhet: "styck", prisKr: 45_000 },
+};
+
+export const RIKT_VENTILATION_EXTRA_TYP_KR: Record<
+  | "vindflakt"
+  | "rokgasflakt"
+  | "takflakt"
+  | "trapphusflakt"
+  | "garageflakt"
+  | "kallarflakt"
+  | "annat",
+  number
+> = {
+  vindflakt: 35_000,
+  rokgasflakt: 28_000,
+  takflakt: 22_000,
+  trapphusflakt: 18_000,
+  garageflakt: 25_000,
+  kallarflakt: 20_000,
+  annat: 22_000,
+};
+
 export const RIKT_FONSTER_KR: Record<string, number> = {
   tra_renovering: 28_000,
   tra_malning: 4_500,
