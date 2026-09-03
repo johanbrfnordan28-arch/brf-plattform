@@ -13,7 +13,6 @@ import {
   manadsnamn,
   normaliseraHandelse,
   skapaHandelseId,
-  skapaStandardHandelser,
   skapaTomHandelse,
   SOMMAR_EXKLUDERADE_MANADER,
   SOTNING_FORESLAGET_INTERVALL_AR,
@@ -49,8 +48,6 @@ function sparaHandelser(lista: ArshjulHandelse[]): void {
   if (typeof window === "undefined") return;
   safeSetLocalStorage(arshjulStorageKey(), JSON.stringify(lista));
 }
-
-const exempelHandelser: ArshjulHandelse[] = skapaStandardHandelser();
 
 function beskrivIntervall(h: ArshjulHandelse): string {
   if (h.typ === "engang" && h.datum) return formatDatumKort(h.datum);
@@ -91,12 +88,8 @@ export function ArshjulModul() {
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
-    const sparade = lasHandelser();
-    if (sparade.length > 0) {
-      setHandelser(sparade);
-    } else {
-      setHandelser(exempelHandelser);
-    }
+    // Ny förening startar med tomt årshjul — standardmall läggs in via knappen.
+    setHandelser(lasHandelser());
     skipFirstSave.current = true;
     setHydrated(true);
   }, []);

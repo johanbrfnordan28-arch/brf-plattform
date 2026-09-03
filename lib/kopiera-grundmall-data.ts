@@ -11,7 +11,7 @@ const GRUNDMALL_DATA_NYCKLAR = [
   "brf-rondering-manadssignering",
   "brf-upphandling-lager",
   "brf-upphandling-schema-bilagor",
-  "brf-arshjul-handelser",
+  // Årshjul kopieras inte — ny förening ska ha tomt hjul (fylls via "Lägg in standardkategorier").
   "brf-grundmall-projekt",
   "brf-tidsplan-bibliotek",
   "brf-forening-sotning-protokoll",
@@ -53,6 +53,20 @@ const GRUNDMALL_MINIMAL_SEED: Record<string, string> = {
 /** Minimal startdata direkt på ny förening — skriver aldrig till grundmallens nycklar. */
 export function forberedNyForening(foreningId: string): void {
   seedMinimalTillForening(foreningId);
+  nollstallArshjul(foreningId);
+}
+
+/** Ny förening får alltid tomt årshjul (ingen demodata). */
+function nollstallArshjul(foreningId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      foreningStorageKey("brf-arshjul-handelser", foreningId),
+      JSON.stringify([]),
+    );
+  } catch {
+    /* ignore */
+  }
 }
 
 function seedMinimalTillForening(foreningId: string): void {
