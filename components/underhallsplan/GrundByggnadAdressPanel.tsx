@@ -28,11 +28,11 @@ export function GrundByggnadAdressPanel({
   return (
     <div className="mt-6 rounded-xl border border-border bg-background/80 p-4 sm:p-5">
       <p className="text-sm font-semibold text-foreground">
-        Byggnader och adresser
+        Byggnader och adresser ({antal})
       </p>
       <p className="mt-1 text-xs text-muted">
-        Antal byggnader ({antal}) styr hur många adresser som finns. En adress per
-        byggnad. Direkt under väljer du{" "}
+        En adress per byggnad. Lägg till eller ta bort byggnader med knapparna
+        nedan — antalet uppdateras automatiskt. Direkt under väljer du{" "}
         <a href="#grund-fasader" className="font-medium text-primary-dark underline">
           vilka fasader
         </a>{" "}

@@ -68,44 +68,55 @@ function ByggnadFasadSidorRad({
 export function GrundFasaderPanel({ grund: rawGrund, onChange }: GrundFasaderPanelProps) {
   const grund = synkaGrundByggnaderOchAdresser(rawGrund);
   const data = normaliseraFastighetsYtor(grund.fastighetsYtor);
+  const harHus = data.hus.length > 0;
 
   function uppdateraYtor(next: FastighetsYtorData) {
     onChange({ ...grund, fastighetsYtor: next });
   }
 
+  // Innan adresser/byggnader finns: diskret plats längre ner — ingen framträdande ruta.
+  if (!harHus) {
+    return (
+      <div
+        id={FASADER_ANCHOR_ID}
+        className="mt-6 scroll-mt-28 rounded-lg border border-dashed border-border bg-background/50 px-3 py-3"
+      >
+        <p className="text-sm font-medium text-muted">Fasader per byggnad</p>
+        <p className="mt-1 text-xs text-muted">
+          Lägg in antal byggnader och adress ovan först — då öppnas fasadvalet
+          (gata, gård, väderstreck) här.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       id={FASADER_ANCHOR_ID}
-      className="mt-6 scroll-mt-28 rounded-xl border-2 border-primary bg-[#eef6f0] p-4 shadow-md sm:p-5"
+      className="mt-6 scroll-mt-28 rounded-xl border border-border bg-background p-4 sm:p-5"
     >
-      <p className="text-sm font-semibold text-primary-dark">
+      <p className="text-sm font-semibold text-foreground">
         Fasader per byggnad
       </p>
       <p className="mt-1 text-xs text-muted">
-        Välj vilka fasader varje byggnad har:{" "}
+        När adresserna är på plats: välj vilka fasader varje byggnad har —{" "}
         <strong className="font-medium text-foreground">
-          Gata, Gård och vädersträck (Norr, Söder, Öster, Väster)
+          Gata, Gård och väderstreck (Norr, Söder, Öster, Väster)
         </strong>
         . Alla är valda från början — stäng av det som inte finns. Fasadyta i m²
         fyller du i i blocket nedan («Fasad- och takytor»).
       </p>
 
-      {data.hus.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-dashed border-border bg-white px-3 py-4 text-xs text-muted">
-          Ange antal byggnader och minst en adress ovan — då visas fasaderna här.
-        </p>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {data.hus.map((h) => (
-            <ByggnadFasadSidorRad
-              key={h.id}
-              hus={h}
-              data={data}
-              onYtorChange={uppdateraYtor}
-            />
-          ))}
-        </div>
-      )}
+      <div className="mt-4 space-y-3">
+        {data.hus.map((h) => (
+          <ByggnadFasadSidorRad
+            key={h.id}
+            hus={h}
+            data={data}
+            onYtorChange={uppdateraYtor}
+          />
+        ))}
+      </div>
     </div>
   );
 }
