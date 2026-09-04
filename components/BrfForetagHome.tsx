@@ -8,6 +8,7 @@ import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRa
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 import { PublikPrisInfo } from "@/components/pris/PublikPrisInfo";
+import { TekniskForvaltningErbjudande } from "@/components/pris/TekniskForvaltningErbjudande";
 import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
@@ -192,10 +193,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Aktuella upphandlingar
                 </Link>
                 <Link
-                  href="#erfarenhet"
+                  href="#teknisk-forvaltning"
                   className="rounded-lg border border-border bg-surface px-5 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
                 >
-                  Vår erfarenhet
+                  Teknisk förvaltning
                 </Link>
               </>
             )}
@@ -295,9 +296,21 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 </li>
               ))}
             </ul>
+            <p className="mt-8 text-sm text-muted">
+              Se hur ni kan anlita oss för{" "}
+              <Link
+                href="#teknisk-forvaltning"
+                className="font-medium text-primary hover:text-primary-dark"
+              >
+                teknisk förvaltning och övriga tjänster
+              </Link>
+              .
+            </p>
           </div>
         </section>
       )}
+
+      {!isForening && <TekniskForvaltningErbjudande />}
 
       {!isForening && (
         <section className="border-b border-border bg-surface">
