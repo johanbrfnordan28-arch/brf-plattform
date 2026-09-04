@@ -11,11 +11,15 @@ import type { Samfallighetsavgift } from "@/components/underhallsplan/samfalligh
 import {
   beraknaPlanUtgiftsRader,
   beraknaPlanAvsattning,
-  beraknaRekommenderadKrPerKvmAr,
+  beraknaForeslagenAvsattningKrPerKvmAr,
+  filtreraDirektkostnadAtgarder,
+  filtreraInvesteringAtgarder,
+  TYPISK_AVSATTNING_KR_PER_KVM,
   summaPlaneradeInvesteringar,
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
 import {
   FORKLARING_ARSBUDGET_VS_PLAN,
+  FORKLARING_DIREKTKOSTNAD,
   FORKLARING_INVESTERING,
   PLAN_BEGREPP,
 } from "@/components/underhallsplan/plan-terminologi";
@@ -76,17 +80,29 @@ export function UnderhallsplanBudget({
     ],
   );
 
-  const atgarderFranHistorik = underhallAtgarder.filter((a) => a.kalla === "historik");
-  const atgarderFranRegister = underhallAtgarder.filter(
+  const investeringAtgarder = useMemo(
+    () => filtreraInvesteringAtgarder(underhallAtgarder),
+    [underhallAtgarder],
+  );
+  const direktAtgarder = useMemo(
+    () => filtreraDirektkostnadAtgarder(underhallAtgarder),
+    [underhallAtgarder],
+  );
+  const atgarderFranHistorik = investeringAtgarder.filter(
+    (a) => a.kalla === "historik",
+  );
+  const atgarderFranRegister = investeringAtgarder.filter(
     (a) => a.kalla !== "historik",
   );
 
-  const investeringSummeradPerAr = useMemo(() => {
+  function summeraPerAr(
+    lista: typeof underhallAtgarder,
+  ): { ar: number; summaKr: number; poster: { komponent: string; del: string; beloppKr: number }[] }[] {
     const map = new Map<
       number,
       { summaKr: number; poster: { komponent: string; del: string; beloppKr: number }[] }
     >();
-    for (const a of underhallAtgarder) {
+    for (const a of lista) {
       const befintlig = map.get(a.ar) ?? { summaKr: 0, poster: [] };
       befintlig.summaKr += a.kostnadKr;
       befintlig.poster.push({
@@ -99,7 +115,70 @@ export function UnderhallsplanBudget({
     return [...map.entries()]
       .map(([ar, data]) => ({ ar, ...data }))
       .sort((a, b) => a.ar - b.ar);
+  }
+
+  const investeringSummeradPerAr = useMemo(
+    () => summeraPerAr(investeringAtgarder),
+    [investeringAtgarder],
+  );
+  const direktkostnadSummeradPerAr = useMemo(
+    () => summeraPerAr(direktAtgarder),
+    [direktAtgarder],
+  );
+
+  const momsSummeradPerAr = useMemo(() => {
+    const map = new Map<
+      number,
+      { summaKr: number; poster: { komponent: string; del: string; beloppKr: number }[] }
+    >();
+    for (const a of underhallAtgarder) {
+      const moms = a.momsAvdragenKr ?? 0;
+      if (moms <= 0) continue;
+      const befintlig = map.get(a.ar) ?? { summaKr: 0, poster: [] };
+      befintlig.summaKr += moms;
+      befintlig.poster.push({
+        komponent: a.komponent,
+        del: a.del,
+        beloppKr: moms,
+      });
+      map.set(a.ar, befintlig);
+    }
+    return [...map.entries()]
+      .map(([ar, data]) => ({ ar, ...data }))
+      .sort((a, b) => a.ar - b.ar);
   }, [underhallAtgarder]);
+
+  const engangsMomsAvdragen = useMemo(() => {
+    const poster: { etikett: string; beloppKr: number; inklKr: number }[] = [];
+    for (const namn of activeComponents) {
+      const data = komponentDetaljer[namn];
+      if (!data) continue;
+      for (const rad of data.underkomponenter) {
+        if (!rad.aktiv) continue;
+        const moms = Number.parseInt(
+          (rad.underhallMomsAvdragenKr ?? "").replace(/\s/g, ""),
+          10,
+        );
+        const inkl = Number.parseInt(
+          (rad.underhallKostnadInklMomsKr ?? "").replace(/\s/g, ""),
+          10,
+        );
+        const harLopande =
+          Number.parseInt((rad.underhallIntervallAr ?? "").trim(), 10) >= 1 &&
+          Number.parseInt((rad.underhallKostnadKr ?? "").replace(/\s/g, ""), 10) >
+            0;
+        // Engång: moms markerad men ingen löpande underhållskostnad i planen
+        if (moms > 0 && !harLopande) {
+          poster.push({
+            etikett: `${namn} — ${rad.etikett}`,
+            beloppKr: moms,
+            inklKr: Number.isFinite(inkl) ? inkl : 0,
+          });
+        }
+      }
+    }
+    return poster;
+  }, [activeComponents, komponentDetaljer]);
 
   const avsattning = beraknaPlanAvsattning(boareaM2, krPerKvmAr, planLangdAr);
   const komponentArskostnad = avsattning.arligAvsattningKr;
@@ -114,9 +193,9 @@ export function UnderhallsplanBudget({
     [underhallAtgarder, planStartAr, planLangdAr],
   );
 
-  const rekommenderadKrPerKvmAr = useMemo(
+  const foreslagenAvsattning = useMemo(
     () =>
-      beraknaRekommenderadKrPerKvmAr(
+      beraknaForeslagenAvsattningKrPerKvmAr(
         summaInvesteringPlan,
         boareaM2,
         planLangdAr,
@@ -124,8 +203,12 @@ export function UnderhallsplanBudget({
     [summaInvesteringPlan, boareaM2, planLangdAr],
   );
 
+  const rekommenderadKrPerKvmAr = foreslagenAvsattning.foreslagen;
+  const obegransadKrPerKvmAr = foreslagenAvsattning.obegransad;
+
   const avsattningUnderRekommendation =
     rekommenderadKrPerKvmAr != null &&
+    !foreslagenAvsattning.overTypiskt &&
     krPerKvmAr < Math.round(rekommenderadKrPerKvmAr * 0.95);
 
   const registerKostnader = sammanstallRegisterKostnader(
@@ -183,10 +266,11 @@ export function UnderhallsplanBudget({
         {FORKLARING_ARSBUDGET_VS_PLAN}
       </p>
       <p className="mt-3 text-sm leading-relaxed text-muted">
-        Planperiod {planStartAr}–{planSlutAr} ({planLangdAr} år). Tabellen visar
-        vad som ska budgeteras i föreningen det året — avsättning varje år och
-        besiktningar det år de utförs (t.ex. vart 10:e år). Investeringar från
-        underhållsplanen visas i egen kolumn.
+        Planperiod {planStartAr}–{planSlutAr} ({planLangdAr} år). Tabellen är
+        underlag till budgeten: avsättning, besiktningar och{" "}
+        {PLAN_BEGREPP.direktkostnader.toLowerCase()} (drift som kostnadsförs
+        direkt). {PLAN_BEGREPP.investeringarPlan} — investeringar i fastigheten
+        — visas i egen kolumn.
       </p>
 
       {!unlocked && (
@@ -198,18 +282,25 @@ export function UnderhallsplanBudget({
       <div className={`mt-6 space-y-6 ${lockedClass}`}>
         <div>
           <p className="text-sm font-semibold text-foreground">
-            Tabell — utgifter i årsbudgeten ({planStartAr}–{planSlutAr})
+            Tabell — underlag till årsbudgeten ({planStartAr}–{planSlutAr})
           </p>
           <div className="mt-3 max-h-[28rem] overflow-auto rounded-xl border border-border">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="sticky top-0 z-10 bg-background text-muted shadow-sm">
                 <tr>
                   <th className="px-4 py-2 font-medium">År</th>
-                  <th className="px-4 py-2 font-medium">Besiktningar</th>
+                  <th className="px-4 py-2 font-medium">Poster (budget)</th>
                   <th className="px-4 py-2 font-medium text-right">Avsättning</th>
                   <th className="px-4 py-2 font-medium text-right">Besiktning</th>
-                  <th className="px-4 py-2 font-medium text-right">Summa årsbudget</th>
-                  <th className="px-4 py-2 font-medium text-right">Investering (plan)</th>
+                  <th className="px-4 py-2 font-medium text-right">
+                    {PLAN_BEGREPP.direktkostnaderKort}
+                  </th>
+                  <th className="px-4 py-2 font-medium text-right">
+                    Summa budgetunderlag
+                  </th>
+                  <th className="px-4 py-2 font-medium text-right">
+                    {PLAN_BEGREPP.investeringarPlan}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -217,11 +308,28 @@ export function UnderhallsplanBudget({
                   <tr key={rad.ar} className="border-t border-border">
                     <td className="px-4 py-2 font-medium text-foreground">{rad.ar}</td>
                     <td className="px-4 py-2 text-muted">
-                      {rad.besiktningPoster.length > 0 ? (
+                      {rad.besiktningPoster.length > 0 ||
+                      rad.direktkostnadPoster.length > 0 ? (
                         <ul className="space-y-0.5">
                           {rad.besiktningPoster.map((p) => (
-                            <li key={p.namn}>
+                            <li key={`b-${p.komponent}-${p.namn}`}>
+                              <span className="text-foreground/80">
+                                {p.komponent}
+                              </span>
+                              {" · "}
                               {p.namn}: {formatKr(p.belopp)}
+                            </li>
+                          ))}
+                          {rad.direktkostnadPoster.map((p, i) => (
+                            <li key={`d-${p.komponent}-${p.namn}-${i}`}>
+                              <span className="text-amber-900/90">
+                                {p.komponent}
+                              </span>
+                              {" · "}
+                              {p.namn}: {formatKr(p.belopp)}
+                              <span className="ml-1 text-[10px] uppercase tracking-wide text-amber-800/80">
+                                kostnadsförs direkt
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -240,6 +348,17 @@ export function UnderhallsplanBudget({
                       }`}
                     >
                       {rad.besiktningar > 0 ? formatKr(rad.besiktningar) : "—"}
+                    </td>
+                    <td
+                      className={`px-4 py-2 text-right font-medium ${
+                        rad.direktkostnader > 0
+                          ? "text-amber-900"
+                          : "text-muted"
+                      }`}
+                    >
+                      {rad.direktkostnader > 0
+                        ? formatKr(rad.direktkostnader)
+                        : "—"}
                     </td>
                     <td className="px-4 py-2 text-right font-semibold text-primary-dark">
                       {formatKr(rad.utgifterArsbudget)}
@@ -266,14 +385,90 @@ export function UnderhallsplanBudget({
           </p>
         </div>
 
+        {direktkostnadSummeradPerAr.length > 0 && (
+          <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 px-4 py-3">
+            <p className="text-sm font-semibold text-amber-950">
+              {PLAN_BEGREPP.direktkostnader} per år — särredovisning
+            </p>
+            <p className="mt-1 text-xs text-muted">{FORKLARING_DIREKTKOSTNAD}</p>
+            <div className="mt-3 space-y-3">
+              {direktkostnadSummeradPerAr.map((grupp) => (
+                <div
+                  key={`direkt-${grupp.ar}`}
+                  className="rounded-lg border border-border/80 bg-white px-3 py-2"
+                >
+                  <p className="flex flex-wrap items-baseline justify-between gap-2 text-sm font-semibold text-foreground">
+                    <span>{grupp.ar}</span>
+                    <span className="text-amber-900">{formatKr(grupp.summaKr)}</span>
+                  </p>
+                  <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
+                    {grupp.poster.map((p, i) => (
+                      <li key={`${p.komponent}-${p.del}-${i}`}>
+                        {p.komponent} — {p.del}: {formatKr(p.beloppKr)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(momsSummeradPerAr.length > 0 || engangsMomsAvdragen.length > 0) && (
+          <div className="rounded-xl border border-sky-200/80 bg-sky-50/40 px-4 py-3">
+            <p className="text-sm font-semibold text-sky-950">
+              Moms borttagen — särredovisning
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Belopp där moms (25 %) tagits bort via knappen «Ta bort moms».
+              Planen använder exkl. moms; momsen visas här separat (momsregistrerad
+              förening — avdrag per post).
+            </p>
+            {engangsMomsAvdragen.length > 0 && (
+              <ul className="mt-3 space-y-1 text-xs text-sky-950">
+                {engangsMomsAvdragen.map((p) => (
+                  <li key={p.etikett}>
+                    {p.etikett}: {formatKr(p.beloppKr)} moms
+                    {p.inklKr > 0 ? ` (från ${formatKr(p.inklKr)} inkl.)` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {momsSummeradPerAr.length > 0 && (
+              <div className="mt-3 space-y-3">
+                {momsSummeradPerAr.map((grupp) => (
+                  <div
+                    key={`moms-${grupp.ar}`}
+                    className="rounded-lg border border-border/80 bg-white px-3 py-2"
+                  >
+                    <p className="flex flex-wrap items-baseline justify-between gap-2 text-sm font-semibold text-foreground">
+                      <span>{grupp.ar}</span>
+                      <span className="text-sky-900">{formatKr(grupp.summaKr)}</span>
+                    </p>
+                    <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
+                      {grupp.poster.map((p, i) => (
+                        <li key={`${p.komponent}-${p.del}-${i}`}>
+                          {p.komponent} — {p.del}: {formatKr(p.beloppKr)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {investeringSummeradPerAr.length > 0 && (
           <div className="rounded-xl border border-violet-200/80 bg-violet-50/30 px-4 py-3">
             <p className="text-sm font-semibold text-violet-950">
-              Investering per år — summerat
+              {PLAN_BEGREPP.investeringarPlan} per år — summerat
             </p>
             <p className="mt-1 text-xs text-muted">
-              Alla planerade åtgärder det året adderas till kolumnen Investering
-              (plan) i tabellen ovan.
+              Investeringar i fastigheten det året — kolumnen{" "}
+              {PLAN_BEGREPP.investeringarPlan}.{" "}
+              {PLAN_BEGREPP.direktkostnader} (drift som kostnadsförs direkt)
+              redovisas separat ovan.
             </p>
             <div className="mt-3 space-y-3">
               {investeringSummeradPerAr.map((grupp) => (
@@ -301,7 +496,7 @@ export function UnderhallsplanBudget({
         {atgarderFranHistorik.length > 0 && (
           <div className="rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3">
             <p className="text-sm font-semibold text-violet-950">
-              Planerade investeringar — från renoveringshistorik
+              {PLAN_BEGREPP.investeringarPlan} — från renoveringshistorik
             </p>
             <p className="mt-1 text-xs text-muted">
               Nästa förekomst beräknas från senaste utförda åtgärd, intervall,
@@ -336,7 +531,7 @@ export function UnderhallsplanBudget({
         {atgarderFranRegister.length > 0 && (
           <div className="rounded-xl border border-violet-200/80 bg-violet-50/40 px-4 py-3">
             <p className="text-sm font-semibold text-violet-950">
-              Planerade investeringar — från registret
+              {PLAN_BEGREPP.investeringarPlan} — från registret
             </p>
             <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm text-muted">
               {atgarderFranRegister.map((a, i) => (
@@ -372,14 +567,18 @@ export function UnderhallsplanBudget({
 
         <div>
           <p className="text-sm font-semibold text-foreground">
-            Avsättning i årsbudgeten (kr/m² och år)
+            Avsättning i budgetunderlaget (kr/m² och år)
           </p>
           <p className="mt-1 text-xs text-muted">
-            <strong className="font-medium text-foreground">Två delar:</strong>{" "}
-            kolumnen <em>Investering (plan)</em> visar när större åtgärder sker (steg
-            3). Fältet kr/m²/år är den jämna avsättningen varje år — det{" "}
-            <strong className="font-medium">höjs automatiskt</strong> när planens
-            totala investeringskostnad ökar (aldrig sänks automatiskt).
+            Typisk nivå för bostadsrättsföreningar är ungefär{" "}
+            <strong className="font-medium text-foreground">
+              {TYPISK_AVSATTNING_KR_PER_KVM.lage}–{TYPISK_AVSATTNING_KR_PER_KVM.hog}{" "}
+              kr/m²/år
+            </strong>
+            . Kolumnen <em>{PLAN_BEGREPP.investeringarPlan}</em> visar när
+            investeringar i fastigheten (t.ex. fönster- eller takbyte) sker —
+            orimligt höga åtgärdskostnader ska justeras i steg 3/slutsidan, inte
+            genom att höja avsättningen till flera miljoner per år.
           </p>
 
           {summaInvesteringPlan > 0 && boareaM2 > 0 && (
@@ -388,31 +587,44 @@ export function UnderhallsplanBudget({
                 Koppling till planerade kostnader
               </p>
               <p className="mt-1 text-sm text-foreground">
-                Summa investeringar i planen ({planStartAr}–{planSlutAr}):{" "}
+                Summa {PLAN_BEGREPP.investeringarPlan.toLowerCase()} i planen (
+                {planStartAr}–{planSlutAr}):{" "}
                 <strong>{formatKr(summaInvesteringPlan)}</strong>
               </p>
-              {rekommenderadKrPerKvmAr != null && (
+              {obegransadKrPerKvmAr != null && (
                 <>
                   <p className="mt-2 text-sm text-foreground">
-                    För att avsättningen ska motsvara samma total över{" "}
-                    {planLangdAr} år och {boareaM2.toLocaleString("sv-SE")} m²
-                    bo- och lokalyta: cirka{" "}
-                    <strong>{rekommenderadKrPerKvmAr} kr/m²/år</strong> (
-                    {formatKr(rekommenderadKrPerKvmAr * boareaM2)}/år).
+                    Om hela summan fördelas jämnt: cirka{" "}
+                    <strong>{obegransadKrPerKvmAr.toLocaleString("sv-SE")} kr/m²/år</strong>{" "}
+                    ({formatKr(obegransadKrPerKvmAr * boareaM2)}/år).
                   </p>
-                  <p className="mt-1 text-xs text-muted">
-                    Nuvarande val: {krPerKvmAr} kr/m²/år (
-                    {formatKr(komponentArskostnad)}/år).
-                  </p>
-                  {krPerKvmAr !== rekommenderadKrPerKvmAr && (
-                    <button
-                      type="button"
-                      onClick={() => onKrPerKvmArChange(rekommenderadKrPerKvmAr)}
-                      className="mt-3 rounded-lg border border-primary bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
-                    >
-                      Sätt till rekommenderat {rekommenderadKrPerKvmAr} kr/m²/år
-                    </button>
+                  {foreslagenAvsattning.overTypiskt ? (
+                    <p className="mt-2 rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-xs text-amber-950">
+                      Det är långt över typiskt ({TYPISK_AVSATTNING_KR_PER_KVM.lage}–
+                      {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²). Kontrollera beloppen
+                      per komponent i summeringen och justera kostnader — avsättningen
+                      begränsas till max {TYPISK_AVSATTNING_KR_PER_KVM.max} kr/m²/år.
+                    </p>
+                  ) : null}
+                  {rekommenderadKrPerKvmAr != null && (
+                    <p className="mt-1 text-xs text-muted">
+                      Nuvarande val: {krPerKvmAr} kr/m²/år (
+                      {formatKr(komponentArskostnad)}/år). Förslag inom typiskt
+                      intervall: {rekommenderadKrPerKvmAr} kr/m²/år.
+                    </p>
                   )}
+                  {rekommenderadKrPerKvmAr != null &&
+                    krPerKvmAr !== rekommenderadKrPerKvmAr && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onKrPerKvmArChange(rekommenderadKrPerKvmAr)
+                        }
+                        className="mt-3 rounded-lg border border-primary bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                      >
+                        Sätt till {rekommenderadKrPerKvmAr} kr/m²/år
+                      </button>
+                    )}
                 </>
               )}
             </div>
@@ -421,17 +633,15 @@ export function UnderhallsplanBudget({
           {summaInvesteringPlan <= 0 && (
             <p className="mt-3 rounded-lg border border-dashed border-amber-300/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
               Inga planerade investeringar med kostnad hittades ännu. Fyll i kostnad
-              och intervall under steg 3 (tillfällen med pris, eller nästa år +
-              kostnad per underkomponent) och spara komponentregistret — då kan
-              förslag på avsättning räknas fram här.
+              och intervall under steg 3 — då kan förslag på avsättning räknas fram
+              här (inom typiskt intervall).
             </p>
           )}
 
           {avsattningUnderRekommendation && rekommenderadKrPerKvmAr != null && (
             <p className="mt-3 rounded-lg border border-amber-300/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
-              Planens kostnader motsvarar cirka {rekommenderadKrPerKvmAr} kr/m²/år —
-              värdet höjs automatiskt vid nästa ändring i registret om det fortfarande
-              ligger lägre. Du kan också trycka knappen ovan.
+              Planens kostnader motsvarar cirka {rekommenderadKrPerKvmAr} kr/m²/år
+              inom typiskt intervall. Du kan höja med knappen ovan.
             </p>
           )}
 
@@ -443,12 +653,17 @@ export function UnderhallsplanBudget({
               <input
                 type="number"
                 min={0}
+                max={TYPISK_AVSATTNING_KR_PER_KVM.max * 2}
                 value={krPerKvmAr}
                 onChange={(event) =>
                   onKrPerKvmArChange(Number(event.target.value) || 0)
                 }
                 className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
+              <span className="mt-1 block text-xs text-muted">
+                Riktmärke {TYPISK_AVSATTNING_KR_PER_KVM.lage}–
+                {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²/år.
+              </span>
             </label>
             <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm">
               <p className="text-muted">Bo- och lokalyta (avsättningsyta)</p>

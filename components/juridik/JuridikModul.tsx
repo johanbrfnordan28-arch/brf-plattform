@@ -24,6 +24,10 @@ import {
   type JuridikTipsRad,
   type JuridikUppladdatDokument,
 } from "@/components/juridik/juridik-lager";
+import {
+  plattformDomarForMapp,
+  type PlattformDom,
+} from "@/components/juridik/plattform-domar";
 
 export function JuridikModul() {
   const [bibliotek, setBibliotek] = useState<JuridikBibliotekState>(
@@ -43,8 +47,11 @@ export function JuridikModul() {
 
   useEffect(() => {
     setBibliotek(lasJuridikBibliotek());
+    // Öppna ytskiktsmappen som standard — där ligger HD T 175-19.
     setMappUi(
-      Object.fromEntries(domMappar.map((m) => [m.id, { öppen: false }])),
+      Object.fromEntries(
+        domMappar.map((m) => [m.id, { öppen: m.id === "ytskikt" }]),
+      ),
     );
     skipFirstSave.current = true;
     setHydrated(true);
@@ -202,6 +209,7 @@ export function JuridikModul() {
             <DomMappRad
               key={mapp.id}
               mapp={mapp}
+              plattformDomar={plattformDomarForMapp(mapp.id)}
               dokument={bibliotek.mappar[mapp.id]?.dokument ?? []}
               öppen={mappUi[mapp.id]?.öppen ?? false}
               visarUppladdning={pågåendeUppladdning === mapp.id}
@@ -354,6 +362,7 @@ export function JuridikModul() {
 
 type DomMappRadProps = {
   mapp: DomMappDefinition;
+  plattformDomar: PlattformDom[];
   dokument: JuridikUppladdatDokument[];
   öppen: boolean;
   visarUppladdning: boolean;
@@ -365,6 +374,7 @@ type DomMappRadProps = {
 
 function DomMappRad({
   mapp,
+  plattformDomar,
   dokument,
   öppen,
   visarUppladdning,
@@ -373,6 +383,8 @@ function DomMappRad({
   onUpload,
   onTaBort,
 }: DomMappRadProps) {
+  const antal = plattformDomar.length + dokument.length;
+
   return (
     <li className="rounded-xl border border-border bg-surface shadow-sm">
       <button
@@ -392,10 +404,9 @@ function DomMappRad({
             {mapp.titel}
           </span>
           <span className="mt-1 block text-sm text-muted">{mapp.beskrivning}</span>
-          {dokument.length > 0 && (
+          {antal > 0 && (
             <span className="mt-2 inline-block rounded-full bg-[#eef6f0] px-2.5 py-0.5 text-xs font-medium text-primary-dark">
-              {dokument.length}{" "}
-              {dokument.length === 1 ? "dom uppladdad" : "domar uppladdade"}
+              {antal} {antal === 1 ? "dom" : "domar"}
             </span>
           )}
         </span>
@@ -409,6 +420,40 @@ function DomMappRad({
             beslut.
           </p>
 
+          {plattformDomar.length > 0 && (
+            <ul className="mt-4 space-y-3">
+              {plattformDomar.map((dom) => (
+                <li
+                  key={dom.id}
+                  className="rounded-lg border border-primary/30 bg-[#eef6f0]/60 px-3 py-3 sm:px-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="rounded-full border border-primary/30 bg-white px-2 py-0.5 text-[11px] font-semibold text-primary-dark">
+                        Plattformsdom · alla föreningar
+                      </span>
+                      <p className="mt-2 text-sm font-semibold text-foreground">
+                        {dom.titel}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted">{dom.referens}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-muted">
+                        {dom.sammanfattning}
+                      </p>
+                    </div>
+                    <a
+                      href={dom.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
+                    >
+                      Läs dom (PDF)
+                    </a>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {dokument.length > 0 ? (
             <ul className="mt-4 space-y-2">
               {dokument.map((doc) => (
@@ -417,33 +462,26 @@ function DomMappRad({
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2.5"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">{doc.filnamn}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {doc.filnamn}
+                    </p>
                     <p className="text-xs text-muted">Uppladdad {doc.uppladdad}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
-                      title="Demo: öppna uppladdad dom"
-                    >
-                      Läs dom
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onTaBort(doc.id)}
-                      className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-red-300 hover:text-red-700"
-                    >
-                      Ta bort
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onTaBort(doc.id)}
+                    className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-red-300 hover:text-red-700"
+                  >
+                    Ta bort
+                  </button>
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : plattformDomar.length === 0 ? (
             <p className="mt-4 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted">
               Inga domar uppladdade ännu i denna mapp.
             </p>
-          )}
+          ) : null}
 
           <div className="mt-4">
             {!visarUppladdning ? (
@@ -452,7 +490,7 @@ function DomMappRad({
                 onClick={onVisaUppladdning}
                 className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
               >
-                Ladda upp vägledande dom
+                Ladda upp ytterligare vägledande dom
               </button>
             ) : (
               <div className="rounded-lg border border-dashed border-primary/40 bg-[#eef6f0]/50 p-4">
@@ -460,7 +498,7 @@ function DomMappRad({
                   Ladda upp dom till gemensamt bibliotek
                 </p>
                 <p className="mt-1 text-xs text-muted">
-                  PDF eller annat dokument — syns för alla föreninger (demo).
+                  PDF eller annat dokument — syns för alla föreningar (demo).
                 </p>
                 <label className="mt-3 inline-flex cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
                   Välj fil
@@ -468,7 +506,9 @@ function DomMappRad({
                     type="file"
                     accept=".pdf,.doc,.docx,application/pdf"
                     className="sr-only"
-                    onChange={(event) => onUpload(event.target.files?.[0] ?? null)}
+                    onChange={(event) =>
+                      onUpload(event.target.files?.[0] ?? null)
+                    }
                   />
                 </label>
               </div>
