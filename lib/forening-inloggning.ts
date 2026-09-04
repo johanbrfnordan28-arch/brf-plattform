@@ -3,13 +3,18 @@
  */
 
 import { GRUNDMALL_FORENING_ID } from "@/lib/forening-konstanter";
-import { cookieHamtaSenastProfil } from "@/lib/forening-lagring";
 import {
+  cookieHamtaSenastProfil,
+  cookieRensaSenastProfil,
+} from "@/lib/forening-lagring";
+import {
+  FORENING_AKTIV_EVENT,
   listaForeningar,
   normaliseraForeningsNamn,
   repareraForeningRegistry,
   SENAST_SKAPAD_PROFIL_KEY,
   sparaForeningProfil,
+  taBortForeningFranRegistryOchLagring,
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import {
@@ -137,6 +142,35 @@ export function listaEgnaTestForeningar(): ForeningProfil[] {
   }
 
   return resultat.sort((a, b) => a.namn.localeCompare(b.namn, "sv"));
+}
+
+/**
+ * Rensar historik över tidigare skapade testföreningar i den här webbläsaren.
+ * Kundföreningar med tecknat avtal behålls.
+ */
+export function rensaEgnaTestForeningHistorik(): number {
+  if (typeof window === "undefined") return 0;
+  repareraForeningRegistry();
+
+  const attTaBort = listaForeningar().filter(
+    (f) => arEgenTestForening(f.id) && !f.avtalGodkant,
+  );
+
+  for (const f of attTaBort) {
+    taBortForeningFranRegistryOchLagring(f.id);
+  }
+
+  try {
+    sessionStorage.removeItem(SENAST_SKAPAD_PROFIL_KEY);
+  } catch {
+    /* ignore */
+  }
+  cookieRensaSenastProfil();
+
+  if (attTaBort.length > 0) {
+    window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  }
+  return attTaBort.length;
 }
 
 /**

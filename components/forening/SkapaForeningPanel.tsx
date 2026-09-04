@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { navigeraTillNyForening } from "@/lib/skapa-forening-navigering";
 import { skapaForeningMedKontoKlient } from "@/lib/auth/skapa-forening-klient";
 import { STYRELSE_ROLLER } from "@/lib/styrelse-ledamot";
+import { rensaEgnaTestForeningHistorik } from "@/lib/forening-inloggning";
 import {
   lasAktivForeningId,
   lasForeningProfil,
@@ -38,6 +39,9 @@ export function SkapaForeningPanel({
   const checkboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Ingen historik över tidigare testföreningar när man skapar ny.
+    rensaEgnaTestForeningHistorik();
+
     const skaFokuseraSkapa =
       window.location.hash === "#skapa-forening" ||
       new URLSearchParams(window.location.search).get("skapa") === "1";
@@ -209,7 +213,9 @@ export function SkapaForeningPanel({
             onChange={(e) => setNamn(e.target.value)}
             placeholder="t.ex. Brf Eken 12"
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-foreground"
-            autoComplete="organization"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             disabled={skapar}
           />
         </label>
