@@ -13,7 +13,7 @@ export const PLATTFORM_ADMIN_EPOST_STANDARD = [
 ] as const;
 
 /** Startkod tills BankID finns — byt via env i produktion. */
-export const PLATTFORM_STARTKOD_STANDARD = "StyrelseNavet2026";
+export const PLATTFORM_STARTKOD_STANDARD = "Semester12345";
 
 export function listaPlattformAdminEposter(): string[] {
   const franEnv = process.env.PLATTFORM_ADMIN_EPOSTER?.trim();
