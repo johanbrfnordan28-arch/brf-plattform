@@ -100,10 +100,12 @@ export function formatKr(belopp: number): string {
 /** Kort villkorstext gemensam för huvud- och undersidor. */
 export function avtalsVillkorKort(): string[] {
   return [
+    "Prövoperiod 30 dagar — ingen uppsägningstid",
+    "Utan tecknat avtal raderas föreningen efter prövoperioden",
     `Årsavtal: ${ARSAVTAL_RABATT_PROCENT} % rabatt mot månadsdebitering`,
     "Fakturering kvartalsvis i förskott (årsavtal)",
-    "Uppsägningstid årsavtal: 6 månader",
-    "Månadsbetalning: ordinarie pris, 1 månads uppsägningstid",
+    "Avtalstid 1 år · uppsägningstid 6 månader",
+    "Prisjustering enligt KPI vid förlängning",
     "Alla priser exkl. moms",
   ];
 }

@@ -11,10 +11,13 @@ import {
   FORENING_AKTIV_EVENT,
   lasAktivForeningId,
   lasForeningProfil,
+  listaForeningar,
   normaliseraForeningProfil,
   sparaForeningProfil,
+  taBortForeningFranRegistryOchLagring,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { arProvoperiodUtgangen } from "@/lib/forening-avtal";
 import {
   arStyrelseKontaktKomplett,
   styrelseKontaktFranProfil,
@@ -49,6 +52,35 @@ export function listaTestperiodForeningar(): ForeningProfil[] {
 
 export function antalKundForeningar(): number {
   return listaKundForeningar().length;
+}
+
+/**
+ * Tar bort testföreningar vars prövoperiod (30 dagar) gått ut utan tecknat avtal.
+ * Anropas vid sidladdning så ansvaret för prövotid följs automatiskt.
+ */
+export function rensaUtgangnaProvoperioder(): string[] {
+  if (typeof window === "undefined") return [];
+  const borttagna: string[] = [];
+  for (const f of listaForeningar()) {
+    if (!arEgenTestForening(f.id) || f.avtalGodkant) continue;
+    if (
+      !arProvoperiodUtgangen({
+        skapadTidpunkt: f.skapadTidpunkt,
+        avtalGodkant: f.avtalGodkant,
+      })
+    ) {
+      continue;
+    }
+    taBortForeningFranRegistryOchLagring(f.id);
+    borttagna.push(f.id);
+    void fetch(`/api/foreningar/${encodeURIComponent(f.id)}/radera-provoperiod`, {
+      method: "POST",
+    }).catch(() => {});
+  }
+  if (borttagna.length > 0) {
+    window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  }
+  return borttagna;
 }
 
 export function kanGodkannaAvtal(profil: ForeningProfil): {

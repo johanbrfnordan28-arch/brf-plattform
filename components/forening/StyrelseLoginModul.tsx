@@ -25,6 +25,7 @@ import {
   KUND_LOGIN_KNAPP_RUBRIK,
   KUND_LOGIN_PATH,
   listaKundForeningar,
+  rensaUtgangnaProvoperioder,
   TEST_LOGIN_PATH,
 } from "@/lib/forening-kund";
 import { arSailorForening } from "@/lib/sailor-forening";
@@ -169,6 +170,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
 
   function ladda() {
+    rensaUtgangnaProvoperioder();
     setForeningar(
       lage === "kund" ? listaKundForeningar() : listaInloggningsForeningar(),
     );

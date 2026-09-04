@@ -144,7 +144,8 @@ export function ForeningPrisPanel({
           </strong>{" "}
           exkl. moms
         </li>
-        <li>Uppsägningstid årsavtal: 6 månader</li>
+        <li>Avtalstid 1 år · uppsägningstid 6 månader</li>
+        <li>Prisjustering enligt KPI vid förlängning</li>
         <li>
           Månadsbetalning utan årsavtal: {formatKr(pris.ordinariePrisPerManad)}
           /mån · 1 månads uppsägningstid
