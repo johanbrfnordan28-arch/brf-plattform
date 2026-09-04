@@ -14,13 +14,21 @@ import {
 import { beraknaSenastGarantibesiktning } from "@/components/projekt/garantibesiktning";
 import { importeraTidsplanerFranProjekt } from "@/components/projekt/tidsplan-arshjul";
 
+function kategoriFranBesiktning(id: string): ArshjulHandelse["kategori"] {
+  if (id === "ovk") return "ovk";
+  if (id === "sotning") return "sotning";
+  if (id === "radon") return "radon";
+  if (id === "energideklaration") return "energideklaration";
+  return "besiktning";
+}
+
 function besiktningTillHandelse(b: Besiktning): ArshjulHandelse {
   const intervall = b.intervallAr >= 1 ? b.intervallAr : 1;
   return normaliseraHandelse({
     id: skapaHandelseId(),
     titel: b.namn,
     beskrivning: `Importerat från underhållsplanen. Nästa planerat år: ${b.nastaBesiktningAr}, intervall ${intervall} år.`,
-    kategori: "besiktning",
+    kategori: kategoriFranBesiktning(b.id),
     typ: "intervall",
     startAr: b.nastaBesiktningAr,
     intervallAr: intervall,
@@ -46,9 +54,9 @@ function garantiTillHandelse(p: Projekt): ArshjulHandelse | null {
   const [ar, manad, dag] = senast.split("-").map(Number);
   return normaliseraHandelse({
     id: skapaHandelseId(),
-    titel: `Garantibesiktning — ${p.titel}`,
+    titel: `Garantbesiktning — ${p.titel}`,
     beskrivning: `2-årsbesiktning för projekt ${p.titel}. Senast ${senast}.`,
-    kategori: "besiktning",
+    kategori: "garantbesiktning",
     typ: "engang",
     datum: senast,
     startAr: ar,

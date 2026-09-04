@@ -190,7 +190,7 @@ export function ForeningsinformationBibliotek() {
       <p className="text-sm leading-relaxed text-muted">
         {antalForeningsHuvudmappar} huvudmappar med undermappar där dokument laddas upp.
         Börja med{" "}
-        <strong className="font-medium text-foreground">Styrelse och stadgar</strong>{" "}
+        <strong className="font-medium text-foreground">Styrelse Arkiv</strong>{" "}
         — övriga huvudmappar fylls på när strukturen är godkänd.
       </p>
       <p className="text-xs text-muted">

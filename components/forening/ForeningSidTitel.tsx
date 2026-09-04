@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 import { uppdateraForeningSidtitel } from "@/lib/forening-sidtitlar";
 
-/** Sätter flikrubrik: Styrelseflow på /forening, annars föreningens namn + modul. */
+/** Sätter flikrubrik: hubbnamn på /forening, annars föreningens namn + modul. */
 export function ForeningSidTitel() {
   const pathname = usePathname();
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { formatKr } from "@/components/underhallsplan/besiktningar";
+import { KostnadPrisVarning } from "@/components/underhallsplan/KostnadPrisVarning";
 import type { FasadAtgardId } from "@/components/underhallsplan/fasad-atgard";
 import {
   beraknaFasadAtgardPrisSumma,
@@ -87,6 +88,10 @@ export function FasadAtgardPrisPanel({
       <p className="mt-4 text-right text-sm font-bold text-primary-dark">
         Summa alla åtgärder: {totaltKr > 0 ? formatKr(totaltKr) : "—"}
       </p>
+
+      <div className="mt-3">
+        <KostnadPrisVarning kompakt />
+      </div>
     </fieldset>
   );
 }
