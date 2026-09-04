@@ -1,8 +1,8 @@
 /** Delad konstant — undvik cirkulära importer mellan registry och kopiera-grundmall. */
 export const GRUNDMALL_FORENING_ID = "grundmall";
 
-/** Fasta id för demoföreningen vid inloggning (Trazie). */
-export const STANDARD_TESTFORENING_IDS = ["test-forening-5"] as const;
+/** Fasta demoföreningar vid inloggning — tomt: användare skapar egna via Prova gratis. */
+export const STANDARD_TESTFORENING_IDS = [] as const;
 
 /** Tidigare fasta testföreningar som tas bort vid uppstart. */
 export const AVVECKLADE_TESTFORENING_IDS = [
@@ -10,6 +10,7 @@ export const AVVECKLADE_TESTFORENING_IDS = [
   "test-forening-2",
   "test-forening-3",
   "test-forening-4", // Brf Nordan 28
+  "test-forening-5", // Brf Trazie
 ] as const;
 
 export function arStandardTestForening(foreningId: string): boolean {

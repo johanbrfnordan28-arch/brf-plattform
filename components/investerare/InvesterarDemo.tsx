@@ -92,7 +92,7 @@ export function InvesterarDemo() {
             >
               {laddar === INVESTERAR_DEMO_DEFAULT
                 ? "Laddar demo…"
-                : "Starta demo — Brf Trazie → slutsida"}
+                : "Starta demo → slutsida"}
             </button>
             <Link
               href={investerarDemoMal.forening}

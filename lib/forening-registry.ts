@@ -356,7 +356,7 @@ export function repareraForeningRegistry(): boolean {
   return andrat || rengoraDubblettForeningar();
 }
 
-/** Tar bort gamla fasta testföreningar (Brf Test 1–3) från register och lagring. */
+/** Tar bort gamla fasta testföreningar (Brf Test 1–3, Nordan 28, Trazie) från register och lagring. */
 function rensaAvveckladeTestForeningar(): void {
   if (typeof window === "undefined") return;
   for (const id of AVVECKLADE_TESTFORENING_IDS) {
