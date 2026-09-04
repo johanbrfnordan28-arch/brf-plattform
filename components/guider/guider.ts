@@ -115,11 +115,11 @@ export const guideFilmer: GuideFilm[] = [
   },
   {
     id: "foreningsinformation",
-    modul: "Föreningsinformation",
+    modul: "Styrning och Dokument",
     titel: "Dokument i rätt mapp",
     längd: "ca 35 sek",
     beskrivning:
-      "Stadgar, ventilation, besiktningar och protokoll — samlat så nästa styrelse hittar allt.",
+      "Styrelsearkiv, ventilation, besiktningar och protokoll — samlat så nästa styrelse hittar allt.",
     scener: [
       {
         titel: "Huvudmappar",

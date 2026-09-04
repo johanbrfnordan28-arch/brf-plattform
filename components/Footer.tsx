@@ -10,7 +10,7 @@ export function Footer() {
   const isForening = pathname.startsWith("/forening");
   const foreningsNamn = useAktivForeningsNamn();
   const kontakt = useStyrelseKontakt();
-  const brand = isForening ? foreningsNamn : "BRF Företag";
+  const brand = isForening ? foreningsNamn : "Styrelse-Navet";
 
   return (
     <footer className="border-t border-border bg-surface">
@@ -46,13 +46,25 @@ export function Footer() {
                 href="/"
                 className="text-sm font-medium text-primary-dark hover:underline"
               >
-                BRF Företags huvudsida
+                Styrelse-Navets huvudsida
               </Link>
             )}
           </div>
         </div>
         <p className="mt-8 text-xs text-muted">
           © {new Date().getFullYear()} {brand} — demoversion
+          {!isForening ? (
+            <>
+              {" · "}
+              <Link
+                href="/plattform-login"
+                className="text-muted/80 hover:text-muted"
+                aria-label="Plattformsinloggning"
+              >
+                ·
+              </Link>
+            </>
+          ) : null}
         </p>
       </div>
     </footer>

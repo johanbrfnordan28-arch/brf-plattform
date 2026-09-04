@@ -36,8 +36,8 @@ export function LokalInventarPanel({
   return (
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-muted">
-        Registrera invändiga delar i {titel.toLowerCase()}. Utvändiga delar kan
-        läggas till senare.
+        Inventarier och installationer i {titel.toLowerCase()} — utöver
+        byggnadens väggar, golv och tak ovan.
       </p>
 
       <label className="block max-w-xs text-sm">

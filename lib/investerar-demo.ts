@@ -1,6 +1,6 @@
 import type { TestplanId } from "@/components/underhallsplan/testplaner";
 
-export const INVESTERAR_DEMO_DEFAULT: TestplanId = "test-sailor";
+export const INVESTERAR_DEMO_DEFAULT: TestplanId = "test-90";
 
 export const investerarDemoProfiler: {
   id: TestplanId;
@@ -9,13 +9,13 @@ export const investerarDemoProfiler: {
   höjdpunkter: string[];
 }[] = [
   {
-    id: "test-sailor",
-    titel: "Brf Sailor 2013",
+    id: "test-90",
+    titel: "Brf Strandskatan 1990-tal",
     beskrivning:
-      "Nyproduktion med 36 lägenheter — komplett register, besiktningar och budget.",
+      "Större förening från 90-talet — komplett register, besiktningar och budget.",
     höjdpunkter: [
       "Underhållsplan med slutsida och diagram",
-      "Komponentregister med balkonger och VVS",
+      "Komponentregister med hiss och VVS",
       "Lämplig som huvuddemo",
     ],
   },
@@ -23,7 +23,7 @@ export const investerarDemoProfiler: {
     id: "test-70",
     titel: "Brf Parklyckan",
     beskrivning:
-      "Större förening (45 lgh) — tak och fasad som klumpsummor, bra för upphandlingsstoryn.",
+      "Större förening från 70-talet — tak och fasad som klumpsummor, bra för upphandlingsstoryn.",
     höjdpunkter: [
       "Visar kostnadsfördelning i planen",
       "Koppla till upphandlingsmodulen",
