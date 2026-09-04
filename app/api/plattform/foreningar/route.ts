@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma, databasArKonfigurerad } from "@/lib/db";
 import { lasSession } from "@/lib/auth/session";
 import { tillDto } from "@/lib/forening-server";
+import { klassificeraInternForeningStatus } from "@/lib/plattform-forening-status";
 
 export async function GET() {
   if (!databasArKonfigurerad()) {
@@ -27,9 +28,16 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({
-    foreningar: rader.map((f) => ({
-      ...tillDto(f),
+  const foreningar = rader.map((f) => {
+    const dto = tillDto(f);
+    const statusInfo = klassificeraInternForeningStatus({
+      avtalGodkant: dto.avtalGodkant,
+      skapadTidpunkt: dto.skapadTidpunkt,
+    });
+    return {
+      ...dto,
+      status: statusInfo.status,
+      statusEtikett: statusInfo.etikett,
       medlemmar: f.medlemmar
         .filter((m) => m.konto.typ === "STYRELSE")
         .map((m) => ({
@@ -37,6 +45,15 @@ export async function GET() {
           epost: m.konto.epost,
           namn: m.konto.namn,
         })),
-    })),
+    };
   });
+
+  const sammanfattning = {
+    totalt: foreningar.length,
+    test: foreningar.filter((f) => f.status === "test").length,
+    kund: foreningar.filter((f) => f.status === "kund").length,
+    utgangen: foreningar.filter((f) => f.status === "utgangen").length,
+  };
+
+  return NextResponse.json({ foreningar, sammanfattning });
 }

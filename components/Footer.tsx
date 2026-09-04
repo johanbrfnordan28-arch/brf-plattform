@@ -58,10 +58,9 @@ export function Footer() {
               {" · "}
               <Link
                 href="/plattform-login"
-                className="text-muted/80 hover:text-muted"
-                aria-label="Plattformsinloggning"
+                className="text-muted underline-offset-2 hover:text-foreground hover:underline"
               >
-                ·
+                Personalinloggning
               </Link>
             </>
           ) : null}

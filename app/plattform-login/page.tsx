@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { PlattformLoginForm } from "@/components/plattform/PlattformLoginForm";
 
 export const metadata: Metadata = {
-  title: "Plattformsinloggning — Styrelse-Navet",
-  robots: { index: false, follow: false },
+  title: "Personalinloggning — Styrelse-Navet",
+  description: "Intern inloggning för behörig personal. Inte för allmänheten.",
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export default function PlattformLoginPage() {

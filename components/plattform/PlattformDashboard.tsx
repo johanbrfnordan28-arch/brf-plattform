@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import {
+  PlattformForeningarOversikt,
+  type PlattformForeningRad,
+} from "@/components/plattform/PlattformForeningarOversikt";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 
 type Statistik = {
@@ -57,17 +61,20 @@ function formatTid(iso: string | null): string {
 
 export function PlattformDashboard() {
   const [epost, setEpost] = useState<string | null>(null);
-  const [forbjuden, setForbjuden] = useState(false);
+  const [forbjuden, setForbjuden] = useState<boolean | null>(null);
   const [statistik, setStatistik] = useState<Statistik | null>(null);
   const [konton, setKonton] = useState<KontoRad[]>([]);
   const [inloggningar, setInloggningar] = useState<Inloggning[]>([]);
   const [mejl, setMejl] = useState<MejlRad[]>([]);
+  const [foreningar, setForeningar] = useState<PlattformForeningRad[]>([]);
+  const [laddarForeningar, setLaddarForeningar] = useState(true);
   const [mittLosenord, setMittLosenord] = useState<MittLosenord | null>(null);
   const [visaMittLosenord, setVisaMittLosenord] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
 
   const ladda = useCallback(async () => {
     setFel(null);
+    setLaddarForeningar(true);
     const sessionRes = await fetch("/api/auth/session");
     const session = (await sessionRes.json()) as {
       inloggad?: boolean;
@@ -76,19 +83,22 @@ export function PlattformDashboard() {
     };
     if (!session.inloggad || session.typ !== "PLATTFORM") {
       setForbjuden(true);
+      setLaddarForeningar(false);
       return;
     }
     setEpost(session.epost || null);
     setForbjuden(false);
 
-    const [statRes, mejlRes, losRes] = await Promise.all([
+    const [statRes, mejlRes, losRes, foreningRes] = await Promise.all([
       fetch("/api/plattform/statistik"),
       fetch("/api/plattform/mejl-outbox"),
       fetch("/api/auth/mitt-losenord"),
+      fetch("/api/plattform/foreningar"),
     ]);
 
     if (!statRes.ok || !mejlRes.ok) {
       setFel("Kunde inte ladda plattformsdata.");
+      setLaddarForeningar(false);
       return;
     }
 
@@ -102,6 +112,22 @@ export function PlattformDashboard() {
     setKonton(statData.kontonMedInloggning || []);
     setInloggningar(statData.senasteInloggningar || []);
     setMejl(mejlData.mejl || []);
+
+    if (foreningRes.ok) {
+      const foreningData = (await foreningRes.json()) as {
+        foreningar: PlattformForeningRad[];
+      };
+      setForeningar(foreningData.foreningar || []);
+    } else if (foreningRes.status === 503) {
+      setFel(
+        "Databasen är inte konfigurerad — föreningsöversikten kräver DATABASE_URL.",
+      );
+      setForeningar([]);
+    } else {
+      setFel("Kunde inte ladda föreningsöversikten.");
+      setForeningar([]);
+    }
+    setLaddarForeningar(false);
 
     if (losRes.ok) {
       const losData = (await losRes.json()) as MittLosenord;
@@ -118,10 +144,20 @@ export function PlattformDashboard() {
     window.location.href = PLATTFORM_LOGIN_PATH;
   }
 
+  if (forbjuden === null) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-muted">
+        Kontrollerar behörighet …
+      </div>
+    );
+  }
+
   if (forbjuden) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-border bg-white p-6 text-center shadow-sm">
-        <p className="text-sm text-muted">Du behöver plattformsinloggning.</p>
+        <p className="text-sm text-muted">
+          Denna sida är inte publik. Du behöver behörig personalinloggning.
+        </p>
         <Link
           href={PLATTFORM_LOGIN_PATH}
           className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white"
@@ -137,11 +173,14 @@ export function PlattformDashboard() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Intern yta — syns inte för styrelser
+            Intern yta — endast behörig personal
           </p>
           <h1 className="text-2xl font-bold text-foreground">Plattform</h1>
           {epost ? (
-            <p className="mt-1 text-sm text-muted">Inloggad som {epost}</p>
+            <p className="mt-1 text-sm text-muted">
+              Inloggad som {epost}. Här syns skapade föreningar, testperioder och
+              accepterade avtal.
+            </p>
           ) : null}
         </div>
         <div className="flex gap-2">
@@ -193,6 +232,11 @@ export function PlattformDashboard() {
           </div>
         </section>
       ) : null}
+
+      <PlattformForeningarOversikt
+        foreningar={foreningar}
+        laddar={laddarForeningar}
+      />
 
       {statistik ? (
         <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">

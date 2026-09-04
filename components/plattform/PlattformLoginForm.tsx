@@ -40,10 +40,11 @@ export function PlattformLoginForm() {
       onSubmit={skicka}
       className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
     >
-      <h1 className="text-xl font-bold text-foreground">Plattformsinloggning</h1>
+      <h1 className="text-xl font-bold text-foreground">Personalinloggning</h1>
       <p className="text-sm text-muted">
-        Endast för personer som arbetar med Styrelse-Navet. Syns inte för
-        styrelser.
+        Endast för behöriga som arbetar med Styrelse-Navet. Efter inloggning ser
+        ni skapade föreningar, vilka som är test och vilka som accepterat
+        avtalet. Styrelser och allmänheten har ingen tillgång hit.
       </p>
       <label className="block text-sm">
         <span className="font-medium">E-post</span>

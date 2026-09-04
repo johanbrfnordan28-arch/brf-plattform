@@ -8,6 +8,7 @@ import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRa
 import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 import { PublikPrisInfo } from "@/components/pris/PublikPrisInfo";
+import { PersonalInloggningFot } from "@/components/plattform/PersonalInloggningFot";
 import { TekniskForvaltningErbjudande } from "@/components/pris/TekniskForvaltningErbjudande";
 import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
@@ -672,6 +673,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <FilmDemo variant="forening" />
         </>
       )}
+
+      {!isForening && <PersonalInloggningFot />}
     </main>
   );
 }
