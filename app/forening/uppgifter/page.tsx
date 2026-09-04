@@ -49,8 +49,10 @@ export default function ForeningUppgifterPage() {
             loggat in. Bara du ser ditt eget lösenord.
           </li>
           <li>
-            <strong>Godkänn avtal</strong> — längst ned. Då blir ni kund och
-            loggar in via «{KUND_LOGIN_KNAPP_RUBRIK}» på Styrelse-Navet.
+            <strong>Godkänn avtal</strong> — längst ned. Signera med BankID.
+            Prövoperiod 30 dagar utan uppsägningstid; därefter årsavtal 1 år med
+            6 månaders uppsägning och KPI-justering. Utan tecknat avtal raderas
+            föreningen efter prövoperioden.
           </li>
           <li>
             <strong>Säkerhetskopiering</strong> — ladda ner er data regelbundet.
