@@ -30,7 +30,7 @@ export function skapaDemoAnalys(komponent: string): BildanalysResultat {
   if (komponent === "Tak") {
     return {
       komponent: "Tak",
-      bedömdTyp: "Tegel- eller betongpannor (demo)",
+      bedömdTyp: "Tegel- eller betongpannor",
       observationer: [
         "Möjlig mossa eller missfärgning längs takfot",
         "Ingen uppenbar skada på nock synlig i bilden",
@@ -44,7 +44,7 @@ export function skapaDemoAnalys(komponent: string): BildanalysResultat {
   if (komponent === "Fasad") {
     return {
       komponent: "Fasad",
-      bedömdTyp: "Putsad fasad (demo)",
+      bedömdTyp: "Putsad fasad",
       observationer: [
         "Sprickor eller flagning kan inte uteslutas i nedre del",
         "Färgton avviker möjligen mellan partier",
@@ -56,7 +56,7 @@ export function skapaDemoAnalys(komponent: string): BildanalysResultat {
   if (komponent === "Trapphus") {
     return {
       komponent: "Trapphus",
-      bedömdTyp: "Målat trapphus, betong/sten (demo)",
+      bedömdTyp: "Målat trapphus, betong/sten",
       observationer: ["Slitage i golv kan förekomma i trafikerade zoner"],
       osakerhetsgrad: "låg",
       förslag: "Koppla till planerat underhåll av trapphus enligt komponentregister.",
@@ -64,7 +64,7 @@ export function skapaDemoAnalys(komponent: string): BildanalysResultat {
   }
   return {
     komponent,
-    bedömdTyp: "Byggnadsdel (demo)",
+    bedömdTyp: "Byggnadsdel",
     observationer: ["Automatisk analys har begränsad säkerhet utan fler bilder"],
     osakerhetsgrad: "hög",
     förslag: "Föreningen bör verifiera på plats innan beslut.",

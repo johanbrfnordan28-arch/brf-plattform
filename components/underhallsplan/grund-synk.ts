@@ -51,22 +51,53 @@ export function uppdateraPlanTitelMedLagenheter(
   return bas;
 }
 
-/** Rubrik på slutsidan — följer alltid aktuellt antal från steg 1. */
+const PLAN_TITEL_PREFIX_RE =
+  /^(?:föreningens\s+underhållsplan|central\s+grundmall|underhållsplan)\s*[—–-]\s*/i;
+
+/** Tar bort visningsprefix så vi inte dubblerar dem. */
+export function rensaPlanTitelPrefix(planNamn: string): string {
+  return planNamn.replace(PLAN_TITEL_PREFIX_RE, "").trim();
+}
+
+/** Rubrik på slutsidan — tydlig skillnad mellan central grundmall och föreningens plan. */
 export function hamtaPlanVisningstitel(
   planNamn: string | null,
   grund: Grunduppgifter,
+  foreningsnamn?: string | null,
+  options?: { arCentralGrundmall?: boolean },
 ): string {
   const grundNorm = normaliseraGrund(grund);
   const antalLgh = hamtaAntalLagenheterFranGrund(grundNorm);
-  if (planNamn?.trim()) {
-    return uppdateraPlanTitelMedLagenheter(planNamn.trim(), antalLgh);
-  }
-  const bas =
-    grundNorm.fastighetsbeteckning.trim() || "Underhållsplan — utkast";
+  const radNamn =
+    rensaPlanTitelPrefix(foreningsnamn?.trim() || "") ||
+    (planNamn?.trim()
+      ? rensaPlanTitelPrefix(rensaPlanTitelFranLagenhetsantal(planNamn.trim()))
+      : "") ||
+    grundNorm.fastighetsbeteckning.trim() ||
+    "";
+
+  const bas = options?.arCentralGrundmall
+    ? radNamn
+      ? `Central grundmall — ${radNamn}`
+      : "Central grundmall — underhållsplan"
+    : radNamn
+      ? `Föreningens underhållsplan — ${radNamn}`
+      : "Föreningens underhållsplan — utkast";
+
   if (antalLgh > 0) {
-    return `${bas} (${antalLgh} lägenheter)`;
+    return uppdateraPlanTitelMedLagenheter(bas, antalLgh);
   }
-  return bas;
+  return rensaPlanTitelFranLagenhetsantal(bas);
+}
+
+/** Bygger plantitel från aktivt föreningsnamn (utan demoplan-namn). */
+export function planNamnFranForeningsnamn(
+  foreningsnamn: string | null | undefined,
+  antalLgh = 0,
+): string | null {
+  const bas = foreningsnamn?.trim();
+  if (!bas) return null;
+  return uppdateraPlanTitelMedLagenheter(bas, antalLgh);
 }
 
 export function hamtaAntalVerksamhetslokaler(grund: Grunduppgifter): number {

@@ -7,18 +7,18 @@ import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    ...(await foreningModulMetadata("Föreningsinformation")),
+    ...(await foreningModulMetadata("Styrning och Dokument")),
     description:
-      "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga styrelsedokument.",
+      "Styrelsearkiv, stadgar, protokoll, årsstämma och övriga styrelsedokument.",
   };
 }
 
 export default function ForeningForeningsinformationPage() {
   return (
     <ModulePage
-      title="Föreningsinformation"
+      title="Styrning och Dokument"
       icon="📁"
-      intro={`${antalForeningsHuvudmappar} huvudmappar: styrelse och stadgar (med nyckel kvittenser), hiss (besiktningar), service (undercentral), ventilation (OVK och sotning) samt tioårsbesiktningar (energi och radon).`}
+      intro={`${antalForeningsHuvudmappar} huvudmappar: Styrelse Arkiv (protokoll, årsstämma, nyckel kvittenser), hiss (besiktningar), service (undercentral), ventilation (OVK och sotning) samt tioårsbesiktningar (energi och radon).`}
     >
       <ContentSection title="Styrelsens bibliotek" plain>
         <ForeningsinformationBibliotek />

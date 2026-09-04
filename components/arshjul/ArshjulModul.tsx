@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
   arshjulStorageKey,
   expanderaTillfallen,
   formatDatumKort,
+  fyllPaStandardHandelser,
   hamtaPaminnelser,
   kategoriEtiketter,
   kategoriFarger,
@@ -14,11 +14,15 @@ import {
   normaliseraHandelse,
   skapaHandelseId,
   skapaTomHandelse,
+  SOMMAR_EXKLUDERADE_MANADER,
+  SOTNING_FORESLAGET_INTERVALL_AR,
   STANDARD_PAMINNELSE_DAGAR,
+  veckodagsnamn,
   type ArshjulHandelse,
   type ArshjulHandelseTyp,
   type ArshjulKategori,
   type ArshjulTillfalle,
+  type Veckodag,
 } from "@/components/arshjul/arshjul";
 import {
   importeraFranProjekt,
@@ -45,34 +49,30 @@ function sparaHandelser(lista: ArshjulHandelse[]): void {
   safeSetLocalStorage(arshjulStorageKey(), JSON.stringify(lista));
 }
 
-const exempelHandelser: ArshjulHandelse[] = [
-  normaliseraHandelse({
-    id: "ex-stamma",
-    titel: "Årsstämma",
-    beskrivning: "Kallelse, underlag och protokoll.",
-    kategori: "stamma",
-    typ: "arlig",
-    manad: 4,
-    dag: 15,
-    paminnelseDagar: [90, 60, 30, 14],
-    klar: false,
-    skapad: "demo",
-    externKalla: "manuell",
-  }),
-  normaliseraHandelse({
-    id: "ex-bokslut",
-    titel: "Bokslut & budget",
-    beskrivning: "Ekonomisk plan och budget inför nästa år.",
-    kategori: "ekonomi",
-    typ: "arlig",
-    manad: 11,
-    dag: 30,
-    paminnelseDagar: [60, 30, 14],
-    klar: false,
-    skapad: "demo",
-    externKalla: "manuell",
-  }),
-];
+function beskrivIntervall(h: ArshjulHandelse): string {
+  if (h.typ === "engang" && h.datum) return formatDatumKort(h.datum);
+  if (h.typ === "manatlig") {
+    const vd = h.veckodag ? veckodagsnamn[h.veckodag] : null;
+    const ord =
+      h.veckodagOrdinal && h.veckodagOrdinal > 1
+        ? `${h.veckodagOrdinal}:e `
+        : "";
+    const bas = vd
+      ? `Varje månad (${ord}${vd.toLowerCase()})`
+      : `Varje månad (dag ${h.dag ?? 1})`;
+    if (h.exkluderaManader?.length) {
+      const hopp = h.exkluderaManader
+        .map((m) => manadsnamn[m - 1]?.slice(0, 3))
+        .join("/");
+      return `${bas} · ej ${hopp}`;
+    }
+    return bas;
+  }
+  if (h.typ === "arlig") {
+    return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`;
+  }
+  return `Vart ${h.intervallAr}:e år från ${h.startAr}`;
+}
 
 export function ArshjulModul() {
   const innevarandeAr = new Date().getFullYear();
@@ -88,14 +88,8 @@ export function ArshjulModul() {
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
-    const sparade = lasHandelser();
-    if (sparade.length > 0) {
-      setHandelser(sparade);
-    } else if (arGrundmallForening(lasAktivForeningId())) {
-      setHandelser(exempelHandelser);
-    } else {
-      setHandelser([]);
-    }
+    // Ny förening startar med tomt årshjul — standardmall läggs in via knappen.
+    setHandelser(lasHandelser());
     skipFirstSave.current = true;
     setHydrated(true);
   }, []);
@@ -215,6 +209,27 @@ export function ArshjulModul() {
     setImportMeddelande(`${nya.length} påminnelse(r) från projekt importerade.`);
   }
 
+  function laggTillStandard() {
+    const efter = fyllPaStandardHandelser(handelser);
+    const antal = efter.length - handelser.length;
+    if (antal === 0) {
+      setImportMeddelande("Alla standardkategorier finns redan.");
+      return;
+    }
+    setHandelser(efter);
+    setImportMeddelande(
+      `${antal} standardhändelser tillagda (styrelsemöte, OVK, sotning, energi, radon m.fl.).`,
+    );
+  }
+
+  function vaxlaExkluderaManad(manad: number) {
+    const nu = form.exkluderaManader ?? [];
+    const nasta = nu.includes(manad)
+      ? nu.filter((m) => m !== manad)
+      : [...nu, manad].sort((a, b) => a - b);
+    setForm({ ...form, exkluderaManader: nasta });
+  }
+
   function TillfalleChip({ t }: { t: ArshjulTillfalle }) {
     const h = handelser.find((x) => x.id === t.handelseId);
     return (
@@ -248,9 +263,10 @@ export function ArshjulModul() {
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Samla styrelsens årshjul och långsiktiga kalender på ett ställe. Lägg in
-          egna påminnelser eller importera besiktningar från underhållsplanen — OVK
-          och andra kontroller kan ligga flera år fram i tiden.
+          Styrelsemöten, byggmöten, OVK, sotning, energideklaration och
+          radonmätning — med månads- eller årsintervall. Hoppa över sommarmånader
+          när ni inte har möten. Sotning föreslås vart{" "}
+          {SOTNING_FORESLAGET_INTERVALL_AR}:e år (kan vara 1–4 beroende på eldstad).
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -281,8 +297,15 @@ export function ArshjulModul() {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={importeraUnderhallsplan}
+          onClick={laggTillStandard}
           className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+        >
+          Lägg in standardkategorier
+        </button>
+        <button
+          type="button"
+          onClick={importeraUnderhallsplan}
+          className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-primary/50"
         >
           Importera besiktningar (underhållsplan)
         </button>
@@ -358,6 +381,7 @@ export function ArshjulModul() {
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 <option value="engang">Engång (datum)</option>
+                <option value="manatlig">Varje månad</option>
                 <option value="arlig">Årligen (samma månad)</option>
                 <option value="intervall">Intervall (t.ex. vart 6:e år)</option>
               </select>
@@ -377,36 +401,91 @@ export function ArshjulModul() {
             )}
 
             {(form.typ === "arlig" || form.typ === "intervall") && (
+              <label className="block">
+                <span className="text-sm font-medium">Månad</span>
+                <select
+                  value={form.manad ?? 1}
+                  onChange={(e) =>
+                    setForm({ ...form, manad: Number(e.target.value) })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  {manadsnamn.map((namn, i) => (
+                    <option key={namn} value={i + 1}>
+                      {namn}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {(form.typ === "arlig" ||
+              form.typ === "intervall" ||
+              form.typ === "manatlig") && (
               <>
                 <label className="block">
-                  <span className="text-sm font-medium">Månad</span>
+                  <span className="text-sm font-medium">Veckodag (valfritt)</span>
                   <select
-                    value={form.manad ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, manad: Number(e.target.value) })
-                    }
+                    value={form.veckodag ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm({
+                        ...form,
+                        veckodag: v
+                          ? (Number(v) as Veckodag)
+                          : undefined,
+                        veckodagOrdinal: v
+                          ? (form.veckodagOrdinal ?? 1)
+                          : undefined,
+                      });
+                    }}
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   >
-                    {manadsnamn.map((namn, i) => (
-                      <option key={namn} value={i + 1}>
-                        {namn}
+                    <option value="">Fast dag i månaden i stället</option>
+                    {([1, 2, 3, 4, 5, 6, 7] as Veckodag[]).map((vd) => (
+                      <option key={vd} value={vd}>
+                        {veckodagsnamn[vd]}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label className="block">
-                  <span className="text-sm font-medium">Dag i månaden</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={28}
-                    value={form.dag ?? 1}
-                    onChange={(e) =>
-                      setForm({ ...form, dag: Number(e.target.value) || 1 })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                </label>
+                {form.veckodag ? (
+                  <label className="block">
+                    <span className="text-sm font-medium">Vilken i månaden</span>
+                    <select
+                      value={form.veckodagOrdinal ?? 1}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          veckodagOrdinal: Number(e.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      <option value={1}>Första</option>
+                      <option value={2}>Andra</option>
+                      <option value={3}>Tredje</option>
+                      <option value={4}>Fjärde</option>
+                    </select>
+                  </label>
+                ) : (
+                  <label className="block">
+                    <span className="text-sm font-medium">Dag i månaden</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={28}
+                      value={form.dag ?? 1}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          dag: Number(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                )}
               </>
             )}
 
@@ -433,15 +512,63 @@ export function ArshjulModul() {
                     max={50}
                     value={form.intervallAr ?? 1}
                     onChange={(e) =>
-                      setForm({ ...form, intervallAr: Number(e.target.value) || 1 })
+                      setForm({
+                        ...form,
+                        intervallAr: Number(e.target.value) || 1,
+                      })
                     }
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
                   <span className="mt-1 block text-xs text-muted">
-                    t.ex. 3 för OVK, 10 för radon, 6 för energideklaration
+                    OVK bostäder 3–6 år · OVK butik 3 år · sotning{" "}
+                    {SOTNING_FORESLAGET_INTERVALL_AR} år · energi/radon 10 år
                   </span>
                 </label>
               </>
+            )}
+
+            {(form.typ === "manatlig" || form.typ === "arlig") && (
+              <fieldset className="sm:col-span-2">
+                <legend className="text-sm font-medium">
+                  Hoppa över månader (t.ex. sommar)
+                </legend>
+                <p className="mt-1 text-xs text-muted">
+                  Bocka ur månader utan möte — t.ex. juli och augusti.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {manadsnamn.map((namn, i) => {
+                    const manad = i + 1;
+                    const vald = (form.exkluderaManader ?? []).includes(manad);
+                    return (
+                      <button
+                        key={namn}
+                        type="button"
+                        onClick={() => vaxlaExkluderaManad(manad)}
+                        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                          vald
+                            ? "border-amber-400 bg-amber-50 text-amber-950"
+                            : "border-border bg-white text-muted hover:border-primary/40"
+                        }`}
+                      >
+                        {vald ? "× " : ""}
+                        {namn.slice(0, 3)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-medium text-primary-dark underline"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      exkluderaManader: [...SOMMAR_EXKLUDERADE_MANADER],
+                    })
+                  }
+                >
+                  Föreslå sommaruppehåll (juli–aug)
+                </button>
+              </fieldset>
             )}
 
             <label className="block sm:col-span-2">
@@ -557,13 +684,7 @@ export function ArshjulModul() {
                   {kategoriEtiketter[h.kategori]}
                 </span>
                 <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
-                <span className="text-xs text-muted">
-                  {h.typ === "engang" && h.datum
-                    ? formatDatumKort(h.datum)
-                    : h.typ === "arlig"
-                      ? `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`
-                      : `Vart ${h.intervallAr}:e år från ${h.startAr}`}
-                </span>
+                <span className="text-xs text-muted">{beskrivIntervall(h)}</span>
                 <button
                   type="button"
                   onClick={() => startaRedigera(h)}
