@@ -12,6 +12,35 @@ function parseAr(text: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Flyttar ett planerat åtgärdsår framåt i intervallsteg tills det ligger
+ * inom/efter planstarten — behåller fasen från byggår (t.ex. 2013+30 → 2043).
+ */
+export function forstaAtgardArIPlan(
+  nastaAr: number,
+  intervallAr: number,
+  planStartAr: number,
+): number {
+  if (!Number.isFinite(nastaAr) || nastaAr <= 0) return planStartAr;
+  if (!Number.isFinite(intervallAr) || intervallAr < 1) {
+    return Math.max(nastaAr, planStartAr);
+  }
+  let ar = nastaAr;
+  while (ar < planStartAr) ar += intervallAr;
+  return ar;
+}
+
+/** Första åtgärd = byggår + intervall (ev. framflyttad till planperioden). */
+export function nastaArFranByggar(
+  byggar: number,
+  intervallAr: number,
+  planStartAr?: number,
+): number {
+  const forsta = byggar + intervallAr;
+  if (planStartAr == null) return forsta;
+  return forstaAtgardArIPlan(forsta, intervallAr, planStartAr);
+}
+
 /** Vilka år underhållet planeras och vilken summa som gäller varje gång. */
 export function beraknaUnderhallKostnadPerArForRad(
   rad: UnderkomponentRad,
@@ -23,8 +52,11 @@ export function beraknaUnderhallKostnadPerArForRad(
   if (kostnad <= 0 || intervall < 1) return [];
 
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
-  let ar = parseAr(rad.underhallNastaAr) || planStartAr;
-  if (ar < planStartAr) ar = planStartAr;
+  let ar = forstaAtgardArIPlan(
+    parseAr(rad.underhallNastaAr) || planStartAr,
+    intervall,
+    planStartAr,
+  );
 
   const rader: UnderhallKostnadPerArRad[] = [];
   while (ar <= planSlutAr) {

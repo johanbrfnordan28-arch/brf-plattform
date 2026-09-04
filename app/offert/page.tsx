@@ -3,8 +3,9 @@ import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
 
 export const metadata: Metadata = {
-  title: "Offert — BRF Företag",
-  description: "Begär och godkänn offerter för BRF — strukturerat flöde med org.nr och BankID.",
+  title: "Offert — Styrelse-Navet",
+  description:
+    "Begär offert på teknisk förvaltning, projektledning, besiktning, skadeutredning och upphandling — fasta priser eller löpande debitering.",
 };
 
 export default function OffertPage() {
@@ -12,9 +13,24 @@ export default function OffertPage() {
     <ModulePage
       title="Offert"
       icon="💬"
-      intro="På föreningssidan begär styrelsen offert med org.nr-uppslag, väljer nivå och får dokument levererat till e-post — med möjlighet till godkännande via BankID."
+      intro="Begär offert på teknisk förvaltning och övriga tjänster. Priset beror på fastigheten och omfattningen — ni får fasta priser på offert eller kan välja löpande debitering."
     >
-      <ContentSection title="Offertflöde">
+      <ContentSection title="Vad ni kan begära offert på">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Teknisk förvaltning till fördelaktigt pris</li>
+          <li>Projektledning</li>
+          <li>Skadeutredning</li>
+          <li>Besiktning</li>
+          <li>Upphandling</li>
+        </ul>
+        <p className="mt-4">
+          Kostnaden anpassas efter er fastighet och hur mycket stöd ni behöver.
+          På föreningssidan kan styrelsen också starta ett strukturerat
+          offertflöde med org.nr-uppslag och godkännande via BankID.
+        </p>
+      </ContentSection>
+
+      <ContentSection title="Offertflöde på föreningssidan">
         <ol className="list-decimal space-y-2 pl-5">
           <li>Styrelsen anger organisationsnummer och e-post.</li>
           <li>Systemet hämtar föreningsdata från register.</li>
