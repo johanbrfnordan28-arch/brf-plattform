@@ -16,7 +16,7 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { useHubbNamn } from "@/components/forening/useHubbNamn";
 import {
   appliceraKontaktPaGrund,
   planNamnFranKontakt,
@@ -32,11 +32,13 @@ function lasAktivProfilForFormular(): ForeningProfil | null {
 }
 
 export function ForeningProfilFormular() {
+  const hubbNamn = useHubbNamn();
   const [profil, setProfil] = useState<ForeningProfil | null>(null);
   const [redo, setRedo] = useState(false);
   const [redigerad, setRedigerad] = useState<ForeningProfil | null>(null);
   const [sparad, setSparad] = useState(false);
   const [sparFel, setSparFel] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   const laddaProfil = useCallback(() => {
     setProfil(lasAktivProfilForFormular());
@@ -53,6 +55,7 @@ export function ForeningProfilFormular() {
     setRedigerad(null);
     setSparad(false);
     setSparFel(null);
+    setServerStatus(null);
   }, [profil?.id]);
 
   const visningsProfil = redigerad ?? profil;
@@ -86,9 +89,10 @@ export function ForeningProfilFormular() {
 
   function spara() {
     setSparFel(null);
+    setServerStatus(null);
     const uppdaterad = { ...visningsProfil, grundinfoPaborjad: true } as ForeningProfil;
     try {
-      sparaForeningProfil(uppdaterad);
+      sparaForeningProfil(uppdaterad, { synkaServer: false });
       const kontakt = styrelseKontaktFranProfil(uppdaterad);
       const plan = lasUnderhallsplanState();
       if (plan) {
@@ -103,6 +107,17 @@ export function ForeningProfilFormular() {
       setProfil(uppdaterad);
       setRedigerad(null);
       setSparad(true);
+
+      void import("@/lib/forening-server-sync").then(
+        async ({ synkaForeningTillServer }) => {
+          const resultat = await synkaForeningTillServer(uppdaterad);
+          setServerStatus(
+            resultat.ok
+              ? "Sparat lokalt och på servern."
+              : `Sparat lokalt. Server: ${resultat.fel}`,
+          );
+        },
+      );
     } catch (e) {
       setSparFel(
         e instanceof Error ? e.message : "Kunde inte spara — försök igen.",
@@ -112,9 +127,16 @@ export function ForeningProfilFormular() {
 
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-      <p className="text-sm text-muted">
-        Uppgifterna sparas för <strong className="text-foreground">{profil.namn}</strong>{" "}
-        och används i dokument, städschema och underhållsplanen.
+      <h2 className="text-lg font-semibold text-foreground">
+        Föreningens identitet
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Namn och organisationsnummer anges vid uppstart och kan kompletteras
+        här. Adresser, styrelse och storlek fylls i under{" "}
+        <a href="#grunduppgifter" className="font-medium text-primary-dark underline">
+          grunduppgifter
+        </a>
+        .
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
@@ -146,33 +168,6 @@ export function ForeningProfilFormular() {
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
         </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">Kontaktperson</span>
-          <input
-            type="text"
-            value={visningsProfil.kontaktperson}
-            onChange={(e) => uppdatera("kontaktperson", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="font-medium text-foreground">Postadress</span>
-          <input
-            type="text"
-            value={visningsProfil.postadress}
-            onChange={(e) => uppdatera("postadress", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">Ort</span>
-          <input
-            type="text"
-            value={visningsProfil.ort}
-            onChange={(e) => uppdatera("ort", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
       </div>
 
       {sparFel && (
@@ -190,25 +185,26 @@ export function ForeningProfilFormular() {
           onClick={spara}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Spara föreningsuppgifter
+          Spara identitet
         </button>
-        <Link
-          href="/forening/underhallsplan#grund"
+        <a
+          href="#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
           Fortsätt till grunduppgifter
-        </Link>
+        </a>
         <Link
           href="/forening"
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
         >
-          Tillbaka till {STYRELSEFLOW_NAMN}
+          Tillbaka till {hubbNamn}
         </Link>
       </div>
 
       {sparad && (
         <p className="mt-3 text-sm text-primary-dark" role="status">
-          Sparat. Data ligger i den här webbläsaren under {visningsProfil.namn}.
+          {serverStatus ??
+            "Sparat lokalt. Synkar till servern … Nästa steg: grunduppgifter nedan."}
         </p>
       )}
     </div>

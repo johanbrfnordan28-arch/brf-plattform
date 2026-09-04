@@ -2,6 +2,11 @@ import {
   formateraSummeringRader,
   type ListaSummeringRad,
 } from "@/components/underhallsplan/lista-summering";
+import {
+  effektivEnhetspris,
+  parsePrisKr,
+} from "@/components/underhallsplan/riktpriser";
+import { hamtaRiktprisVentilationExtraTyp } from "@/components/underhallsplan/underhall-atgard-riktpris";
 
 export type VentilationExtraTypId =
   | "vindflakt"
@@ -19,6 +24,8 @@ export type VentilationExtraPost = {
   /** T.ex. «Vind hus A», «Öppen spis trapphus 2» */
   plats: string;
   antal: string;
+  /** Tomt = riktpris per typ */
+  enhetsprisKr: string;
 };
 
 export const VENTILATION_EXTRA_UNDERKOMPONENT_ID = "extra-flaktar";
@@ -78,6 +85,7 @@ export function skapaTomVentilationExtraPost(
     typAnnanText: "",
     plats: "",
     antal: "1",
+    enhetsprisKr: "",
   };
 }
 
@@ -106,7 +114,24 @@ export function normaliseraVentilationExtraPost(
     antal: antal > 0 ? String(antal) : "1",
     plats: post.plats.trim(),
     typAnnanText: post.typ === "annat" ? post.typAnnanText.trim() : "",
+    enhetsprisKr: post.enhetsprisKr.trim(),
   };
+}
+
+export function beraknaVentilationExtraPostKr(post: VentilationExtraPost): number {
+  const antal = parseAntal(post.antal);
+  if (antal <= 0) return 0;
+  const enhetspris = effektivEnhetspris(
+    post.enhetsprisKr,
+    hamtaRiktprisVentilationExtraTyp(post.typ),
+  );
+  return Math.round(antal * enhetspris);
+}
+
+export function summeraVentilationExtraTotaltKr(
+  poster: VentilationExtraPost[],
+): number {
+  return poster.reduce((sum, p) => sum + beraknaVentilationExtraPostKr(p), 0);
 }
 
 export function formateraVentilationExtraPost(post: VentilationExtraPost): string {
@@ -128,6 +153,13 @@ export function summeraVentilationExtraPoster(
     { etikett: "Antal fläktposter", varde: `${poster.length} st` },
     { etikett: "Totalt antal fläktar", varde: `${totaltAntal} st` },
   ];
+  const totaltKr = summeraVentilationExtraTotaltKr(poster);
+  if (totaltKr > 0) {
+    rader.push({
+      etikett: "Uppskattad kostnad",
+      varde: `${totaltKr.toLocaleString("sv-SE")} kr`,
+    });
+  }
 
   for (const typDef of ventilationExtraTyper) {
     const matchande = poster.filter((p) => p.typ === typDef.id);

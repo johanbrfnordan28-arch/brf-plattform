@@ -4,10 +4,7 @@ export type TestplanRenoveringId =
   | "test-1900"
   | "test-50"
   | "test-70"
-  | "test-90"
-  | "test-sailor"
-  | "test-nordan-28"
-  | "test-nordan-30";
+  | "test-90";
 
 const importerad = "2026-02-01";
 
@@ -64,108 +61,6 @@ const renoveringar1900: UtfördRenovering[] = [
     titel: "Eldragning gemensamma utrymmen",
     omfattning: "Ny el i trapphus, källare och soprum.",
     kostnadKr: 120_000,
-  }),
-];
-
-/** Brf Nordan 28 — tidigt 1900-tal, 18 lgh */
-const renoveringarNordan28: UtfördRenovering[] = [
-  forv({
-    id: "n28-stambyte-1996",
-    komponent: "VVS",
-    ar: 1996,
-    titel: "Stambyte (klumpsumma)",
-    omfattning:
-      "Klumpsumma: byte av tappvatten och avlopp, radiatoråtgärder samt etablering i samtliga lägenheter.",
-    kostnadKr: 3_650_000,
-    entreprenor: "Rör & Bad AB",
-    klumpsumma: true,
-  }),
-  forv({
-    id: "n28-tak-2011",
-    komponent: "Tak",
-    ar: 2011,
-    titel: "Takomläggning (klumpsumma)",
-    omfattning:
-      "Samlad faktura: omläggning tegeltak, plåtdetaljer och åtgärd skorstenar.",
-    kostnadKr: 1_180_000,
-    entreprenor: "Tak & Mur AB",
-    klumpsumma: true,
-    inkluderadeUnderkomponenter: ["skorsten"],
-    kommandeAtgardOverrides: {
-      "n28-tak-2011": {
-        läge: "avvikande",
-        atgardId: "takmalning",
-        intervallAr: 10,
-        nastaAr: 2026,
-        kostnadAndel: 0.15,
-      },
-    },
-  }),
-  forv({
-    id: "n28-fonster-2016",
-    komponent: "Fönster",
-    underkomponentId: "fonster",
-    ar: 2016,
-    titel: "Fönsterrenovering",
-    omfattning: "Renovering av träfönster i gatufasad, målning och tätning.",
-    kostnadKr: 540_000,
-    kommandeAtgardOverrides: {
-      "n28-fonster-2016": {
-        läge: "avvikande",
-        atgardId: "fonster-malning",
-        intervallAr: 12,
-        nastaAr: 2028,
-        kostnadAndel: 0.18,
-      },
-    },
-  }),
-  forv({
-    id: "n28-fasad-2019",
-    komponent: "Fasad",
-    ar: 2019,
-    titel: "Fasadtvätt och putsreparation",
-    omfattning: "Tvätt, lagning sprickor och ommålning sockel.",
-    kostnadKr: 320_000,
-  }),
-];
-
-/** Brf Nordan 30 — tidigt 1900-tal, 24 lgh */
-const renoveringarNordan30: UtfördRenovering[] = [
-  forv({
-    id: "n30-stambyte-2002",
-    komponent: "VVS",
-    ar: 2002,
-    titel: "Stambyte etapp 1–2 (klumpsumma)",
-    omfattning:
-      "Klumpsumma: stambyte i två etapper inkl. tappvatten, avlopp och radiatorinjustering.",
-    kostnadKr: 4_450_000,
-    entreprenor: "Stamprojekt i Norden",
-    klumpsumma: true,
-  }),
-  forv({
-    id: "n30-tak-2010",
-    komponent: "Tak",
-    ar: 2010,
-    titel: "Takomläggning (klumpsumma)",
-    omfattning: "Samlad faktura: omläggning tak, plåt, rännor och säkerhetsdetaljer.",
-    kostnadKr: 1_520_000,
-    klumpsumma: true,
-  }),
-  forv({
-    id: "n30-balkonger-2018",
-    komponent: "Balkonger",
-    ar: 2018,
-    titel: "Balkongtätning",
-    omfattning: "Tätning och fallspackel på balkonger mot gård.",
-    kostnadKr: 390_000,
-  }),
-  forv({
-    id: "n30-trapphus-2020",
-    komponent: "Trapphus",
-    ar: 2020,
-    titel: "Målning trapphus",
-    omfattning: "Spackling och målning väggar och snickerier.",
-    kostnadKr: 260_000,
   }),
 ];
 
@@ -291,60 +186,6 @@ const renoveringar70: UtfördRenovering[] = [
   }),
 ];
 
-/** Brf Sailor — nyproduktion 2013, 36 lgh */
-const renoveringarSailor: UtfördRenovering[] = [
-  forv({
-    id: "sailor-vent-2023",
-    komponent: "Ventilation",
-    ar: 2023,
-    titel: "FTX-filter och kanalrengöring",
-    omfattning: "Filterbyte, kanalinspektion och injustering i alla tre hus.",
-    kostnadKr: 142_000,
-  }),
-  forv({
-    id: "sailor-tvatt-2021",
-    komponent: "Källare",
-    ar: 2021,
-    titel: "Uppgradering tvättstuga",
-    omfattning: "Nya maskiner, betalterminal och LED-belysning gemensam tvätt.",
-    kostnadKr: 385_000,
-    entreprenor: "Tvätt & Service i Stockholm",
-  }),
-  forv({
-    id: "sailor-mark-2020",
-    komponent: "Mark och gård",
-    ar: 2020,
-    titel: "Gård och lekplats",
-    omfattning: "Ny asfalt infart, komplettering lekplats och belysning.",
-    kostnadKr: 295_000,
-  }),
-  forv({
-    id: "sailor-trapphus-2019",
-    komponent: "Trapphus",
-    ar: 2019,
-    titel: "Målning trapphus",
-    omfattning: "Spackling och målning väggar i samtliga trapphus.",
-    kostnadKr: 168_000,
-  }),
-  forv({
-    id: "sailor-fasad-2018",
-    komponent: "Fasad",
-    ar: 2018,
-    titel: "Fasadtvätt och balkonger",
-    omfattning: "Tvätt tunnputs, kontroll fogar och tätning balkonger väster och syd.",
-    kostnadKr: 215_000,
-    entreprenor: "Fasadpartner Syd",
-  }),
-  forv({
-    id: "sailor-garage-2017",
-    komponent: "Komplement byggnad och P-platser",
-    ar: 2017,
-    titel: "Underhåll garage",
-    omfattning: "Målning väggar, ny belysning och märkning p-platser.",
-    kostnadKr: 125_000,
-  }),
-];
-
 /** Brf Strandskatan — 90-tal, 60 lgh */
 const renoveringar90: UtfördRenovering[] = [
   forv({
@@ -391,12 +232,9 @@ const renoveringar90: UtfördRenovering[] = [
 
 const renoveringarPerTestplan: Record<TestplanRenoveringId, UtfördRenovering[]> = {
   "test-1900": renoveringar1900,
-  "test-nordan-28": renoveringarNordan28,
-  "test-nordan-30": renoveringarNordan30,
   "test-50": renoveringar50,
   "test-70": renoveringar70,
   "test-90": renoveringar90,
-  "test-sailor": renoveringarSailor,
 };
 
 export function hamtaTestplanRenoveringar(
