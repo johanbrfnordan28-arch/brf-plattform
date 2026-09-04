@@ -131,9 +131,12 @@ export function ArshjulModul() {
   const perArTidslinje = useMemo(() => {
     const map = new Map<number, ArshjulTillfalle[]>();
     for (const t of tillfallenTidslinje) {
-      const lista = map.get(t.ar) ?? [];
-      lista.push(t);
-      map.set(t.ar, lista);
+      // År från datumet — så engångs-/årshändelser hamnar rätt i tidslinjen.
+      const arFranDatum = Number(t.datumIso.slice(0, 4));
+      const ar = Number.isFinite(arFranDatum) ? arFranDatum : t.ar;
+      const lista = map.get(ar) ?? [];
+      lista.push({ ...t, ar });
+      map.set(ar, lista);
     }
     return [...map.entries()].sort(([a], [b]) => a - b);
   }, [tillfallenTidslinje]);
@@ -149,14 +152,52 @@ export function ArshjulModul() {
     if (redigeraId === id) setRedigeraId(null);
   }
 
-  function markeraKlar(id: string, ar?: number) {
+  function markeraKlar(id: string, tillfalle?: { ar: number; datumIso: string }) {
     const h = handelser.find((x) => x.id === id);
     if (!h) return;
-    if (h.typ === "intervall" && ar != null) {
-      uppdateraHandelse(id, { senastKlarAr: ar, klar: false });
-    } else {
+
+    if (h.typ === "engang") {
       uppdateraHandelse(id, { klar: true });
+      return;
     }
+
+    if (h.typ === "intervall" && tillfalle?.ar != null) {
+      const datum = tillfalle.datumIso.slice(0, 10);
+      const klarDatum = [
+        ...new Set([...(h.klarDatum ?? []), datum]),
+      ].sort();
+      uppdateraHandelse(id, {
+        senastKlarAr: tillfalle.ar,
+        klarDatum,
+        klar: false,
+      });
+      return;
+    }
+
+    // Månads- / årsvisa serier: bocka bara av det valda tillfället.
+    if (tillfalle?.datumIso) {
+      const datum = tillfalle.datumIso.slice(0, 10);
+      const klarDatum = [
+        ...new Set([...(h.klarDatum ?? []), datum]),
+      ].sort();
+      uppdateraHandelse(id, { klarDatum, klar: false });
+      return;
+    }
+
+    // Fallback (t.ex. påminnelselista utan datum) — bocka inte hela serien.
+    if (h.typ === "manatlig" || h.typ === "arlig") return;
+    uppdateraHandelse(id, { klar: true });
+  }
+
+  function avmarkeraKlar(id: string, datumIso: string) {
+    const h = handelser.find((x) => x.id === id);
+    if (!h) return;
+    const nyckel = datumIso.slice(0, 10);
+    const klarDatum = (h.klarDatum ?? []).filter((d) => d.slice(0, 10) !== nyckel);
+    uppdateraHandelse(id, {
+      klarDatum: klarDatum.length > 0 ? klarDatum : undefined,
+      klar: h.typ === "engang" ? false : h.klar,
+    });
   }
 
   function sparaForm(event: React.FormEvent) {
@@ -234,18 +275,31 @@ export function ArshjulModul() {
     const h = handelser.find((x) => x.id === t.handelseId);
     return (
       <div
-        className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]}`}
+        className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]} ${
+          t.arKlar ? "opacity-60" : ""
+        }`}
       >
-        <p className="font-medium">{t.titel}</p>
+        <p className={`font-medium ${t.arKlar ? "line-through" : ""}`}>
+          {t.titel}
+        </p>
         {t.dag > 1 && (
           <p className="opacity-80">
             {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
           </p>
         )}
-        {h && !h.klar && (
+        {h && t.arKlar && (
           <button
             type="button"
-            onClick={() => markeraKlar(h.id, t.ar)}
+            onClick={() => avmarkeraKlar(h.id, t.datumIso)}
+            className="mt-1 underline-offset-2 hover:underline"
+          >
+            Ångra avklarad
+          </button>
+        )}
+        {h && !t.arKlar && (
+          <button
+            type="button"
+            onClick={() => markeraKlar(h.id, { ar: t.ar, datumIso: t.datumIso })}
             className="mt-1 underline-offset-2 hover:underline"
           >
             Markera klar
@@ -416,6 +470,28 @@ export function ArshjulModul() {
                     </option>
                   ))}
                 </select>
+              </label>
+            )}
+
+            {(form.typ === "arlig" || form.typ === "manatlig") && (
+              <label className="block">
+                <span className="text-sm font-medium">Från år</span>
+                <input
+                  type="number"
+                  min={innevarandeAr - 5}
+                  max={innevarandeAr + 50}
+                  value={form.startAr ?? innevarandeAr}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      startAr: Number(e.target.value) || innevarandeAr,
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+                <span className="mt-1 block text-xs text-muted">
+                  Första året händelsen ska synas (t.ex. 2027 för stämma nästa år).
+                </span>
               </label>
             )}
 
@@ -664,7 +740,7 @@ export function ArshjulModul() {
                         <span className="text-[10px] text-muted/50">Inget inlagt</span>
                       ) : (
                         poster.map((t) => (
-                          <TillfalleChip key={`${t.handelseId}-${t.ar}`} t={t} />
+                          <TillfalleChip key={`${t.handelseId}-${t.datumIso}`} t={t} />
                         ))
                       )}
                     </div>
@@ -772,7 +848,12 @@ export function ArshjulModul() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => markeraKlar(p.handelseId)}
+                    onClick={() =>
+                      markeraKlar(p.handelseId, {
+                        ar: Number(p.tillfalleDatum.slice(0, 4)),
+                        datumIso: p.tillfalleDatum,
+                      })
+                    }
                     className="shrink-0 text-xs font-medium text-primary-dark hover:underline"
                   >
                     Markera klar

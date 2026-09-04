@@ -47,10 +47,13 @@ export type ArshjulHandelse = {
   intervallAr?: number;
   /** Senast markerad som genomförd (kalenderår) — nästa tillfälle räknas därifrån. */
   senastKlarAr?: number;
+  /** Avklarade enskilda tillfällen (YYYY-MM-DD) — gäller månads-/årsvisa serier. */
+  klarDatum?: string[];
   /** Månader som hoppas över (t.ex. juli–augusti = [7, 8]). */
   exkluderaManader?: number[];
   /** Dagar före händelsen att visa påminnelse. */
   paminnelseDagar: number[];
+  /** Engångshändelse helt avklarad (serier använder klarDatum i stället). */
   klar: boolean;
   skapad: string;
   externKalla?: "underhallsplan" | "projekt" | "manuell";
@@ -67,6 +70,8 @@ export type ArshjulTillfalle = {
   datumIso: string;
   beskrivning: string;
   arManatlig: boolean;
+  /** Detta enskilda tillfälle är avbockat. */
+  arKlar: boolean;
 };
 
 export type ArshjulPaminnelse = {
@@ -181,6 +186,16 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
       ].sort((a, b) => a - b)
     : undefined;
 
+  const klarDatum = Array.isArray(raw.klarDatum)
+    ? [
+        ...new Set(
+          raw.klarDatum.filter(
+            (d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}/.test(d),
+          ),
+        ),
+      ].sort()
+    : undefined;
+
   const veckodag =
     raw.veckodag != null && raw.veckodag >= 1 && raw.veckodag <= 7
       ? (raw.veckodag as Veckodag)
@@ -193,10 +208,17 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
     kategori: arGiltigKategori(raw.kategori) ? raw.kategori : "ovrigt",
     typ: arGiltigTyp(raw.typ) ? raw.typ : "engang",
     paminnelseDagar,
-    klar: Boolean(raw.klar),
+    // Serier bockas per tillfälle via klarDatum — gammal serie-klar nollställs.
+    klar: arGiltigTyp(raw.typ) && raw.typ !== "engang" ? false : Boolean(raw.klar),
+    klarDatum:
+      klarDatum && klarDatum.length > 0 ? klarDatum : undefined,
     manad:
       raw.manad != null && raw.manad >= 1 && raw.manad <= 12
         ? raw.manad
+        : undefined,
+    startAr:
+      raw.startAr != null && raw.startAr >= 1990 && raw.startAr <= 2200
+        ? raw.startAr
         : undefined,
     intervallAr:
       raw.intervallAr != null && raw.intervallAr >= 1 ? raw.intervallAr : undefined,
@@ -273,6 +295,13 @@ function manadArExkluderad(h: ArshjulHandelse, manad: number): boolean {
   return Boolean(h.exkluderaManader?.includes(manad));
 }
 
+/** Om ett enskilt tillfälle är avbockat. */
+export function tillfalleArKlar(h: ArshjulHandelse, datumIso: string): boolean {
+  if (h.typ === "engang" && h.klar) return true;
+  const nyckel = datumIso.slice(0, 10);
+  return Boolean(h.klarDatum?.some((d) => d.slice(0, 10) === nyckel));
+}
+
 export function nastaIntervallAr(h: ArshjulHandelse): number | null {
   if (h.typ !== "intervall" || !h.intervallAr || h.intervallAr < 1) return null;
   const bas = h.senastKlarAr ?? h.startAr;
@@ -301,6 +330,7 @@ function pushTillfalle(
     datumIso: dagInfo.datumIso,
     beskrivning: h.beskrivning,
     arManatlig,
+    arKlar: tillfalleArKlar(h, dagInfo.datumIso),
   });
 }
 
@@ -313,14 +343,16 @@ export function expanderaTillfallen(
   const lista: ArshjulTillfalle[] = [];
 
   for (const h of handelser) {
-    if (h.klar && h.typ === "engang") continue;
+    // Helt avklarad engångshändelse visas inte igen.
+    if (h.typ === "engang" && h.klar) continue;
 
     if (h.typ === "engang" && h.datum) {
-      const d = parseDatum(h.datum);
+      const d = parseDatum(h.datum.slice(0, 10));
       if (!d) continue;
       const ar = d.getFullYear();
       const manad = d.getMonth() + 1;
       if (ar >= franAr && ar <= tillAr && !manadArExkluderad(h, manad)) {
+        const datumIso = h.datum.slice(0, 10);
         lista.push({
           handelseId: h.id,
           titel: h.titel,
@@ -328,16 +360,19 @@ export function expanderaTillfallen(
           ar,
           manad,
           dag: d.getDate(),
-          datumIso: h.datum,
+          datumIso,
           beskrivning: h.beskrivning,
           arManatlig: false,
+          arKlar: tillfalleArKlar(h, datumIso),
         });
       }
       continue;
     }
 
     if (h.typ === "manatlig") {
+      const start = h.startAr ?? franAr;
       for (let ar = franAr; ar <= tillAr; ar++) {
+        if (ar < start) continue;
         for (let manad = 1; manad <= 12; manad++) {
           pushTillfalle(lista, h, ar, manad, true);
         }
@@ -347,8 +382,10 @@ export function expanderaTillfallen(
 
     if (h.typ === "arlig" && (h.manad || h.veckodag)) {
       const manad = h.manad ?? 1;
+      const start = h.startAr ?? franAr;
       for (let ar = franAr; ar <= tillAr; ar++) {
-        pushTillfalle(lista, h, ar, manad, true);
+        if (ar < start) continue;
+        pushTillfalle(lista, h, ar, manad, false);
       }
       continue;
     }
@@ -385,7 +422,7 @@ export function hamtaPaminnelser(
 
   for (const t of tillfallen) {
     const h = handelser.find((x) => x.id === t.handelseId);
-    if (!h || h.klar) continue;
+    if (!h || t.arKlar) continue;
 
     const mål = parseDatum(t.datumIso);
     if (!mål) continue;
@@ -592,6 +629,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       typ: "arlig",
       manad: 4,
       dag: 15,
+      startAr: basAr,
       paminnelseDagar: [90, 60, 30, 14],
       klar: false,
       skapad: "standard",
@@ -605,6 +643,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       typ: "arlig",
       manad: 11,
       dag: 30,
+      startAr: basAr,
       paminnelseDagar: [60, 30, 14],
       klar: false,
       skapad: "standard",
