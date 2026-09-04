@@ -1,4 +1,8 @@
-import { GRUNDMALL_FORENING_ID } from "@/lib/forening-konstanter";
+import {
+  arStandardTestForening,
+  AVVECKLADE_TESTFORENING_IDS,
+  GRUNDMALL_FORENING_ID,
+} from "@/lib/forening-konstanter";
 import {
   cookieHamtaAktivForeningId,
   cookieHamtaSenastProfil,
@@ -10,6 +14,10 @@ import {
   localStorageFelMeddelande,
   safeSetLocalStorage,
 } from "@/lib/localStorage";
+import {
+  normaliseraStyrelseLedamoter,
+  type StyrelseLedamot,
+} from "@/lib/styrelse-ledamot";
 
 export const FORENING_REGISTRY_KEY = "brf-forening-registry";
 export const FORENING_AKTIV_ID_KEY = "brf-forening-aktiv-id";
@@ -33,18 +41,69 @@ export { GRUNDMALL_FORENING_ID } from "@/lib/forening-konstanter";
 /** Befintlig demo — oförändrade localStorage-nycklar utan prefix. */
 export const GRUNDMALL_NAMN = "Grundmall föreningar";
 
+export type { StyrelseLedamot };
+
 export type ForeningProfil = {
   id: string;
   namn: string;
   skapadTidpunkt: string;
   organisationsnummer: string;
   epost: string;
+  /** Gatadress / första fastighetsadress (speglas från grunduppgifter). */
   postadress: string;
+  postnummer: string;
   ort: string;
   kontaktperson: string;
+  /** Styrelsens medlemmar — BankID kopplas per person (demo tills riktig e-legitimation). */
+  styrelseledamoter: StyrelseLedamot[];
   /** Styrelsen har börjat fylla grunduppgifter (underhållsplan eller här). */
   grundinfoPaborjad: boolean;
+  /**
+   * Styrelsen har godkänt ettårsavtalet — föreningen är kund.
+   * Inloggning sker då via «Logga in till er BRF», inte testperiod.
+   */
+  avtalGodkant: boolean;
+  /** ISO-tidpunkt när avtalet godkändes (tom sträng om ej kund). */
+  avtalGodkantTidpunkt: string;
+  /** BankID-signering av avtal. */
+  avtalBankidTidpunkt: string;
+  avtalBankidNamn: string;
 };
+
+/** Säkerställer nya fält för profiler sparade innan avtal/kund fanns. */
+export function normaliseraForeningProfil(
+  raw: Partial<ForeningProfil> & Pick<ForeningProfil, "id" | "namn">,
+): ForeningProfil {
+  return {
+    id: raw.id,
+    namn: typeof raw.namn === "string" ? raw.namn : "",
+    skapadTidpunkt:
+      typeof raw.skapadTidpunkt === "string" ? raw.skapadTidpunkt : "",
+    organisationsnummer:
+      typeof raw.organisationsnummer === "string"
+        ? raw.organisationsnummer
+        : "",
+    epost: typeof raw.epost === "string" ? raw.epost : "",
+    postadress: typeof raw.postadress === "string" ? raw.postadress : "",
+    postnummer: typeof raw.postnummer === "string" ? raw.postnummer : "",
+    ort: typeof raw.ort === "string" ? raw.ort : "",
+    kontaktperson:
+      typeof raw.kontaktperson === "string" ? raw.kontaktperson : "",
+    styrelseledamoter: normaliseraStyrelseLedamoter(raw.styrelseledamoter),
+    grundinfoPaborjad: Boolean(raw.grundinfoPaborjad),
+    avtalGodkant: Boolean(raw.avtalGodkant),
+    avtalGodkantTidpunkt:
+      typeof raw.avtalGodkantTidpunkt === "string"
+        ? raw.avtalGodkantTidpunkt
+        : "",
+    avtalBankidTidpunkt:
+      typeof raw.avtalBankidTidpunkt === "string"
+        ? raw.avtalBankidTidpunkt
+        : "",
+    avtalBankidNamn:
+      typeof raw.avtalBankidNamn === "string" ? raw.avtalBankidNamn : "",
+  };
+}
 
 type ForeningRegistry = {
   version: 1;
@@ -66,13 +125,15 @@ function normaliseraRegistry(raw: unknown): ForeningRegistry {
   if (!Array.isArray(o.poster)) return tomtRegistry();
   return {
     version: 1,
-    poster: o.poster.filter(
-      (p): p is ForeningProfil =>
-        typeof p === "object" &&
-        p != null &&
-        typeof p.id === "string" &&
-        typeof p.namn === "string",
-    ),
+    poster: o.poster
+      .filter(
+        (p): p is ForeningProfil =>
+          typeof p === "object" &&
+          p != null &&
+          typeof (p as ForeningProfil).id === "string" &&
+          typeof (p as ForeningProfil).namn === "string",
+      )
+      .map((p) => normaliseraForeningProfil(p)),
   };
 }
 
@@ -138,6 +199,37 @@ function taBortForeningFranLagring(foreningId: string): void {
   }
 }
 
+/** Tar bort all föreningspecifik data i localStorage (moduler, profil m.m.). */
+export function rensaForeningLocalStorage(foreningId: string): void {
+  taBortForeningFranLagring(foreningId);
+}
+
+/**
+ * Tar bort en förening från registret och all lokal lagring.
+ * Används bl.a. när avvecklade testföreningar rensas bort.
+ */
+export function taBortForeningFranRegistryOchLagring(foreningId: string): void {
+  if (typeof window === "undefined" || !foreningId) return;
+  if (foreningId === GRUNDMALL_FORENING_ID) return;
+
+  const registry = lasForeningRegistryInternt();
+  const innan = registry.poster.length;
+  registry.poster = registry.poster.filter((p) => p.id !== foreningId);
+  taBortForeningFranLagring(foreningId);
+
+  if (registry.poster.length !== innan) {
+    try {
+      sparaRegistry(registry);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (lasAktivForeningId() === foreningId) {
+    sattAktivForeningId(GRUNDMALL_FORENING_ID, { tyst: true });
+  }
+}
+
 /**
  * Behåller en förening per namn — tar bort dubbletter från registret och lagring.
  */
@@ -147,9 +239,14 @@ export function rengoraDubblettForeningar(): boolean {
   const registry = lasForeningRegistryInternt();
   const grupper = new Map<string, ForeningProfil[]>();
   const utanNamn: ForeningProfil[] = [];
+  const standardTest: ForeningProfil[] = [];
 
   for (const post of registry.poster) {
     if (post.id === GRUNDMALL_FORENING_ID) continue;
+    if (arStandardTestForening(post.id)) {
+      standardTest.push(post);
+      continue;
+    }
     const nyckel = normaliseraForeningsNamn(post.namn);
     if (!nyckel) {
       utanNamn.push(post);
@@ -161,7 +258,7 @@ export function rengoraDubblettForeningar(): boolean {
   }
 
   const aktivId = hamtaAktivForeningId();
-  const nyaPoster: ForeningProfil[] = [...utanNamn];
+  const nyaPoster: ForeningProfil[] = [...standardTest, ...utanNamn];
   const borttagna: string[] = [];
 
   for (const poster of grupper.values()) {
@@ -239,7 +336,7 @@ export function repareraForeningRegistry(): boolean {
       if (!raw) continue;
       const profil = JSON.parse(raw) as ForeningProfil;
       if (typeof profil.namn !== "string" || !profil.namn.trim()) continue;
-      registry.poster.push({ ...profil, id });
+      registry.poster.push(normaliseraForeningProfil({ ...profil, id }));
       ids.add(id);
       andrat = true;
     } catch {
@@ -255,7 +352,16 @@ export function repareraForeningRegistry(): boolean {
     }
   }
 
+  rensaAvveckladeTestForeningar();
   return andrat || rengoraDubblettForeningar();
+}
+
+/** Tar bort gamla fasta testföreningar (Brf Test 1–3, Nordan 28, Trazie) från register och lagring. */
+function rensaAvveckladeTestForeningar(): void {
+  if (typeof window === "undefined") return;
+  for (const id of AVVECKLADE_TESTFORENING_IDS) {
+    taBortForeningFranRegistryOchLagring(id);
+  }
 }
 
 function sparaRegistry(registry: ForeningRegistry): void {
@@ -422,7 +528,7 @@ export function aktiveraForeningVidSidladdning(): ForeningProfil | null {
 }
 
 function tomProfil(id: string, namn: string): ForeningProfil {
-  return {
+  return normaliseraForeningProfil({
     id,
     namn,
     skapadTidpunkt: new Date().toISOString(),
@@ -432,7 +538,9 @@ function tomProfil(id: string, namn: string): ForeningProfil {
     ort: "",
     kontaktperson: "",
     grundinfoPaborjad: false,
-  };
+    avtalGodkant: false,
+    avtalGodkantTidpunkt: "",
+  });
 }
 
 /**
@@ -583,7 +691,7 @@ export function webblasarenKanSparaIData(): boolean {
 export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
   const id = foreningId ?? hamtaAktivForeningId();
   if (id === GRUNDMALL_FORENING_ID) {
-    return {
+    return normaliseraForeningProfil({
       id: GRUNDMALL_FORENING_ID,
       namn: GRUNDMALL_NAMN,
       skapadTidpunkt: "",
@@ -593,7 +701,9 @@ export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
       ort: "",
       kontaktperson: "",
       grundinfoPaborjad: true,
-    };
+      avtalGodkant: false,
+      avtalGodkantTidpunkt: "",
+    });
   }
   const key = profilStorageKey(id);
   try {
@@ -601,9 +711,9 @@ export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
     if (!raw) {
       const reg = lasForeningRegistry();
       const post = reg.poster.find((p) => p.id === id);
-      return post ?? null;
+      return post ? normaliseraForeningProfil(post) : null;
     }
-    return JSON.parse(raw) as ForeningProfil;
+    return normaliseraForeningProfil(JSON.parse(raw) as ForeningProfil);
   } catch {
     return null;
   }
@@ -611,21 +721,34 @@ export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
 
 export function sparaForeningProfil(
   profil: ForeningProfil,
-  val?: { tyst?: boolean },
+  val?: { tyst?: boolean; synkaServer?: boolean },
 ): void {
+  const normaliserad = normaliseraForeningProfil(profil);
   const registry = lasForeningRegistry();
-  const idx = registry.poster.findIndex((p) => p.id === profil.id);
-  if (idx >= 0) registry.poster[idx] = profil;
-  else registry.poster.push(profil);
+  const idx = registry.poster.findIndex((p) => p.id === normaliserad.id);
+  if (idx >= 0) registry.poster[idx] = normaliserad;
+  else registry.poster.push(normaliserad);
   sparaRegistry(registry);
 
-  const key = profilStorageKey(profil.id);
-  const result = safeSetLocalStorage(key, JSON.stringify(profil));
+  const key = profilStorageKey(normaliserad.id);
+  const result = safeSetLocalStorage(key, JSON.stringify(normaliserad));
   if (!result.ok) {
     throw new Error(localStorageFelMeddelande(result.error));
   }
   if (!val?.tyst) {
     window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  }
+
+  const skaSynka =
+    val?.synkaServer !== false &&
+    normaliserad.id !== GRUNDMALL_FORENING_ID &&
+    !arStandardTestForening(normaliserad.id);
+  if (skaSynka) {
+    void import("@/lib/forening-server-sync")
+      .then(({ synkaForeningTillServer }) =>
+        synkaForeningTillServer(normaliserad),
+      )
+      .catch(() => {});
   }
 }
 
@@ -645,7 +768,16 @@ export function arGrundmallForening(id?: string): boolean {
   return (id ?? hamtaAktivForeningId()) === GRUNDMALL_FORENING_ID;
 }
 
-export function skapaNyForening(namn: string): ForeningProfil {
+export function skapaNyForening(
+  namn: string,
+  val?: {
+    id?: string;
+    synkaServer?: boolean;
+    epost?: string;
+    kontaktperson?: string;
+    styrelseledamoter?: StyrelseLedamot[];
+  },
+): ForeningProfil {
   const trimmat = namn.trim();
   if (!trimmat) {
     throw new Error("Ange ett namn på föreningen.");
@@ -664,14 +796,26 @@ export function skapaNyForening(namn: string): ForeningProfil {
     throw new Error(localStorageFelMeddelande("unavailable"));
   }
 
-  const id = skapaForeningIdFranNamn(trimmat);
-  const profil = tomProfil(id, trimmat);
+  const id = val?.id?.trim() || skapaForeningIdFranNamn(trimmat);
+  if (lasForeningRegistry().poster.some((p) => p.id === id)) {
+    throw new Error("Förenings-id finns redan. Försök med ett annat namn.");
+  }
+
+  let profil = tomProfil(id, trimmat);
+  if (val?.epost || val?.kontaktperson || val?.styrelseledamoter) {
+    profil = normaliseraForeningProfil({
+      ...profil,
+      epost: val.epost ?? profil.epost,
+      kontaktperson: val.kontaktperson ?? profil.kontaktperson,
+      styrelseledamoter: val.styrelseledamoter ?? profil.styrelseledamoter,
+    });
+  }
 
   sparaSenastSkapadProfil(profil);
   markeraPendingAktivForening(id);
   markeraNyssSkapadForening(id);
 
-  sparaForeningProfil(profil, { tyst: true });
+  sparaForeningProfil(profil, { tyst: true, synkaServer: false });
   sattAktivForeningId(id, { tyst: true });
   window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
 
@@ -682,6 +826,12 @@ export function skapaNyForening(namn: string): ForeningProfil {
         "Föreningen kunde inte sparas i webbläsaren. Rensa gammal webbplatsdata (Safari/Edge: Inställningar → Integritet) och försök igen.",
       );
     }
+  }
+
+  if (val?.synkaServer !== false) {
+    void import("@/lib/forening-server-sync")
+      .then(({ synkaForeningTillServer }) => synkaForeningTillServer(profil))
+      .catch(() => {});
   }
 
   return profil;

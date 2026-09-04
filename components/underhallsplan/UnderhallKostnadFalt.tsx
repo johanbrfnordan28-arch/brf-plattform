@@ -5,7 +5,12 @@ import {
   måttenhetEtiketter,
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
+import { KostnadPrisVarning } from "@/components/underhallsplan/KostnadPrisVarning";
 import { UnderhallBlandadPrisFalt } from "@/components/underhallsplan/UnderhallBlandadPrisFalt";
+import {
+  hamtaRiktprisForUnderkomponent,
+} from "@/components/underhallsplan/underhall-atgard-riktpris";
+import { MomsAvdragKnapp } from "@/components/underhallsplan/MomsAvdragKnapp";
 import {
   beraknaUnderhallKostnadFranEnhet,
   hamtaUnderhallPrisEnhet,
@@ -20,14 +25,22 @@ type UnderhallKostnadFaltProps = {
   onChange: (patch: Partial<UnderkomponentRad>) => void;
   /** T.ex. fasadmaterial / takyta — blandad prissättning. */
   visaAlltidEnhetspris?: boolean;
+  komponentNamn?: string;
+  underkomponentId?: string;
 };
 
 export function UnderhallKostnadFalt({
   rad,
   onChange,
   visaAlltidEnhetspris = false,
+  komponentNamn,
+  underkomponentId,
 }: UnderhallKostnadFaltProps) {
   const prisEnhet = hamtaUnderhallPrisEnhet(rad);
+  const rikt =
+    komponentNamn && underkomponentId
+      ? hamtaRiktprisForUnderkomponent(komponentNamn, underkomponentId)
+      : null;
   const visaEnhet =
     visaAlltidEnhetspris ||
     rad.måttenhet === "kvm" ||
@@ -91,6 +104,56 @@ export function UnderhallKostnadFalt({
         ? "Yta (m²) kan fyllas i takytfältet ovan eller från grunduppgifter (steg 1)."
         : undefined;
 
+  function anvandRiktpris() {
+    if (!rikt) return;
+    if (rikt.enhet === "total") {
+      onChange({
+        underhallPrisEnhet: "total",
+        underhallKostnadKr: String(rikt.prisKr),
+        underhallEnhetsprisKr: "",
+      });
+      return;
+    }
+    if (rikt.enhet === "styck") {
+      const antal =
+        rad.underhallPrisAntal?.trim() ||
+        (rad.måttenhet === "antal" ? rad.värde : "") ||
+        "1";
+      onChange({
+        underhallPrisEnhet: "styck",
+        underhallEnhetsprisKr: String(rikt.prisKr),
+        underhallPrisAntal: antal,
+        underhallKostnadKr: synkaUnderhallKostnadKr({
+          ...rad,
+          underhallPrisEnhet: "styck",
+          underhallEnhetsprisKr: String(rikt.prisKr),
+          underhallPrisAntal: antal,
+        }),
+      });
+      return;
+    }
+    const kvm = rad.värde.trim();
+    onChange({
+      underhallPrisEnhet: "kvm",
+      underhallEnhetsprisKr: String(rikt.prisKr),
+      värde: kvm,
+      underhallKostnadKr: synkaUnderhallKostnadKr({
+        ...rad,
+        underhallPrisEnhet: "kvm",
+        underhallEnhetsprisKr: String(rikt.prisKr),
+        värde: kvm,
+      }),
+    });
+  }
+
+  const riktprisText =
+    rikt &&
+    (rikt.enhet === "kvm"
+      ? `Riktpris ca ${rikt.prisKr.toLocaleString("sv-SE")} kr/m²`
+      : rikt.enhet === "styck"
+        ? `Riktpris ca ${rikt.prisKr.toLocaleString("sv-SE")} kr/st`
+        : `Riktpris ca ${rikt.prisKr.toLocaleString("sv-SE")} kr totalt`);
+
   return (
     <div className="space-y-3">
       {visaEnhet && (
@@ -133,6 +196,18 @@ export function UnderhallKostnadFalt({
 
       {prisEnhet !== "total" && prisEnhet !== "blandad" && visaEnhet && (
         <div className="rounded-lg border border-primary/25 bg-white p-3">
+          {riktprisText && (
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] text-muted">{riktprisText}</p>
+              <button
+                type="button"
+                onClick={anvandRiktpris}
+                className="text-[11px] font-medium text-primary-dark underline hover:no-underline"
+              >
+                Använd riktpris
+              </button>
+            </div>
+          )}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(5.5rem,auto)] items-end gap-2 sm:gap-3">
             <label className="block text-sm">
               <span className="text-xs font-medium text-muted">{mangdLabel}</span>
@@ -194,16 +269,47 @@ export function UnderhallKostnadFalt({
                 underhallKostnadKr: e.target.value,
                 underhallPrisEnhet: "total",
                 underhallEnhetsprisKr: "",
+                underhallMomsAvdragenKr: "",
+                underhallKostnadInklMomsKr: "",
               })
             }
             placeholder="Tomt = lägg till senare"
             className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          />
+          <MomsAvdragKnapp
+            kostnadKr={rad.underhallKostnadKr}
+            momsAvdragenKr={rad.underhallMomsAvdragenKr}
+            kostnadInklMomsKr={rad.underhallKostnadInklMomsKr}
+            onApply={({ kostnadExklMoms, momsAvdragen, kostnadInklMoms }) =>
+              onChange({
+                underhallKostnadKr: String(kostnadExklMoms),
+                underhallMomsAvdragenKr: String(momsAvdragen),
+                underhallKostnadInklMomsKr: String(kostnadInklMoms),
+                underhallPrisEnhet: "total",
+              })
+            }
+            onAterstall={() => {
+              const inkl = rad.underhallKostnadInklMomsKr?.trim();
+              if (!inkl) return;
+              onChange({
+                underhallKostnadKr: inkl,
+                underhallMomsAvdragenKr: "",
+                underhallKostnadInklMomsKr: "",
+                underhallPrisEnhet: "total",
+              });
+            }}
           />
           <p className="mt-1 text-[10px] text-muted">
             Välj «Yta + styck + total» om du vill fördela på m² och styck med
             reservation för ställning m.m.
           </p>
         </label>
+      )}
+
+      {(visaEnhet || rikt) && (
+        <div className="mt-3">
+          <KostnadPrisVarning kompakt />
+        </div>
       )}
     </div>
   );

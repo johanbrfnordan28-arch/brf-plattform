@@ -10,25 +10,43 @@ import {
   type Samfallighetsavgift,
 } from "@/components/underhallsplan/samfallighetsavgift";
 import {
+  arAtgardDirektkostnad,
   samlaAllaUnderhallAtgarder,
   underhallKostnadPerAr,
   type UnderhallAtgard,
 } from "@/components/underhallsplan/underhall-budget";
 
-/** Årsvis uppdelning: utgifter i årsbudgeten vs investeringar enligt plan. */
+export type PlanUtgiftspost = {
+  namn: string;
+  belopp: number;
+  /** Komponent i underhållsplanen som posten avser. */
+  komponent: string;
+};
+
+/** Årsvis uppdelning: underlag till årsbudgeten vs planerat underhåll (investeringar). */
 export type PlanUtgiftsArRad = {
   ar: number;
   /** Jämn avsättning kr/m²/år — budgeteras varje år. */
   avsattning: number;
   /** Besiktningar m.m. det år de utförs. */
   besiktningar: number;
-  /** Planerade investeringar/åtgärder enligt underhållsplanen det året. */
+  /**
+   * Periodiskt underhåll det år det utförs
+   * (spolning, filmning m.m. — kostnadsförs direkt, aktiveras ej).
+   */
+  direktkostnader: number;
+  /** Planerat underhåll / investeringar i fastigheten enligt planen det året. */
   investeringPlan: number;
-  /** Avsättning + besiktningar — det som hör till föreningens årsbudget. */
+  /** Avsättning + besiktningar + periodiskt underhåll — underlag till årsbudgeten. */
   utgifterArsbudget: number;
-  /** Investering + utgifter i årsbudget (kassaflöde totalt det året). */
+  /** Planerat underhåll + budgetunderlag (kassaflöde totalt det året). */
   totaltKassaflode: number;
-  besiktningPoster: { namn: string; belopp: number }[];
+  /** Besiktningar och samfällighet — med komponent. */
+  besiktningPoster: PlanUtgiftspost[];
+  /** Periodiskt underhåll — med komponent. */
+  direktkostnadPoster: PlanUtgiftspost[];
+  /** Planerat underhåll det året — med komponent. */
+  investeringPoster: PlanUtgiftspost[];
 };
 
 /** @deprecated Använd PlanUtgiftsArRad */
@@ -44,19 +62,52 @@ export type PlanAvsattning = {
   summaAvsattningPlanperiodKr: number;
 };
 
-/** Summerar alla planerade investeringsbelopp inom planperioden. */
+/**
+ * Typisk avsättning för BRF (kr/m² bo- och lokalyta och år).
+ * Auto-beräkning från planerade investeringar får inte pressa upp över max —
+ * orimligt höga åtgärdskostnader ska justeras i registret, inte i avsättningen.
+ */
+export const TYPISK_AVSATTNING_KR_PER_KVM = {
+  min: 200,
+  lage: 400,
+  hog: 600,
+  /** Tak för autosatt/klampad avsättning. */
+  max: 600,
+  /** Vid återställning av orimligt högt sparat värde. */
+  standard: 500,
+} as const;
+
+/** Endast aktiverbara/avskrivningsbara investeringar. */
+export function filtreraInvesteringAtgarder(
+  atgarder: UnderhallAtgard[],
+): UnderhallAtgard[] {
+  return atgarder.filter((a) => !arAtgardDirektkostnad(a));
+}
+
+/** Periodiskt underhåll (kostnadsförs direkt — aktiveras ej). */
+export function filtreraDirektkostnadAtgarder(
+  atgarder: UnderhallAtgard[],
+): UnderhallAtgard[] {
+  return atgarder.filter((a) => arAtgardDirektkostnad(a));
+}
+
+/** Summerar planerat underhåll / investeringar (exkl. periodiskt underhåll). */
 export function summaPlaneradeInvesteringar(
   atgarder: UnderhallAtgard[],
   planStartAr: number,
   planLangdAr: number,
 ): number {
-  const perAr = underhallKostnadPerAr(atgarder, planStartAr, planLangdAr);
+  const perAr = underhallKostnadPerAr(
+    filtreraInvesteringAtgarder(atgarder),
+    planStartAr,
+    planLangdAr,
+  );
   return Object.values(perAr).reduce((sum, v) => sum + v, 0);
 }
 
 /**
  * Jämn avsättning kr/m²/år som motsvarar att totala planerade investeringar
- * fördelas jämnt över planperioden och avsättningsytan.
+ * fördelas jämnt över planperioden och avsättningsytan (obegränsad).
  */
 export function beraknaRekommenderadKrPerKvmAr(
   summaInvesteringKr: number,
@@ -67,6 +118,42 @@ export function beraknaRekommenderadKrPerKvmAr(
     return null;
   }
   return Math.max(1, Math.round(summaInvesteringKr / (boareaM2 * planLangdAr)));
+}
+
+/** Begränsar avsättning till typiskt intervall (max 600 kr/m²/år). */
+export function begransaAvsattningKrPerKvmAr(value: number): number {
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return Math.min(value, TYPISK_AVSATTNING_KR_PER_KVM.max);
+}
+
+export type ForeslagenAvsattning = {
+  /** Obegränsat värde från planerade investeringar. */
+  obegransad: number | null;
+  /** Förslag att sätta i planen — aldrig över typiskt max. */
+  foreslagen: number | null;
+  /** true om obegränsad ligger över typiskt max. */
+  overTypiskt: boolean;
+};
+
+export function beraknaForeslagenAvsattningKrPerKvmAr(
+  summaInvesteringKr: number,
+  boareaM2: number,
+  planLangdAr: number,
+): ForeslagenAvsattning {
+  const obegransad = beraknaRekommenderadKrPerKvmAr(
+    summaInvesteringKr,
+    boareaM2,
+    planLangdAr,
+  );
+  if (obegransad == null) {
+    return { obegransad: null, foreslagen: null, overTypiskt: false };
+  }
+  const overTypiskt = obegransad > TYPISK_AVSATTNING_KR_PER_KVM.max;
+  return {
+    obegransad,
+    foreslagen: begransaAvsattningKrPerKvmAr(obegransad),
+    overTypiskt,
+  };
 }
 
 export function beraknaPlanAvsattning(
@@ -121,8 +208,15 @@ export function beraknaPlanUtgiftsRader(input: {
     planLangdAr,
     planKostnader,
   );
-  const underhallPerAr = underhallKostnadPerAr(
-    underhallAtgarder,
+  const investeringAtgarder = filtreraInvesteringAtgarder(underhallAtgarder);
+  const direktAtgarder = filtreraDirektkostnadAtgarder(underhallAtgarder);
+  const investeringPerAr = underhallKostnadPerAr(
+    investeringAtgarder,
+    planStartAr,
+    planLangdAr,
+  );
+  const direktPerAr = underhallKostnadPerAr(
+    direktAtgarder,
     planStartAr,
     planLangdAr,
   );
@@ -135,24 +229,48 @@ export function beraknaPlanUtgiftsRader(input: {
   const samfallighetPerAr = beraknaSamfallighetsavgiftPerAr(samfallighetsavgift);
 
   return besiktningPerAr.map((rad) => {
-    const investeringPlan = underhallPerAr[rad.ar] ?? 0;
+    const investeringPlan = investeringPerAr[rad.ar] ?? 0;
+    const direktkostnader = direktPerAr[rad.ar] ?? 0;
     const besiktningarSumma = rad.summaBesiktningar + samfallighetPerAr;
-    const utgifterArsbudget = besiktningarSumma + avsattning.arligAvsattningKr;
-    const poster = rad.poster.map((p) => ({
+    const utgifterArsbudget =
+      besiktningarSumma + avsattning.arligAvsattningKr + direktkostnader;
+    const poster: PlanUtgiftspost[] = rad.poster.map((p) => ({
       namn: p.namn,
       belopp: p.belopp,
+      komponent: p.komponent,
     }));
     if (samfallighetPerAr > 0) {
-      poster.push({ namn: "Samfällighetsavgift", belopp: samfallighetPerAr });
+      poster.push({
+        namn: "Samfällighetsavgift",
+        belopp: samfallighetPerAr,
+        komponent: "Samfällighet",
+      });
     }
+    const direktkostnadPoster: PlanUtgiftspost[] = direktAtgarder
+      .filter((a) => a.ar === rad.ar)
+      .map((a) => ({
+        namn: a.del,
+        belopp: a.kostnadKr,
+        komponent: a.komponent,
+      }));
+    const investeringPoster: PlanUtgiftspost[] = investeringAtgarder
+      .filter((a) => a.ar === rad.ar)
+      .map((a) => ({
+        namn: a.del,
+        belopp: a.kostnadKr,
+        komponent: a.komponent,
+      }));
     return {
       ar: rad.ar,
       avsattning: avsattning.arligAvsattningKr,
       besiktningar: besiktningarSumma,
+      direktkostnader,
       investeringPlan,
       utgifterArsbudget,
       totaltKassaflode: utgifterArsbudget + investeringPlan,
       besiktningPoster: poster,
+      direktkostnadPoster,
+      investeringPoster,
     };
   });
 }

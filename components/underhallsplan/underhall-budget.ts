@@ -18,14 +18,21 @@ import {
   hamtaUnderhallTillfallenData,
   hamtaUnderhallTillfallenPriser,
 } from "@/components/underhallsplan/underhall-tillfallen-register";
+import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
+import { parseKrBelopp } from "@/components/underhallsplan/moms";
 import { effektivUnderhallKostnadKr } from "@/components/underhallsplan/underhall-kostnad";
-import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
+import {
+  beraknaUpphandlingOchProjektledning,
+  type PlanKostnaderNormaliserade,
+} from "@/components/underhallsplan/plan-kostnader";
+import { forstaAtgardArIPlan } from "@/components/underhallsplan/underhall-plan-ar";
 import type { RenoveringFordelningKontext } from "@/components/underhallsplan/renovering-fordelning";
 import {
   genereraAtgarderFranHistorik,
   historikTackerAtgardTyp,
   type RenoveringAtgardTyp,
 } from "@/components/underhallsplan/renovering-planering";
+import { RENOVERING_ATGARD_TILL_UNDERKOMPONENT } from "@/components/underhallsplan/underhall-atgard-katalog";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
 
 export type UnderhallAtgardKalla = "register" | "historik";
@@ -42,7 +49,28 @@ export type UnderhallAtgard = {
   kallaRenoveringTitel?: string;
   kostnadForklaring?: string;
   atgardTyp?: RenoveringAtgardTyp;
+  /** Underkomponent-id i registret (för klassning K3 vs direktkostnad). */
+  underkomponentId?: string;
+  /**
+   * true = kostnadsförs i resultaträkningen det år den utförs (ej aktiveras).
+   * false/undefined = planerad investering som kan aktiveras/skrivas av.
+   */
+  direktkostnad?: boolean;
+  /** Moms som tagits bort från kostnaden och särredovisas detta tillfälle. */
+  momsAvdragenKr?: number;
 };
+
+/** Avgör om en åtgärd ska särredovisas som kostnadsfört underhåll. */
+export function arAtgardDirektkostnad(a: UnderhallAtgard): boolean {
+  if (a.direktkostnad === true) return true;
+  if (a.direktkostnad === false) return false;
+  const underId =
+    a.underkomponentId ??
+    (a.atgardTyp
+      ? RENOVERING_ATGARD_TILL_UNDERKOMPONENT[a.atgardTyp]
+      : undefined);
+  return arDirektkostnadUnderhall(a.komponent, underId);
+}
 
 function parseAr(text: string): number {
   const n = Number.parseInt(text.trim(), 10);
@@ -91,7 +119,14 @@ export function samlaUnderhallAtgarder(
     for (const rad of data.underkomponenter) {
       if (!rad.aktiv || arUnderhallFlyttad(rad)) continue;
       if (fasadmaterialPlaneratViaTillfallen(komponent, rad.id, detalj)) {
-        continue;
+        /**
+         * Tillfällen (puts/målning m.m.) är redan tillagda ovan.
+         * Fortsätt med radens underhållskostnad om den är ifylld — t.ex. större
+         * fasadförnyelse som K3-investering utöver löpande tillfällen.
+         */
+        const kostnad = effektivUnderhallKostnadKr(rad);
+        const intervall = parseAr(rad.underhallIntervallAr ?? "");
+        if (kostnad <= 0 || intervall < 1) continue;
       }
       const planNyckel = hamtaUnderhallTillfallenPlanNyckel(komponent, rad.id);
       if (
@@ -108,6 +143,7 @@ export function samlaUnderhallAtgarder(
             priser,
             planStartAr,
             planLangdAr,
+            rad.id,
           ),
         );
         continue;
@@ -116,8 +152,13 @@ export function samlaUnderhallAtgarder(
       const intervall = parseAr(rad.underhallIntervallAr ?? "");
       if (kostnad <= 0 || intervall < 1) continue;
 
-      let ar = parseAr(rad.underhallNastaAr ?? "") || planStartAr;
-      if (ar < planStartAr) ar = planStartAr;
+      let ar = forstaAtgardArIPlan(
+        parseAr(rad.underhallNastaAr ?? "") || planStartAr,
+        intervall,
+        planStartAr,
+      );
+      const direktkostnad = arDirektkostnadUnderhall(komponent, rad.id);
+      const momsAvdragenKr = parseKrBelopp(rad.underhallMomsAvdragenKr);
 
       while (ar <= planSlutAr) {
         atgarder.push({
@@ -127,6 +168,9 @@ export function samlaUnderhallAtgarder(
           kostnadKr: kostnad,
           intervallAr: intervall,
           kalla: "register",
+          underkomponentId: rad.id,
+          direktkostnad,
+          ...(momsAvdragenKr > 0 ? { momsAvdragenKr } : {}),
         });
         ar += intervall;
       }
@@ -202,6 +246,30 @@ export function samlaAllaUnderhallAtgarder(
       const rad = data?.underkomponenter.find((r) => r.etikett === a.del);
       if (!rad) return true;
       return !registerSkallFiltreras(rad, a.komponent, renoveringar, fordelningKontext);
+    });
+  }
+
+  /** Upphandling + projektledning på registerinvesteringar (som för historik). */
+  if (planKostnader) {
+    franRegister = franRegister.map((a) => {
+      if (arAtgardDirektkostnad(a) || a.kostnadKr <= 0) return a;
+      const oh = beraknaUpphandlingOchProjektledning(
+        a.kostnadKr,
+        planKostnader,
+      );
+      if (oh.totaltKr === a.kostnadKr) return a;
+      return {
+        ...a,
+        kostnadKr: oh.totaltKr,
+        kostnadForklaring: [
+          a.kostnadForklaring,
+          `Entreprenad ${a.kostnadKr.toLocaleString("sv-SE")} kr`,
+          `Upphandling ${planKostnader.upphandlingProcent}% +${oh.upphandlingKr.toLocaleString("sv-SE")} kr`,
+          `Projektledning ${planKostnader.projektledningProcent}% +${oh.projektledningKr.toLocaleString("sv-SE")} kr`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      };
     });
   }
 

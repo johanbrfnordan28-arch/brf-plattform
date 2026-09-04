@@ -52,6 +52,14 @@ export const PLAN_SLUTSIDA_RAD: PlanSlutsidaRadAvsnitt[] = [
     ],
   },
   {
+    rubrik: "K3 och komponentavskrivning",
+    punkter: [
+      "Från 2026 ska BRF tillämpa K3: byggnaden delas upp i komponenter med egna nyttjandeperioder. Använd registret och avskrivningstiderna som underlag till ekonomisk förvaltare.",
+      "Underhållsintervall (när ni åtgärdar) är inte samma sak som avskrivningstid (hur länge komponenten skrivs av). Kort underhåll — målning, spolning — är normalt inte egna K3-komponenter.",
+      "Stomme och grund sätts ofta till ca 100 år i anläggningsregistret; övriga delar (tak, fasad, stammar, fönster, hiss m.m.) finns i er plan.",
+    ],
+  },
+  {
     rubrik: "För styrelsen",
     punkter: [
       "Planen är beslutsunderlag över flera mandatperioder. Behåll ytor, antal och vad som gjordes vid renoveringar — även där arbetet redan är utfört.",
@@ -64,6 +72,7 @@ export const PLAN_SLUTSIDA_RAD: PlanSlutsidaRadAvsnitt[] = [
 /** Checklista för årlig genomgång — utan namn, lämplig att bocka av vid utskrift. */
 export const PLAN_SLUTSIDA_CHECKLISTA: string[] = [
   "Gå igenom planerade tider (föregående sida) — behöver något läggas tidigare eller senare?",
+  "Stäm av K3-avskrivningstider i komponentregistret med ekonomisk förvaltare inför årsredovisning.",
   "Stäm av skick efter vinter/väta: tak, fasad, fönster, avlopp, källare.",
   "Uppdatera underhållstillfällen i steg 3 om besiktning eller entreprenör ger ny bedömning.",
   "Kontrollera att avsättning kr/m²/år fortfarande är rimlig (steg 6).",
