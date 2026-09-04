@@ -12,6 +12,9 @@ export const PLATTFORM_ADMIN_EPOST_STANDARD = [
   "admin6@styrelse-navet.se",
 ] as const;
 
+/** Startkod tills BankID finns — byt via env i produktion. */
+export const PLATTFORM_STARTKOD_STANDARD = "StyrelseNavet2026";
+
 export function listaPlattformAdminEposter(): string[] {
   const franEnv = process.env.PLATTFORM_ADMIN_EPOSTER?.trim();
   if (franEnv) {
@@ -26,6 +29,13 @@ export function listaPlattformAdminEposter(): string[] {
 export function arPlattformAdminEpost(epost: string): boolean {
   const nyckel = epost.trim().toLowerCase();
   return listaPlattformAdminEposter().includes(nyckel);
+}
+
+/** Kod för plattformsinloggning (innan BankID). */
+export function hamtaPlattformStartkod(): string {
+  const franEnv = process.env.PLATTFORM_STARTKOD?.trim();
+  if (franEnv && franEnv.length >= 8) return franEnv;
+  return PLATTFORM_STARTKOD_STANDARD;
 }
 
 export const PLATTFORM_LOGIN_PATH = "/plattform-login";

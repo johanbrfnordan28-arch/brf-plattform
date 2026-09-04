@@ -6,6 +6,7 @@ import {
   PlattformForeningarOversikt,
   type PlattformForeningRad,
 } from "@/components/plattform/PlattformForeningarOversikt";
+import { PlattformAnvandarePanel } from "@/components/plattform/PlattformAnvandarePanel";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 
 type Statistik = {
@@ -237,6 +238,8 @@ export function PlattformDashboard() {
         foreningar={foreningar}
         laddar={laddarForeningar}
       />
+
+      <PlattformAnvandarePanel />
 
       {statistik ? (
         <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">

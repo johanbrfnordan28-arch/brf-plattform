@@ -9,6 +9,7 @@ import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
 import { normaliseraEpost } from "@/lib/auth/epost";
 import {
   arPlattformAdminEpost,
+  hamtaPlattformStartkod,
   listaPlattformAdminEposter,
 } from "@/lib/auth/projekt-admin";
 import { skickaMejl } from "@/lib/auth/mejl";
@@ -17,21 +18,36 @@ let seedPromise: Promise<void> | null = null;
 
 /**
  * Säkerställer att plattformsadmin-konton finns.
- * Tillfälliga lösenord mejlas/outboxas endast första gången kontot skapas.
+ * Befintliga styrelsekonton på allowlist uppgraderas till PLATTFORM (behåller lösenord).
+ * Nya konton får startkod (eller tillfälligt lösenord om startkod saknas).
  */
 export async function sakraPlattformAdminKonton(
   basUrl?: string,
 ): Promise<void> {
   if (!seedPromise) {
     seedPromise = (async () => {
+      const startkod = hamtaPlattformStartkod();
       for (const epost of listaPlattformAdminEposter()) {
         const epostNyckel = normaliseraEpost(epost);
         const finns = await prisma.konto.findUnique({
           where: { epostNyckel },
         });
-        if (finns) continue;
 
-        const losenord = genereraTillfalligtLosenord(14);
+        if (finns) {
+          if (finns.typ !== "PLATTFORM") {
+            await prisma.konto.update({
+              where: { id: finns.id },
+              data: {
+                typ: "PLATTFORM",
+                namn: finns.namn?.trim() || "Plattformsadmin",
+                aktiv: true,
+              },
+            });
+          }
+          continue;
+        }
+
+        const losenord = startkod || genereraTillfalligtLosenord(14);
         await prisma.konto.create({
           data: {
             id: skapaId("konto"),
@@ -57,9 +73,10 @@ export async function sakraPlattformAdminKonton(
             "Ditt plattformsadmin-konto är skapat.",
             `Inloggning: ${login}`,
             `E-post: ${epostNyckel}`,
-            `Tillfälligt lösenord: ${losenord}`,
+            `Kod: ${losenord}`,
             "",
-            "Kontot syns inte för styrelser. Byt lösenord efter inloggning.",
+            "Logga in med e-post och kod. BankID kommer snart.",
+            "Byt kod/lösenord efter inloggning. Kontot syns inte för styrelser.",
           ].join("\n"),
         });
       }

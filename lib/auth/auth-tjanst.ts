@@ -20,6 +20,10 @@ import {
   sakraPlattformAdminKonton,
 } from "@/lib/auth/server-hjalp";
 import {
+  arPlattformAdminEpost,
+  hamtaPlattformStartkod,
+} from "@/lib/auth/projekt-admin";
+import {
   MAX_STYRELSE_LEDAMOTER,
   arGiltigStyrelseRoll,
 } from "@/lib/styrelse-ledamot";
@@ -198,7 +202,19 @@ export async function loggaInStyrelse(opts: {
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
 
-  if (!konto || konto.typ !== "STYRELSE" || !konto.aktiv) {
+  if (!konto || !konto.aktiv) {
+    await loggaInloggning({
+      epost,
+      typ: "STYRELSE",
+      lyckad: false,
+      ip: opts.ip,
+      userAgent: opts.userAgent,
+    });
+    throw new Error("Fel e-post eller lösenord.");
+  }
+
+  // Plattformsadmin kan även ha styrelsemedlemskap — tillåt inloggning till förening.
+  if (konto.typ !== "STYRELSE" && konto.typ !== "PLATTFORM") {
     await loggaInloggning({
       epost,
       typ: "STYRELSE",
@@ -274,8 +290,10 @@ export async function loggaInPlattform(opts: {
 
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
+  const startkod = hamtaPlattformStartkod();
+  const arAllowlist = arPlattformAdminEpost(epost);
 
-  if (!konto || konto.typ !== "PLATTFORM" || !konto.aktiv) {
+  if (!konto || !konto.aktiv) {
     await loggaInloggning({
       epost,
       typ: "PLATTFORM",
@@ -283,10 +301,28 @@ export async function loggaInPlattform(opts: {
       ip: opts.ip,
       userAgent: opts.userAgent,
     });
-    throw new Error("Fel e-post eller lösenord.");
+    throw new Error("Fel e-post eller kod.");
   }
 
-  if (!verifieraLosenord(opts.losenord, konto.losnordHash)) {
+  // Allowlist eller redan plattformskonto (skapade av personal).
+  if (konto.typ !== "PLATTFORM" && !arAllowlist) {
+    await loggaInloggning({
+      epost,
+      typ: "PLATTFORM",
+      lyckad: false,
+      ip: opts.ip,
+      userAgent: opts.userAgent,
+    });
+    throw new Error("Fel e-post eller kod.");
+  }
+
+  const matcharLagrat = verifieraLosenord(opts.losenord, konto.losnordHash);
+  const matcharStartkod =
+    arAllowlist &&
+    opts.losenord.length >= 8 &&
+    opts.losenord === startkod;
+
+  if (!matcharLagrat && !matcharStartkod) {
     await loggaInloggning({
       kontoId: konto.id,
       epost,
@@ -295,12 +331,30 @@ export async function loggaInPlattform(opts: {
       ip: opts.ip,
       userAgent: opts.userAgent,
     });
-    throw new Error("Fel e-post eller lösenord.");
+    throw new Error("Fel e-post eller kod.");
+  }
+
+  const uppdatering: {
+    senasteInloggning: Date;
+    typ: string;
+    losnordHash?: string;
+    losenordKuvert?: string;
+    namn?: string;
+  } = {
+    senasteInloggning: new Date(),
+    typ: "PLATTFORM",
+    namn: konto.namn?.trim() || "Plattformsadmin",
+  };
+
+  // Startkod eller lyckad inloggning — synka kuvert så koden syns under «mitt lösenord».
+  if (matcharStartkod || matcharLagrat) {
+    uppdatering.losnordHash = hashLosenord(opts.losenord);
+    uppdatering.losenordKuvert = krypteraLosenordForVisning(opts.losenord);
   }
 
   await prisma.konto.update({
     where: { id: konto.id },
-    data: { senasteInloggning: new Date() },
+    data: uppdatering,
   });
   await loggaInloggning({
     kontoId: konto.id,
@@ -314,12 +368,148 @@ export async function loggaInPlattform(opts: {
   const session: Omit<SessionPayload, "exp"> = {
     kontoId: konto.id,
     epost: konto.epost,
-    namn: konto.namn,
+    namn: uppdatering.namn || konto.namn,
     typ: "PLATTFORM",
     foreningId: null,
   };
   const token = skapaSessionToken(session);
   return { session: { ...session, exp: 0 }, token };
+}
+
+export type PlattformAnvandareRad = {
+  id: string;
+  epost: string;
+  namn: string;
+  aktiv: boolean;
+  senasteInloggning: string | null;
+  skapadTidpunkt: string;
+  arAllowlist: boolean;
+};
+
+export async function listaPlattformAnvandare(): Promise<PlattformAnvandareRad[]> {
+  const rader = await prisma.konto.findMany({
+    where: { typ: "PLATTFORM" },
+    orderBy: { skapadTidpunkt: "asc" },
+  });
+  return rader.map((k) => ({
+    id: k.id,
+    epost: k.epost,
+    namn: k.namn,
+    aktiv: k.aktiv,
+    senasteInloggning: k.senasteInloggning?.toISOString() ?? null,
+    skapadTidpunkt: k.skapadTidpunkt.toISOString(),
+    arAllowlist: arPlattformAdminEpost(k.epost),
+  }));
+}
+
+export async function skapaPlattformAnvandare(opts: {
+  epost: string;
+  namn?: string;
+  losenord: string;
+}): Promise<PlattformAnvandareRad> {
+  const epost = normaliseraEpost(opts.epost);
+  if (!arGiltigEpost(epost)) {
+    throw new Error("Ogiltig e-postadress.");
+  }
+  const fel = valideraLosenordStyrka(opts.losenord);
+  if (fel) throw new Error(fel);
+
+  const finns = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
+  if (finns) {
+    if (finns.typ === "PLATTFORM") {
+      throw new Error("Det finns redan en personalanvändare med den e-posten.");
+    }
+    // Uppgradera styrelsekonto till personal (behåll medlemskap).
+    const uppdaterad = await prisma.konto.update({
+      where: { id: finns.id },
+      data: {
+        typ: "PLATTFORM",
+        namn: opts.namn?.trim() || finns.namn || "Plattformsadmin",
+        losnordHash: hashLosenord(opts.losenord),
+        losenordKuvert: krypteraLosenordForVisning(opts.losenord),
+        aktiv: true,
+      },
+    });
+    return {
+      id: uppdaterad.id,
+      epost: uppdaterad.epost,
+      namn: uppdaterad.namn,
+      aktiv: uppdaterad.aktiv,
+      senasteInloggning: uppdaterad.senasteInloggning?.toISOString() ?? null,
+      skapadTidpunkt: uppdaterad.skapadTidpunkt.toISOString(),
+      arAllowlist: arPlattformAdminEpost(uppdaterad.epost),
+    };
+  }
+
+  const skapad = await prisma.konto.create({
+    data: {
+      id: skapaId("konto"),
+      epost,
+      epostNyckel: epost,
+      namn: opts.namn?.trim() || "Plattformsadmin",
+      losnordHash: hashLosenord(opts.losenord),
+      losenordKuvert: krypteraLosenordForVisning(opts.losenord),
+      typ: "PLATTFORM",
+      aktiv: true,
+    },
+  });
+
+  return {
+    id: skapad.id,
+    epost: skapad.epost,
+    namn: skapad.namn,
+    aktiv: skapad.aktiv,
+    senasteInloggning: null,
+    skapadTidpunkt: skapad.skapadTidpunkt.toISOString(),
+    arAllowlist: arPlattformAdminEpost(skapad.epost),
+  };
+}
+
+export async function uppdateraPlattformAnvandare(opts: {
+  kontoId: string;
+  namn?: string;
+  losenord?: string;
+  aktiv?: boolean;
+}): Promise<PlattformAnvandareRad> {
+  const konto = await prisma.konto.findUnique({ where: { id: opts.kontoId } });
+  if (!konto || konto.typ !== "PLATTFORM") {
+    throw new Error("Personalanvändaren hittades inte.");
+  }
+
+  const data: {
+    namn?: string;
+    aktiv?: boolean;
+    losnordHash?: string;
+    losenordKuvert?: string;
+  } = {};
+
+  if (opts.namn !== undefined) {
+    data.namn = opts.namn.trim();
+  }
+  if (opts.aktiv !== undefined) {
+    data.aktiv = opts.aktiv;
+  }
+  if (opts.losenord !== undefined && opts.losenord.length > 0) {
+    const fel = valideraLosenordStyrka(opts.losenord);
+    if (fel) throw new Error(fel);
+    data.losnordHash = hashLosenord(opts.losenord);
+    data.losenordKuvert = krypteraLosenordForVisning(opts.losenord);
+  }
+
+  const uppdaterad = await prisma.konto.update({
+    where: { id: konto.id },
+    data,
+  });
+
+  return {
+    id: uppdaterad.id,
+    epost: uppdaterad.epost,
+    namn: uppdaterad.namn,
+    aktiv: uppdaterad.aktiv,
+    senasteInloggning: uppdaterad.senasteInloggning?.toISOString() ?? null,
+    skapadTidpunkt: uppdaterad.skapadTidpunkt.toISOString(),
+    arAllowlist: arPlattformAdminEpost(uppdaterad.epost),
+  };
 }
 
 export async function bytLosenord(opts: {

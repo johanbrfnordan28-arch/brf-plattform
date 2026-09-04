@@ -7,7 +7,7 @@ import { PLATTFORM_START_PATH } from "@/lib/auth/projekt-admin";
 export function PlattformLoginForm() {
   const router = useRouter();
   const [epost, setEpost] = useState("");
-  const [losenord, setLosenord] = useState("");
+  const [kod, setKod] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [laddar, setLaddar] = useState(false);
 
@@ -19,7 +19,7 @@ export function PlattformLoginForm() {
       const res = await fetch("/api/auth/plattform-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ epost, losenord }),
+        body: JSON.stringify({ epost, losenord: kod }),
       });
       const data = (await res.json()) as { fel?: string };
       if (!res.ok) {
@@ -42,9 +42,8 @@ export function PlattformLoginForm() {
     >
       <h1 className="text-xl font-bold text-foreground">Personalinloggning</h1>
       <p className="text-sm text-muted">
-        Endast för behöriga som arbetar med Styrelse-Navet. Efter inloggning ser
-        ni skapade föreningar, vilka som är test och vilka som accepterat
-        avtalet. Styrelser och allmänheten har ingen tillgång hit.
+        Logga in med e-post och kod. BankID kommer snart. Endast behörig personal
+        — styrelser och allmänheten har ingen tillgång hit.
       </p>
       <label className="block text-sm">
         <span className="font-medium">E-post</span>
@@ -55,18 +54,23 @@ export function PlattformLoginForm() {
           className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           required
           autoComplete="username"
+          placeholder="johancarlsen@icloud.com"
         />
       </label>
       <label className="block text-sm">
-        <span className="font-medium">Lösenord</span>
+        <span className="font-medium">Kod</span>
         <input
           type="password"
-          value={losenord}
-          onChange={(e) => setLosenord(e.target.value)}
+          value={kod}
+          onChange={(e) => setKod(e.target.value)}
           className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           required
+          minLength={8}
           autoComplete="current-password"
         />
+        <span className="mt-1 block text-xs text-muted">
+          Använd er startkod eller den kod ni fått. Byts inne på plattformen.
+        </span>
       </label>
       {fel ? (
         <p
@@ -81,8 +85,9 @@ export function PlattformLoginForm() {
         disabled={laddar}
         className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
       >
-        {laddar ? "Loggar in …" : "Logga in"}
+        {laddar ? "Loggar in …" : "Logga in med kod"}
       </button>
+      <p className="text-center text-xs text-muted">BankID-inloggning kommer inom kort.</p>
     </form>
   );
 }
