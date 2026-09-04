@@ -34,6 +34,7 @@ import {
   rensaStandardTestForening,
 } from "@/lib/testforeningar";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { EfterInloggningLosenordPanel } from "@/components/auth/EfterInloggningLosenordPanel";
 
 export type LoginLage = "test" | "kund";
 
@@ -158,6 +159,11 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const [losenord, setLosenord] = useState("");
   const [kontoFel, setKontoFel] = useState<string | null>(null);
   const [kontoLaddar, setKontoLaddar] = useState(false);
+  const [efterInloggning, setEfterInloggning] = useState<{
+    epost: string;
+    losenord: string;
+    foreningId: string;
+  } | null>(null);
   const listaRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
@@ -226,22 +232,28 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
 
       if (res.ok && data.foreningId) {
         // Spara lösenordet lokalt så det syns under Konto även om kuvert saknas
+        const sparadEpost = (data.epost || epost).trim().toLowerCase();
         sparaLokalKonto({
-          epost: (data.epost || epost).trim().toLowerCase(),
+          epost: sparadEpost,
           losenord,
           foreningId: data.foreningId,
           namn: "",
           roll: "Ledamot",
         });
         sparaLokalSession({
-          epost: (data.epost || epost).trim().toLowerCase(),
+          epost: sparadEpost,
           foreningId: data.foreningId,
           namn: "",
           inloggadTidpunkt: new Date().toISOString(),
         });
         markeraPendingAktivForening(data.foreningId);
         sattAktivForeningId(data.foreningId);
-        window.location.assign(hamtaForeningStartPath(data.foreningId));
+        setEfterInloggning({
+          epost: sparadEpost,
+          losenord,
+          foreningId: data.foreningId,
+        });
+        setKontoLaddar(false);
         return;
       }
 
@@ -259,7 +271,12 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           });
           markeraPendingAktivForening(lokal.foreningId);
           sattAktivForeningId(lokal.foreningId);
-          window.location.assign(hamtaForeningStartPath(lokal.foreningId));
+          setEfterInloggning({
+            epost: lokal.epost,
+            losenord: lokal.losenord,
+            foreningId: lokal.foreningId,
+          });
+          setKontoLaddar(false);
           return;
         }
       }
@@ -282,7 +299,12 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           });
           markeraPendingAktivForening(lokal.foreningId);
           sattAktivForeningId(lokal.foreningId);
-          window.location.assign(hamtaForeningStartPath(lokal.foreningId));
+          setEfterInloggning({
+            epost: lokal.epost,
+            losenord: lokal.losenord,
+            foreningId: lokal.foreningId,
+          });
+          setKontoLaddar(false);
           return;
         }
       } catch {
@@ -312,6 +334,17 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           <div key={i} className="h-24 rounded-2xl bg-border/40" />
         ))}
       </div>
+    );
+  }
+
+  if (efterInloggning) {
+    return (
+      <EfterInloggningLosenordPanel
+        epost={efterInloggning.epost}
+        losenord={efterInloggning.losenord}
+        foreningId={efterInloggning.foreningId}
+        foreningStartPath={hamtaForeningStartPath(efterInloggning.foreningId)}
+      />
     );
   }
 

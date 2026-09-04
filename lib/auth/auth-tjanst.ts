@@ -345,6 +345,72 @@ export async function bytLosenord(opts: {
   });
 }
 
+/**
+ * Genererar nytt tillfälligt lösenord, sparar hash+kuvert och mejlar det.
+ * Används vid «Skicka lösenord igen» efter skapande eller från kontot.
+ */
+export async function skickaTillfalligtLosenord(opts: {
+  epost: string;
+  basUrl: string;
+  /** Om satt: endast detta konto (inloggad användare). */
+  kontoId?: string;
+}): Promise<{ skickat: boolean; mejlVia?: "resend" | "outbox" }> {
+  const epost = normaliseraEpost(opts.epost);
+  if (!arGiltigEpost(epost)) {
+    throw new Error("Ogiltig e-postadress.");
+  }
+
+  const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
+  // Undvik e-postläckage när anropet är publikt
+  if (!konto || !konto.aktiv || konto.typ !== "STYRELSE") {
+    return { skickat: true };
+  }
+  if (opts.kontoId && konto.id !== opts.kontoId) {
+    throw new Error("Du kan bara skicka lösenord till ditt eget konto.");
+  }
+
+  // Utan inloggning: endast nya konton som inte loggat in ännu (efter skapa förening).
+  if (!opts.kontoId) {
+    const skapadMs = konto.skapadTidpunkt.getTime();
+    const maxAlderMs = 2 * 60 * 60 * 1000;
+    if (konto.senasteInloggning != null || Date.now() - skapadMs > maxAlderMs) {
+      throw new Error(
+        "Logga in eller använd «Glömt lösenord» för att få en återställningslänk.",
+      );
+    }
+  }
+
+  const medlemskap = await prisma.foreningMedlem.findFirst({
+    where: { kontoId: konto.id },
+    include: { forening: true },
+    orderBy: { skapadTidpunkt: "asc" },
+  });
+  const foreningsNamn = medlemskap?.forening.namn || "er förening";
+
+  const tillfalligt = genereraTillfalligtLosenord(12);
+  await prisma.konto.update({
+    where: { id: konto.id },
+    data: {
+      losnordHash: hashLosenord(tillfalligt),
+      losenordKuvert: krypteraLosenordForVisning(tillfalligt),
+    },
+  });
+
+  const loginUrl = `${opts.basUrl.replace(/\/$/, "")}/styrelse-login`;
+  const mejl = await skickaMejl(
+    byggLosenordMejl({
+      foreningsNamn,
+      mottagarNamn: konto.namn,
+      epost: konto.epost,
+      losenord: tillfalligt,
+      loginUrl,
+      arSkickaIgen: true,
+    }),
+  );
+
+  return { skickat: true, mejlVia: mejl.via };
+}
+
 export async function begärAterstallning(opts: {
   epost: string;
   basUrl: string;

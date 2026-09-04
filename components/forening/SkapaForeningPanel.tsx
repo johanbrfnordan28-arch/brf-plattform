@@ -36,6 +36,11 @@ export function SkapaForeningPanel({
     mejlVia: string;
     meddelande: string;
   } | null>(null);
+  const [skickarIgen, setSkickarIgen] = useState(false);
+  const [skickaIgenMeddelande, setSkickaIgenMeddelande] = useState<string | null>(
+    null,
+  );
+  const [skickaIgenFel, setSkickaIgenFel] = useState<string | null>(null);
   const checkboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -159,11 +164,65 @@ export function SkapaForeningPanel({
             </p>
           )}
           <p className="mt-2 text-xs text-muted">
-            Spara lösenordet. Efter inloggning byter du det under{" "}
-            <strong className="font-medium text-foreground">Konto</strong> i
-            menyn (Byt lösenord).
+            Lösenordet skickas också till e-posten. När du loggar in kan du spara
+            det eller byta till ett eget under Konto.
           </p>
         </div>
+
+        {losenInfo.losenord ? (
+          <div className="mt-3">
+            <button
+              type="button"
+              disabled={skickarIgen}
+              onClick={async () => {
+                setSkickaIgenFel(null);
+                setSkickaIgenMeddelande(null);
+                setSkickarIgen(true);
+                try {
+                  const res = await fetch("/api/auth/skicka-losenord", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ epost: losenInfo.epost }),
+                  });
+                  const data = (await res.json()) as {
+                    fel?: string;
+                    meddelande?: string;
+                  };
+                  if (!res.ok) {
+                    setSkickaIgenFel(
+                      data.fel || "Kunde inte skicka lösenordet igen.",
+                    );
+                    return;
+                  }
+                  setSkickaIgenMeddelande(
+                    data.meddelande ||
+                      "Ett nytt tillfälligt lösenord har skickats till din e-post.",
+                  );
+                } catch {
+                  setSkickaIgenFel("Kunde inte nå servern.");
+                } finally {
+                  setSkickarIgen(false);
+                }
+              }}
+              className="text-sm font-medium text-primary-dark underline hover:no-underline disabled:opacity-50"
+            >
+              {skickarIgen
+                ? "Skickar …"
+                : "Skicka lösenordet igen via e-post"}
+            </button>
+            {skickaIgenMeddelande ? (
+              <p className="mt-2 text-sm text-primary-dark" role="status">
+                {skickaIgenMeddelande}
+              </p>
+            ) : null}
+            {skickaIgenFel ? (
+              <p className="mt-2 text-sm text-red-800" role="alert">
+                {skickaIgenFel}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <button
           type="button"
           className="brf-knapp-gron mt-4 px-6 py-3 text-base shadow-sm"

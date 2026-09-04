@@ -78,21 +78,30 @@ export function byggLosenordMejl(opts: {
   epost: string;
   losenord: string;
   loginUrl: string;
+  arSkickaIgen?: boolean;
 }): MejlMeddelande {
+  const rubrik = opts.arSkickaIgen
+    ? `Nytt tillfälligt lösenord till ${opts.foreningsNamn}`
+    : `Inloggning till ${opts.foreningsNamn} — Styrelse-Navet`;
+  const intro = opts.arSkickaIgen
+    ? `Här är ett nytt tillfälligt lösenord till «${opts.foreningsNamn}».`
+    : `Föreningen «${opts.foreningsNamn}» har skapats i Styrelse-Navet.`;
+
   return {
     till: opts.epost,
-    amne: `Inloggning till ${opts.foreningsNamn} — Styrelse-Navet`,
+    amne: rubrik,
     brodtext: [
       `Hej ${opts.mottagarNamn || "styrelsen"},`,
       "",
-      `Föreningen «${opts.foreningsNamn}» har skapats i Styrelse-Navet.`,
+      intro,
       "",
       `Inloggning: ${opts.loginUrl}`,
       `E-post: ${opts.epost}`,
       `Tillfälligt lösenord: ${opts.losenord}`,
       "",
-      "Byt lösenord efter första inloggningen under Konto i menyn.",
-      "Glömt lösenordet? Använd «Glömt lösenord» på inloggningssidan.",
+      "När du loggar in kan du spara lösenordet eller byta till ett eget.",
+      "Du hittar också «Spara/visa» och «Byt lösenord» under Konto i menyn.",
+      "Glömt lösenordet senare? Använd «Glömt lösenord» på inloggningssidan.",
       "",
       "Vänliga hälsningar",
       "Styrelse-Navet",
