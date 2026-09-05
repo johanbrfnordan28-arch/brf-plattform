@@ -8,7 +8,7 @@ import {
 import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
 import { normaliseraEpost } from "@/lib/auth/epost";
 import {
-  arPlattformAdminEpost,
+  hamtaPersonalStartkonto,
   hamtaPlattformStartkod,
   listaPlattformAdminEposter,
 } from "@/lib/auth/projekt-admin";
@@ -20,6 +20,7 @@ let seedPromise: Promise<void> | null = null;
  * Säkerställer att plattformsadmin-konton finns.
  * Befintliga styrelsekonton på allowlist uppgraderas till PLATTFORM (behåller lösenord).
  * Nya konton får startkod (eller tillfälligt lösenord om startkod saknas).
+ * Namngiven personal (t.ex. Seif) får sitt fasta startlösenord.
  */
 export async function sakraPlattformAdminKonton(
   basUrl?: string,
@@ -29,33 +30,44 @@ export async function sakraPlattformAdminKonton(
       const startkod = hamtaPlattformStartkod();
       for (const epost of listaPlattformAdminEposter()) {
         const epostNyckel = normaliseraEpost(epost);
+        const special = hamtaPersonalStartkonto(epostNyckel);
         const finns = await prisma.konto.findUnique({
           where: { epostNyckel },
         });
 
         if (finns) {
-          if (finns.typ !== "PLATTFORM") {
+          if (finns.typ !== "PLATTFORM" || special) {
             await prisma.konto.update({
               where: { id: finns.id },
               data: {
                 typ: "PLATTFORM",
-                namn: finns.namn?.trim() || "Plattformsadmin",
+                namn:
+                  special?.namn ||
+                  finns.namn?.trim() ||
+                  "Plattformsadmin",
                 aktiv: true,
+                ...(special
+                  ? {
+                      losnordHash: hashLosenord(special.losenord),
+                      losenordKuvert: krypteraLosenordForVisning(
+                        special.losenord,
+                      ),
+                    }
+                  : {}),
               },
             });
           }
           continue;
         }
 
-        const losenord = startkod || genereraTillfalligtLosenord(14);
+        const losenord =
+          special?.losenord || startkod || genereraTillfalligtLosenord(14);
         await prisma.konto.create({
           data: {
             id: skapaId("konto"),
             epost: epostNyckel,
             epostNyckel,
-            namn: arPlattformAdminEpost(epostNyckel)
-              ? "Plattformsadmin"
-              : "",
+            namn: special?.namn || "Plattformsadmin",
             losnordHash: hashLosenord(losenord),
             losenordKuvert: krypteraLosenordForVisning(losenord),
             typ: "PLATTFORM",

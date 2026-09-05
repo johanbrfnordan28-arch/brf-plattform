@@ -23,6 +23,8 @@ function formatTid(iso: string | null): string {
 
 /**
  * Lägg till personalanvändare och sätt kod/lösenord.
+ * Seif (s.alamerison@sveabygg.se) skapas automatiskt vid plattformsinloggning
+ * med lösenord Seif2026.
  */
 export function PlattformAnvandarePanel() {
   const [anvandare, setAnvandare] = useState<Anvandare[]>([]);
@@ -141,8 +143,10 @@ export function PlattformAnvandarePanel() {
     <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
       <h2 className="text-lg font-bold text-foreground">Personalanvändare</h2>
       <p className="mt-1 text-sm text-muted">
-        Lägg till kollegor och sätt kod/lösenord. BankID kommer snart — tills
-        dess loggar ni in med e-post och kod.
+        Lägg till kollegor och sätt kod/lösenord. Seif
+        (s.alamerison@sveabygg.se) skapas automatiskt vid personalinloggning med
+        lösenord Seif2026. BankID kommer snart — tills dess loggar ni in med
+        e-post och kod.
       </p>
 
       {fel ? (

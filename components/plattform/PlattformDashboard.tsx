@@ -10,7 +10,10 @@ import {
 import { PlattformAnvandarePanel } from "@/components/plattform/PlattformAnvandarePanel";
 import { PlattformGrundmallPanel } from "@/components/plattform/PlattformGrundmallPanel";
 import { PlattformMalPanel } from "@/components/plattform/PlattformMalPanel";
+import { PlattformOffertPanel } from "@/components/plattform/PlattformOffertPanel";
+import { InternNavetUpphandlingPanel } from "@/components/upphandling/InternNavetUpphandlingPanel";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
+import { ABK_09_KORT } from "@/lib/abk-09";
 
 type Statistik = {
   totaltHandelser: number;
@@ -259,6 +262,22 @@ export function PlattformDashboard() {
       />
 
       <PlattformAnvandarePanel />
+
+      <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-foreground">
+          Upphandlingar på huvudsidan
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Skapa och publicera projekt som syns under /upphandling. Se intresse,
+          ladda upp handlingar och mejla underlag till entreprenörer.{" "}
+          {ABK_09_KORT}
+        </p>
+        <div className="mt-5">
+          <InternNavetUpphandlingPanel kravBankId={false} />
+        </div>
+      </section>
+
+      <PlattformOffertPanel />
 
       {statistik ? (
         <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">

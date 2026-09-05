@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ABK_09_KORT } from "@/lib/abk-09";
 import { plattformStodMailto } from "@/lib/plattform-stod";
 
 const TJANSTER = [
@@ -75,22 +76,29 @@ export function TekniskForvaltningErbjudande() {
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               Begär en offert med fast pris, eller fråga om löpande teknisk
-              förvaltning. Vi anpassar omfattningen efter er förening.
+              förvaltning. Vi anpassar omfattningen efter er förening.{" "}
+              {ABK_09_KORT}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link
+              href="/offert"
+              className="brf-knapp-gron px-6 py-3 text-sm sm:text-base"
+            >
+              Begär offert
+            </Link>
             <a
               href={plattformStodMailto(
                 "Styrelse-Navet — offertförfrågan",
                 "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
               )}
-              className="brf-knapp-gron px-6 py-3 text-sm sm:text-base"
+              className="rounded-lg border border-primary bg-white px-6 py-3 text-sm font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0] sm:text-base"
             >
-              Begär offert
+              Mejla oss
             </a>
             <Link
               href="#skapa-forening"
-              className="rounded-lg border border-primary bg-white px-6 py-3 text-sm font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0] sm:text-base"
+              className="rounded-lg border border-border bg-white px-6 py-3 text-sm font-semibold text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:text-base"
             >
               Prova plattformen
             </Link>

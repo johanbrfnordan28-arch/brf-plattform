@@ -9,18 +9,22 @@ import {
   hamtaIntressenFor,
   hamtaNavetAnbudFor,
   hamtaNavetPublicerade,
+  hamtaNavetUnderlag,
   hamtaEntreprenor,
+  laggTillNavetDokument,
   mailtoInbjudan,
   markeraIntresseInbjuden,
   NAVET_UPPHANDLING_EVENT,
   navetUpphandlingStorageKey,
   registreraMejlAnbud,
   skapaNavetUpphandling,
+  taBortNavetDokument,
   uppdateraNavetTeaser,
   type NavetAnbud,
   type NavetInbjudan,
   type NavetIntresse,
   type NavetPubliceradTeaser,
+  type NavetUnderlagDokument,
 } from "@/components/upphandling/navet-upphandling-lager";
 
 type ProjektFalt = {
@@ -155,13 +159,21 @@ function ProjektFaltGrid({
   );
 }
 
-export function InternNavetUpphandlingPanel() {
+export function InternNavetUpphandlingPanel({
+  kravBankId = true,
+}: {
+  /** false = personalytan /plattform (redan inloggad). */
+  kravBankId?: boolean;
+}) {
   const [lista, setLista] = useState<NavetPubliceradTeaser[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [valdId, setValdId] = useState("");
   const [inbjudningar, setInbjudningar] = useState<NavetInbjudan[]>([]);
   const [intressen, setIntressen] = useState<NavetIntresse[]>([]);
   const [anbud, setAnbud] = useState<NavetAnbud[]>([]);
+  const [underlagDokument, setUnderlagDokument] = useState<
+    NavetUnderlagDokument[]
+  >([]);
 
   const [ny, setNy] = useState<ProjektFalt>(TOMMA_FALT);
   const [redigera, setRedigera] = useState<ProjektFalt>(TOMMA_FALT);
@@ -181,6 +193,7 @@ export function InternNavetUpphandlingPanel() {
   const [mejlMeddelande, setMejlMeddelande] = useState("");
   const [mejlFel, setMejlFel] = useState<string | null>(null);
   const [mejlOk, setMejlOk] = useState(false);
+  const [dokFel, setDokFel] = useState<string | null>(null);
 
   function uppdatera(forceId?: string) {
     const pub = hamtaNavetPublicerade();
@@ -192,12 +205,14 @@ export function InternNavetUpphandlingPanel() {
       setInbjudningar(hamtaInbjudningarFor(id));
       setIntressen(hamtaIntressenFor(id));
       setAnbud(hamtaNavetAnbudFor(id));
+      setUnderlagDokument(hamtaNavetUnderlag(id)?.dokument ?? []);
       const teaser = pub.find((u) => u.id === id);
       if (teaser) setRedigera(faltFranTeaser(teaser));
     } else {
       setInbjudningar([]);
       setIntressen([]);
       setAnbud([]);
+      setUnderlagDokument([]);
       setRedigera(TOMMA_FALT);
     }
   }
@@ -225,12 +240,14 @@ export function InternNavetUpphandlingPanel() {
     setInbjudningar(hamtaInbjudningarFor(valdId));
     setIntressen(hamtaIntressenFor(valdId));
     setAnbud(hamtaNavetAnbudFor(valdId));
+    setUnderlagDokument(hamtaNavetUnderlag(valdId)?.dokument ?? []);
     const teaser = hamtaNavetPublicerade().find((u) => u.id === valdId);
     if (teaser) setRedigera(faltFranTeaser(teaser));
     setSenasteLank(null);
     setSenasteMailto(null);
     setUppdateraOk(false);
     setMejlOk(false);
+    setDokFel(null);
   }, [valdId]);
 
   function onSkapa(event: FormEvent) {
@@ -347,16 +364,19 @@ export function InternNavetUpphandlingPanel() {
 
   const vald = lista.find((u) => u.id === valdId);
 
-  return (
-    <NavetBankIdGrind rubrik="BankID — projektinformation och anbud">
+  const innehall = (
       <div className="space-y-10">
         <p className="rounded-lg border border-border bg-background/80 px-4 py-3 text-sm leading-relaxed text-muted">
-          På den publika sidan visas stadsdel, basinformation om fastigheten och
-          vad som ska utföras.{" "}
+          Publicerade projekt syns på{" "}
+          <a href="/upphandling" className="font-medium text-primary-dark underline">
+            /upphandling
+          </a>{" "}
+          (huvudsidans upphandlingsyta).{" "}
           <strong className="font-medium text-foreground">
             Inga handlingar laddas upp publikt
           </strong>{" "}
-          — underlag mejlas ut. Anbud som kommer in via mejl registreras här.
+          — underlag sparas här och mejlas till inbjudna entreprenörer. Intresse
+          och anbud syns bara för personal.
         </p>
 
         <form
@@ -588,6 +608,78 @@ export function InternNavetUpphandlingPanel() {
               )}
             </form>
 
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+              <h3 className="font-semibold text-foreground">
+                Handlingar / förfrågningsunderlag
+              </h3>
+              <p className="mt-1 text-sm text-muted">
+                Ladda upp filer här (sparas som filnamn i prototypen). När ni
+                bjuder in en entreprenör mejlar ni handlingarna — de syns via den
+                personliga underlagslänken.
+              </p>
+              {dokFel && (
+                <p className="mt-2 text-sm text-red-700" role="alert">
+                  {dokFel}
+                </p>
+              )}
+              {underlagDokument.length > 0 ? (
+                <ul className="mt-3 space-y-2">
+                  {underlagDokument.map((d) => (
+                    <li
+                      key={`${d.etikett}-${d.filnamn}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-[#fafcfa] px-3 py-2 text-sm"
+                    >
+                      <span>
+                        <span className="font-medium text-foreground">
+                          {d.etikett}
+                        </span>{" "}
+                        <span className="text-muted">({d.filnamn})</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="text-xs text-muted hover:text-red-800"
+                        onClick={() => {
+                          if (!valdId) return;
+                          taBortNavetDokument(valdId, d.filnamn, d.etikett);
+                          uppdatera(valdId);
+                        }}
+                      >
+                        Ta bort
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-muted">Inga handlingar ännu.</p>
+              )}
+              <label className="mt-3 inline-flex cursor-pointer rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]">
+                Ladda upp handling
+                <input
+                  type="file"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const fil = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!fil || !valdId) return;
+                    setDokFel(null);
+                    try {
+                      laggTillNavetDokument(valdId, {
+                        etikett: fil.name.replace(/\.[^.]+$/, "") || fil.name,
+                        filnamn: fil.name,
+                      });
+                      uppdatera(valdId);
+                    } catch (error) {
+                      setDokFel(
+                        error instanceof Error
+                          ? error.message
+                          : "Kunde inte lägga till handling.",
+                      );
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
             <div>
               <h3 className="font-semibold text-foreground">
                 Intresseanmälningar (endast intern vy)
@@ -732,6 +824,15 @@ export function InternNavetUpphandlingPanel() {
           </>
         )}
       </div>
-    </NavetBankIdGrind>
   );
+
+  if (kravBankId) {
+    return (
+      <NavetBankIdGrind rubrik="BankID — projektinformation och anbud">
+        {innehall}
+      </NavetBankIdGrind>
+    );
+  }
+
+  return innehall;
 }
