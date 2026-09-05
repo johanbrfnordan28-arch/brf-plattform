@@ -548,7 +548,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   slås ihop överallt — era ifyllda uppgifter behålls.
                 </p>
               </div>
-              <SkapaForeningPanel kompakt visaSnabbstart />
+              <SkapaForeningPanel kompakt />
             </div>
           </section>
 

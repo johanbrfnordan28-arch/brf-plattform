@@ -8,6 +8,7 @@ import {
   type PlattformForeningSammanfattning,
 } from "@/components/plattform/PlattformForeningarOversikt";
 import { PlattformAnvandarePanel } from "@/components/plattform/PlattformAnvandarePanel";
+import { PlattformGrundmallPanel } from "@/components/plattform/PlattformGrundmallPanel";
 import { PlattformMalPanel } from "@/components/plattform/PlattformMalPanel";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 
@@ -248,6 +249,8 @@ export function PlattformDashboard() {
         aktuelltTest={foreningSammanfattning.test}
         avslutadePerioder={foreningSammanfattning.utgangen}
       />
+
+      <PlattformGrundmallPanel />
 
       <PlattformForeningarOversikt
         foreningar={foreningar}

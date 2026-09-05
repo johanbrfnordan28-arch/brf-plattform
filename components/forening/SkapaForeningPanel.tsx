@@ -13,16 +13,14 @@ import {
 
 type Props = {
   kompakt?: boolean;
-  visaSnabbstart?: boolean;
 };
 
-const DEMO_FORENINGS_NAMN = "Brf Testförening";
 const BRF_PREFIX = "Brf ";
 
-export function SkapaForeningPanel({
-  kompakt = false,
-  visaSnabbstart = false,
-}: Props) {
+/**
+ * Ett formulär, en knapp — skapa förening med namn, kontakt och e-post.
+ */
+export function SkapaForeningPanel({ kompakt = false }: Props) {
   const [namn, setNamn] = useState(BRF_PREFIX);
   const [skapareNamn, setSkapareNamn] = useState("");
   const [skapareEpost, setSkapareEpost] = useState("");
@@ -44,7 +42,6 @@ export function SkapaForeningPanel({
   const checkboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Ingen historik över tidigare testföreningar när man skapar ny.
     rensaEgnaTestForeningHistorik();
 
     const skaFokuseraSkapa =
@@ -100,7 +97,9 @@ export function SkapaForeningPanel({
     }
   }
 
-  function valideraOchSkapa(trimmatNamn: string) {
+  function hanteraSkapa(event?: React.SyntheticEvent) {
+    event?.preventDefault();
+    const trimmatNamn = namn.trim();
     if (!arStyrelseBekraftat()) {
       setFel("Bocka i rutan: du tillhör styrelsen (eller har mandat).");
       return;
@@ -119,26 +118,6 @@ export function SkapaForeningPanel({
     }
     void korSkapa(trimmatNamn);
   }
-
-  function hanteraSkapaMedNamn(event?: React.SyntheticEvent) {
-    event?.preventDefault();
-    valideraOchSkapa(namn.trim());
-  }
-
-  function hanteraSnabbstartDemo(event: React.MouseEvent) {
-    event.preventDefault();
-    const trimmat = namn.trim() || DEMO_FORENINGS_NAMN;
-    setNamn(trimmat);
-    if (!skapareNamn.trim()) setSkapareNamn("Demo Ordförande");
-    if (!skapareEpost.trim()) setSkapareEpost("demo@example.com");
-    if (checkboxRef.current) checkboxRef.current.checked = true;
-    window.setTimeout(() => valideraOchSkapa(trimmat), 0);
-  }
-
-  const snabbstartEtikett =
-    namn.trim().length > 0
-      ? "Skapa förening med namnet ovan"
-      : "Skapa vår testförening nu";
 
   if (losenInfo) {
     return (
@@ -257,12 +236,12 @@ export function SkapaForeningPanel({
         lösenord.
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
-        <strong>Endast styrelsen</strong> ska skapa föreningens sida. Entreprenörer
-        och medlemmar loggar in via länkar som styrelsen delar — inte genom att skapa
-        en ny förening här.
+        <strong>Endast styrelsen</strong> ska skapa föreningens sida.
+        Entreprenörer och medlemmar loggar in via länkar som styrelsen delar —
+        inte genom att skapa en ny förening här.
       </p>
 
-      <div className="mt-4 space-y-4">
+      <form onSubmit={hanteraSkapa} className="mt-4 space-y-4">
         <label className="block text-sm">
           <span className="font-medium text-foreground">Föreningens namn</span>
           <input
@@ -333,8 +312,8 @@ export function SkapaForeningPanel({
             className="mt-1 h-4 w-4 shrink-0 rounded border-border accent-[#5a9a6e]"
           />
           <span className="text-muted">
-            Jag bekräftar att jag är styrelseledamot eller har styrelsens mandat att
-            skapa föreningens sida i BRF Företag.
+            Jag bekräftar att jag är styrelseledamot eller har styrelsens mandat
+            att skapa föreningens sida.
           </span>
         </label>
 
@@ -361,39 +340,14 @@ export function SkapaForeningPanel({
           </div>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {visaSnabbstart && (
-            <button
-              type="button"
-              disabled={skapar}
-              onClick={hanteraSnabbstartDemo}
-              className="brf-knapp-gron order-first px-6 py-3 text-base shadow-sm"
-            >
-              {skapar ? "Skapar …" : snabbstartEtikett}
-            </button>
-          )}
-          <button
-            type="button"
-            disabled={skapar}
-            onClick={hanteraSkapaMedNamn}
-            className={
-              visaSnabbstart
-                ? "brf-knapp-gron-kontur px-5 py-2.5 text-sm"
-                : "brf-knapp-gron px-6 py-3 text-base shadow-sm"
-            }
-          >
-            {skapar ? "Skapar …" : "Skapa förening och gå vidare"}
-          </button>
-          {!kompakt && (
-            <Link
-              href="/forening"
-              className="inline-flex items-center rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-medium text-foreground hover:border-[#5a9a6e]/50"
-            >
-              Till befintlig grundmall
-            </Link>
-          )}
-        </div>
-      </div>
+        <button
+          type="submit"
+          disabled={skapar}
+          className="brf-knapp-gron px-6 py-3 text-base shadow-sm disabled:opacity-50"
+        >
+          {skapar ? "Skapar …" : "Skapa förening"}
+        </button>
+      </form>
     </div>
   );
 }
