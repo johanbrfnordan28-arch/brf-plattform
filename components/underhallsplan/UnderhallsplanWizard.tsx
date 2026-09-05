@@ -1477,8 +1477,10 @@ export function UnderhallsplanWizard() {
                 2.
               </span>
               <span>
-                Därefter kan ni fylla i <strong>steg 2–6 i valfri ordning</strong> —
-                ett steg i taget. Allt sparas automatiskt i er plan.
+                Fortsätt i ordning:{" "}
+                <strong>steg 2 → 3 → 4</strong> (utförda arbeten, komponenter,
+                besiktningar). Steg 5 (bildstöd) och steg 6 (årsbudget) öppnas
+                när föregående steg sparats. Allt sparas i er plan.
               </span>
             </li>
             <li className="flex gap-2">
@@ -1486,8 +1488,9 @@ export function UnderhallsplanWizard() {
                 3.
               </span>
               <span>
-                <strong>Steg 7 — Summering</strong> ger underlag till årsbudgeten.
-                Justera kostnader där — summeringen är klar till styrelsemötet.
+                <strong>Steg 7 — Summering</strong> ger en överskådlig slutprodukt
+                för styrelsemötet och för nästa styrelse. Justera kostnader där
+                vid behov.
               </span>
             </li>
           </ul>
@@ -1796,13 +1799,42 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Anpassa planen för er fastighet: ta bort delar som inte är aktuella
-              och importera saknade från grundmallen. Då blir planen mer
-              överskådlig. Uppdateringar i grundmallen skriver inte över det ni
-              redan sparat.
+              Anpassa planen för er fastighet: aktivera det som ingår, ta bort
+              delar som inte är aktuella och lägg till egna komponenter vid
+              behov. Då blir planen överskådlig — även för nästa styrelse.
+              Uppdateringar i grundmallen skriver inte över det ni redan sparat.
             </>
           )}
         </p>
+
+        {!skrivskyddad && (
+          <div className="mt-3 rounded-lg border border-border bg-background px-3 py-3 text-xs leading-relaxed text-muted">
+            <p className="font-medium text-foreground">
+              Lägg till och ta bort — så fungerar knapparna
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              <li>
+                <strong className="text-foreground">Aktiv / Inaktiv</strong> —
+                döljer eller visar komponenten i planen. Sparade tillfällen och
+                priser behålls när ni sätter den inaktiv.
+              </li>
+              <li>
+                <strong className="text-foreground">Ta bort</strong> — raderar
+                komponenten och dess tillfällen från er plan (går inte att ångra
+                utan att lägga in på nytt).
+              </li>
+              <li>
+                <strong className="text-foreground">Lägg till egen</strong> —
+                skapa huvudkomponent som saknas i listan (t.ex. solceller).
+              </li>
+              <li>
+                Inne i varje aktiv komponent: lägg till eller ta bort
+                underkomponenter och underhållstillfällen så registret speglar
+                just er fastighet.
+              </li>
+            </ul>
+          </div>
+        )}
 
         {!skrivskyddad && (
           <p className="mt-3 rounded-lg border border-primary/20 bg-[#eef6f0]/50 px-3 py-2 text-xs leading-relaxed text-muted">

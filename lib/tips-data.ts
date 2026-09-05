@@ -7,14 +7,19 @@ export type TipsPunkt = {
 export const tips: Record<string, TipsPunkt[]> = {
   underhallsplan: [
     {
+      ikon: "🏗️",
+      titel: "Professionell grund först",
+      text: "Det är viktigt att planen tas fram av en professionell part. Då får ni rätt omfattning, intervall och kostnadsläge — styrelse och förvaltare kan sedan arbeta vidare i det levande dokumentet.",
+    },
+    {
       ikon: "💡",
       titel: "Adresser före fasader",
       text: "I steg 1: börja med planinställningar, uppgifter och adresser. Fasader per byggnad öppnas när byggnader lagts in — då blir planen lättare att överblicka.",
     },
     {
       ikon: "📥",
-      titel: "Er plan, er kontroll",
-      text: "Styrelsen styr innehållet i föreningens underhållsplan. Importera saknade delar från grundmallen i steg 3, och ta bort delar som inte är aktuella för er fastighet — så blir planen mer överskådlig. Er sparade plan skrivs inte över automatiskt.",
+      titel: "Lägg till och ta bort",
+      text: "I steg 3: aktivera det som ingår, ta bort det som inte hör till er fastighet, och lägg till egna komponenter vid behov. Håll bara kvar det som behövs — så blir planen överskådlig för nästa styrelse.",
     },
     {
       ikon: "📐",
@@ -23,8 +28,8 @@ export const tips: Record<string, TipsPunkt[]> = {
     },
     {
       ikon: "📋",
-      titel: "Redo för styrelsemötet",
-      text: "Slutsidan summerar planen med underlag till årsbudgeten och avsättningsförslag. Skriv ut eller spara som PDF — redo för styrelsemötet för beslut.",
+      titel: "Slutprodukt för kommande styrelse",
+      text: "Slutsidan summerar planen med budgetunderlag och checklista. Skriv ut eller spara som PDF — en tydlig utgångspunkt när styrelsen byts ut.",
     },
   ],
 

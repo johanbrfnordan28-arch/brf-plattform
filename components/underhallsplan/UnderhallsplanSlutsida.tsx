@@ -58,6 +58,7 @@ import {
   PLAN_SLUTSIDA_CHECKLISTA,
   PLAN_SLUTSIDA_ERFARENHET,
   PLAN_SLUTSIDA_LEVANDE_PLAN,
+  PLAN_SLUTSIDA_PROFFS,
   PLAN_SLUTSIDA_RAD,
 } from "@/components/underhallsplan/plan-slutsida-rad";
 
@@ -1211,9 +1212,9 @@ export function UnderhallsplanSlutsida({
           className="print:break-after-auto"
         >
           <p className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-4 py-3 text-sm leading-relaxed text-foreground">
-            Planen visar siffror och tider — nedan kompletterar erfarenhetsbaserade
-            råd ({PLAN_SLUTSIDA_ERFARENHET.bygg} och{" "}
-            {PLAN_SLUTSIDA_ERFARENHET.styrelse}). Använd dem tillsammans med
+            {PLAN_SLUTSIDA_PROFFS} Planen visar siffror och tider — nedan
+            kompletterar erfarenhetsbaserade råd ({PLAN_SLUTSIDA_ERFARENHET.bygg}{" "}
+            och {PLAN_SLUTSIDA_ERFARENHET.styrelse}). Använd dem tillsammans med
             besiktningar och offerter för just er förening.
           </p>
 

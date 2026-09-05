@@ -47,7 +47,10 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
           Vi tar fram underhållsplanen — styrelsen lämnar underlaget
         </h2>
         <p className="mt-3 text-muted">
-          För föreningar med tecknat avtal. Ordinarie pris från{" "}
+          Professionell framtagning utifrån underlag från styrelsen. Därefter blir
+          planen ett levande dokument där styrelse eller förvaltare lägger till
+          och tar bort komponenter — överskådligt för nästa styrelse. För
+          föreningar med tecknat avtal. Ordinarie pris från{" "}
           <strong className="text-foreground">
             {formatKr(UNDERHALLSPLAN_FRAN_PRIS_KR)}
           </strong>{" "}
