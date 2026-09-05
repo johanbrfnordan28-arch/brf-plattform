@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { plattformStodMailto } from "@/lib/plattform-stod";
 
 const TJANSTER = [
   {
@@ -78,12 +79,15 @@ export function TekniskForvaltningErbjudande() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/offert"
+            <a
+              href={plattformStodMailto(
+                "Styrelse-Navet — offertförfrågan",
+                "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
+              )}
               className="brf-knapp-gron px-6 py-3 text-sm sm:text-base"
             >
               Begär offert
-            </Link>
+            </a>
             <Link
               href="#skapa-forening"
               className="rounded-lg border border-primary bg-white px-6 py-3 text-sm font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0] sm:text-base"

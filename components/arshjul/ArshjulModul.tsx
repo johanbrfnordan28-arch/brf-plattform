@@ -352,7 +352,7 @@ export function ArshjulModul() {
         <button
           type="button"
           onClick={laggTillStandard}
-          className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+          className="rounded-lg border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
         >
           Lägg in standardkategorier
         </button>
@@ -371,6 +371,25 @@ export function ArshjulModul() {
           Importera från projekt (garanti + tidsplaner)
         </button>
       </div>
+      {handelser.length === 0 && (
+        <div className="rounded-xl border border-primary/30 bg-[#eef6f0] px-4 py-4">
+          <p className="text-sm font-semibold text-primary-dark">
+            Årshjulet är tomt
+          </p>
+          <p className="mt-1 text-sm text-foreground">
+            Börja med standardkategorier (möten, OVK, sotning m.m.) — sedan kan
+            ni lägga till egna påminnelser eller importera från underhållsplan
+            och projekt.
+          </p>
+          <button
+            type="button"
+            onClick={laggTillStandard}
+            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+          >
+            Lägg in standardkategorier
+          </button>
+        </div>
+      )}
       {importMeddelande && (
         <p className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
           {importMeddelande}

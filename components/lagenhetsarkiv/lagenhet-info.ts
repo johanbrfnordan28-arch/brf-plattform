@@ -73,13 +73,131 @@ export type SenasteRenovering = {
   ar?: string;
   harDokumentation?: boolean;
   harBilder?: boolean;
+  /**
+   * Om kök/badrum byggts eller renoverats enligt gällande branschregler
+   * (Säker Vatten respektive BKR/GVK).
+   */
+  foljtBranschregler?: boolean;
 };
 
+/**
+ * Passivt läckageskydd i kök enligt Säker Vatteninstallation —
+ * uppsamlande tråg/vattentät insats under vattenansluten utrustning
+ * och i diskbänksskåp.
+ */
 export type KokLackagekydd = {
+  /** Uppsamlande tråg under diskmaskin. */
   diskmaskin?: boolean;
+  /** Uppsamlande tråg under kylskåp. */
+  kylskap?: boolean;
+  /** Uppsamlande tråg under frys. */
+  frys?: boolean;
+  /** Vattentät insats / uppsamlande tråg i diskbänksskåp. */
+  diskbanksskap?: boolean;
+  /** Aktivt skydd: fuktsensor kopplad till vattenlarm, läckagebrytare eller vattenfelsbrytare. */
+  aktivtLackageskydd?: boolean;
+  /** @deprecated Migreras till kylskap + frys */
   kylFrys?: boolean;
+  /** @deprecated Migreras till diskbanksskap */
   diskbankslada?: boolean;
 };
+
+export const KOK_LACKAGESKYDD_ETIKETTER: {
+  key: keyof Pick<
+    KokLackagekydd,
+    "diskmaskin" | "kylskap" | "frys" | "diskbanksskap" | "aktivtLackageskydd"
+  >;
+  etikett: string;
+  hint?: string;
+}[] = [
+  {
+    key: "diskmaskin",
+    etikett: "Under diskmaskin",
+    hint: "Uppsamlande tråg",
+  },
+  {
+    key: "kylskap",
+    etikett: "Under kylskåp",
+    hint: "Uppsamlande tråg",
+  },
+  {
+    key: "frys",
+    etikett: "Under frys",
+    hint: "Uppsamlande tråg",
+  },
+  {
+    key: "diskbanksskap",
+    etikett: "I diskbänksskåp",
+    hint: "Vattentät insats eller uppsamlande tråg",
+  },
+  {
+    key: "aktivtLackageskydd",
+    etikett: "Aktivt läckageskydd",
+    hint: "Fuktsensor med vattenlarm / läckagebrytare",
+  },
+];
+
+/** Branschregler för kök — Säker Vatteninstallation. */
+export const BRANSCHREGLER_KOK = {
+  kort: "Säker Vatten",
+  namn: "Säker Vatteninstallation",
+  info:
+    "Kök som byggts eller renoverats ska följa branschregler Säker Vatteninstallation — bland annat läckageskydd under diskmaskin, kylskåp, frys och i diskbänksskåp.",
+};
+
+/** Branschregler för badrum — Byggkeramikrådet / GVK. */
+export const BRANSCHREGLER_BADRUM = {
+  kort: "BKR/GVK",
+  namn: "Byggkeramikrådets branschregler för våtrum (BKR/GVK)",
+  info:
+    "Badrum som byggts eller renoverats ska följa Byggkeramikrådets branschregler för våtrum (BKR) och GVK — bland annat tätskikt, golvbrunn och dokumenterad egenkontroll.",
+};
+
+export type BranschreglerRum = "kok" | "badrum";
+
+export function branschreglerForRum(rum: BranschreglerRum) {
+  return rum === "kok" ? BRANSCHREGLER_KOK : BRANSCHREGLER_BADRUM;
+}
+
+/** True om våning anger vindsvåning (golvyta är då relevant). */
+export function arVindsvaning(vaning?: string): boolean {
+  const v = vaning?.trim().toLowerCase() ?? "";
+  if (!v) return false;
+  return (
+    v.includes("vind") ||
+    v === "v" ||
+    v.startsWith("v ") ||
+    /\bvind\b/.test(v)
+  );
+}
+
+export function normaliseraKokLackagekydd(
+  lackagekydd?: KokLackagekydd,
+): KokLackagekydd {
+  if (!lackagekydd) return {};
+  const next: KokLackagekydd = { ...lackagekydd };
+  if (lackagekydd.kylFrys && next.kylskap === undefined && next.frys === undefined) {
+    next.kylskap = true;
+    next.frys = true;
+  }
+  if (lackagekydd.diskbankslada && next.diskbanksskap === undefined) {
+    next.diskbanksskap = true;
+  }
+  return next;
+}
+
+export function formateraLackagekydd(l?: KokLackagekydd): string | undefined {
+  const n = normaliseraKokLackagekydd(l);
+  const delar = KOK_LACKAGESKYDD_ETIKETTER.filter((e) => n[e.key]).map(
+    (e) => e.etikett,
+  );
+  return delar.length > 0 ? delar.join(" · ") : undefined;
+}
+
+/** Visar info när renoveringsår finns men branschregler inte bekräftats. */
+export function saknarBranschreglerInfo(r?: SenasteRenovering): boolean {
+  return !!(r?.ar?.trim() && r.foljtBranschregler !== true);
+}
 
 export type LagenhetKok = {
   senasteRenovering?: SenasteRenovering;
@@ -141,8 +259,8 @@ export const TILLAGT_RUM_TYP_ETIKETTER: Record<TillagtRumTyp, string> = {
 };
 
 export const TILLAGT_RUM_TYP_BESKRIVNINGAR: Record<TillagtRumTyp, string> = {
-  kok: "Renovering, läckageskydd och besiktning — kan påverka grannar",
-  badrum: "Renovering och besiktning — kan påverka grannar",
+  kok: "Renovering, Säker Vatten-läckageskydd och besiktning — kan påverka grannar",
+  badrum: "Renovering, BKR/GVK och besiktning — kan påverka grannar",
   wc: "Renovering och besiktning — kan påverka grannar",
   entre: "Dörrtyp: standard eller säkerhetsdörr",
   ovrigt: "Besiktning och uppvärmning (t.ex. sovrum)",
@@ -255,9 +373,9 @@ export function normaliseraLagenhetsRum(
       },
       kok: {
         ...apartment.lagenhetsRum.kok,
-        lackagekydd: {
-          ...apartment.lagenhetsRum.kok?.lackagekydd,
-        },
+        lackagekydd: normaliseraKokLackagekydd(
+          apartment.lagenhetsRum.kok?.lackagekydd,
+        ),
         besiktning: normaliseraRumBesiktning(apartment.lagenhetsRum.kok?.besiktning),
       },
       badrum: {
@@ -269,6 +387,7 @@ export function normaliseraLagenhetsRum(
       ovrigaRum: (apartment.lagenhetsRum.ovrigaRum ?? []).map((r) => ({
         ...r,
         typ: r.typ ?? "ovrigt",
+        lackagekydd: normaliseraKokLackagekydd(r.lackagekydd),
         besiktning: normaliseraRumBesiktning(r.besiktning),
       })),
     };
@@ -321,11 +440,16 @@ export function formateraUppvarmning(u?: LagenhetUppvarmning): string | undefine
 }
 
 export function formateraRenovering(r?: SenasteRenovering): string | undefined {
-  if (!r?.ar?.trim()) return undefined;
-  const delar = [r.ar];
+  if (!r?.ar?.trim() && !r?.foljtBranschregler && !r?.harDokumentation && !r?.harBilder) {
+    return undefined;
+  }
+  if (!r?.ar?.trim() && !r?.foljtBranschregler) return undefined;
+  const delar: string[] = [];
+  if (r.ar?.trim()) delar.push(r.ar);
+  if (r.foljtBranschregler) delar.push("branschregler");
   if (r.harDokumentation) delar.push("dokumentation");
   if (r.harBilder) delar.push("bilder");
-  return delar.join(" · ");
+  return delar.length > 0 ? delar.join(" · ") : undefined;
 }
 
 export function besiktningBehoverAtgard(b?: RumBesiktning): boolean {
@@ -465,8 +589,13 @@ export function sammanfattaTillagtRum(r: LagenhetOvrigtRum): string {
   if (dorr) delar.push(dorr);
   const kontroll = formateraBadrumKontrollpunkter(r.kontrollpunkter);
   if (kontroll) delar.push(kontroll);
+  const lackage = formateraLackagekydd(r.lackagekydd);
+  if (lackage) delar.push(lackage);
   if (r.besiktning?.fordjupadUndersokning) {
     delar.push("Fördjupad undersökning");
+  }
+  if (saknarBranschreglerInfo(r.senasteRenovering)) {
+    delar.push("Branschregler saknas");
   }
   if (delar.length > 0) return delar.join(" · ");
   return `${TILLAGT_RUM_TYP_ETIKETTER[typ]} — komplettera vid behov`;
@@ -490,20 +619,27 @@ export function sammanfattaRumsstatus(
     senasteRenovering?: SenasteRenovering;
     uppvarmning?: LagenhetUppvarmning;
     kontrollpunkter?: BadrumKontrollpunkter;
+    lackagekydd?: KokLackagekydd;
   },
 ): string {
   const delar: string[] = [];
   if (opts.besiktning?.status) {
     delar.push(BESIKTNING_STATUS_ETIKETTER[opts.besiktning.status]);
   }
-  const ren = formateraRenovering(opts.renovering ?? opts.senasteRenovering);
+  const renovering = opts.renovering ?? opts.senasteRenovering;
+  const ren = formateraRenovering(renovering);
   if (ren) delar.push(`Renovering ${ren}`);
   const varme = formateraUppvarmning(opts.uppvarmning);
   if (varme) delar.push(varme);
   const kontroll = formateraBadrumKontrollpunkter(opts.kontrollpunkter);
   if (kontroll) delar.push(kontroll);
+  const lackage = formateraLackagekydd(opts.lackagekydd);
+  if (lackage) delar.push(lackage);
   if (opts.besiktning?.fordjupadUndersokning) {
     delar.push("Fördjupad undersökning");
+  }
+  if (saknarBranschreglerInfo(renovering)) {
+    delar.push("Branschregler saknas");
   }
   return delar.length > 0 ? delar.join(" · ") : `${titel} — komplettera vid behov`;
 }
@@ -516,9 +652,13 @@ export function lagenhetHarIfylldInfo(apartment: ApartmentFolder): boolean {
     apartment.adress ||
     apartment.vaning ||
     apartment.boyta ||
+    apartment.golvyta ||
+    apartment.uppmattYta ||
+    apartment.matbevis ||
     apartment.andelstal ||
     formateraRenovering(rum.kok.senasteRenovering) ||
     formateraRenovering(rum.badrum.senasteRenovering) ||
+    formateraLackagekydd(rum.kok.lackagekydd) ||
     rum.hall.besiktning?.status ||
     rum.kok.besiktning?.status ||
     rum.badrum.besiktning?.status ||
@@ -533,7 +673,8 @@ export function lagenhetHarIfylldInfo(apartment: ApartmentFolder): boolean {
         r.besiktning?.status ||
         formateraRenovering(r.senasteRenovering) ||
         formateraEntreDorr(r.dorrTyp) ||
-        formateraBadrumKontrollpunkter(r.kontrollpunkter),
+        formateraBadrumKontrollpunkter(r.kontrollpunkter) ||
+        formateraLackagekydd(r.lackagekydd),
     ) ||
     eldstader.length > 0 ||
     flaktHarVarde(flakt) ||

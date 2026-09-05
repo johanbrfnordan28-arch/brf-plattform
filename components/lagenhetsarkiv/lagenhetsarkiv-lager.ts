@@ -70,12 +70,21 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
         },
         kok: {
           senasteRenovering: { ar: "2019", harDokumentation: true },
-          lackagekydd: { diskmaskin: true, kylFrys: true },
+          lackagekydd: {
+            diskmaskin: true,
+            kylskap: true,
+            frys: true,
+            diskbanksskap: true,
+          },
           besiktning: { status: "observera" },
           uppvarmning: { typ: "golvvarme-vatten", antal: "1" },
         },
         badrum: {
-          senasteRenovering: { ar: "2024", harBilder: true },
+          senasteRenovering: {
+            ar: "2024",
+            harBilder: true,
+            foljtBranschregler: true,
+          },
           besiktning: { status: "bra" },
           kontrollpunkter: {
             tatskiktGolvbrunn: "ok",
@@ -146,14 +155,18 @@ export function lasLagenhetsarkiv(): LagenhetsarkivState | null {
   }
 }
 
-export function sparaLagenhetsarkiv(state: LagenhetsarkivState): boolean {
-  if (typeof window === "undefined") return false;
-  const ok = safeSetLocalStorage(
+export function sparaLagenhetsarkiv(
+  state: LagenhetsarkivState,
+): { ok: true } | { ok: false; error: import("@/lib/localStorage").LocalStorageSetError } {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "unavailable" };
+  }
+  const result = safeSetLocalStorage(
     lagenhetsarkivStorageKey(),
     JSON.stringify(state),
-  ).ok;
-  if (ok) {
+  );
+  if (result.ok) {
     window.dispatchEvent(new Event(LAGENHETSARKIV_EVENT));
   }
-  return ok;
+  return result;
 }

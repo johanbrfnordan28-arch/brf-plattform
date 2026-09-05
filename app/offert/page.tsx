@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import {
+  PLATTFORM_STOD_EPOST,
+  plattformStodMailto,
+} from "@/lib/plattform-stod";
+import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 export const metadata: Metadata = {
   title: "Offert — Styrelse-Navet",
@@ -25,36 +31,46 @@ export default function OffertPage() {
         </ul>
         <p className="mt-4">
           Kostnaden anpassas efter er fastighet och hur mycket stöd ni behöver.
-          På föreningssidan kan styrelsen också starta ett strukturerat
-          offertflöde med org.nr-uppslag och godkännande via BankID.
         </p>
       </ContentSection>
 
-      <ContentSection title="Offertflöde på föreningssidan">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Styrelsen anger organisationsnummer och e-post.</li>
-          <li>Systemet hämtar föreningsdata från register.</li>
-          <li>Styrelsen väljer nivå 1–4 och kompletterar vid behov.</li>
-          <li>Offertförfrågan skickas — ni får notis i den interna portalen.</li>
-          <li>Offert genereras och skickas till angiven e-post.</li>
-          <li>Styrelsen granskar och godkänner med BankID.</li>
-        </ol>
-      </ContentSection>
-
-      <ContentSection title="Fyra nivåer">
+      <ContentSection title="Så begär ni offert">
         <p>
-          Nivåerna styr omfattning och pris — från enklare teknisk förvaltning till
-          utökade paket med underhållsplan, upphandlingsstöd och löpande uppföljning.
-          Varje nivå kan ha tydlig beskrivning av vad som ingår.
+          Skicka ett mejl med föreningens namn, ungefärlig storlek (antal
+          lägenheter) och vad ni vill ha hjälp med. Vi återkommer med förslag
+          och pris.
         </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <a
+            href={plattformStodMailto(
+              "Styrelse-Navet — offertförfrågan",
+              "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
+            )}
+            className="brf-knapp-gron inline-flex px-5 py-2.5 text-sm"
+          >
+            Mejla offertförfrågan
+          </a>
+          <a
+            href={`mailto:${PLATTFORM_STOD_EPOST}`}
+            className="inline-flex rounded-lg border border-primary px-5 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
+          >
+            {PLATTFORM_STOD_EPOST}
+          </a>
+        </div>
       </ContentSection>
 
-      <ContentSection title="Var funktionen finns">
+      <ContentSection title="Prova plattformen först">
         <p>
-          Offert hör hemma på <strong>föreningssidan</strong>, inte som generellt
-          formulär på startsidan. Publika besökare kan läsa om tjänsten; inloggad
-          styrelse startar sitt ärende där.
+          Vill ni se hur styrelsearbetet blir överskådligt i praktiken? Skapa
+          en testförening gratis och utforska modulerna — offert på teknisk
+          förvaltning kan ni begära när ni vill.
         </p>
+        <Link
+          href={PROVA_GRATIS_PATH}
+          className="mt-4 inline-flex text-sm font-medium text-primary-dark underline hover:no-underline"
+        >
+          Prova gratis →
+        </Link>
       </ContentSection>
     </ModulePage>
   );

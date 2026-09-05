@@ -51,6 +51,8 @@ import {
   type RenoveringsMallId,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
+import { localStorageFelMeddelande } from "@/lib/localStorage";
+import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 
 function uppdateraRenoveringsMapp(
   mappar: RenoveringsMapp[],
@@ -75,6 +77,7 @@ export function ApartmentArchiveDemo() {
   const [historiskMapp, setHistoriskMapp] = useState(false);
   const [valdaRenoveringstyper, setValdaRenoveringstyper] = useState<string[]>([]);
   const [skapadFeedback, setSkapadFeedback] = useState<string | null>(null);
+  const [sparFel, setSparFel] = useState<string | null>(null);
   const [frånLagenhetsnummer, setFrånLagenhetsnummer] = useState("");
   const [tillLagenhetsnummer, setTillLagenhetsnummer] = useState("");
   const [nummerbyteMeddelande, setNummerbyteMeddelande] = useState<{
@@ -107,10 +110,15 @@ export function ApartmentArchiveDemo() {
       skipFirstSave.current = false;
       return;
     }
-    sparaLagenhetsarkiv({
+    const resultat = sparaLagenhetsarkiv({
       apartments,
       nextApartmentNumber,
     });
+    if (resultat.ok) {
+      setSparFel(null);
+    } else {
+      setSparFel(localStorageFelMeddelande(resultat.error));
+    }
   }, [apartments, nextApartmentNumber, hydrated]);
 
   useEffect(() => {
@@ -518,6 +526,15 @@ export function ApartmentArchiveDemo() {
 
   return (
     <div className="rounded-3xl border border-border bg-surface shadow-sm">
+      {sparFel && (
+        <div
+          className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-950 sm:px-6"
+          role="alert"
+        >
+          <p className="font-medium">Kunde inte spara lägenhetsarkivet</p>
+          <p className="mt-0.5">{sparFel}</p>
+        </div>
+      )}
       <div className="border-b border-border p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -610,29 +627,11 @@ export function ApartmentArchiveDemo() {
                     }
                   />
 
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-                      Lägenhetsmappar
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      Grundmappar för {etikett}.
-                    </p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      {apartment.basePages.map((page) => (
-                        <div
-                          key={page}
-                          className="rounded-xl border border-border bg-background p-4 shadow-sm"
-                        >
-                          <p className="text-sm font-semibold text-foreground">
-                            {page}
-                          </p>
-                          <p className="mt-1 text-xs text-muted">
-                            Grundmapp för dokument
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <p className="rounded-lg border border-border bg-[#fafcfa] px-3 py-2 text-xs text-muted">
+                    Dokument för anmälningar, beslut och sluthandlingar läggs i
+                    renoveringsmapparna nedan — öppna en mapp och ladda upp där.
+                  </p>
+                  <DemoFilSparningNotis />
 
                   <div id="lagenhetsuppgifter" className="scroll-mt-24">
                     <LagenhetInfoPanel
