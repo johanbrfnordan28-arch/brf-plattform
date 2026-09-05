@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 
 /** Gemensam accordion-struktur: komponent (+/−) → underkomponenter som kort. */
 
@@ -37,12 +38,7 @@ export function KomponentAccordionRad({
         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[#eef6f0]/50"
         aria-expanded={isOpen}
       >
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white"
-          aria-hidden
-        >
-          {isOpen ? "−" : "+"}
-        </span>
+        <OppnaStangIkon oppen={isOpen} storlek="sm" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-foreground">{namn}</span>
           {undertitel && (

@@ -60,6 +60,16 @@ export const lokalInventarMallar: Record<LokalTypId, LokalInventarDel[]> = {
       beskrivning: "Antal bänkar eller ytor för sköljning och städ.",
     },
     {
+      id: "vatten-avlopp",
+      etikett: "Vatten och avlopp för spolning",
+      beskrivning: "Vattenutkastare eller slanganslutning samt avlopp för spolning av golvytan.",
+    },
+    {
+      id: "undercentral-rum",
+      etikett: "Rum för undercentral",
+      beskrivning: "Separat utrymme i byggnaden för fjärrvärmeundercentral.",
+    },
+    {
       id: "belysning",
       etikett: "Belysning",
       beskrivning: "Antal armaturer i soprummet.",
