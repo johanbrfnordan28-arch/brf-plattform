@@ -40,6 +40,7 @@ model Forening {
 
   medlemmar            ForeningMedlem[]
   inloggningar         InloggningsHistorik[]
+  sakerhetskopior      ForeningSakerhetskopia[]
 }
 
 /// Inloggningskonto — styrelseledamot eller dold plattformsadmin.
@@ -150,3 +151,26 @@ model PlattformMalRad {
   @@index([typ, aktiv])
   @@index([tidpunkt])
 }
+
+/// Säkerhetskopia av föreningens webbläsardata — lagras på våra servrar.
+model ForeningSakerhetskopia {
+  id             String   @id
+  foreningId     String
+  /// Snapshot av namnet vid kopiering (för listning).
+  foreningsNamn  String
+  filnamn        String
+  exportedAt     DateTime
+  version        Int      @default(1)
+  antalNycklar   Int      @default(0)
+  storlekBytes   Int      @default(0)
+  /// Full backup-JSON (format brf-forening-backup).
+  payload        Json
+  skapadAvEpost  String   @default("")
+  skapadTidpunkt DateTime @default(now())
+
+  forening Forening @relation(fields: [foreningId], references: [id], onDelete: Cascade)
+
+  @@index([foreningId, skapadTidpunkt])
+  @@index([foreningsNamn])
+}
+

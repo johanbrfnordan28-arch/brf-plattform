@@ -1,9 +1,13 @@
 import {
   arGrundmallForening,
+  FORENING_AKTIV_EVENT,
   hamtaAktivForeningId,
   lasForeningProfil,
+  rensaForeningLocalStorage,
+  sattAktivForeningId,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { safeSetLocalStorage } from "@/lib/localStorage";
 
 export const FORENING_BACKUP_FORMAT = "brf-forening-backup" as const;
 export const FORENING_BACKUP_VERSION = 1;
@@ -74,7 +78,99 @@ export function filnamnForBackup(backup: ForeningBackup): string {
   return `sakerhetskopia-${slugFranNamn(namn)}-${datumFilnamn(backup.exportedAt)}.json`;
 }
 
-/** Laddar ner föreningens data som JSON — ansvaret ligger hos styrelsen. */
+export function formatBackupDatum(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("sv-SE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/** Validerar uppladdad eller hämtad JSON. */
+export function valideraForeningBackup(raw: unknown): ForeningBackup | string {
+  if (!raw || typeof raw !== "object") return "Ogiltig säkerhetskopia.";
+  const o = raw as Record<string, unknown>;
+  if (o.format !== FORENING_BACKUP_FORMAT) {
+    return "Filen är inte en Styrelse-Navet-säkerhetskopia.";
+  }
+  if (o.version !== FORENING_BACKUP_VERSION) {
+    return "Säkerhetskopians version stöds inte.";
+  }
+  if (typeof o.foreningId !== "string" || !o.foreningId.trim()) {
+    return "Säkerhetskopian saknar förenings-id.";
+  }
+  if (typeof o.exportedAt !== "string") {
+    return "Säkerhetskopian saknar datum.";
+  }
+  if (!o.keys || typeof o.keys !== "object" || Array.isArray(o.keys)) {
+    return "Säkerhetskopian saknar data.";
+  }
+  return {
+    format: FORENING_BACKUP_FORMAT,
+    version: FORENING_BACKUP_VERSION,
+    exportedAt: o.exportedAt,
+    foreningId: o.foreningId.trim(),
+    profil:
+      o.profil && typeof o.profil === "object"
+        ? (o.profil as ForeningProfil)
+        : null,
+    keys: o.keys as Record<string, string>,
+  };
+}
+
+/**
+ * Återställer föreningens localStorage från en säkerhetskopia.
+ * Skriver över befintlig data för samma förenings-id.
+ */
+export function aterstallForeningFranBackup(
+  backup: ForeningBackup,
+  opts?: { kravForeningId?: string },
+): { ok: boolean; fel?: string } {
+  if (typeof window === "undefined") {
+    return { ok: false, fel: "Återställning fungerar bara i webbläsaren." };
+  }
+  const id = backup.foreningId;
+  if (!id || arGrundmallForening(id)) {
+    return { ok: false, fel: "Kan inte återställa till grundmallen." };
+  }
+  if (opts?.kravForeningId && opts.kravForeningId !== id) {
+    return {
+      ok: false,
+      fel: "Säkerhetskopian tillhör en annan förening än den ni är inne på.",
+    };
+  }
+
+  const prefix = `brf-f-${id}--`;
+  rensaForeningLocalStorage(id);
+
+  let skrivna = 0;
+  for (const [key, varde] of Object.entries(backup.keys)) {
+    if (!key.startsWith(prefix)) continue;
+    if (typeof varde !== "string") continue;
+    safeSetLocalStorage(key, varde);
+    skrivna += 1;
+  }
+
+  if (skrivna === 0 && Object.keys(backup.keys).length > 0) {
+    return {
+      ok: false,
+      fel: "Säkerhetskopian innehöll inga giltiga nycklar för föreningen.",
+    };
+  }
+
+  sattAktivForeningId(id, { tyst: true });
+  window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+
+  return { ok: true };
+}
+
+/** Laddar ner föreningens data som JSON. */
 export function laddaNerForeningSakerhetskopia(foreningId?: string): {
   ok: boolean;
   filnamn?: string;
