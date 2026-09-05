@@ -6,20 +6,20 @@ import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    ...(await foreningModulMetadata("Årshjul & kalender")),
+    ...(await foreningModulMetadata("Årshjul")),
     description:
-      "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
+      "Årshjulet ger översikt och gör planeringen av styrelsearbetet mer överskådlig — med påminnelser flera år framåt.",
   };
 }
 
 export default function ForeningArshjulPage() {
   return (
     <ModulePage
-      title="Årshjul & kalender"
+      title="Årshjul"
       icon="📅"
-      intro="Planera styrelsearbetet året runt och se långsiktiga datum — OVK, stämma, bokslut och egna påminnelser. Importera besiktningar från underhållsplanen så inget ligger tio år fram utan att synas."
+      intro="Styrelsemöten, byggmöten, garantbesiktning, OVK, sotning, energideklaration och radon — med månads- eller årsintervall. Hoppa över sommaren när ni inte har möten."
     >
-      <ContentSection title="Styrelsens kalender" plain>
+      <ContentSection title="Styrelsens årshjul" plain>
         <ArshjulModul />
       </ContentSection>
     </ModulePage>

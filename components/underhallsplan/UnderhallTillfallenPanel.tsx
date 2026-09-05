@@ -1,7 +1,6 @@
 "use client";
 
-import type { FasadAtgardId } from "@/components/underhallsplan/fasad-atgard";
-import { FasadAtgardPrisPanel } from "@/components/underhallsplan/FasadAtgardPrisPanel";
+import { UnderhallAtgardPrisPanel } from "@/components/underhallsplan/UnderhallAtgardPrisPanel";
 import {
   hamtaUnderhallAtgardKatalog,
   hamtaVanligaInkluderadeUnderkomponenter,
@@ -306,8 +305,9 @@ export function UnderhallTillfallenPanel({
 
           {tillfalle.atgarder.length > 0 && (
             <div className="mt-4">
-              <FasadAtgardPrisPanel
-                valdaAtgarder={tillfalle.atgarder as FasadAtgardId[]}
+              <UnderhallAtgardPrisPanel
+                planNyckel={planNyckel}
+                valdaAtgarder={tillfalle.atgarder}
                 priser={priser}
                 defaultKvm={defaultKvm}
                 onChange={onPriserChange}
