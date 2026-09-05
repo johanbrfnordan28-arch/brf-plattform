@@ -37,22 +37,22 @@ export function ForeningValkommenRand() {
       <p className="text-sm font-semibold text-primary-dark">Välkommen!</p>
       <p className="mt-1 text-base font-bold text-foreground">{namn}</p>
       <p className="mt-2 text-sm text-muted">
-        Er föreningssida är en kopia av grundmallen — samma moduler och demo-innehåll.
-        Börja med årshjulet eller underhållsplanen nedan. Föreningsuppgifter fyller ni i
-        när det passar.
+        Er föreningssida är sparad i den här webbläsaren. Börja med att spara
+        föreningsuppgifter — då syns ni tydligt vid nästa inloggning från
+        Styrelse-Navet. Därefter kan ni öppna årshjul eller underhållsplan.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href="/forening/uppgifter"
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Fyll i styrelsens kontakt
+          Spara föreningsuppgifter
         </Link>
         <Link
-          href="/forening/underhallsplan#grund"
+          href="/forening/uppgifter#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
-          Grunduppgifter fastighet
+          Grunduppgifter
         </Link>
         <Link
           href="/forening/arshjul"

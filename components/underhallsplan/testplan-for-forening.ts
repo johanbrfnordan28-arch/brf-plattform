@@ -1,12 +1,9 @@
 import {
   arGrundmallForening,
   lasAktivForeningId,
-  lasForeningProfil,
 } from "@/lib/forening-registry";
 import {
   testplaner,
-  testplanNordan28,
-  testplanNordan30,
   type TestplanDefinition,
   type TestplanId,
 } from "@/components/underhallsplan/testplaner";
@@ -17,41 +14,26 @@ export const GENERISKA_DEMO_TESTPLANER: TestplanId[] = [
   "test-50",
   "test-70",
   "test-90",
-  "test-sailor",
 ];
 
-function matcharNordan28(foreningId: string, foreningNamn: string): boolean {
-  const id = foreningId.toLowerCase();
-  const namn = foreningNamn.toLowerCase();
-  return id.includes("nordan-28") || namn.includes("nordan 28");
-}
-
-function matcharNordan30(foreningId: string, foreningNamn: string): boolean {
-  const id = foreningId.toLowerCase();
-  const namn = foreningNamn.toLowerCase();
-  return id.includes("nordan-30") || namn.includes("nordan 30");
-}
-
+/**
+ * Epokmallar (90-tal m.m.) visas bara i central grundmall.
+ * Föreningar öppnar grundmallen skrivskyddat via ForeningPlanLagePanel —
+ * de ska inte ladda epok-/startunderlag in i sin egen plan.
+ */
 export function hamtaTillgangligaTestplaner(
   foreningId?: string,
-  foreningNamn?: string,
 ): TestplanDefinition[] {
   const id = foreningId ?? lasAktivForeningId();
   if (arGrundmallForening(id)) return testplaner;
-
-  const namn = foreningNamn ?? lasForeningProfil(id)?.namn ?? "";
-  if (matcharNordan28(id, namn)) return [testplanNordan28];
-  if (matcharNordan30(id, namn)) return [testplanNordan30];
-
   return [];
 }
 
 export function arTillatenTestplanForForening(
   planId: TestplanId,
   foreningId?: string,
-  foreningNamn?: string,
 ): boolean {
-  const tillgangliga = hamtaTillgangligaTestplaner(foreningId, foreningNamn);
+  const tillgangliga = hamtaTillgangligaTestplaner(foreningId);
   return tillgangliga.some((plan) => plan.id === planId);
 }
 

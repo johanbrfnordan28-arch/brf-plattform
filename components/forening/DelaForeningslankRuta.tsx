@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
+import { useHubbNamn } from "@/components/forening/useHubbNamn";
 import {
   arGrundmallForening,
   FORENING_AKTIV_EVENT,
@@ -17,6 +17,7 @@ type DelaForeningslankRutaProps = {
 
 /** Tillfällig ruta — ta bort när delning inte längre behövs. */
 export function DelaForeningslankRuta({ initialUrl = "" }: DelaForeningslankRutaProps) {
+  const hubbNamn = useHubbNamn();
   const [visa, setVisa] = useState(false);
   const [lank, setLank] = useState(initialUrl);
   const [kopierad, setKopierad] = useState(false);
@@ -68,10 +69,10 @@ export function DelaForeningslankRuta({ initialUrl = "" }: DelaForeningslankRuta
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
-            Dela {STYRELSEFLOW_NAMN}
+            Dela {hubbNamn}
           </p>
           <p className="text-sm text-amber-950">
-            Kopiera länken och skicka till en kollega som ska se {STYRELSEFLOW_NAMN}.
+            Kopiera länken och skicka till en kollega som ska se {hubbNamn}.
           </p>
           <div className="mt-2 flex gap-2">
             <input
