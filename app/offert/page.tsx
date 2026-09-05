@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { OffertForfraganForm } from "@/components/offert/OffertForfraganForm";
+import { ABK_09_KORT, ABK_09_LANG } from "@/lib/abk-09";
+import {
+  PLATTFORM_STOD_EPOST,
+  plattformStodMailto,
+} from "@/lib/plattform-stod";
+import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 export const metadata: Metadata = {
-  title: "Offert — BRF Företag",
-  description: "Begär och godkänn offerter för BRF — strukturerat flöde med org.nr och BankID.",
+  title: "Offert — Styrelse-Navet",
+  description:
+    "Begär offert på teknisk förvaltning, projektledning, besiktning, skadeutredning och upphandling — enligt ABK 09 utan avvikelser.",
 };
 
 export default function OffertPage() {
@@ -12,33 +21,47 @@ export default function OffertPage() {
     <ModulePage
       title="Offert"
       icon="💬"
-      intro="På föreningssidan begär styrelsen offert med org.nr-uppslag, väljer nivå och får dokument levererat till e-post — med möjlighet till godkännande via BankID."
+      intro="Begär offert på teknisk förvaltning och övriga konsulttjänster. Priset beror på fastigheten och omfattningen — fasta priser eller löpande debitering."
     >
-      <ContentSection title="Offertflöde">
-        <ol className="list-decimal space-y-2 pl-5">
-          <li>Styrelsen anger organisationsnummer och e-post.</li>
-          <li>Systemet hämtar föreningsdata från register.</li>
-          <li>Styrelsen väljer nivå 1–4 och kompletterar vid behov.</li>
-          <li>Offertförfrågan skickas — ni får notis i den interna portalen.</li>
-          <li>Offert genereras och skickas till angiven e-post.</li>
-          <li>Styrelsen granskar och godkänner med BankID.</li>
-        </ol>
+      <ContentSection title="Avtal — ABK 09">
+        <p>{ABK_09_LANG}</p>
+        <p className="mt-2 text-sm text-muted">{ABK_09_KORT}</p>
       </ContentSection>
 
-      <ContentSection title="Fyra nivåer">
-        <p>
-          Nivåerna styr omfattning och pris — från enklare teknisk förvaltning till
-          utökade paket med underhållsplan, upphandlingsstöd och löpande uppföljning.
-          Varje nivå kan ha tydlig beskrivning av vad som ingår.
-        </p>
+      <ContentSection title="Vad ni kan begära offert på">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Teknisk förvaltning till fördelaktigt pris</li>
+          <li>Projektledning</li>
+          <li>Skadeutredning</li>
+          <li>Besiktning</li>
+          <li>Upphandling</li>
+        </ul>
       </ContentSection>
 
-      <ContentSection title="Var funktionen finns">
+      <OffertForfraganForm />
+
+      <ContentSection title="Alternativ: mejla direkt">
         <p>
-          Offert hör hemma på <strong>föreningssidan</strong>, inte som generellt
-          formulär på startsidan. Publika besökare kan läsa om tjänsten; inloggad
-          styrelse startar sitt ärende där.
+          Ni kan också mejla oss direkt. Ange förening, ungefärlig storlek och
+          vad ni vill ha hjälp med.
         </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <a
+            href={plattformStodMailto(
+              "Styrelse-Navet — offertförfrågan",
+              "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
+            )}
+            className="inline-flex rounded-lg border border-primary px-5 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
+          >
+            Mejla {PLATTFORM_STOD_EPOST}
+          </a>
+          <Link
+            href={PROVA_GRATIS_PATH}
+            className="inline-flex text-sm font-medium text-primary-dark underline hover:no-underline"
+          >
+            Prova plattformen gratis →
+          </Link>
+        </div>
       </ContentSection>
     </ModulePage>
   );

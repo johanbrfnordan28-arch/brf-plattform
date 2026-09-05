@@ -1,13 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ForeningVaxlare } from "@/components/forening/ForeningVaxlare";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
-import { GRUNDMALL_NAMN } from "@/lib/forening-registry";
+import { arAktivKundForening } from "@/lib/forening-kund";
+import { FORENING_AKTIV_EVENT, GRUNDMALL_NAMN } from "@/lib/forening-registry";
 
 const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
+  {
+    href: "/forening/underhallsplan",
+    label: "Underhåll",
+    aktivPa: (p: string) => p.startsWith("/forening/underhallsplan"),
+  },
   {
     href: "/forening/rondering#manadssignering-schema",
     label: "Rondering",
@@ -24,19 +31,52 @@ const nav = [
     aktivPa: (p: string) => p.startsWith("/forening/medlemmar"),
   },
   {
+    href: "/forening/guider",
+    label: "Guider",
+    aktivPa: (p: string) => p.startsWith("/forening/guider"),
+  },
+  {
     href: "/forening/uppgifter",
     label: "Uppgifter",
     aktivPa: (p: string) => p.startsWith("/forening/uppgifter"),
+  },
+  {
+    href: "/forening/konto",
+    label: "Konto",
+    aktivPa: (p: string) => p.startsWith("/forening/konto"),
   },
 ];
 
 export function ForeningHeader() {
   const pathname = usePathname();
   const foreningsNamn = useAktivForeningsNamn();
+  const [arKund, setArKund] = useState(false);
+  const [loggarUt, setLoggarUt] = useState(false);
   const initial =
     foreningsNamn === GRUNDMALL_NAMN
       ? "G"
       : foreningsNamn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
+
+  useEffect(() => {
+    function ladda() {
+      setArKund(arAktivKundForening());
+    }
+    ladda();
+    window.addEventListener(FORENING_AKTIV_EVENT, ladda);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+  }, []);
+
+  async function loggaUt() {
+    setLoggarUt(true);
+    try {
+      const { rensaLokalSession } = await import("@/lib/auth/lokal-session");
+      rensaLokalSession();
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* fortsätt till startsidan ändå */
+    }
+    window.location.href = "/";
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
@@ -73,20 +113,22 @@ export function ForeningHeader() {
         <div className="flex flex-wrap items-center justify-end gap-2">
           <ForeningVaxlare />
           <span className="hidden rounded-full border border-primary/30 bg-[#e2f0e6] px-3 py-1 text-xs font-medium text-primary-dark lg:inline-flex">
-            Inloggad styrelse
+            {arKund ? "Kund · er förening" : "Inloggad styrelse"}
           </span>
           <Link
             href="/"
-            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
+            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark lg:inline-flex"
           >
-            BRF Företag
+            Styrelse-Navet
           </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark"
+          <button
+            type="button"
+            disabled={loggarUt}
+            onClick={() => void loggaUt()}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark disabled:opacity-50"
           >
-            Logga ut
-          </Link>
+            {loggarUt ? "Loggar ut…" : "Logga ut"}
+          </button>
         </div>
       </div>
     </header>

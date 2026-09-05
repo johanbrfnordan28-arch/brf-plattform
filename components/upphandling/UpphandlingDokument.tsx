@@ -38,11 +38,13 @@ import {
   upphandlingStorageKey,
   type KategoriUpphandlingMeta,
 } from "@/components/upphandling/upphandling-lager";
+import { publiceraTillNavet } from "@/components/upphandling/navet-upphandling-lager";
 import { DriftUpphandlingSchemaPanel } from "@/components/upphandling/DriftUpphandlingSchemaPanel";
 import {
   StyrelseBeslutSektion,
   StyrelseGodkannandeSektion,
 } from "@/components/upphandling/StyrelseUpphandlingPanel";
+import { hamtaAktivForeningsNamn } from "@/lib/forening-registry";
 
 type KategoriState = KategoriDokumentState;
 
@@ -125,6 +127,42 @@ export function UpphandlingSidaInnehall() {
       return;
     }
     sparaUpphandlingLager(result.lager);
+
+    const dokState = kategorier[kategoriKey];
+    const dokument = [
+      ...standardDokumentPlatser
+        .map((plats) => {
+          const ref = dokState?.platser?.[plats.id];
+          return ref?.filnamn
+            ? { etikett: plats.etikett, filnamn: ref.filnamn }
+            : null;
+        })
+        .filter((d): d is { etikett: string; filnamn: string } => Boolean(d)),
+      ...(dokState?.extra ?? [])
+        .filter((e) => e.dokument?.filnamn)
+        .map((e) => ({
+          etikett: e.etikett,
+          filnamn: e.dokument!.filnamn,
+        })),
+    ];
+
+    try {
+      publiceraTillNavet({
+        id: result.upphandling.id,
+        kategoriId: result.upphandling.kategoriId,
+        kategoriNamn: result.upphandling.kategoriNamn,
+        gruppId: result.upphandling.gruppId,
+        titel: result.upphandling.titel,
+        ort: result.upphandling.ort,
+        sistaAnbudsdag: result.upphandling.sistaAnbudsdag,
+        foreningIntern: hamtaAktivForeningsNamn(),
+        kortBeskrivning: `${result.upphandling.kategoriNamn} i ${result.upphandling.ort}. Fullständigt förfrågningsunderlag endast för inbjudna entreprenörer.`,
+        dokument,
+      });
+    } catch {
+      // Navet-synk får inte blockera föreningspublicering
+    }
+
     uppdateraFranLager();
     setPubliceringsFel((current) => {
       const next = { ...current };

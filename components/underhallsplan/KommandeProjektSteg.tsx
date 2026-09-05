@@ -1,5 +1,6 @@
 "use client";
 
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatKostnad } from "@/components/underhallsplan/renoveringar";
 import {
@@ -322,13 +323,16 @@ export function KommandeProjektSteg({
                       </p>
                     </button>
                     <div className="flex gap-2">
-                      <button
-                        type="button"
+                      <OppnaStangKnapp
+                        oppen={ärÖppen}
                         onClick={() => setÖppetProjektId(ärÖppen ? null : p.id)}
-                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium"
-                      >
-                        {ärÖppen ? "Stäng" : "Öppna"}
-                      </button>
+                        storlek="sm"
+                        ariaLabel={
+                          ärÖppen
+                            ? `Stäng projektet ${p.titel}`
+                            : `Öppna projektet ${p.titel}`
+                        }
+                      />
                       <button
                         type="button"
                         onClick={() => taBortProjekt(p.id)}

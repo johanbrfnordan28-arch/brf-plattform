@@ -4,13 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { useStyrelseKontakt } from "@/components/forening/useStyrelseKontakt";
+import {
+  PLATTFORM_STOD_EPOST,
+  plattformStodMailto,
+} from "@/lib/plattform-stod";
 
 export function Footer() {
   const pathname = usePathname();
   const isForening = pathname.startsWith("/forening");
   const foreningsNamn = useAktivForeningsNamn();
   const kontakt = useStyrelseKontakt();
-  const brand = isForening ? foreningsNamn : "BRF Företag";
+  const brand = isForening ? foreningsNamn : "Styrelse-Navet";
 
   return (
     <footer className="border-t border-border bg-surface">
@@ -36,23 +40,47 @@ export function Footer() {
                 </a>
                 {kontakt.kontaktperson ? ` (${kontakt.kontaktperson})` : ""}
               </p>
-            ) : !isForening ? (
-              <p className="text-sm text-muted">
-                Prototyp — integritet, villkor och kontakt kommer i produktversion.
-              </p>
             ) : null}
+            <p className="text-sm text-muted">
+              Hjälp från Styrelse-Navet:{" "}
+              <a
+                href={plattformStodMailto()}
+                className="font-medium text-primary-dark underline hover:no-underline"
+              >
+                {PLATTFORM_STOD_EPOST}
+              </a>
+            </p>
             {isForening && (
               <Link
                 href="/"
                 className="text-sm font-medium text-primary-dark hover:underline"
               >
-                BRF Företags huvudsida
+                Styrelse-Navets huvudsida
+              </Link>
+            )}
+            {!isForening && (
+              <Link
+                href="/offert"
+                className="text-sm font-medium text-primary-dark hover:underline"
+              >
+                Begär offert
               </Link>
             )}
           </div>
         </div>
         <p className="mt-8 text-xs text-muted">
-          © {new Date().getFullYear()} {brand} — demoversion
+          © {new Date().getFullYear()} {brand}
+          {!isForening ? (
+            <>
+              {" · "}
+              <Link
+                href="/plattform-login"
+                className="text-muted underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Personalinloggning
+              </Link>
+            </>
+          ) : null}
         </p>
       </div>
     </footer>
