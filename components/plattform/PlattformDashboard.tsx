@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   PlattformForeningarOversikt,
   type PlattformForeningRad,
+  type PlattformForeningSammanfattning,
 } from "@/components/plattform/PlattformForeningarOversikt";
 import { PlattformAnvandarePanel } from "@/components/plattform/PlattformAnvandarePanel";
+import { PlattformMalPanel } from "@/components/plattform/PlattformMalPanel";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 
 type Statistik = {
@@ -68,6 +70,13 @@ export function PlattformDashboard() {
   const [inloggningar, setInloggningar] = useState<Inloggning[]>([]);
   const [mejl, setMejl] = useState<MejlRad[]>([]);
   const [foreningar, setForeningar] = useState<PlattformForeningRad[]>([]);
+  const [foreningSammanfattning, setForeningSammanfattning] =
+    useState<PlattformForeningSammanfattning>({
+      totalt: 0,
+      test: 0,
+      kund: 0,
+      utgangen: 0,
+    });
   const [laddarForeningar, setLaddarForeningar] = useState(true);
   const [mittLosenord, setMittLosenord] = useState<MittLosenord | null>(null);
   const [visaMittLosenord, setVisaMittLosenord] = useState(false);
@@ -234,9 +243,16 @@ export function PlattformDashboard() {
         </section>
       ) : null}
 
+      <PlattformMalPanel
+        aktuelltAvtal={foreningSammanfattning.kund}
+        aktuelltTest={foreningSammanfattning.test}
+        avslutadePerioder={foreningSammanfattning.utgangen}
+      />
+
       <PlattformForeningarOversikt
         foreningar={foreningar}
         laddar={laddarForeningar}
+        onSammanfattning={setForeningSammanfattning}
       />
 
       <PlattformAnvandarePanel />

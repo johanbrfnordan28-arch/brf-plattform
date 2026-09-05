@@ -34,12 +34,12 @@ export function klassificeraInternForeningStatus(opts: {
   });
 
   if (utgangen) {
-    return {
-      status: "utgangen",
-      etikett: "Test — utgången",
-      beskrivning: "Prövoperiod slut utan tecknat avtal",
-      dagarKvar: 0,
-    };
+  return {
+    status: "utgangen",
+    etikett: "Avslutad period",
+    beskrivning: "Prövoperiod slut utan tecknat avtal",
+    dagarKvar: 0,
+  };
   }
 
   const dagarKvar = dagarKvarAvProvoperiod(

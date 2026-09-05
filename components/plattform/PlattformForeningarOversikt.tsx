@@ -1,10 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   klassificeraInternForeningStatus,
   type InternForeningStatus,
 } from "@/lib/plattform-forening-status";
+
+export type PlattformForeningAktivitet = {
+  antalAnvandare: number;
+  inloggningarTotalt: number;
+  inloggningar7Dagar: number;
+  inloggningar30Dagar: number;
+  senasteInloggning: string | null;
+};
 
 export type PlattformForeningRad = {
   id: string;
@@ -18,7 +26,23 @@ export type PlattformForeningRad = {
   avtalBankidTidpunkt: string;
   avtalBankidNamn: string;
   skapadTidpunkt: string;
-  medlemmar: Array<{ roll: string; epost: string; namn: string }>;
+  medlemmar: Array<{
+    roll: string;
+    epost: string;
+    namn: string;
+    typ?: string;
+    senasteInloggning?: string | null;
+  }>;
+  aktivitet?: PlattformForeningAktivitet;
+};
+
+export type PlattformForeningSammanfattning = {
+  totalt: number;
+  test: number;
+  kund: number;
+  utgangen: number;
+  anvandareTotalt?: number;
+  inloggningar7Dagar?: number;
 };
 
 type Filter = "alla" | InternForeningStatus;
@@ -43,9 +67,9 @@ function formatDatum(iso: string | null | undefined): string {
 
 const FILTER_ETIKETTER: Record<Filter, string> = {
   alla: "Alla",
-  test: "Testföreningar",
-  kund: "Accepterat avtal",
-  utgangen: "Utgångna tester",
+  test: "Aktuella tester",
+  kund: "Med avtal",
+  utgangen: "Avslutade perioder",
 };
 
 function statusBadgeClass(status: InternForeningStatus): string {
@@ -58,21 +82,41 @@ function statusBadgeClass(status: InternForeningStatus): string {
   return "bg-sky-50 text-sky-950 ring-1 ring-sky-200";
 }
 
+function tomAktivitet(): PlattformForeningAktivitet {
+  return {
+    antalAnvandare: 0,
+    inloggningarTotalt: 0,
+    inloggningar7Dagar: 0,
+    inloggningar30Dagar: 0,
+    senasteInloggning: null,
+  };
+}
+
 type Props = {
   foreningar: PlattformForeningRad[];
   laddar?: boolean;
+  onSammanfattning?: (s: PlattformForeningSammanfattning) => void;
 };
 
 /**
- * Intern översikt: skapade föreningar, test vs accepterat avtal.
+ * Intern översikt: skapade föreningar, aktivitet, test vs avtal vs avslutade.
  */
-export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
+export function PlattformForeningarOversikt({
+  foreningar,
+  laddar,
+  onSammanfattning,
+}: Props) {
   const [filter, setFilter] = useState<Filter>("alla");
+  const [sortering, setSortering] = useState<"skapad" | "aktivitet">("skapad");
 
   const berikade = useMemo(
     () =>
       foreningar.map((f) => ({
         ...f,
+        aktivitet: f.aktivitet ?? {
+          ...tomAktivitet(),
+          antalAnvandare: f.medlemmar.length,
+        },
         statusInfo: klassificeraInternForeningStatus({
           avtalGodkant: f.avtalGodkant,
           skapadTidpunkt: f.skapadTidpunkt,
@@ -82,17 +126,41 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
   );
 
   const sammanfattning = useMemo(() => {
-    const bas = { totalt: berikade.length, test: 0, kund: 0, utgangen: 0 };
+    const bas: PlattformForeningSammanfattning = {
+      totalt: berikade.length,
+      test: 0,
+      kund: 0,
+      utgangen: 0,
+      anvandareTotalt: 0,
+      inloggningar7Dagar: 0,
+    };
     for (const f of berikade) {
       bas[f.statusInfo.status] += 1;
+      bas.anvandareTotalt! += f.aktivitet.antalAnvandare;
+      bas.inloggningar7Dagar! += f.aktivitet.inloggningar7Dagar;
     }
     return bas;
   }, [berikade]);
 
+  useEffect(() => {
+    onSammanfattning?.(sammanfattning);
+  }, [onSammanfattning, sammanfattning]);
+
   const filtrerade = useMemo(() => {
-    if (filter === "alla") return berikade;
-    return berikade.filter((f) => f.statusInfo.status === filter);
-  }, [berikade, filter]);
+    const lista =
+      filter === "alla"
+        ? [...berikade]
+        : berikade.filter((f) => f.statusInfo.status === filter);
+    if (sortering === "aktivitet") {
+      lista.sort((a, b) => {
+        const diff =
+          b.aktivitet.inloggningar30Dagar - a.aktivitet.inloggningar30Dagar;
+        if (diff !== 0) return diff;
+        return b.aktivitet.antalAnvandare - a.aktivitet.antalAnvandare;
+      });
+    }
+    return lista;
+  }, [berikade, filter, sortering]);
 
   return (
     <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
@@ -100,17 +168,19 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
         <div>
           <h2 className="text-lg font-bold text-foreground">Föreningar</h2>
           <p className="mt-1 text-sm text-muted">
-            Alla skapade föreningar — vilka som är test och vilka som accepterat
-            avtalet/offerten.
+            Skapade sidor, aktivitet (användare och inloggningar), avtal,
+            aktuella tester och avslutade perioder.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-center text-xs">
           {(
             [
               ["Totalt", sammanfattning.totalt],
-              ["Test", sammanfattning.test],
+              ["Tester", sammanfattning.test],
               ["Avtal", sammanfattning.kund],
-              ["Utgångna", sammanfattning.utgangen],
+              ["Avslutade", sammanfattning.utgangen],
+              ["Användare", sammanfattning.anvandareTotalt ?? 0],
+              ["Inlogg. 7d", sammanfattning.inloggningar7Dagar ?? 0],
             ] as const
           ).map(([etikett, varde]) => (
             <div
@@ -124,7 +194,7 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {(Object.keys(FILTER_ETIKETTER) as Filter[]).map((nyckel) => (
           <button
             key={nyckel}
@@ -142,6 +212,19 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
               : ` (${sammanfattning[nyckel]})`}
           </button>
         ))}
+        <label className="ml-auto flex items-center gap-2 text-sm text-muted">
+          Sortera
+          <select
+            value={sortering}
+            onChange={(e) =>
+              setSortering(e.target.value as "skapad" | "aktivitet")
+            }
+            className="rounded-lg border border-border bg-white px-2 py-1.5 text-foreground"
+          >
+            <option value="skapad">Senast skapad</option>
+            <option value="aktivitet">Mest aktiva</option>
+          </select>
+        </label>
       </div>
 
       <div className="mt-4 overflow-x-auto">
@@ -150,8 +233,9 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
             <tr>
               <th className="py-2 pr-3">Förening</th>
               <th className="py-2 pr-3">Status</th>
+              <th className="py-2 pr-3">Användare</th>
+              <th className="py-2 pr-3">Inloggningar</th>
               <th className="py-2 pr-3">Skapad</th>
-              <th className="py-2 pr-3">Avtal / BankID</th>
               <th className="py-2">Kontakt</th>
             </tr>
           </thead>
@@ -166,45 +250,59 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
                       : "Org.nr saknas"}
                     {f.ort ? ` · ${f.ort}` : ""}
                   </p>
-                  <p className="mt-0.5 font-mono text-[11px] text-muted">
-                    {f.id}
-                  </p>
                 </td>
                 <td className="py-3 pr-3">
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadgeClass(f.statusInfo.status)}`}
                   >
-                    {f.statusInfo.etikett}
+                    {f.statusInfo.status === "utgangen"
+                      ? "Avslutad period"
+                      : f.statusInfo.etikett}
                   </span>
                   <p className="mt-1 text-xs text-muted">
                     {f.statusInfo.status === "test" &&
                     f.statusInfo.dagarKvar != null
                       ? `${f.statusInfo.dagarKvar} dagar kvar`
-                      : f.statusInfo.beskrivning}
+                      : f.statusInfo.status === "kund"
+                        ? f.avtalGodkantTidpunkt
+                          ? `Avtal ${formatDatum(f.avtalGodkantTidpunkt)}`
+                          : "Tecknat avtal"
+                        : f.statusInfo.beskrivning}
+                  </p>
+                </td>
+                <td className="py-3 pr-3">
+                  <p className="font-semibold text-foreground">
+                    {f.aktivitet.antalAnvandare}
+                  </p>
+                  {f.medlemmar.length > 0 ? (
+                    <p className="mt-1 max-w-[14rem] text-xs text-muted">
+                      {f.medlemmar
+                        .map((m) => m.namn || m.epost)
+                        .slice(0, 3)
+                        .join(", ")}
+                      {f.medlemmar.length > 3
+                        ? ` +${f.medlemmar.length - 3}`
+                        : ""}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted">Inga användare</p>
+                  )}
+                </td>
+                <td className="py-3 pr-3">
+                  <p className="font-semibold text-foreground">
+                    {f.aktivitet.inloggningarTotalt}
+                    <span className="font-normal text-muted"> totalt</span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    {f.aktivitet.inloggningar7Dagar} / 7 d ·{" "}
+                    {f.aktivitet.inloggningar30Dagar} / 30 d
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Senast: {formatTid(f.aktivitet.senasteInloggning)}
                   </p>
                 </td>
                 <td className="py-3 pr-3 whitespace-nowrap text-muted">
                   {formatDatum(f.skapadTidpunkt)}
-                </td>
-                <td className="py-3 pr-3">
-                  {f.avtalGodkant ? (
-                    <>
-                      <p className="font-medium text-foreground">Godkänt</p>
-                      <p className="text-xs text-muted">
-                        {formatTid(f.avtalGodkantTidpunkt)}
-                      </p>
-                      {f.avtalBankidNamn ? (
-                        <p className="mt-1 text-xs text-muted">
-                          BankID: {f.avtalBankidNamn}
-                          {f.avtalBankidTidpunkt
-                            ? ` · ${formatTid(f.avtalBankidTidpunkt)}`
-                            : ""}
-                        </p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <span className="text-muted">Ej accepterat</span>
-                  )}
                 </td>
                 <td className="py-3">
                   <p className="text-foreground">
@@ -213,19 +311,12 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
                   {f.kontaktperson && f.epost ? (
                     <p className="text-xs text-muted">{f.epost}</p>
                   ) : null}
-                  {f.medlemmar.length > 0 ? (
-                    <p className="mt-1 text-xs text-muted">
-                      {f.medlemmar
-                        .map((m) => `${m.namn || m.epost} (${m.roll})`)
-                        .join(", ")}
-                    </p>
-                  ) : null}
                 </td>
               </tr>
             ))}
             {!laddar && filtrerade.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-6 text-muted">
+                <td colSpan={6} className="py-6 text-muted">
                   {foreningar.length === 0
                     ? "Inga föreningar skapade ännu."
                     : "Inga föreningar matchar filtret."}
@@ -234,7 +325,7 @@ export function PlattformForeningarOversikt({ foreningar, laddar }: Props) {
             ) : null}
             {laddar ? (
               <tr>
-                <td colSpan={5} className="py-6 text-muted">
+                <td colSpan={6} className="py-6 text-muted">
                   Laddar föreningar …
                 </td>
               </tr>

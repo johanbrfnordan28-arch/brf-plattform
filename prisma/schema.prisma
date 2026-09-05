@@ -121,3 +121,14 @@ model MejlOutbox {
   skickadVia String @default("outbox")
   skapadTidpunkt DateTime @default(now())
 }
+
+/// Mål och intern uppföljning — endast plattformsadmin.
+model PlattformMal {
+  id              String   @id @default("default")
+  /// Mål: antal föreningar med tecknat avtal.
+  malAvtal        Int      @default(10)
+  /// Mål: antal aktuella testföreningar (pågående prövoperiod).
+  malTest         Int      @default(20)
+  uppdateradTidpunkt DateTime @updatedAt
+  uppdateradAvEpost  String @default("")
+}
