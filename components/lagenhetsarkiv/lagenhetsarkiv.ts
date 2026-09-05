@@ -106,6 +106,13 @@ export type ApartmentFolder = {
   biyta?: string;
   /** Uppmätt yta — kan avvika från registrerad. */
   uppmattYta?: string;
+  /**
+   * Golvyta (m²) — används ofta för vindsvåningar där boyta mäts som golvyta
+   * under snedtak snarare än BOA.
+   */
+  golvyta?: string;
+  /** Mätbevis för uppmätt yta (krav när uppmätt yta anges). */
+  matbevis?: LagenhetsDokument;
   /** Andelstal/insats, t.ex. "0,7842 %" eller "550 000 kr". */
   andelstal?: string;
   /** Referens till ritning — filnamn eller länk. */

@@ -24,6 +24,7 @@ export const GRUNDUPPGIFT_FALT: GrundFalt[] = [
   { key: "andelstal", etikett: "Andelstal", kort: "Andelstal", viktig: true, summerbar: true },
   { key: "boyta", etikett: "Boyta (BOA)", kort: "BOA", enhet: "m²", viktig: true, summerbar: true },
   { key: "uppmattYta", etikett: "Uppmätt yta", kort: "Uppmätt", enhet: "m²", summerbar: true },
+  { key: "golvyta", etikett: "Golvyta (vind)", kort: "Golvyta", enhet: "m²", summerbar: true },
   { key: "biyta", etikett: "Biyta (BIA)", kort: "BIA", enhet: "m²", summerbar: true },
   { key: "vaning", etikett: "Våning", kort: "Våning" },
   { key: "antalRum", etikett: "Antal rum", kort: "Rum" },

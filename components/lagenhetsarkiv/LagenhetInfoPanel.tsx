@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ApartmentFolder } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
+import type {
+  ApartmentFolder,
+  LagenhetsDokument,
+} from "@/components/lagenhetsarkiv/lagenhetsarkiv";
+import { skapaLagenhetsDokumentId } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import {
   BADRUM_KONTROLL_ETIKETTER,
   BESIKTNING_STATUS_ETIKETTER,
   BESIKTNING_STATUS_VAL,
   besiktningBehoverAtgard,
   badrumKontrollBehoverAtgard,
+  branschreglerForRum,
   ELDSTAD_PROVTRYCKNING_INFO,
   flaktHarVarde,
   formateraEldstadStatus,
@@ -18,12 +23,16 @@ import {
   ENTRE_DORR_ETIKETTER,
   foreslagetTillagtRumsnamn,
   formateraEntreDorr,
+  KOK_LACKAGESKYDD_ETIKETTER,
   mergeBesiktning,
   normaliseraEldstader,
   normaliseraFlakt,
+  normaliseraKokLackagekydd,
   normaliseraLagenhetsRum,
+  arVindsvaning,
   räknaBesiktningAtgarder,
   rumTypPaverkarGrannar,
+  saknarBranschreglerInfo,
   sammanfattaRumsstatus,
   sammanfattaTillagtRum,
   skapaEldstadId,
@@ -36,6 +45,7 @@ import {
   type BadrumKontrollpunktStatus,
   type BadrumKontrollpunkter,
   type BadrumTappvatten,
+  type BranschreglerRum,
   type EntreDorrTyp,
   type KokLackagekydd,
   type LagenhetBadrum,
@@ -65,6 +75,8 @@ function byggSparPatch(
     boyta: string;
     biyta: string;
     uppmattYta: string;
+    golvyta: string;
+    matbevis: LagenhetsDokument | undefined;
     andelstal: string;
     ritning: string;
     balkong: string;
@@ -85,6 +97,8 @@ function byggSparPatch(
     boyta: data.boyta.trim() || undefined,
     biyta: data.biyta.trim() || undefined,
     uppmattYta: data.uppmattYta.trim() || undefined,
+    golvyta: data.golvyta.trim() || undefined,
+    matbevis: data.matbevis,
     andelstal: data.andelstal.trim() || undefined,
     ritning: data.ritning.trim() || undefined,
     balkong: data.balkong.trim() || undefined,
@@ -234,29 +248,49 @@ function LackagekyddFalt({
   varde: KokLackagekydd;
   onChange: (patch: Partial<KokLackagekydd>) => void;
 }) {
+  const normaliserad = normaliseraKokLackagekydd(varde);
+
   return (
-    <div>
-      <p className={labelKlass}>Läckageskydd</p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {(
-          [
-            ["diskmaskin", "Under diskmaskin"],
-            ["kylFrys", "Under kyl och frys"],
-            ["diskbankslada", "I diskbänkslåda"],
-          ] as const
-        ).map(([nyckel, etikett]) => (
-          <label key={nyckel} className="flex items-center gap-2 text-sm">
+    <div className="rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-3">
+      <div>
+        <p className="text-xs font-medium text-primary-dark">
+          Läckageskydd mot vattenskador
+        </p>
+        <p className="mt-0.5 text-xs text-muted">
+          Enligt Säker Vatteninstallation ska passivt skydd finnas under
+          diskmaskin, kylskåp, frys och i diskbänksskåp — samt aktivt skydd med
+          fuktsensor.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2">
+        {KOK_LACKAGESKYDD_ETIKETTER.map(({ key, etikett, hint }) => (
+          <label key={key} className="flex items-start gap-2 text-sm">
             <input
               type="checkbox"
-              checked={varde[nyckel] ?? false}
-              onChange={(e) => onChange({ [nyckel]: e.target.checked })}
-              className="rounded border-border"
+              checked={normaliserad[key] ?? false}
+              onChange={(e) => onChange({ [key]: e.target.checked })}
+              className="mt-0.5 rounded border-border"
             />
-            {etikett}
+            <span>
+              {etikett}
+              {hint ? (
+                <span className="block text-xs text-muted">{hint}</span>
+              ) : null}
+            </span>
           </label>
         ))}
       </div>
     </div>
+  );
+}
+
+function BranschreglerInfo({ rum }: { rum: BranschreglerRum }) {
+  const regler = branschreglerForRum(rum);
+  return (
+    <p className="rounded-lg border border-sky-200/80 bg-sky-50 px-3 py-2 text-xs text-sky-950">
+      <span className="font-medium">Information saknas om branschregler. </span>
+      {regler.info} Markera om arbetet följt {regler.kort}.
+    </p>
   );
 }
 
@@ -277,7 +311,13 @@ function BadrumKontrollpunkterFalt({
 
   return (
     <div className="rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-4">
-      <p className="text-xs font-medium text-primary-dark">Kontrollpunkter badrum</p>
+      <div>
+        <p className="text-xs font-medium text-primary-dark">Kontrollpunkter badrum</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Enligt Byggkeramikrådets branschregler för våtrum (BKR/GVK) ska tätskikt
+          och läckageindikering kunna kontrolleras.
+        </p>
+      </div>
 
       <div>
         <label className={labelKlass}>Tätskikt vid golvbrunn</label>
@@ -365,6 +405,9 @@ function TillagtRumInnehall({
           <RenoveringFalt
             varde={rum.senasteRenovering ?? {}}
             onChange={(senasteRenovering) => onChange({ senasteRenovering })}
+            branschreglerRum={
+              typ === "kok" ? "kok" : typ === "badrum" ? "badrum" : undefined
+            }
           />
         </div>
       )}
@@ -478,10 +521,18 @@ function UppvarmningFalt({
 function RenoveringFalt({
   varde,
   onChange,
+  branschreglerRum,
 }: {
   varde: SenasteRenovering;
   onChange: (next: SenasteRenovering) => void;
+  branschreglerRum?: BranschreglerRum;
 }) {
+  const regler = branschreglerRum
+    ? branschreglerForRum(branschreglerRum)
+    : null;
+  const visarInfo =
+    branschreglerRum != null && saknarBranschreglerInfo(varde);
+
   return (
     <div className="space-y-2">
       <div>
@@ -496,6 +547,25 @@ function RenoveringFalt({
           className={inputKlass}
         />
       </div>
+      {regler && (
+        <div className="space-y-2">
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={varde.foljtBranschregler ?? false}
+              onChange={(e) =>
+                onChange({ ...varde, foljtBranschregler: e.target.checked })
+              }
+              className="mt-0.5 rounded border-border"
+            />
+            <span>
+              Byggt/renoverat enligt branschregler ({regler.kort})
+              <span className="block text-xs text-muted">{regler.namn}</span>
+            </span>
+          </label>
+          {visarInfo && <BranschreglerInfo rum={branschreglerRum!} />}
+        </div>
+      )}
       <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -616,6 +686,10 @@ export function LagenhetInfoPanel({
   const [boyta, setBoyta] = useState(apartment.boyta ?? "");
   const [biyta, setBiyta] = useState(apartment.biyta ?? "");
   const [uppmattYta, setUppmattYta] = useState(apartment.uppmattYta ?? "");
+  const [golvyta, setGolvyta] = useState(apartment.golvyta ?? "");
+  const [matbevis, setMatbevis] = useState<LagenhetsDokument | undefined>(
+    apartment.matbevis,
+  );
   const [andelstal, setAndelstal] = useState(apartment.andelstal ?? "");
   const [ritning, setRitning] = useState(apartment.ritning ?? "");
   const [balkong, setBalkong] = useState(apartment.balkong ?? "");
@@ -642,6 +716,8 @@ export function LagenhetInfoPanel({
     setBoyta(apartment.boyta ?? "");
     setBiyta(apartment.biyta ?? "");
     setUppmattYta(apartment.uppmattYta ?? "");
+    setGolvyta(apartment.golvyta ?? "");
+    setMatbevis(apartment.matbevis);
     setAndelstal(apartment.andelstal ?? "");
     setRitning(apartment.ritning ?? "");
     setBalkong(apartment.balkong ?? "");
@@ -662,6 +738,8 @@ export function LagenhetInfoPanel({
     boyta: string;
     biyta: string;
     uppmattYta: string;
+    golvyta: string;
+    matbevis: LagenhetsDokument | undefined;
     andelstal: string;
     ritning: string;
     balkong: string;
@@ -681,6 +759,8 @@ export function LagenhetInfoPanel({
       boyta,
       biyta,
       uppmattYta,
+      golvyta,
+      matbevis,
       andelstal,
       ritning,
       balkong,
@@ -862,6 +942,8 @@ export function LagenhetInfoPanel({
     boyta: string;
     biyta: string;
     uppmattYta: string;
+    golvyta: string;
+    matbevis: LagenhetsDokument | undefined;
     andelstal: string;
     ritning: string;
     balkong: string;
@@ -877,6 +959,8 @@ export function LagenhetInfoPanel({
     if (felt.boyta !== undefined) setBoyta(felt.boyta);
     if (felt.biyta !== undefined) setBiyta(felt.biyta);
     if (felt.uppmattYta !== undefined) setUppmattYta(felt.uppmattYta);
+    if (felt.golvyta !== undefined) setGolvyta(felt.golvyta);
+    if (felt.matbevis !== undefined) setMatbevis(felt.matbevis);
     if (felt.andelstal !== undefined) setAndelstal(felt.andelstal);
     if (felt.ritning !== undefined) setRitning(felt.ritning);
     if (felt.balkong !== undefined) setBalkong(felt.balkong);
@@ -888,6 +972,23 @@ export function LagenhetInfoPanel({
     if (felt.lagenhetNotering !== undefined) setLagenhetNotering(felt.lagenhetNotering);
     persist(felt);
   }
+
+  function laddaUppMatbevis(filnamn: string) {
+    const doc: LagenhetsDokument = {
+      id: skapaLagenhetsDokumentId(),
+      filnamn,
+      uppladdad: new Date().toISOString().slice(0, 10),
+    };
+    setMatbevis(doc);
+    persist({ matbevis: doc });
+  }
+
+  function taBortMatbevis() {
+    setMatbevis(undefined);
+    persist({ matbevis: undefined });
+  }
+
+  const saknarMatbevis = !!uppmattYta.trim() && !matbevis;
 
   const harInfo = lagenhetHarIfylldInfo(apartment);
   const atgarder = räknaBesiktningAtgarder(lagenhetsRum);
@@ -1030,6 +1131,69 @@ export function LagenhetInfoPanel({
               />
             </div>
             <div>
+              <label className={labelKlass}>
+                Golvyta (m²)
+                {arVindsvaning(vaning) ? " — vindsvåning" : ""}
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={golvyta}
+                onBlur={(e) => sparaGrund({ golvyta: e.target.value })}
+                onChange={(e) => setGolvyta(e.target.value)}
+                placeholder="För vindsvåning"
+                className={inputKlass}
+              />
+              <p className="mt-1 text-xs text-muted">
+                Vindsvåningar mäts vanligtvis med golvyta under snedtak.
+              </p>
+            </div>
+            <div className="sm:col-span-3 rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-2">
+              <p className="text-xs font-medium text-primary-dark">
+                Mätbevis för uppmätt yta
+              </p>
+              <p className="text-xs text-muted">
+                När uppmätt yta anges ska mätbevis kunna bifogas som dokument.
+              </p>
+              {matbevis ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-2.5 py-1.5">
+                  <span className="text-sm text-primary-dark">
+                    {matbevis.filnamn}{" "}
+                    <span className="text-xs text-muted">
+                      ({matbevis.uppladdad})
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={taBortMatbevis}
+                    className="text-xs text-muted hover:text-red-800"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+              ) : (
+                <label className="inline-flex cursor-pointer rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]">
+                  Ladda upp mätbevis
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const fil = e.target.files?.[0];
+                      if (fil) laddaUppMatbevis(fil.name);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+              {saknarMatbevis && (
+                <p className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  Uppmätt yta är angiven — bifoga mätbevis så att uppgiften kan
+                  verifieras.
+                </p>
+              )}
+            </div>
+            <div>
               <label className={labelKlass}>Antal rum</label>
               <input
                 value={antalRum}
@@ -1131,7 +1295,10 @@ export function LagenhetInfoPanel({
               titel="Kök"
               status={lagenhetsRum.kok.besiktning}
               sammanfattning={sammanfattaRumsstatus("Kök", lagenhetsRum.kok)}
-              accent={besiktningBehoverAtgard(lagenhetsRum.kok.besiktning)}
+              accent={
+                besiktningBehoverAtgard(lagenhetsRum.kok.besiktning) ||
+                saknarBranschreglerInfo(lagenhetsRum.kok.senasteRenovering)
+              }
             >
               <div className="mb-3">
                 <GrannPaverkanInfo />
@@ -1146,6 +1313,7 @@ export function LagenhetInfoPanel({
                   onChange={(senasteRenovering) =>
                     uppdateraKok({ senasteRenovering })
                   }
+                  branschreglerRum="kok"
                 />
               </div>
               <div className="mt-3">
@@ -1168,7 +1336,8 @@ export function LagenhetInfoPanel({
               sammanfattning={sammanfattaRumsstatus("Badrum", lagenhetsRum.badrum)}
               accent={
                 besiktningBehoverAtgard(lagenhetsRum.badrum.besiktning) ||
-                badrumKontrollBehoverAtgard(lagenhetsRum.badrum.kontrollpunkter)
+                badrumKontrollBehoverAtgard(lagenhetsRum.badrum.kontrollpunkter) ||
+                saknarBranschreglerInfo(lagenhetsRum.badrum.senasteRenovering)
               }
             >
               <div className="mb-3">
@@ -1184,6 +1353,7 @@ export function LagenhetInfoPanel({
                   onChange={(senasteRenovering) =>
                     uppdateraBadrum({ senasteRenovering })
                   }
+                  branschreglerRum="badrum"
                 />
               </div>
               <div className="mt-3">
@@ -1209,7 +1379,9 @@ export function LagenhetInfoPanel({
                 accent={
                   besiktningBehoverAtgard(rum.besiktning) ||
                   (rum.typ === "badrum" &&
-                    badrumKontrollBehoverAtgard(rum.kontrollpunkter))
+                    badrumKontrollBehoverAtgard(rum.kontrollpunkter)) ||
+                  ((rum.typ === "kok" || rum.typ === "badrum") &&
+                    saknarBranschreglerInfo(rum.senasteRenovering))
                 }
               >
                 <div className="mb-2 flex justify-end">
