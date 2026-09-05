@@ -28,9 +28,9 @@ export const FORENING_MODULER: ForeningModulDef[] = [
   },
   {
     id: "medlemmar",
-    title: "Medlemmar",
+    title: "Medlemmar & lägenhetsarkiv",
     description:
-      "Renoveringsanmälan, utskick och lägenhetsarkiv med aktuell information och historik per lägenhet.",
+      "Lägenhetsarkiv, renoveringsanmälan och utskick — aktuell information och historik per lägenhet.",
     path: "/medlemmar",
     icon: "👥",
   },

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { Besiktningar } from "@/components/underhallsplan/BesiktningarSteg";
 import { BildstodAnalys } from "@/components/underhallsplan/BildstodAnalys";
@@ -1496,15 +1495,9 @@ export function UnderhallsplanWizard() {
           </ul>
         )}
         <p className="mt-3 text-xs text-muted">
-          Behöver ni bara en enkel åtgärds- och kostnadslista utan 50-årsbudget?
-          Det finns en separat{" "}
-          <Link
-            href="/forening/plan"
-            className="font-medium text-primary-dark underline hover:no-underline"
-          >
-            enkel åtgärdslista
-          </Link>{" "}
-          — den är inte samma sak som underhållsplanen.
+          Underhållsplanen är den långsiktiga 50-årsplanen med budget och
+          livslängder. Börja i steg 1 (grunduppgifter) och gå vidare steg för
+          steg — summeringen i steg 7 är underlaget till styrelsemötet.
         </p>
       </div>
 

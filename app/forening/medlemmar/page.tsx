@@ -17,9 +17,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function ForeningMedlemmarPage() {
   return (
     <ModulePage
-      title="Medlemmar"
+      title="Medlemmar & lägenhetsarkiv"
       icon="👥"
-      intro="Lägenhetsarkivet överst — därefter renoveringar. Överenskommelser mejlas först till styrelsen, sedan till medlemmen för BankID-signering och sparas i respektive lägenhet."
+      intro="Börja i lägenhetsarkivet högst upp — öppna en lägenhet, fyll i uppgifter och spara. Renoveringar och överenskommelser hanteras under samma modul."
     >
       <ContentSection title="Så fungerar modulen">
         <p>

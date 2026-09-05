@@ -33,7 +33,7 @@ const featuredPublic = [
     ],
   },
   {
-    title: "Lägenhetsarkiv",
+    title: "Medlemmar & lägenhetsarkiv",
     description:
       "Här sparas aktuell information och historik för respektive lägenhet. Handlingar från äldre projekt samlas på ett ställe — så styrelsen slipper leta i mejl och mappar när något behöver följas upp.",
     anchor: "#moduler",
@@ -97,7 +97,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     title: mod.title,
     description: mod.description,
     icon: mod.icon,
-    ...(isForening ? { href: `${base}${mod.path}` } : {}),
+    href: isForening
+      ? `${base}${mod.path}`
+      : PROVA_GRATIS_PATH,
   }));
 
   return (
@@ -409,7 +411,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-2 text-muted">
             {isForening
               ? "Välj en modul för att arbeta i er förenings miljö. Snabbvägarna visar de fyra översta — ni kan flytta om och byta."
-              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Allt hänger ihop — så styrelsen alltid vet var informationen finns."}
+              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Klicka på en modul för att prova gratis — eller logga in till er förening."}
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

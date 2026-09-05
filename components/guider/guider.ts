@@ -193,7 +193,7 @@ export const guideFilmer: GuideFilm[] = [
     scener: [
       {
         titel: "Saknar du något?",
-        text: "Om en funktion eller komponent saknas någonstans i portalen saknar säkert fler samma — hör av er så vi vet vad som behövs.",
+        text: "Om en funktion eller komponent saknas någonstans i portalen saknar säkert fler samma — mejla johancarlsen@icloud.com så vi vet vad som behövs.",
       },
       {
         titel: "Tips och råd välkomna",

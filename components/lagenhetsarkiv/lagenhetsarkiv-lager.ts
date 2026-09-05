@@ -155,14 +155,18 @@ export function lasLagenhetsarkiv(): LagenhetsarkivState | null {
   }
 }
 
-export function sparaLagenhetsarkiv(state: LagenhetsarkivState): boolean {
-  if (typeof window === "undefined") return false;
-  const ok = safeSetLocalStorage(
+export function sparaLagenhetsarkiv(
+  state: LagenhetsarkivState,
+): { ok: true } | { ok: false; error: import("@/lib/localStorage").LocalStorageSetError } {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "unavailable" };
+  }
+  const result = safeSetLocalStorage(
     lagenhetsarkivStorageKey(),
     JSON.stringify(state),
-  ).ok;
-  if (ok) {
+  );
+  if (result.ok) {
     window.dispatchEvent(new Event(LAGENHETSARKIV_EVENT));
   }
-  return ok;
+  return result;
 }
