@@ -15,7 +15,11 @@ import {
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import type { UnderhallKostnadPerArRad } from "@/components/underhallsplan/underhall-plan-ar";
-import { summeraUnderhallPerAr } from "@/components/underhallsplan/underhall-plan-ar";
+import {
+  forstaAtgardArIPlan,
+  summeraUnderhallPerAr,
+} from "@/components/underhallsplan/underhall-plan-ar";
+import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
 import type { UnderhallAtgard } from "@/components/underhallsplan/underhall-budget";
 import { hamtaUnderhallTillfallenPlanNyckel } from "@/components/underhallsplan/underhall-atgard-katalog";
 import { hamtaUnderhallTillfallenData } from "@/components/underhallsplan/underhall-tillfallen-register";
@@ -47,8 +51,11 @@ export function expanderaUnderhallTillfallePerAr(
   if (intervall < 1 || tillfalle.atgarder.length === 0) return [];
 
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
-  let ar = parseAr(tillfalle.nastaAr) || planStartAr;
-  if (ar < planStartAr) ar = planStartAr;
+  let ar = forstaAtgardArIPlan(
+    parseAr(tillfalle.nastaAr) || planStartAr,
+    intervall,
+    planStartAr,
+  );
 
   const rader: UnderhallKostnadPerArRad[] = [];
   while (ar <= planSlutAr) {
@@ -86,6 +93,7 @@ export function samlaUnderhallTillfallenBudgetPoster(
   priser: Record<string, import("@/components/underhallsplan/fasad-atgard-pris").FasadAtgardPrisRad>,
   planStartAr: number,
   planLangdAr: number,
+  underkomponentId?: string,
 ): UnderhallAtgard[] {
   const norm = normaliseraUnderhallTillfallenData(planNyckel, data);
   const atgarder: UnderhallAtgard[] = [];
@@ -95,8 +103,11 @@ export function samlaUnderhallTillfallenBudgetPoster(
     const intervall = parseAr(tillfalle.intervallAr);
     if (intervall < 1 || tillfalle.atgarder.length === 0) continue;
 
-    let ar = parseAr(tillfalle.nastaAr) || planStartAr;
-    if (ar < planStartAr) ar = planStartAr;
+    let ar = forstaAtgardArIPlan(
+      parseAr(tillfalle.nastaAr) || planStartAr,
+      intervall,
+      planStartAr,
+    );
 
     const tillfalleTitel = tillfalle.titel.trim();
     const inkl = (tillfalle.inkluderadeUnderkomponenter ?? []).filter(Boolean);
@@ -122,6 +133,12 @@ export function samlaUnderhallTillfallenBudgetPoster(
           kostnadKr,
           intervallAr: intervall,
           kalla: "register",
+          underkomponentId,
+          direktkostnad: arDirektkostnadUnderhall(
+            komponent,
+            underkomponentId,
+            atgardId,
+          ),
         });
       }
       ar += intervall;
