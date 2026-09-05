@@ -29,7 +29,6 @@ import {
   normaliseraFlakt,
   normaliseraKokLackagekydd,
   normaliseraLagenhetsRum,
-  arVindsvaning,
   räknaBesiktningAtgarder,
   rumTypPaverkarGrannar,
   saknarBranschreglerInfo,
@@ -68,50 +67,18 @@ const inputKlass =
 
 const labelKlass = "mb-1 block text-xs font-medium text-muted";
 
-function byggSparPatch(
-  data: {
-    adress: string;
-    vaning: string;
-    boyta: string;
-    biyta: string;
-    uppmattYta: string;
-    golvyta: string;
-    matbevis: LagenhetsDokument | undefined;
-    andelstal: string;
-    ritning: string;
-    balkong: string;
-    kallareForrad: string;
-    pPlats: string;
-    antalRum: string;
-    antalBadrum: string;
-    antalWC: string;
-    lagenhetsRum: LagenhetsRumsInfo;
-    eldstader: LagenhetEldstad[];
-    flakt: LagenhetFlakt;
-    lagenhetNotering: string;
-  },
-): Partial<ApartmentFolder> {
+function byggRumPatch(data: {
+  lagenhetsRum: LagenhetsRumsInfo;
+  eldstader: LagenhetEldstad[];
+  flakt: LagenhetFlakt;
+  lagenhetNotering: string;
+}): Partial<ApartmentFolder> {
   return {
-    adress: data.adress.trim() || undefined,
-    vaning: data.vaning.trim() || undefined,
-    boyta: data.boyta.trim() || undefined,
-    biyta: data.biyta.trim() || undefined,
-    uppmattYta: data.uppmattYta.trim() || undefined,
-    golvyta: data.golvyta.trim() || undefined,
-    matbevis: data.matbevis,
-    andelstal: data.andelstal.trim() || undefined,
-    ritning: data.ritning.trim() || undefined,
-    balkong: data.balkong.trim() || undefined,
-    kallareForrad: data.kallareForrad.trim() || undefined,
-    pPlats: data.pPlats.trim() || undefined,
-    antalRum: data.antalRum.trim() || undefined,
-    antalBadrum: data.antalBadrum.trim() || undefined,
-    antalWC: data.antalWC.trim() || undefined,
-    installationer: undefined,
     lagenhetsRum: data.lagenhetsRum,
     eldstader: data.eldstader.length > 0 ? data.eldstader : undefined,
     flakt: flaktHarVarde(data.flakt) ? data.flakt : undefined,
     lagenhetNotering: data.lagenhetNotering.trim() || undefined,
+    installationer: undefined,
     varme: undefined,
     senastStambyte: undefined,
     eldstadAntal: undefined,
@@ -681,20 +648,9 @@ export function LagenhetInfoPanel({
   lagenhetsEtikett,
   onUppdatera,
 }: Props) {
-  const [adress, setAdress] = useState(apartment.adress ?? "");
-  const [vaning, setVaning] = useState(apartment.vaning ?? "");
-  const [boyta, setBoyta] = useState(apartment.boyta ?? "");
-  const [biyta, setBiyta] = useState(apartment.biyta ?? "");
-  const [uppmattYta, setUppmattYta] = useState(apartment.uppmattYta ?? "");
-  const [golvyta, setGolvyta] = useState(apartment.golvyta ?? "");
   const [matbevis, setMatbevis] = useState<LagenhetsDokument | undefined>(
     apartment.matbevis,
   );
-  const [andelstal, setAndelstal] = useState(apartment.andelstal ?? "");
-  const [ritning, setRitning] = useState(apartment.ritning ?? "");
-  const [balkong, setBalkong] = useState(apartment.balkong ?? "");
-  const [kallareForrad, setKallareForrad] = useState(apartment.kallareForrad ?? "");
-  const [pPlats, setPPlats] = useState(apartment.pPlats ?? "");
   const [lagenhetsRum, setLagenhetsRum] = useState<LagenhetsRumsInfo>(
     normaliseraLagenhetsRum(apartment),
   );
@@ -702,80 +658,38 @@ export function LagenhetInfoPanel({
     normaliseraEldstader(apartment),
   );
   const [flakt, setFlakt] = useState<LagenhetFlakt>(normaliseraFlakt(apartment));
-  const [antalRum, setAntalRum] = useState(apartment.antalRum ?? "");
-  const [antalBadrum, setAntalBadrum] = useState(apartment.antalBadrum ?? "");
-  const [antalWC, setAntalWC] = useState(apartment.antalWC ?? "");
   const [lagenhetNotering, setLagenhetNotering] = useState(
     apartment.lagenhetNotering ?? "",
   );
   const [nyRumTyp, setNyRumTyp] = useState<TillagtRumTyp>("ovrigt");
 
   useEffect(() => {
-    setAdress(apartment.adress ?? "");
-    setVaning(apartment.vaning ?? "");
-    setBoyta(apartment.boyta ?? "");
-    setBiyta(apartment.biyta ?? "");
-    setUppmattYta(apartment.uppmattYta ?? "");
-    setGolvyta(apartment.golvyta ?? "");
     setMatbevis(apartment.matbevis);
-    setAndelstal(apartment.andelstal ?? "");
-    setRitning(apartment.ritning ?? "");
-    setBalkong(apartment.balkong ?? "");
-    setKallareForrad(apartment.kallareForrad ?? "");
-    setPPlats(apartment.pPlats ?? "");
+  }, [apartment.id, apartment.matbevis]);
+
+  useEffect(() => {
     setLagenhetsRum(normaliseraLagenhetsRum(apartment));
     setEldstader(normaliseraEldstader(apartment));
     setFlakt(normaliseraFlakt(apartment));
-    setAntalRum(apartment.antalRum ?? "");
-    setAntalBadrum(apartment.antalBadrum ?? "");
-    setAntalWC(apartment.antalWC ?? "");
     setLagenhetNotering(apartment.lagenhetNotering ?? "");
   }, [apartment.id]);
 
-  function persist(overrides: Partial<{
-    adress: string;
-    vaning: string;
-    boyta: string;
-    biyta: string;
-    uppmattYta: string;
-    golvyta: string;
-    matbevis: LagenhetsDokument | undefined;
-    andelstal: string;
-    ritning: string;
-    balkong: string;
-    kallareForrad: string;
-    pPlats: string;
-    antalRum: string;
-    antalBadrum: string;
-    antalWC: string;
-    lagenhetsRum: LagenhetsRumsInfo;
-    eldstader: LagenhetEldstad[];
-    flakt: LagenhetFlakt;
-    lagenhetNotering: string;
-  }> = {}) {
+  function persist(
+    overrides: Partial<{
+      lagenhetsRum: LagenhetsRumsInfo;
+      eldstader: LagenhetEldstad[];
+      flakt: LagenhetFlakt;
+      lagenhetNotering: string;
+    }> = {},
+  ) {
     const data = {
-      adress,
-      vaning,
-      boyta,
-      biyta,
-      uppmattYta,
-      golvyta,
-      matbevis,
-      andelstal,
-      ritning,
-      balkong,
-      kallareForrad,
-      pPlats,
-      antalRum,
-      antalBadrum,
-      antalWC,
       lagenhetsRum,
       eldstader,
       flakt,
       lagenhetNotering,
       ...overrides,
     };
-    onUppdatera(byggSparPatch(data));
+    onUppdatera(byggRumPatch(data));
   }
 
   function uppdateraHall(patch: Partial<LagenhetHall>) {
@@ -936,43 +850,6 @@ export function LagenhetInfoPanel({
     });
   }
 
-  function sparaGrund(felt: Partial<{
-    adress: string;
-    vaning: string;
-    boyta: string;
-    biyta: string;
-    uppmattYta: string;
-    golvyta: string;
-    matbevis: LagenhetsDokument | undefined;
-    andelstal: string;
-    ritning: string;
-    balkong: string;
-    kallareForrad: string;
-    pPlats: string;
-    antalRum: string;
-    antalBadrum: string;
-    antalWC: string;
-    lagenhetNotering: string;
-  }>) {
-    if (felt.adress !== undefined) setAdress(felt.adress);
-    if (felt.vaning !== undefined) setVaning(felt.vaning);
-    if (felt.boyta !== undefined) setBoyta(felt.boyta);
-    if (felt.biyta !== undefined) setBiyta(felt.biyta);
-    if (felt.uppmattYta !== undefined) setUppmattYta(felt.uppmattYta);
-    if (felt.golvyta !== undefined) setGolvyta(felt.golvyta);
-    if (felt.matbevis !== undefined) setMatbevis(felt.matbevis);
-    if (felt.andelstal !== undefined) setAndelstal(felt.andelstal);
-    if (felt.ritning !== undefined) setRitning(felt.ritning);
-    if (felt.balkong !== undefined) setBalkong(felt.balkong);
-    if (felt.kallareForrad !== undefined) setKallareForrad(felt.kallareForrad);
-    if (felt.pPlats !== undefined) setPPlats(felt.pPlats);
-    if (felt.antalRum !== undefined) setAntalRum(felt.antalRum);
-    if (felt.antalBadrum !== undefined) setAntalBadrum(felt.antalBadrum);
-    if (felt.antalWC !== undefined) setAntalWC(felt.antalWC);
-    if (felt.lagenhetNotering !== undefined) setLagenhetNotering(felt.lagenhetNotering);
-    persist(felt);
-  }
-
   function laddaUppMatbevis(filnamn: string) {
     const doc: LagenhetsDokument = {
       id: skapaLagenhetsDokumentId(),
@@ -980,15 +857,16 @@ export function LagenhetInfoPanel({
       uppladdad: new Date().toISOString().slice(0, 10),
     };
     setMatbevis(doc);
-    persist({ matbevis: doc });
+    onUppdatera({ matbevis: doc });
   }
 
   function taBortMatbevis() {
     setMatbevis(undefined);
-    persist({ matbevis: undefined });
+    onUppdatera({ matbevis: undefined });
   }
 
-  const saknarMatbevis = !!uppmattYta.trim() && !matbevis;
+  const saknarMatbevis =
+    !!(apartment.uppmattYta ?? "").trim() && !matbevis;
 
   const harInfo = lagenhetHarIfylldInfo(apartment);
   const atgarder = räknaBesiktningAtgarder(lagenhetsRum);
@@ -1065,205 +943,54 @@ export function LagenhetInfoPanel({
         </div>
 
         <Sektion
-          titel="Grunduppgifter"
-          beskrivning="Adress, yta och tillbehör — syns i sammanställningen"
+          titel="Mätbevis"
+          beskrivning="Bifoga mätbevis när uppmätt yta anges i grunduppgifter"
           defaultOppen
         >
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className={labelKlass}>Adress</label>
-              <input
-                value={adress}
-                onBlur={(e) => sparaGrund({ adress: e.target.value })}
-                onChange={(e) => setAdress(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Våning</label>
-              <input
-                value={vaning}
-                onBlur={(e) => sparaGrund({ vaning: e.target.value })}
-                onChange={(e) => setVaning(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>BOA (m²)</label>
-              <input
-                type="number"
-                min="0"
-                value={boyta}
-                onBlur={(e) => sparaGrund({ boyta: e.target.value })}
-                onChange={(e) => setBoyta(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>BIA (m²)</label>
-              <input
-                type="number"
-                min="0"
-                value={biyta}
-                onBlur={(e) => sparaGrund({ biyta: e.target.value })}
-                onChange={(e) => setBiyta(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Andelstal</label>
-              <input
-                value={andelstal}
-                onBlur={(e) => sparaGrund({ andelstal: e.target.value })}
-                onChange={(e) => setAndelstal(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Uppmätt yta (m²)</label>
-              <input
-                type="number"
-                min="0"
-                value={uppmattYta}
-                onBlur={(e) => sparaGrund({ uppmattYta: e.target.value })}
-                onChange={(e) => setUppmattYta(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>
-                Golvyta (m²)
-                {arVindsvaning(vaning) ? " — vindsvåning" : ""}
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={golvyta}
-                onBlur={(e) => sparaGrund({ golvyta: e.target.value })}
-                onChange={(e) => setGolvyta(e.target.value)}
-                placeholder="För vindsvåning"
-                className={inputKlass}
-              />
-              <p className="mt-1 text-xs text-muted">
-                Vindsvåningar mäts vanligtvis med golvyta under snedtak.
-              </p>
-            </div>
-            <div className="sm:col-span-3 rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-2">
-              <p className="text-xs font-medium text-primary-dark">
-                Mätbevis för uppmätt yta
-              </p>
-              <p className="text-xs text-muted">
-                När uppmätt yta anges ska mätbevis kunna bifogas som dokument.
-              </p>
-              {matbevis ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-2.5 py-1.5">
-                  <span className="text-sm text-primary-dark">
-                    {matbevis.filnamn}{" "}
-                    <span className="text-xs text-muted">
-                      ({matbevis.uppladdad})
-                    </span>
+          <div className="rounded-lg border border-dashed border-primary/25 bg-[#fafcfa] p-3 space-y-2">
+            <p className="text-xs font-medium text-primary-dark">
+              Mätbevis för uppmätt yta
+            </p>
+            <p className="text-xs text-muted">
+              När uppmätt yta anges ska mätbevis kunna bifogas som dokument.
+            </p>
+            {matbevis ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-2.5 py-1.5">
+                <span className="text-sm text-primary-dark">
+                  {matbevis.filnamn}{" "}
+                  <span className="text-xs text-muted">
+                    ({matbevis.uppladdad})
                   </span>
-                  <button
-                    type="button"
-                    onClick={taBortMatbevis}
-                    className="text-xs text-muted hover:text-red-800"
-                  >
-                    Ta bort
-                  </button>
-                </div>
-              ) : (
-                <label className="inline-flex cursor-pointer rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]">
-                  Ladda upp mätbevis
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
-                    className="sr-only"
-                    onChange={(e) => {
-                      const fil = e.target.files?.[0];
-                      if (fil) laddaUppMatbevis(fil.name);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              )}
-              {saknarMatbevis && (
-                <p className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                  Uppmätt yta är angiven — bifoga mätbevis så att uppgiften kan
-                  verifieras.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className={labelKlass}>Antal rum</label>
-              <input
-                value={antalRum}
-                onBlur={(e) => sparaGrund({ antalRum: e.target.value })}
-                onChange={(e) => setAntalRum(e.target.value)}
-                placeholder="t.ex. 3 rok"
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Antal badrum</label>
-              <input
-                type="number"
-                min="0"
-                value={antalBadrum}
-                onBlur={(e) => sparaGrund({ antalBadrum: e.target.value })}
-                onChange={(e) => setAntalBadrum(e.target.value)}
-                placeholder="t.ex. 1"
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Antal WC</label>
-              <input
-                type="number"
-                min="0"
-                value={antalWC}
-                onBlur={(e) => sparaGrund({ antalWC: e.target.value })}
-                onChange={(e) => setAntalWC(e.target.value)}
-                placeholder="t.ex. 1"
-                className={inputKlass}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelKlass}>Ritning / planritning</label>
-              <input
-                value={ritning}
-                onBlur={(e) => sparaGrund({ ritning: e.target.value })}
-                onChange={(e) => setRitning(e.target.value)}
-                placeholder="Filnamn eller länk"
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Balkong</label>
-              <input
-                value={balkong}
-                onBlur={(e) => sparaGrund({ balkong: e.target.value })}
-                onChange={(e) => setBalkong(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>Förråd</label>
-              <input
-                value={kallareForrad}
-                onBlur={(e) => sparaGrund({ kallareForrad: e.target.value })}
-                onChange={(e) => setKallareForrad(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
-            <div>
-              <label className={labelKlass}>P-plats</label>
-              <input
-                value={pPlats}
-                onBlur={(e) => sparaGrund({ pPlats: e.target.value })}
-                onChange={(e) => setPPlats(e.target.value)}
-                className={inputKlass}
-              />
-            </div>
+                </span>
+                <button
+                  type="button"
+                  onClick={taBortMatbevis}
+                  className="text-xs text-muted hover:text-red-800"
+                >
+                  Ta bort
+                </button>
+              </div>
+            ) : (
+              <label className="inline-flex cursor-pointer rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]">
+                Ladda upp mätbevis
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const fil = e.target.files?.[0];
+                    if (fil) laddaUppMatbevis(fil.name);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            )}
+            {saknarMatbevis && (
+              <p className="rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                Uppmätt yta är angiven — bifoga mätbevis så att uppgiften kan
+                verifieras.
+              </p>
+            )}
           </div>
         </Sektion>
 
@@ -1640,7 +1367,7 @@ export function LagenhetInfoPanel({
           <label className={labelKlass}>Övrig notering</label>
           <textarea
             value={lagenhetNotering}
-            onBlur={(e) => sparaGrund({ lagenhetNotering: e.target.value })}
+            onBlur={(e) => persist({ lagenhetNotering: e.target.value })}
             onChange={(e) => setLagenhetNotering(e.target.value)}
             rows={2}
             className={`${inputKlass} resize-none`}
