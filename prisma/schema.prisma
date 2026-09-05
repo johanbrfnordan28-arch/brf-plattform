@@ -122,13 +122,31 @@ model MejlOutbox {
   skapadTidpunkt DateTime @default(now())
 }
 
-/// Mål och intern uppföljning — endast plattformsadmin.
-model PlattformMal {
-  id              String   @id @default("default")
-  /// Mål: antal föreningar med tecknat avtal.
-  malAvtal        Int      @default(10)
-  /// Mål: antal aktuella testföreningar (pågående prövoperiod).
-  malTest         Int      @default(20)
+/// Intern inställning (t.ex. varning för många testföreningar).
+model PlattformInstallning {
+  id                 String   @id @default("default")
+  /// Varning när antalet aktuella testföreningar når eller överstiger detta.
+  varningTestAntal  Int      @default(25)
   uppdateradTidpunkt DateTime @updatedAt
-  uppdateradAvEpost  String @default("")
+  uppdateradAvEpost  String   @default("")
+}
+
+/// Ett mätbart mål med tidpunkt — flera kan finnas samtidigt.
+model PlattformMalRad {
+  id               String    @id
+  /// avtal | test
+  typ              String
+  titel            String    @default("")
+  malAntal         Int
+  /// Måldatum / deadline.
+  tidpunkt         DateTime
+  uppfylld         Boolean   @default(false)
+  uppfylldTidpunkt DateTime?
+  aktiv            Boolean   @default(true)
+  skapadTidpunkt   DateTime  @default(now())
+  skapadAvEpost    String    @default("")
+  uppdateradTidpunkt DateTime @updatedAt
+
+  @@index([typ, aktiv])
+  @@index([tidpunkt])
 }
