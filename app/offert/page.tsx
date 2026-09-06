@@ -32,7 +32,7 @@ export default function OffertPage() {
       <ContentSection title="Vad ni kan begära offert på">
         <ul className="list-disc space-y-2 pl-5">
           <li>Teknisk förvaltning till fördelaktigt pris</li>
-          <li>Professionell underhållsplan (från-pris, separat från plattformsabonnemanget)</li>
+          <li>Professionell underhållsplan — ordinarie 24 000 kr, 12 000 kr vid plattformsavtal (kan köpas senare)</li>
           <li>Projektledning</li>
           <li>Skadeutredning</li>
           <li>Besiktning</li>

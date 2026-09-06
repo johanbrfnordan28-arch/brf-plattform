@@ -133,8 +133,9 @@ export function ForeningPrisPanel({
         </span>
       </p>
       <p className="mt-1 text-sm text-muted">
-        Årsavtal ({pris.niva.etikett}) · {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt
-        mot ordinarie {formatKr(pris.ordinariePrisPerManad)}/mån
+        Årsavtal ({pris.niva.etikett}) · {formatKr(pris.arsPrisPerManad * 12)}
+        /år · {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot ordinarie{" "}
+        {formatKr(pris.ordinariePrisPerManad)}/mån
       </p>
       <ul className="mt-3 space-y-1 text-sm text-muted">
         <li>

@@ -12,7 +12,7 @@ import { PersonalInloggningFot } from "@/components/plattform/PersonalInloggning
 import { TekniskForvaltningErbjudande } from "@/components/pris/TekniskForvaltningErbjudande";
 import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
-import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+import { ARSAVTAL_RABATT_PROCENT, formatKr, PLATTFORM_FRAN_ARSPRIS_KR } from "@/lib/prislista";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
@@ -326,11 +326,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </p>
             <p>
               <span className="font-semibold text-primary-dark">
-                −{ARSAVTAL_RABATT_PROCENT}&nbsp;%
+                Plattform från {formatKr(PLATTFORM_FRAN_ARSPRIS_KR)}/år
               </span>
               <span className="text-muted">
                 {" "}
-                på ettårsavtal vs månadsdebitering
+                exkl. moms vid 1 årsavtal (−{ARSAVTAL_RABATT_PROCENT}&nbsp;% vs
+                månad)
               </span>
             </p>
           </div>
@@ -564,10 +565,15 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Börja gratis — väx när ni är redo
                 </h2>
                 <p className="mt-2 text-muted">
-                  Testa plattformen utan kostnad. När ni ser värdet väljer ni
-                  ettårsavtal — med {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot
-                  månadsdebitering. Er kostnad beror på antal lägenheter och
-                  visas inne på föreningssidan när antalet är ifyllt.
+                  Testa plattformen utan kostnad. När ni ser värdet tecknar ni 1
+                  årsavtal — från{" "}
+                  <strong className="text-foreground">
+                    {formatKr(PLATTFORM_FRAN_ARSPRIS_KR)}
+                  </strong>
+                  /år exkl. moms ({ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot
+                  månadsdebitering). Exakt pris beror på antal lägenheter —
+                  begär offert. Professionell underhållsplan är tillägg och kan
+                  köpas samtidigt eller senare.
                 </p>
               </div>
 

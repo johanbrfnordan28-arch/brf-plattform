@@ -1,19 +1,19 @@
 /**
  * Pris för professionell underhållsplan (tilläggstjänst).
- * Skilt från plattformsabonnemanget (månadspris per lägenhetsnivå i prislista.ts).
+ * Skilt från plattformsabonnemanget (från 6 000 kr/år vid 1 årsavtal).
  *
- * Ordinarie från-pris: 24 000 kr exkl. moms.
- * Vid tecknat plattformsavtal: 50 % rabatt → från 12 000 kr exkl. moms.
- * Exakt belopp via offert utifrån fastighetens omfattning.
+ * Ordinarie: 24 000 kr exkl. moms.
+ * Med tecknat plattformsavtal: 12 000 kr exkl. moms (50 % rabatt).
+ * Kan köpas samtidigt eller senare. Exakt belopp via offert.
  */
 
-/** Ordinarie startpris exkl. moms (utan avtalsrabatt). */
+/** Ordinarie pris exkl. moms (utan plattformsavtal). */
 export const UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR = 24_000;
 
-/** Från-pris exkl. moms för föreningar med tecknat avtal (50 % rabatt). */
+/** Pris exkl. moms när föreningen även har tecknat plattformsavtal. */
 export const UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR = 12_000;
 
-/** Rabatt vid tecknande av avtal. */
+/** Rabatt på underhållsplanen när plattformsavtal tecknas. */
 export const UNDERHALLSPLAN_AVTAL_RABATT_PROCENT = 50;
 
 /** @deprecated Använd UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR */
@@ -26,7 +26,7 @@ export const UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT =
 /** Visningsdatum för avtalserbjudande (året ut). */
 export const UNDERHALLSPLAN_KAMPANJ_GALLER_TOM = "2026-12-31";
 
-/** Avtalspris från (12 000 kr). */
+/** Avtalspris (12 000 kr). */
 export function underhallsplanKampanjPrisFran(): number {
   return UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR;
 }
@@ -43,6 +43,7 @@ export function formatKampanjDatum(isoDatum: string): string {
   }
 }
 
+/** Erbjudandet om avtalspris på underhållsplanen är aktivt. */
 export function underhallsplanKampanjArAktiv(
   nu: Date = new Date(),
 ): boolean {
