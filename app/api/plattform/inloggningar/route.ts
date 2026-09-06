@@ -5,10 +5,7 @@ import { sakraPlattformAdminKonton } from "@/lib/auth/server-hjalp";
 
 export async function GET(req: Request) {
   if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
+    return NextResponse.json({ inloggningar: [], demoLage: true });
   }
 
   const session = await lasSession();

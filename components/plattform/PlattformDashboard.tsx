@@ -85,6 +85,7 @@ export function PlattformDashboard() {
   const [mittLosenord, setMittLosenord] = useState<MittLosenord | null>(null);
   const [visaMittLosenord, setVisaMittLosenord] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
+  const [demoLage, setDemoLage] = useState(false);
 
   const ladda = useCallback(async () => {
     setFel(null);
@@ -110,42 +111,57 @@ export function PlattformDashboard() {
       fetch("/api/plattform/foreningar"),
     ]);
 
-    if (!statRes.ok || !mejlRes.ok) {
-      setFel("Kunde inte ladda plattformsdata.");
-      setLaddarForeningar(false);
-      return;
+    let arDemo = false;
+
+    if (statRes.ok) {
+      const statData = (await statRes.json()) as {
+        statistik: Statistik;
+        kontonMedInloggning: KontoRad[];
+        senasteInloggningar: Inloggning[];
+        demoLage?: boolean;
+      };
+      setStatistik(statData.statistik);
+      setKonton(statData.kontonMedInloggning || []);
+      setInloggningar(statData.senasteInloggningar || []);
+      if (statData.demoLage) arDemo = true;
     }
 
-    const statData = (await statRes.json()) as {
-      statistik: Statistik;
-      kontonMedInloggning: KontoRad[];
-      senasteInloggningar: Inloggning[];
-    };
-    const mejlData = (await mejlRes.json()) as { mejl: MejlRad[] };
-    setStatistik(statData.statistik);
-    setKonton(statData.kontonMedInloggning || []);
-    setInloggningar(statData.senasteInloggningar || []);
-    setMejl(mejlData.mejl || []);
+    if (mejlRes.ok) {
+      const mejlData = (await mejlRes.json()) as {
+        mejl: MejlRad[];
+        demoLage?: boolean;
+      };
+      setMejl(mejlData.mejl || []);
+      if (mejlData.demoLage) arDemo = true;
+    }
 
     if (foreningRes.ok) {
       const foreningData = (await foreningRes.json()) as {
         foreningar: PlattformForeningRad[];
+        demoLage?: boolean;
       };
       setForeningar(foreningData.foreningar || []);
+      if (foreningData.demoLage) arDemo = true;
     } else if (foreningRes.status === 503) {
-      setFel(
-        "Databasen är inte konfigurerad — föreningsöversikten kräver DATABASE_URL.",
-      );
-      setForeningar([]);
-    } else {
-      setFel("Kunde inte ladda föreningsöversikten.");
+      arDemo = true;
       setForeningar([]);
     }
+
+    setDemoLage(arDemo);
+    if (arDemo) {
+      setFel(null);
+    } else if (!statRes.ok || !mejlRes.ok) {
+      setFel("Kunde inte ladda plattformsdata.");
+    }
+
     setLaddarForeningar(false);
 
     if (losRes.ok) {
-      const losData = (await losRes.json()) as MittLosenord;
+      const losData = (await losRes.json()) as MittLosenord & {
+        demoLage?: boolean;
+      };
       setMittLosenord(losData);
+      if (losData.demoLage) setDemoLage(true);
     }
   }, []);
 
@@ -213,6 +229,15 @@ export function PlattformDashboard() {
           </button>
         </div>
       </header>
+
+      {demoLage ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Demoläge utan serverdatabas — upphandling, offert och personalinloggning
+          fungerar här. Statistik och föreningsöversikt blir tillgängliga när{" "}
+          <code className="text-xs">DATABASE_URL</code> är satt i Vercel för
+          demo.styrelse-navet.se.
+        </p>
+      ) : null}
 
       {fel ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

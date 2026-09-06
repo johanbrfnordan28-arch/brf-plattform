@@ -5,16 +5,24 @@ import { tillDto } from "@/lib/forening-server";
 import { klassificeraInternForeningStatus } from "@/lib/plattform-forening-status";
 
 export async function GET() {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
-
   const session = await lasSession();
   if (!session || session.typ !== "PLATTFORM") {
     return NextResponse.json({ fel: "Endast plattformsadmin." }, { status: 403 });
+  }
+
+  if (!databasArKonfigurerad()) {
+    return NextResponse.json({
+      foreningar: [],
+      sammanfattning: {
+        totalt: 0,
+        test: 0,
+        kund: 0,
+        utgangen: 0,
+        anvandareTotalt: 0,
+        inloggningar7Dagar: 0,
+      },
+      demoLage: true,
+    });
   }
 
   const nu = Date.now();

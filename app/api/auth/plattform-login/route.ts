@@ -3,6 +3,10 @@ import { databasArKonfigurerad } from "@/lib/db";
 import { loggaInPlattform } from "@/lib/auth/auth-tjanst";
 import { skrivSessionCookie } from "@/lib/auth/session";
 import { hamtaRequestMeta } from "@/lib/auth/server-hjalp";
+import {
+  skapaPlattformDemoSession,
+  verifieraPlattformDemoInloggning,
+} from "@/lib/auth/plattform-demo-login";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -14,13 +18,6 @@ function basUrlFranRequest(req: Request): string {
 }
 
 export async function POST(req: Request) {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
-
   try {
     const body = (await req.json()) as {
       epost?: string;
@@ -31,6 +28,25 @@ export async function POST(req: Request) {
         { fel: "Ange e-post och lösenord." },
         { status: 400 },
       );
+    }
+
+    // Demoläge / mässa — när Vercel saknar DATABASE_URL.
+    if (!databasArKonfigurerad()) {
+      const demo = verifieraPlattformDemoInloggning(body.epost, body.losenord);
+      if (!demo) {
+        return NextResponse.json(
+          { fel: "Fel e-post eller kod." },
+          { status: 401 },
+        );
+      }
+      const { token } = skapaPlattformDemoSession(demo);
+      await skrivSessionCookie(token);
+      return NextResponse.json({
+        ok: true,
+        typ: "PLATTFORM",
+        epost: demo.epost,
+        demoLage: true,
+      });
     }
 
     const meta = hamtaRequestMeta(req);

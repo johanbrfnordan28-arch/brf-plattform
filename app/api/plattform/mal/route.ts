@@ -16,15 +16,18 @@ async function kravPlattform() {
 }
 
 export async function GET() {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
   const session = await kravPlattform();
   if (!session) {
     return NextResponse.json({ fel: "Endast plattformsadmin." }, { status: 403 });
+  }
+
+  if (!databasArKonfigurerad()) {
+    return NextResponse.json({
+      demoLage: true,
+      mal: [],
+      installning: { varningTestAntal: 25 },
+      varningTest: false,
+    });
   }
 
   try {
@@ -42,7 +45,9 @@ export async function GET() {
 export async function POST(req: Request) {
   if (!databasArKonfigurerad()) {
     return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
+      {
+        fel: "Demoläge utan databas — mål sparas när DATABASE_URL är satt i Vercel.",
+      },
       { status: 503 },
     );
   }

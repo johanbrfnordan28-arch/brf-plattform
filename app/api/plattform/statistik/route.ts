@@ -4,16 +4,25 @@ import { lasSession } from "@/lib/auth/session";
 
 /** Aggregerad inloggningsstatistik för plattformsadmin. */
 export async function GET() {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
-
   const session = await lasSession();
   if (!session || session.typ !== "PLATTFORM") {
     return NextResponse.json({ fel: "Endast plattformsadmin." }, { status: 403 });
+  }
+
+  if (!databasArKonfigurerad()) {
+    return NextResponse.json({
+      demoLage: true,
+      statistik: {
+        totaltHandelser: 0,
+        lyckade24Timmar: 0,
+        lyckade7Dagar: 0,
+        misslyckade7Dagar: 0,
+        unikaAnvandare7Dagar: 0,
+        antalStyrelseKonton: 0,
+      },
+      kontonMedInloggning: [],
+      senasteInloggningar: [],
+    });
   }
 
   const nu = Date.now();

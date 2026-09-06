@@ -3,16 +3,13 @@ import { prisma, databasArKonfigurerad } from "@/lib/db";
 import { lasSession } from "@/lib/auth/session";
 
 export async function GET() {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
-
   const session = await lasSession();
   if (!session || session.typ !== "PLATTFORM") {
     return NextResponse.json({ fel: "Endast plattformsadmin." }, { status: 403 });
+  }
+
+  if (!databasArKonfigurerad()) {
+    return NextResponse.json({ mejl: [], demoLage: true });
   }
 
   const rader = await prisma.mejlOutbox.findMany({

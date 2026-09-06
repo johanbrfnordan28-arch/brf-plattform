@@ -6,6 +6,10 @@ import {
   skapaPlattformAnvandare,
   uppdateraPlattformAnvandare,
 } from "@/lib/auth/auth-tjanst";
+import {
+  hamtaPersonalStartkonto,
+  listaPlattformAdminEposter,
+} from "@/lib/auth/projekt-admin";
 
 async function kravPlattformSession() {
   const session = await lasSession();
@@ -16,15 +20,25 @@ async function kravPlattformSession() {
 }
 
 export async function GET() {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
   const session = await kravPlattformSession();
   if (!session) {
     return NextResponse.json({ fel: "Endast plattformsadmin." }, { status: 403 });
+  }
+
+  if (!databasArKonfigurerad()) {
+    const anvandare = listaPlattformAdminEposter().map((epost) => {
+      const special = hamtaPersonalStartkonto(epost);
+      return {
+        id: `demo-${epost}`,
+        epost,
+        namn: special?.namn || "Plattformsadmin",
+        aktiv: true,
+        senasteInloggning: null,
+        skapadTidpunkt: new Date().toISOString(),
+        arAllowlist: true,
+      };
+    });
+    return NextResponse.json({ anvandare, demoLage: true });
   }
 
   const anvandare = await listaPlattformAnvandare();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma, databasArKonfigurerad } from "@/lib/db";
 import { lasSession } from "@/lib/auth/session";
 import { dekrypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
+import { hamtaPlattformDemoLosenord } from "@/lib/auth/plattform-demo-login";
 
 /**
  * Returnerar endast den inloggades eget lösenord — aldrig andras.
@@ -13,12 +14,18 @@ export async function GET() {
   }
 
   if (!databasArKonfigurerad()) {
+    const demoLosenord =
+      session.typ === "PLATTFORM"
+        ? hamtaPlattformDemoLosenord(session.epost)
+        : null;
     return NextResponse.json({
       epost: session.epost,
-      losenord: null,
+      losenord: demoLosenord,
       lokalFallback: true,
-      meddelande:
-        "Servern har ingen databas — lösenordet finns endast lokalt i webbläsaren för ditt konto.",
+      demoLage: true,
+      meddelande: demoLosenord
+        ? "Demoläge utan databas — detta är din startkod för mässa/demo."
+        : "Servern har ingen databas — lösenordet finns endast lokalt i webbläsaren för ditt konto.",
     });
   }
 

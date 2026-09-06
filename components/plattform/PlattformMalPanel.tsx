@@ -92,11 +92,15 @@ export function PlattformMalPanel({
       mal: MalRad[];
       installning: Installning;
       varningTest: boolean;
+      demoLage?: boolean;
     };
     setMal(data.mal || []);
     setInstallning(data.installning);
     setVarningAntal(String(data.installning?.varningTestAntal ?? 25));
     setVarningTest(Boolean(data.varningTest));
+    if (data.demoLage) {
+      setFel(null);
+    }
     setLaddar(false);
   }, []);
 

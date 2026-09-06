@@ -43,7 +43,8 @@ export function PlattformLoginForm() {
       <h1 className="text-xl font-bold text-foreground">Personalinloggning</h1>
       <p className="text-sm text-muted">
         Logga in med e-post och kod. BankID kommer snart. Endast behörig personal
-        — styrelser och allmänheten har ingen tillgång hit.
+        — styrelser och allmänheten har ingen tillgång hit. Fungerar även i
+        demoläge utan databas (mässa).
       </p>
       <label className="block text-sm">
         <span className="font-medium">E-post</span>
