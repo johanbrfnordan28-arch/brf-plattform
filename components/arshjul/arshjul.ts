@@ -42,9 +42,15 @@ export type ArshjulHandelse = {
   veckodag?: Veckodag;
   /** Vilken förekomst av veckodagen: 1 = första, 2 = andra … (standard 1). */
   veckodagOrdinal?: number;
-  /** Intervall — första planerade år och år mellan tillfällen. */
+  /** Intervall / serie — första planerade år och år mellan tillfällen. */
   startAr?: number;
   intervallAr?: number;
+  /**
+   * Sista år serien bokas till (inklusive).
+   * Saknas = ingen egen gräns (följer vy / tidslinjens tillAr).
+   * Används för styrelsemöten m.m. så bokningen inte löper obegränsat.
+   */
+  slutAr?: number;
   /** Senast markerad som genomförd (kalenderår) — nästa tillfälle räknas därifrån. */
   senastKlarAr?: number;
   /** Avklarade enskilda tillfällen (YYYY-MM-DD) — gäller månads-/årsvisa serier. */
@@ -95,6 +101,16 @@ export const STANDARD_PAMINNELSE_DAGAR = [365, 180, 90, 30, 14, 7];
 
 /** Föreslaget intervall för sotning i BRF med eldstäder (kan vara 1–4 år beroende på eldstad). */
 export const SOTNING_FORESLAGET_INTERVALL_AR = 3;
+
+/** OVK bostäder — vanligen vart 6:e år (S/F/FX). */
+export const OVK_INTERVALL_BOSTAD_AR = 6;
+/** OVK verksamhetslokaler / butiker / kontor — normalt vart 3:e år. */
+export const OVK_INTERVALL_VERKSAMHET_AR = 3;
+/** Standardlängd för styrelsemöte- och byggmötesbokning (år framåt från start). */
+export const STANDARD_MOTE_BOKNING_AR = 3;
+
+export const OVK_BOSTAD_ID = "std-ovk-bostad";
+export const OVK_VERKSAMHET_ID = "std-ovk-butik";
 
 export const kategoriEtiketter: Record<ArshjulKategori, string> = {
   styrelsemote: "Styrelsemöte",
@@ -219,6 +235,10 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
     startAr:
       raw.startAr != null && raw.startAr >= 1990 && raw.startAr <= 2200
         ? raw.startAr
+        : undefined,
+    slutAr:
+      raw.slutAr != null && raw.slutAr >= 1990 && raw.slutAr <= 2200
+        ? raw.slutAr
         : undefined,
     intervallAr:
       raw.intervallAr != null && raw.intervallAr >= 1 ? raw.intervallAr : undefined,
@@ -346,12 +366,14 @@ export function expanderaTillfallen(
     // Helt avklarad engångshändelse visas inte igen.
     if (h.typ === "engang" && h.klar) continue;
 
+    const serieSlut = h.slutAr != null ? Math.min(tillAr, h.slutAr) : tillAr;
+
     if (h.typ === "engang" && h.datum) {
       const d = parseDatum(h.datum.slice(0, 10));
       if (!d) continue;
       const ar = d.getFullYear();
       const manad = d.getMonth() + 1;
-      if (ar >= franAr && ar <= tillAr && !manadArExkluderad(h, manad)) {
+      if (ar >= franAr && ar <= serieSlut && !manadArExkluderad(h, manad)) {
         const datumIso = h.datum.slice(0, 10);
         lista.push({
           handelseId: h.id,
@@ -371,7 +393,7 @@ export function expanderaTillfallen(
 
     if (h.typ === "manatlig") {
       const start = h.startAr ?? franAr;
-      for (let ar = franAr; ar <= tillAr; ar++) {
+      for (let ar = franAr; ar <= serieSlut; ar++) {
         if (ar < start) continue;
         for (let manad = 1; manad <= 12; manad++) {
           pushTillfalle(lista, h, ar, manad, true);
@@ -383,7 +405,7 @@ export function expanderaTillfallen(
     if (h.typ === "arlig" && (h.manad || h.veckodag)) {
       const manad = h.manad ?? 1;
       const start = h.startAr ?? franAr;
-      for (let ar = franAr; ar <= tillAr; ar++) {
+      for (let ar = franAr; ar <= serieSlut; ar++) {
         if (ar < start) continue;
         pushTillfalle(lista, h, ar, manad, false);
       }
@@ -395,7 +417,7 @@ export function expanderaTillfallen(
       if (h.senastKlarAr != null) {
         ar = h.senastKlarAr + h.intervallAr;
       }
-      while (ar <= tillAr) {
+      while (ar <= serieSlut) {
         if (ar >= franAr) {
           const manad = h.manad ?? 6;
           pushTillfalle(lista, h, ar, manad, false);
@@ -504,11 +526,13 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-styrelsemote",
       titel: "Styrelsemöte",
       beskrivning:
-        "Ordinarie styrelsemöte — andra tisdagen varje månad. Uppehåll juli–augusti.",
+        "Ordinarie styrelsemöte — andra tisdagen varje månad. Uppehåll juli–augusti. Bokningen är begränsad till ett antal år — förläng under redigera vid behov.",
       kategori: "styrelsemote",
       typ: "manatlig",
       veckodag: 2,
       veckodagOrdinal: 2,
+      startAr: basAr,
+      slutAr: basAr + STANDARD_MOTE_BOKNING_AR - 1,
       exkluderaManader: [...SOMMAR_EXKLUDERADE_MANADER],
       paminnelseDagar: [14, 7, 1],
       klar: false,
@@ -519,11 +543,13 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-byggmote",
       titel: "Byggmöte",
       beskrivning:
-        "Bygg- / entreprenadmöte under pågående projekt. Justera eller ta bort månader utan projekt.",
+        "Bygg- / entreprenadmöte under pågående projekt. Justera eller ta bort månader utan projekt. Bokningen är begränsad till ett antal år.",
       kategori: "byggmote",
       typ: "manatlig",
       veckodag: 4,
       veckodagOrdinal: 1,
+      startAr: basAr,
+      slutAr: basAr + STANDARD_MOTE_BOKNING_AR - 1,
       exkluderaManader: [...SOMMAR_EXKLUDERADE_MANADER],
       paminnelseDagar: [7, 1],
       klar: false,
@@ -543,38 +569,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       skapad: "standard",
       externKalla: "manuell",
     }),
-    normaliseraHandelse({
-      id: "std-ovk-bostad",
-      titel: "OVK — bostäder",
-      beskrivning:
-        "Obligatorisk ventilationskontroll för bostäder. Intervall 3 eller 6 år beroende på ventilationssystem (S/F/FX ofta 6 år, FT/FTX 3 år).",
-      kategori: "ovk",
-      typ: "intervall",
-      startAr: basAr,
-      intervallAr: 6,
-      manad: 9,
-      dag: 1,
-      paminnelseDagar: [365, 180, 90, 30],
-      klar: false,
-      skapad: "standard",
-      externKalla: "manuell",
-    }),
-    normaliseraHandelse({
-      id: "std-ovk-butik",
-      titel: "OVK — butiker / verksamhet",
-      beskrivning:
-        "OVK för verksamhetslokaler och butiker — normalt vart 3:e år.",
-      kategori: "ovk",
-      typ: "intervall",
-      startAr: basAr,
-      intervallAr: 3,
-      manad: 9,
-      dag: 15,
-      paminnelseDagar: [180, 90, 30],
-      klar: false,
-      skapad: "standard",
-      externKalla: "manuell",
-    }),
+    ...skapaOvkPaket(basAr),
     normaliseraHandelse({
       id: "std-sotning",
       titel: "Sotning",
@@ -630,6 +625,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       manad: 4,
       dag: 15,
       startAr: basAr,
+      slutAr: basAr + STANDARD_MOTE_BOKNING_AR - 1,
       paminnelseDagar: [90, 60, 30, 14],
       klar: false,
       skapad: "standard",
@@ -644,12 +640,70 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       manad: 11,
       dag: 30,
       startAr: basAr,
+      slutAr: basAr + STANDARD_MOTE_BOKNING_AR - 1,
       paminnelseDagar: [60, 30, 14],
       klar: false,
       skapad: "standard",
       externKalla: "manuell",
     }),
   ];
+}
+
+/**
+ * OVK med båda intervallen på en gång:
+ * bostäder (normalt 6 år) + verksamhetslokaler/butiker/kontor (3 år).
+ */
+export function skapaOvkPaket(basAr = innevarandeAr()): ArshjulHandelse[] {
+  return [
+    normaliseraHandelse({
+      id: OVK_BOSTAD_ID,
+      titel: "OVK — lägenheter / bostäder",
+      beskrivning:
+        `Obligatorisk ventilationskontroll för bostadslägenheter. Vanligt intervall vart ${OVK_INTERVALL_BOSTAD_AR}:e år (S/F/FX). FT/FTX kan kräva tätare — justera vid behov.`,
+      kategori: "ovk",
+      typ: "intervall",
+      startAr: basAr,
+      intervallAr: OVK_INTERVALL_BOSTAD_AR,
+      manad: 9,
+      dag: 1,
+      paminnelseDagar: [365, 180, 90, 30],
+      klar: false,
+      skapad: "standard",
+      externKalla: "manuell",
+    }),
+    normaliseraHandelse({
+      id: OVK_VERKSAMHET_ID,
+      titel: "OVK — verksamhetslokaler / butiker / kontor",
+      beskrivning:
+        `OVK för verksamhetslokaler, butiker, kontor och liknande — normalt vart ${OVK_INTERVALL_VERKSAMHET_AR}:e år.`,
+      kategori: "ovk",
+      typ: "intervall",
+      startAr: basAr,
+      intervallAr: OVK_INTERVALL_VERKSAMHET_AR,
+      manad: 9,
+      dag: 15,
+      paminnelseDagar: [180, 90, 30],
+      klar: false,
+      skapad: "standard",
+      externKalla: "manuell",
+    }),
+  ];
+}
+
+/** Lägger till saknade OVK-intervall (bostad + verksamhet) utan dubbletter. */
+export function fyllPaOvkPaket(
+  befintliga: ArshjulHandelse[],
+  basAr = innevarandeAr(),
+): ArshjulHandelse[] {
+  const ids = new Set(befintliga.map((h) => h.id));
+  const tillagg = skapaOvkPaket(basAr).filter((h) => !ids.has(h.id));
+  return [...befintliga, ...tillagg];
+}
+
+/** True om minst ett av OVK-paketets intervall saknas. */
+export function saknarOvkPaket(befintliga: ArshjulHandelse[]): boolean {
+  const ids = new Set(befintliga.map((h) => h.id));
+  return !ids.has(OVK_BOSTAD_ID) || !ids.has(OVK_VERKSAMHET_ID);
 }
 
 /** Lägger till saknade standardhändelser (matchar på id). */
