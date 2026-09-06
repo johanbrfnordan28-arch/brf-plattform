@@ -315,6 +315,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
       {!isForening && <TekniskForvaltningErbjudande />}
 
+      {/* Publikt: underhållsplan som tillägg — tidigt på sidan (ca plats 5). */}
+      {!isForening && <UnderhallsplanReklam lage="public" />}
+
       {!isForening && (
         <section className="border-b border-border bg-surface">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-4 py-4 text-center text-sm sm:px-6">
@@ -422,7 +425,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </div>
       </section>
 
-      <UnderhallsplanReklam lage={isForening ? "forening" : "public"} />
+      {isForening && <UnderhallsplanReklam lage="forening" />}
 
       {!isForening ? (
         <section
