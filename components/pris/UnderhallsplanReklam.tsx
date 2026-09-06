@@ -1,13 +1,13 @@
 import Link from "next/link";
 import {
-  formatKampanjDatum,
-  UNDERHALLSPLAN_FRAN_PRIS_KR,
-  UNDERHALLSPLAN_KAMPANJ_GALLER_TOM,
-  UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT,
-  underhallsplanKampanjArAktiv,
-  underhallsplanKampanjPrisFran,
+  UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR,
+  UNDERHALLSPLAN_AVTAL_RABATT_PROCENT,
+  UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR,
 } from "@/lib/underhallsplan-kampanj";
-import { formatKr } from "@/lib/prislista";
+import {
+  formatKr,
+  PLATTFORM_FRAN_ARSPRIS_KR,
+} from "@/lib/prislista";
 
 type Props = {
   /** Publikt Styrelse-Navet eller inloggad föreningssida */
@@ -17,19 +17,14 @@ type Props = {
 };
 
 /**
- * Reklam för underhållsplanen — vad styrelsen behöver lämna in,
- * att priset beror på fastigheten, och kampanj för avtalskunder.
+ * Reklam för underhållsplanen som tilläggstjänst.
+ * Plattformsabonnemanget (från 6 000 kr/år) är separat.
  */
 export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
-  const kampanjAktiv = underhallsplanKampanjArAktiv();
-  const kampanjPris = underhallsplanKampanjPrisFran();
-  const gallerTom = formatKampanjDatum(UNDERHALLSPLAN_KAMPANJ_GALLER_TOM);
   const ctaHref =
-    lage === "forening" ? "/forening/underhallsplan" : "/prova-gratis";
+    lage === "forening" ? "/forening/underhallsplan" : "/offert";
   const ctaText =
-    lage === "forening"
-      ? "Öppna underhållsplanen"
-      : "Skapa förening och börja";
+    lage === "forening" ? "Öppna underhållsplanen" : "Begär offert";
 
   const innehall = (
     <>
@@ -49,27 +44,37 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
         <p className="mt-3 text-muted">
           Professionell framtagning utifrån underlag från styrelsen. Därefter blir
           planen ett levande dokument där styrelse eller förvaltare lägger till
-          och tar bort komponenter — överskådligt för nästa styrelse. För
-          föreningar med tecknat avtal. Ordinarie pris från{" "}
+          och tar bort komponenter. Ordinarie pris{" "}
           <strong className="text-foreground">
-            {formatKr(UNDERHALLSPLAN_FRAN_PRIS_KR)}
+            {formatKr(UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR)}
           </strong>{" "}
-          exkl. moms. Kostnaden beror på fastighetens storlek — antal
-          lägenheter, ytor och omfattning.
+          exkl. moms. För er som även tecknar avtal på plattformen:{" "}
+          {UNDERHALLSPLAN_AVTAL_RABATT_PROCENT}&nbsp;% rabatt →{" "}
+          <strong className="text-foreground">
+            {formatKr(UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR)}
+          </strong>{" "}
+          exkl. moms. Underhållsplanen kan också köpas senare.
         </p>
       </div>
 
-      {kampanjAktiv && (
-        <div className="mt-6 inline-flex flex-col gap-1 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
-          <p className="text-lg font-bold text-amber-950">
-            {UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT}&nbsp;% rabatt
-          </p>
-          <p className="text-sm text-amber-900">
-            Kampanjpris från <strong>{formatKr(kampanjPris)}</strong> exkl. moms
-            — gäller t.o.m. <strong>{gallerTom}</strong>
-          </p>
-        </div>
-      )}
+      <div className="mt-6 rounded-xl border border-primary/25 bg-white/90 px-4 py-4">
+        <p className="text-sm font-semibold text-foreground">
+          Exempel: plattformsavtal + underhållsplan
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          Plattform från{" "}
+          <strong className="text-foreground">
+            {formatKr(PLATTFORM_FRAN_ARSPRIS_KR)}
+          </strong>
+          /år + underhållsplan från{" "}
+          <strong className="text-foreground">
+            {formatKr(UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR)}
+          </strong>{" "}
+          exkl. moms. För exakt pris — begär offert. (Utan plattformsavtal är
+          underhållsplanen{" "}
+          {formatKr(UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR)}.)
+        </p>
+      </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div>
@@ -103,12 +108,13 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
         </div>
         <div>
           <h3 className="text-base font-semibold text-foreground">
-            Vad som påverkar kostnaden
+            Offert och när ni kan köpa
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Priset räknas utifrån fastighetens omfattning: antal lägenheter,
-            boarea och övriga ytor, antal byggnader och hur mycket dokumentation
-            som finns. Ni får en tydlig offert när underlaget är komplett.
+            Priset är alltid <strong className="text-foreground">från</strong>{" "}
+            och beror på fastighetens omfattning. Ni får en tydlig offert —
+            tecknas samtidigt med plattformen eller senare när ni är redo. Detta
+            är inte samma sak som månads-/årspriset för plattformen.
           </p>
           {!kompakt && (
             <Link

@@ -1,8 +1,13 @@
 /**
- * Publik pris-/avtalsinfo utan att visa belopp per nivå.
- * Konkreta kronor visas först inne på föreningssidan när lägenheter är ifyllda.
+ * Publik pris-/avtalsinfo för plattformen.
+ * Underhållsplan (tillägg) hanteras separat i UnderhallsplanReklam.
  */
-import { ARSAVTAL_RABATT_PROCENT, avtalsVillkorKort } from "@/lib/prislista";
+import {
+  ARSAVTAL_RABATT_PROCENT,
+  avtalsVillkorKort,
+  formatKr,
+  PLATTFORM_FRAN_ARSPRIS_KR,
+} from "@/lib/prislista";
 
 type Props = {
   /** Visa rubrik «Ettårsavtal» m.m. */
@@ -15,13 +20,17 @@ export function PublikPrisInfo({ visaRubrik = true }: Props) {
       {visaRubrik && (
         <>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            Ettårsavtal
+            Plattform · ettårsavtal
           </p>
           <h3 className="mt-2 text-xl font-bold text-foreground">
-            Spara {ARSAVTAL_RABATT_PROCENT}&nbsp;%
+            Från {formatKr(PLATTFORM_FRAN_ARSPRIS_KR)}
+            <span className="text-base font-semibold text-muted">
+              {" "}
+              / år exkl. moms
+            </span>
           </h3>
           <p className="mt-1 text-sm text-primary-dark">
-            mot månadsdebitering
+            {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot månadsdebitering
           </p>
         </>
       )}
@@ -31,8 +40,10 @@ export function PublikPrisInfo({ visaRubrik = true }: Props) {
         ))}
       </ul>
       <p className="mt-4 text-sm text-muted">
-        Priset beror på antal lägenheter. Er exakta kostnad visas först när
-        styrelsen fyllt i antalet i underhållsplanen.
+        Priset beror på antal lägenheter. Exakt kostnad får ni i offert — eller
+        ser ni inne på föreningssidan när antalet lägenheter är ifyllt.
+        Professionell underhållsplan är en tilläggstjänst och kan tecknas
+        samtidigt eller senare.
       </p>
     </div>
   );

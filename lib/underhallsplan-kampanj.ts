@@ -1,24 +1,34 @@
 /**
- * Kampanj / tilläggstjänst: professionell underhållsplan.
- * Skilt från plattformsabonnemanget (månadspris per lägenhetsnivå).
+ * Pris för professionell underhållsplan (tilläggstjänst).
+ * Skilt från plattformsabonnemanget (från 6 000 kr/år vid 1 årsavtal).
+ *
+ * Ordinarie: 24 000 kr exkl. moms.
+ * Med tecknat plattformsavtal: 12 000 kr exkl. moms (50 % rabatt).
+ * Kan köpas samtidigt eller senare. Exakt belopp via offert.
  */
 
-import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+/** Ordinarie pris exkl. moms (utan plattformsavtal). */
+export const UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR = 24_000;
 
-/** Ordinarie startpris exkl. moms (för föreningar med plattformsavtal). */
-export const UNDERHALLSPLAN_FRAN_PRIS_KR = 12_000;
+/** Pris exkl. moms när föreningen även har tecknat plattformsavtal. */
+export const UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR = 12_000;
 
-/** Kampanjrabatt på underhållsplanen (samma procentsats som årsavtal). */
-export const UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT = ARSAVTAL_RABATT_PROCENT;
+/** Rabatt på underhållsplanen när plattformsavtal tecknas. */
+export const UNDERHALLSPLAN_AVTAL_RABATT_PROCENT = 50;
 
-/** Kampanjen gäller t.o.m. detta datum (året ut). */
+/** @deprecated Använd UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR */
+export const UNDERHALLSPLAN_FRAN_PRIS_KR = UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR;
+
+/** @deprecated Använd UNDERHALLSPLAN_AVTAL_RABATT_PROCENT */
+export const UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT =
+  UNDERHALLSPLAN_AVTAL_RABATT_PROCENT;
+
+/** Visningsdatum för avtalserbjudande (året ut). */
 export const UNDERHALLSPLAN_KAMPANJ_GALLER_TOM = "2026-12-31";
 
+/** Avtalspris (12 000 kr). */
 export function underhallsplanKampanjPrisFran(): number {
-  return Math.round(
-    UNDERHALLSPLAN_FRAN_PRIS_KR *
-      (1 - UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT / 100),
-  );
+  return UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR;
 }
 
 export function formatKampanjDatum(isoDatum: string): string {
@@ -33,6 +43,7 @@ export function formatKampanjDatum(isoDatum: string): string {
   }
 }
 
+/** Erbjudandet om avtalspris på underhållsplanen är aktivt. */
 export function underhallsplanKampanjArAktiv(
   nu: Date = new Date(),
 ): boolean {

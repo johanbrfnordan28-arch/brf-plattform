@@ -1,10 +1,19 @@
 /**
- * Prislista för Styrelse-Navet (exkl. moms).
+ * Prislista för Styrelse-Navet-plattformen (exkl. moms).
  * Årsavtal = 50 % rabatt mot ordinarie månadspris.
  * Fakturering vid årsavtal: kvartalsvis i förskott.
+ *
+ * Underhållsplan som tilläggstjänst: se underhallsplan-kampanj.ts
+ * (ordinarie 24 000 / 12 000 vid plattformsavtal) — separat från abonnemanget.
  */
 
 export const ARSAVTAL_RABATT_PROCENT = 50;
+
+/**
+ * Publikt «från»-pris för plattformen vid 1 årsavtal (exkl. moms).
+ * Motsvarar lägsta nivån: 500 kr/mån × 12 = 6 000 kr/år.
+ */
+export const PLATTFORM_FRAN_ARSPRIS_KR = 6_000;
 
 export type PrisNiva = {
   id: string;
@@ -102,10 +111,11 @@ export function avtalsVillkorKort(): string[] {
   return [
     "Prövoperiod 30 dagar — ingen uppsägningstid",
     "Utan tecknat avtal raderas föreningen efter prövoperioden",
+    `Plattform från ${PLATTFORM_FRAN_ARSPRIS_KR.toLocaleString("sv-SE")} kr/år exkl. moms vid 1 årsavtal`,
     `Årsavtal: ${ARSAVTAL_RABATT_PROCENT} % rabatt mot månadsdebitering`,
     "Fakturering kvartalsvis i förskott (årsavtal)",
     "Avtalstid 1 år · uppsägningstid 6 månader",
     "Prisjustering enligt KPI vid förlängning",
-    "Alla priser exkl. moms",
+    "Alla priser exkl. moms · exakt pris via offert",
   ];
 }

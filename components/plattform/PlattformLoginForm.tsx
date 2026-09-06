@@ -55,7 +55,7 @@ export function PlattformLoginForm() {
           className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           required
           autoComplete="username"
-          placeholder="johancarlsen@icloud.com"
+          placeholder="johan@styrelse-navet.se"
         />
       </label>
       <label className="block text-sm">
