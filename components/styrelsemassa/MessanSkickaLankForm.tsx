@@ -3,10 +3,19 @@
 import { FormEvent, useState } from "react";
 import { sparaStyrelsemassaLeadLokal } from "@/lib/styrelsemassa-lager";
 
+type MessanSkickaLankFormProps = {
+  kompakt?: boolean;
+  /** Inbäddad i startsidans kort — utan egen ram och med neutral knapp. */
+  inlagd?: boolean;
+};
+
 /**
  * Lättare ingång än att skapa testförening direkt — mejlar länk till prova-gratis.
  */
-export function MessanSkickaLankForm({ kompakt = false }: { kompakt?: boolean }) {
+export function MessanSkickaLankForm({
+  kompakt = false,
+  inlagd = false,
+}: MessanSkickaLankFormProps) {
   const [foreningsNamn, setForeningsNamn] = useState("");
   const [epost, setEpost] = useState("");
   const [kontaktperson, setKontaktperson] = useState("");
@@ -61,17 +70,21 @@ export function MessanSkickaLankForm({ kompakt = false }: { kompakt?: boolean })
     <form
       id="mejla-lank"
       onSubmit={(e) => void onSubmit(e)}
-      className={`space-y-4 rounded-2xl border border-dashed border-primary/40 bg-[#eef6f0]/60 p-5 shadow-sm ${kompakt ? "" : "sm:p-6"}`}
+      className={
+        inlagd
+          ? "mt-4 space-y-3"
+          : `space-y-4 rounded-2xl border border-dashed border-primary/40 bg-[#eef6f0]/60 p-5 shadow-sm ${kompakt ? "" : "sm:p-6"}`
+      }
     >
-      <div>
-        <h3 className="font-semibold text-foreground">
-          Mejla mig en länk
-        </h3>
-        <p className="mt-1 text-sm text-muted">
-          Vill ni fundera först? Vi skickar en länk så ni kan skapa er
-          förening när det passar — samma provperiod som ovan.
-        </p>
-      </div>
+      {!inlagd ? (
+        <div>
+          <h3 className="font-semibold text-foreground">Mejla mig en länk</h3>
+          <p className="mt-1 text-sm text-muted">
+            Vill ni fundera först? Vi skickar en länk så ni kan skapa er
+            förening när det passar — samma provperiod som ovan.
+          </p>
+        </div>
+      ) : null}
 
       <label className="block text-sm">
         <span className="font-medium">
@@ -140,7 +153,11 @@ export function MessanSkickaLankForm({ kompakt = false }: { kompakt?: boolean })
       <button
         type="submit"
         disabled={skickar}
-        className="rounded-lg border border-primary bg-white px-5 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#e2f0e6] disabled:opacity-60"
+        className={
+          inlagd
+            ? "brf-knapp-neutral mt-1 px-5 py-2.5 text-sm disabled:opacity-60"
+            : "rounded-lg border border-primary bg-white px-5 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#e2f0e6] disabled:opacity-60"
+        }
       >
         {skickar ? "Skickar…" : "Mejla länk till mig"}
       </button>

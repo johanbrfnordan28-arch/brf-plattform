@@ -4,15 +4,17 @@ STYRELSEMÄSSA — LÄNK ATT DELA
 Visa QR-kod eller skriv upp adressen. Besökaren fyller i förening + e-post
 och får en länk mejlad (samma sida kan de öppna senare hemma).
 
-PÅ MÄSSAN (lokal dator, npm run dev):
+PÅ MÄSSAN (lokal dator — fungerar nu):
   http://127.0.0.1:3010/massa
 
-PUBLIK DEMO (när sajten är deployad):
+  Dubbelklicka:  OPPNA-MASSA.command
+  (startar dev-server automatiskt om den inte redan kör)
+
+PUBLIK DEMO (kräver deploy till main först):
   https://demo.styrelse-navet.se/massa
+  → Ger 404 tills feature-branchen mergats till main och Vercel deployat.
 
-Dubbelklicka:  OPPNA-MASSA.command
-
-ALTERNATIV (skapa testförening direkt):
+ALTERNATIV (skapa testförening direkt, lokalt):
   http://127.0.0.1:3010/prova-gratis
 
 UPPFÖLJNING (personal):
