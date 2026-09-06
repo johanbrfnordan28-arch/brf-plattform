@@ -6,16 +6,21 @@ import {
   arshjulStorageKey,
   expanderaTillfallen,
   formatDatumKort,
+  fyllPaOvkPaket,
   fyllPaStandardHandelser,
   hamtaPaminnelser,
   kategoriEtiketter,
   kategoriFarger,
   manadsnamn,
   normaliseraHandelse,
+  OVK_INTERVALL_BOSTAD_AR,
+  OVK_INTERVALL_VERKSAMHET_AR,
+  saknarOvkPaket,
   skapaHandelseId,
   skapaTomHandelse,
   SOMMAR_EXKLUDERADE_MANADER,
   SOTNING_FORESLAGET_INTERVALL_AR,
+  STANDARD_MOTE_BOKNING_AR,
   STANDARD_PAMINNELSE_DAGAR,
   veckodagsnamn,
   type ArshjulHandelse,
@@ -29,6 +34,10 @@ import {
   importeraFranUnderhallsplan,
 } from "@/components/arshjul/arshjul-import";
 import { safeSetLocalStorage } from "@/lib/localStorage";
+import {
+  arNyssSkapadForening,
+  FORENING_AKTIV_EVENT,
+} from "@/lib/forening-registry";
 
 type Vy = "arshjul" | "tidslinje" | "paminnelser";
 
@@ -50,6 +59,12 @@ function sparaHandelser(lista: ArshjulHandelse[]): void {
 }
 
 function beskrivIntervall(h: ArshjulHandelse): string {
+  const period =
+    h.slutAr != null
+      ? h.startAr != null
+        ? ` · ${h.startAr}–${h.slutAr}`
+        : ` · t.o.m. ${h.slutAr}`
+      : "";
   if (h.typ === "engang" && h.datum) return formatDatumKort(h.datum);
   if (h.typ === "manatlig") {
     const vd = h.veckodag ? veckodagsnamn[h.veckodag] : null;
@@ -64,14 +79,14 @@ function beskrivIntervall(h: ArshjulHandelse): string {
       const hopp = h.exkluderaManader
         .map((m) => manadsnamn[m - 1]?.slice(0, 3))
         .join("/");
-      return `${bas} · ej ${hopp}`;
+      return `${bas} · ej ${hopp}${period}`;
     }
-    return bas;
+    return `${bas}${period}`;
   }
   if (h.typ === "arlig") {
-    return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`;
+    return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}${period}`;
   }
-  return `Vart ${h.intervallAr}:e år från ${h.startAr}`;
+  return `Vart ${h.intervallAr}:e år från ${h.startAr}${period}`;
 }
 
 export function ArshjulModul() {
@@ -85,13 +100,33 @@ export function ArshjulModul() {
   const [redigeraId, setRedigeraId] = useState<string | null>(null);
   const [form, setForm] = useState(skapaTomHandelse());
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
+  /** Vid ny OVK: skapa båda intervallen (lägenheter 6 år + verksamhet 3 år) på en gång. */
+  const [ovkBadaIntervall, setOvkBadaIntervall] = useState(true);
+  /** Antal år serien bokas (sätter slutAr från startAr). Tom = obegränsat. */
+  const [bokningAntalAr, setBokningAntalAr] = useState<number | "">(
+    STANDARD_MOTE_BOKNING_AR,
+  );
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
-    // Ny förening startar med tomt årshjul — standardmall läggs in via knappen.
-    setHandelser(lasHandelser());
-    skipFirstSave.current = true;
-    setHydrated(true);
+    function laddaOm() {
+      skipFirstSave.current = true;
+      let lista = lasHandelser();
+      // Om nyss skapad förening råkat få standardmall (läcka från grundmall) — rensa.
+      if (
+        arNyssSkapadForening() &&
+        lista.length > 0 &&
+        lista.every((h) => h.id.startsWith("std-") || h.skapad === "standard")
+      ) {
+        lista = [];
+        sparaHandelser(lista);
+      }
+      setHandelser(lista);
+      setHydrated(true);
+    }
+    laddaOm();
+    window.addEventListener(FORENING_AKTIV_EVENT, laddaOm);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, laddaOm);
   }, []);
 
   useEffect(() => {
@@ -202,11 +237,56 @@ export function ArshjulModul() {
 
   function sparaForm(event: React.FormEvent) {
     event.preventDefault();
+
+    // OVK-paket: båda intervallen med en ibockning.
+    if (
+      !redigeraId &&
+      form.kategori === "ovk" &&
+      ovkBadaIntervall
+    ) {
+      const basAr = form.startAr ?? innevarandeAr;
+      const efter = fyllPaOvkPaket(handelser, basAr);
+      const antal = efter.length - handelser.length;
+      if (antal === 0) {
+        setImportMeddelande(
+          "OVK för lägenheter och verksamhetslokaler finns redan i årshjulet.",
+        );
+      } else {
+        setHandelser(efter);
+        setImportMeddelande(
+          `${antal === 2 ? "Båda" : "Saknade"} OVK-intervall tillagda: lägenheter (vart ${OVK_INTERVALL_BOSTAD_AR}:e år) och verksamhetslokaler (vart ${OVK_INTERVALL_VERKSAMHET_AR}:e år).`,
+        );
+      }
+      setForm(skapaTomHandelse());
+      setOvkBadaIntervall(true);
+      setBokningAntalAr(STANDARD_MOTE_BOKNING_AR);
+      setSkapaOppen(false);
+      return;
+    }
+
     if (!form.titel.trim()) return;
+
+    const startAr =
+      form.startAr ??
+      (form.typ === "engang" ? undefined : innevarandeAr);
+    let slutAr = form.slutAr;
+    if (
+      form.typ !== "engang" &&
+      bokningAntalAr !== "" &&
+      Number(bokningAntalAr) >= 1 &&
+      startAr != null
+    ) {
+      slutAr = startAr + Number(bokningAntalAr) - 1;
+    } else if (bokningAntalAr === "") {
+      slutAr = undefined;
+    }
+
     const sparad = normaliseraHandelse({
       ...form,
       titel: form.titel.trim(),
       id: redigeraId ?? form.id ?? skapaHandelseId(),
+      startAr,
+      slutAr,
     });
     if (redigeraId) {
       setHandelser((current) =>
@@ -217,12 +297,22 @@ export function ArshjulModul() {
       setHandelser((current) => [...current, sparad]);
     }
     setForm(skapaTomHandelse());
+    setOvkBadaIntervall(true);
+    setBokningAntalAr(STANDARD_MOTE_BOKNING_AR);
     setSkapaOppen(false);
   }
 
   function startaRedigera(h: ArshjulHandelse) {
     setRedigeraId(h.id);
     setForm({ ...h });
+    setOvkBadaIntervall(false);
+    if (h.startAr != null && h.slutAr != null && h.slutAr >= h.startAr) {
+      setBokningAntalAr(h.slutAr - h.startAr + 1);
+    } else if (h.slutAr != null) {
+      setBokningAntalAr(Math.max(1, h.slutAr - innevarandeAr + 1));
+    } else {
+      setBokningAntalAr("");
+    }
     setSkapaOppen(true);
   }
 
@@ -259,7 +349,22 @@ export function ArshjulModul() {
     }
     setHandelser(efter);
     setImportMeddelande(
-      `${antal} standardhändelser tillagda (styrelsemöte, OVK, sotning, energi, radon m.fl.).`,
+      `${antal} standardhändelser tillagda (styrelsemöte, OVK 6+3 år, sotning, energi, radon m.fl.).`,
+    );
+  }
+
+  function laggTillOvkPaket() {
+    if (!saknarOvkPaket(handelser)) {
+      setImportMeddelande(
+        "OVK för lägenheter och verksamhetslokaler finns redan.",
+      );
+      return;
+    }
+    const efter = fyllPaOvkPaket(handelser, innevarandeAr);
+    const antal = efter.length - handelser.length;
+    setHandelser(efter);
+    setImportMeddelande(
+      `${antal} OVK-intervall tillagda: lägenheter (vart ${OVK_INTERVALL_BOSTAD_AR}:e år) och verksamhetslokaler/butiker/kontor (vart ${OVK_INTERVALL_VERKSAMHET_AR}:e år).`,
     );
   }
 
@@ -317,10 +422,10 @@ export function ArshjulModul() {
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Styrelsemöten, byggmöten, OVK, sotning, energideklaration och
-          radonmätning — med månads- eller årsintervall. Hoppa över sommarmånader
-          när ni inte har möten. Sotning föreslås vart{" "}
-          {SOTNING_FORESLAGET_INTERVALL_AR}:e år (kan vara 1–4 beroende på eldstad).
+          Årshjulet är tomt tills ni själva lägger in händelser — styrelsemöten,
+          OVK, sotning m.m. Ni styr intervall och hur många år ni bokar. Valfria
+          mallar finns om ni vill ha ett snabbstart, men inget fylls i
+          automatiskt när föreningen skapas.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -351,10 +456,29 @@ export function ArshjulModul() {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={laggTillStandard}
+          onClick={() => {
+            setSkapaOppen(true);
+            setRedigeraId(null);
+            setForm(skapaTomHandelse());
+          }}
           className="rounded-lg border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Lägg in standardkategorier
+          + Lägg till händelse
+        </button>
+        <button
+          type="button"
+          onClick={laggTillStandard}
+          className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-muted hover:border-primary/50"
+        >
+          Valfri mall: standardkategorier
+        </button>
+        <button
+          type="button"
+          onClick={laggTillOvkPaket}
+          className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-muted hover:border-teal-500"
+        >
+          Valfri mall: OVK ({OVK_INTERVALL_BOSTAD_AR}+{OVK_INTERVALL_VERKSAMHET_AR}{" "}
+          år)
         </button>
         <button
           type="button"
@@ -372,21 +496,24 @@ export function ArshjulModul() {
         </button>
       </div>
       {handelser.length === 0 && (
-        <div className="rounded-xl border border-primary/30 bg-[#eef6f0] px-4 py-4">
-          <p className="text-sm font-semibold text-primary-dark">
-            Årshjulet är tomt
+        <div className="rounded-xl border border-border bg-surface/60 px-4 py-4">
+          <p className="text-sm font-semibold text-foreground">
+            Årshjulet är tomt — som det ska vara
           </p>
-          <p className="mt-1 text-sm text-foreground">
-            Börja med standardkategorier (möten, OVK, sotning m.m.) — sedan kan
-            ni lägga till egna påminnelser eller importera från underhållsplan
-            och projekt.
+          <p className="mt-1 text-sm text-muted">
+            Lägg till era egna möten och besiktningar, eller använd en valfri
+            mall om ni vill ha ett förslag att utgå från.
           </p>
           <button
             type="button"
-            onClick={laggTillStandard}
+            onClick={() => {
+              setSkapaOppen(true);
+              setRedigeraId(null);
+              setForm(skapaTomHandelse());
+            }}
             className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
           >
-            Lägg in standardkategorier
+            + Lägg till första händelsen
           </button>
         </div>
       )}
@@ -411,11 +538,20 @@ export function ArshjulModul() {
             <label className="block sm:col-span-2">
               <span className="text-sm font-medium">Titel</span>
               <input
-                required
-                value={form.titel}
+                required={
+                  !(form.kategori === "ovk" && ovkBadaIntervall && !redigeraId)
+                }
+                disabled={
+                  form.kategori === "ovk" && ovkBadaIntervall && !redigeraId
+                }
+                value={
+                  form.kategori === "ovk" && ovkBadaIntervall && !redigeraId
+                    ? `OVK — lägenheter (${OVK_INTERVALL_BOSTAD_AR} år) + verksamhet (${OVK_INTERVALL_VERKSAMHET_AR} år)`
+                    : form.titel
+                }
                 onChange={(e) => setForm({ ...form, titel: e.target.value })}
                 placeholder="t.ex. OVK, Årsstämma, Radonmätning"
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-muted"
               />
             </label>
             <label className="block sm:col-span-2">
@@ -432,9 +568,21 @@ export function ArshjulModul() {
               <span className="text-sm font-medium">Kategori</span>
               <select
                 value={form.kategori}
-                onChange={(e) =>
-                  setForm({ ...form, kategori: e.target.value as ArshjulKategori })
-                }
+                onChange={(e) => {
+                  const kategori = e.target.value as ArshjulKategori;
+                  setForm({
+                    ...form,
+                    kategori,
+                    typ: kategori === "ovk" ? "intervall" : form.typ,
+                    intervallAr:
+                      kategori === "ovk"
+                        ? OVK_INTERVALL_BOSTAD_AR
+                        : form.intervallAr,
+                  });
+                  if (kategori === "ovk" && !redigeraId) {
+                    setOvkBadaIntervall(true);
+                  }
+                }}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 {(Object.keys(kategoriEtiketter) as ArshjulKategori[]).map((k) => (
@@ -473,7 +621,8 @@ export function ArshjulModul() {
               </label>
             )}
 
-            {(form.typ === "arlig" || form.typ === "intervall") && (
+            {(form.typ === "arlig" || form.typ === "intervall") &&
+              !(form.kategori === "ovk" && ovkBadaIntervall && !redigeraId) && (
               <label className="block">
                 <span className="text-sm font-medium">Månad</span>
                 <select
@@ -514,9 +663,62 @@ export function ArshjulModul() {
               </label>
             )}
 
+            {!redigeraId && form.kategori === "ovk" && (
+              <label className="flex sm:col-span-2 cursor-pointer items-start gap-3 rounded-xl border border-teal-200 bg-teal-50/80 px-3 py-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={ovkBadaIntervall}
+                  onChange={(e) => setOvkBadaIntervall(e.target.checked)}
+                />
+                <span className="text-sm text-teal-950">
+                  <span className="font-semibold">
+                    Skapa båda OVK-intervallen på en gång
+                  </span>
+                  <span className="mt-0.5 block text-xs text-teal-900/80">
+                    Lägenheter/bostäder vart {OVK_INTERVALL_BOSTAD_AR}:e år och
+                    verksamhetslokaler, butiker och kontor vart{" "}
+                    {OVK_INTERVALL_VERKSAMHET_AR}:e år — så ni slipper lägga in
+                    dem var för sig.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {form.typ !== "engang" &&
+              !(form.kategori === "ovk" && ovkBadaIntervall && !redigeraId) && (
+              <label className="block">
+                <span className="text-sm font-medium">
+                  Boka antal år framåt
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  placeholder="Obegränsat"
+                  value={bokningAntalAr}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") {
+                      setBokningAntalAr("");
+                      return;
+                    }
+                    setBokningAntalAr(Math.max(1, Number(v) || 1));
+                  }}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+                <span className="mt-1 block text-xs text-muted">
+                  Begränsar serien (t.ex. styrelsemöten) till valt antal år.
+                  Lämna tomt för obegränsat. Standardförslag:{" "}
+                  {STANDARD_MOTE_BOKNING_AR} år.
+                </span>
+              </label>
+            )}
+
             {(form.typ === "arlig" ||
               form.typ === "intervall" ||
-              form.typ === "manatlig") && (
+              form.typ === "manatlig") &&
+              !(form.kategori === "ovk" && ovkBadaIntervall && !redigeraId) && (
               <>
                 <label className="block">
                   <span className="text-sm font-medium">Veckodag (valfritt)</span>
@@ -599,26 +801,29 @@ export function ArshjulModul() {
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="block">
-                  <span className="text-sm font-medium">Intervall (år)</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={form.intervallAr ?? 1}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        intervallAr: Number(e.target.value) || 1,
-                      })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                  <span className="mt-1 block text-xs text-muted">
-                    OVK bostäder 3–6 år · OVK butik 3 år · sotning{" "}
-                    {SOTNING_FORESLAGET_INTERVALL_AR} år · energi/radon 10 år
-                  </span>
-                </label>
+                {!(form.kategori === "ovk" && ovkBadaIntervall && !redigeraId) && (
+                  <label className="block">
+                    <span className="text-sm font-medium">Intervall (år)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={form.intervallAr ?? 1}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          intervallAr: Number(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                    <span className="mt-1 block text-xs text-muted">
+                      OVK lägenheter {OVK_INTERVALL_BOSTAD_AR} år · OVK verksamhet{" "}
+                      {OVK_INTERVALL_VERKSAMHET_AR} år · sotning{" "}
+                      {SOTNING_FORESLAGET_INTERVALL_AR} år · energi/radon 10 år
+                    </span>
+                  </label>
+                )}
               </>
             )}
 
@@ -695,7 +900,11 @@ export function ArshjulModul() {
               type="submit"
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
             >
-              {redigeraId ? "Spara ändringar" : "Lägg till"}
+              {redigeraId
+                ? "Spara ändringar"
+                : form.kategori === "ovk" && ovkBadaIntervall
+                  ? "Lägg till båda OVK-intervallen"
+                  : "Lägg till"}
             </button>
             {redigeraId && (
               <button
