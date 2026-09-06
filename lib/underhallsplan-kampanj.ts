@@ -1,24 +1,34 @@
 /**
- * Kampanj / tilläggstjänst: professionell underhållsplan.
- * Skilt från plattformsabonnemanget (månadspris per lägenhetsnivå).
+ * Pris för professionell underhållsplan (tilläggstjänst).
+ * Skilt från plattformsabonnemanget (månadspris per lägenhetsnivå i prislista.ts).
+ *
+ * Ordinarie från-pris: 24 000 kr exkl. moms.
+ * Vid tecknat plattformsavtal: 50 % rabatt → från 12 000 kr exkl. moms.
+ * Exakt belopp via offert utifrån fastighetens omfattning.
  */
 
-import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+/** Ordinarie startpris exkl. moms (utan avtalsrabatt). */
+export const UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR = 24_000;
 
-/** Ordinarie startpris exkl. moms (för föreningar med plattformsavtal). */
-export const UNDERHALLSPLAN_FRAN_PRIS_KR = 12_000;
+/** Från-pris exkl. moms för föreningar med tecknat avtal (50 % rabatt). */
+export const UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR = 12_000;
 
-/** Kampanjrabatt på underhållsplanen (samma procentsats som årsavtal). */
-export const UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT = ARSAVTAL_RABATT_PROCENT;
+/** Rabatt vid tecknande av avtal. */
+export const UNDERHALLSPLAN_AVTAL_RABATT_PROCENT = 50;
 
-/** Kampanjen gäller t.o.m. detta datum (året ut). */
+/** @deprecated Använd UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR */
+export const UNDERHALLSPLAN_FRAN_PRIS_KR = UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR;
+
+/** @deprecated Använd UNDERHALLSPLAN_AVTAL_RABATT_PROCENT */
+export const UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT =
+  UNDERHALLSPLAN_AVTAL_RABATT_PROCENT;
+
+/** Visningsdatum för avtalserbjudande (året ut). */
 export const UNDERHALLSPLAN_KAMPANJ_GALLER_TOM = "2026-12-31";
 
+/** Avtalspris från (12 000 kr). */
 export function underhallsplanKampanjPrisFran(): number {
-  return Math.round(
-    UNDERHALLSPLAN_FRAN_PRIS_KR *
-      (1 - UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT / 100),
-  );
+  return UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR;
 }
 
 export function formatKampanjDatum(isoDatum: string): string {

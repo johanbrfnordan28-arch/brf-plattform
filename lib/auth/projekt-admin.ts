@@ -5,7 +5,9 @@
 
 export const PLATTFORM_ADMIN_EPOST_STANDARD = [
   "johancarlsen@icloud.com",
+  "johan@styrelse-navet.se",
   "s.alamerison@sveabygg.se",
+  "seif@styrelse-navet.se",
   "admin2@styrelse-navet.se",
   "admin3@styrelse-navet.se",
   "admin4@styrelse-navet.se",
@@ -22,6 +24,10 @@ export const PLATTFORM_PERSONAL_STARTLOSENORD: Record<
     namn: "Seif Alameri",
     losenord: "Seif2026",
   },
+  "seif@styrelse-navet.se": {
+    namn: "Seif Alameri",
+    losenord: "Seif2026",
+  },
 };
 
 /** Startkod tills BankID finns — byt via env i produktion. */
@@ -34,9 +40,13 @@ export function listaPlattformAdminEposter(): string[] {
       .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
-    // Seif ska alltid finnas även när env override används.
-    if (!lista.includes("s.alamerison@sveabygg.se")) {
-      lista.push("s.alamerison@sveabygg.se");
+    // Offentliga personaladresser ska alltid finnas även när env override används.
+    for (const obligatorisk of [
+      "s.alamerison@sveabygg.se",
+      "seif@styrelse-navet.se",
+      "johan@styrelse-navet.se",
+    ]) {
+      if (!lista.includes(obligatorisk)) lista.push(obligatorisk);
     }
     return lista;
   }

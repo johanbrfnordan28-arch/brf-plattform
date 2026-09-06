@@ -1,11 +1,11 @@
 import Link from "next/link";
 import {
   formatKampanjDatum,
-  UNDERHALLSPLAN_FRAN_PRIS_KR,
+  UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR,
+  UNDERHALLSPLAN_AVTAL_RABATT_PROCENT,
   UNDERHALLSPLAN_KAMPANJ_GALLER_TOM,
-  UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT,
+  UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR,
   underhallsplanKampanjArAktiv,
-  underhallsplanKampanjPrisFran,
 } from "@/lib/underhallsplan-kampanj";
 import { formatKr } from "@/lib/prislista";
 
@@ -17,25 +17,22 @@ type Props = {
 };
 
 /**
- * Reklam för underhållsplanen — vad styrelsen behöver lämna in,
- * att priset beror på fastigheten, och kampanj för avtalskunder.
+ * Reklam för underhållsplanen som tilläggstjänst.
+ * Skilt från plattformens månadspris — här: från-pris + offert.
  */
 export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
-  const kampanjAktiv = underhallsplanKampanjArAktiv();
-  const kampanjPris = underhallsplanKampanjPrisFran();
+  const avtalErbjudandeAktivt = underhallsplanKampanjArAktiv();
   const gallerTom = formatKampanjDatum(UNDERHALLSPLAN_KAMPANJ_GALLER_TOM);
   const ctaHref =
-    lage === "forening" ? "/forening/underhallsplan" : "/prova-gratis";
+    lage === "forening" ? "/forening/underhallsplan" : "/offert";
   const ctaText =
-    lage === "forening"
-      ? "Öppna underhållsplanen"
-      : "Skapa förening och börja";
+    lage === "forening" ? "Öppna underhållsplanen" : "Begär offert";
 
   const innehall = (
     <>
       <div className="max-w-3xl">
         <p className="text-sm font-semibold text-primary-dark">
-          Underhållsplan · tilläggstjänst
+          Underhållsplan · tilläggstjänst (inte plattformsabonnemanget)
         </p>
         <h2
           className={
@@ -49,24 +46,26 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
         <p className="mt-3 text-muted">
           Professionell framtagning utifrån underlag från styrelsen. Därefter blir
           planen ett levande dokument där styrelse eller förvaltare lägger till
-          och tar bort komponenter — överskådligt för nästa styrelse. För
-          föreningar med tecknat avtal. Ordinarie pris från{" "}
+          och tar bort komponenter — överskådligt för nästa styrelse. Ordinarie
+          pris från{" "}
           <strong className="text-foreground">
-            {formatKr(UNDERHALLSPLAN_FRAN_PRIS_KR)}
+            {formatKr(UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR)}
           </strong>{" "}
-          exkl. moms. Kostnaden beror på fastighetens storlek — antal
-          lägenheter, ytor och omfattning.
+          exkl. moms. Ni får alltid en offert utifrån fastighetens omfattning.
         </p>
       </div>
 
-      {kampanjAktiv && (
+      {avtalErbjudandeAktivt && (
         <div className="mt-6 inline-flex flex-col gap-1 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
           <p className="text-lg font-bold text-amber-950">
-            {UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT}&nbsp;% rabatt
+            {UNDERHALLSPLAN_AVTAL_RABATT_PROCENT}&nbsp;% rabatt vid avtal
           </p>
           <p className="text-sm text-amber-900">
-            Kampanjpris från <strong>{formatKr(kampanjPris)}</strong> exkl. moms
-            — gäller t.o.m. <strong>{gallerTom}</strong>
+            Vid tecknande av plattformsavtal: från{" "}
+            <strong>{formatKr(UNDERHALLSPLAN_AVTAL_FRAN_PRIS_KR)}</strong>{" "}
+            exkl. moms (ordinarie från{" "}
+            {formatKr(UNDERHALLSPLAN_ORDINARIE_FRAN_PRIS_KR)}). Gäller t.o.m.{" "}
+            <strong>{gallerTom}</strong>. Exakt pris i offert.
           </p>
         </div>
       )}
@@ -106,9 +105,11 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
             Vad som påverkar kostnaden
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Priset räknas utifrån fastighetens omfattning: antal lägenheter,
-            boarea och övriga ytor, antal byggnader och hur mycket dokumentation
-            som finns. Ni får en tydlig offert när underlaget är komplett.
+            Priset är alltid <strong className="text-foreground">från</strong>{" "}
+            och beror på fastighetens omfattning: antal lägenheter, boarea och
+            övriga ytor, antal byggnader och hur mycket dokumentation som finns.
+            Ni får en tydlig offert när underlaget är komplett — detta är inte
+            samma sak som månadspriset för plattformen.
           </p>
           {!kompakt && (
             <Link

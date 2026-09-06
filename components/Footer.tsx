@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { useStyrelseKontakt } from "@/components/forening/useStyrelseKontakt";
 import {
+  OFFENTLIGA_KONTAKT_EPOSTER,
   PLATTFORM_STOD_EPOST,
   plattformStodMailto,
 } from "@/lib/plattform-stod";
@@ -19,7 +20,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="font-semibold text-foreground">{brand}</p>
             <p className="mt-1 max-w-md text-sm text-muted">
@@ -41,15 +42,34 @@ export function Footer() {
                 {kontakt.kontaktperson ? ` (${kontakt.kontaktperson})` : ""}
               </p>
             ) : null}
-            <p className="text-sm text-muted">
-              Hjälp från Styrelse-Navet:{" "}
-              <a
-                href={plattformStodMailto()}
-                className="font-medium text-primary-dark underline hover:no-underline"
-              >
-                {PLATTFORM_STOD_EPOST}
-              </a>
-            </p>
+            {!isForening ? (
+              <div className="text-sm text-muted">
+                <p className="font-medium text-foreground">Kontakt</p>
+                <ul className="mt-1 space-y-0.5">
+                  {OFFENTLIGA_KONTAKT_EPOSTER.map((k) => (
+                    <li key={k.epost}>
+                      <a
+                        href={plattformStodMailto(undefined, undefined, k.epost)}
+                        className="font-medium text-primary-dark underline hover:no-underline"
+                      >
+                        {k.epost}
+                      </a>
+                      <span className="text-muted"> ({k.etikett})</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-sm text-muted">
+                Hjälp från Styrelse-Navet:{" "}
+                <a
+                  href={plattformStodMailto()}
+                  className="font-medium text-primary-dark underline hover:no-underline"
+                >
+                  {PLATTFORM_STOD_EPOST}
+                </a>
+              </p>
+            )}
             {isForening && (
               <Link
                 href="/"

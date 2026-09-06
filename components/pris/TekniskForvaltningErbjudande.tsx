@@ -94,7 +94,7 @@ export function TekniskForvaltningErbjudande() {
               )}
               className="rounded-lg border border-primary bg-white px-6 py-3 text-sm font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0] sm:text-base"
             >
-              Mejla oss
+              Mejla support@styrelse-navet.se
             </a>
             <Link
               href="#skapa-forening"
