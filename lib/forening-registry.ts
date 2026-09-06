@@ -817,6 +817,8 @@ export function skapaNyForening(
 
   sparaForeningProfil(profil, { tyst: true, synkaServer: false });
   sattAktivForeningId(id, { tyst: true });
+  // Tomt årshjul direkt — föreningen fyller själv (ingen demodata från grundmall).
+  forberedNyForening(id);
   window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
 
   if (!bekraftaAttForeningArSparad(id)) {

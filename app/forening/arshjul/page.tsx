@@ -17,7 +17,7 @@ export default function ForeningArshjulPage() {
     <ModulePage
       title="Årshjul"
       icon="📅"
-      intro="Styrelsemöten, byggmöten, garantbesiktning, OVK, sotning, energideklaration och radon — med månads- eller årsintervall. Hoppa över sommaren när ni inte har möten."
+      intro="Lägg själva in styrelsemöten, OVK, sotning och andra återkommande punkter. Inget fylls i automatiskt när föreningen skapas."
     >
       <ContentSection title="Styrelsens årshjul" plain>
         <ArshjulModul />

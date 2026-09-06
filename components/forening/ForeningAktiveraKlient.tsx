@@ -6,6 +6,7 @@ import {
   aktiveraForeningVidSidladdning,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { forberedNyForening } from "@/lib/kopiera-grundmall-data";
 import { byggNyForeningUrl } from "@/lib/skapa-forening-navigering";
 
 export function ForeningAktiveraKlient() {
@@ -22,6 +23,8 @@ export function ForeningAktiveraKlient() {
       setFel("Kunde inte läsa föreningen från länken. Försök skapa igen.");
       return;
     }
+    // Säkerställ tomt årshjul innan vidare till föreningssidan.
+    forberedNyForening(aktiverad.id);
     setProfil(aktiverad);
     window.location.replace(byggNyForeningUrl(aktiverad.id, aktiverad.namn));
   }, []);

@@ -34,6 +34,10 @@ import {
   importeraFranUnderhallsplan,
 } from "@/components/arshjul/arshjul-import";
 import { safeSetLocalStorage } from "@/lib/localStorage";
+import {
+  arNyssSkapadForening,
+  FORENING_AKTIV_EVENT,
+} from "@/lib/forening-registry";
 
 type Vy = "arshjul" | "tidslinje" | "paminnelser";
 
@@ -105,10 +109,24 @@ export function ArshjulModul() {
   const skipFirstSave = useRef(true);
 
   useEffect(() => {
-    // Ny förening startar med tomt årshjul — standardmall läggs in via knappen.
-    setHandelser(lasHandelser());
-    skipFirstSave.current = true;
-    setHydrated(true);
+    function laddaOm() {
+      skipFirstSave.current = true;
+      let lista = lasHandelser();
+      // Om nyss skapad förening råkat få standardmall (läcka från grundmall) — rensa.
+      if (
+        arNyssSkapadForening() &&
+        lista.length > 0 &&
+        lista.every((h) => h.id.startsWith("std-") || h.skapad === "standard")
+      ) {
+        lista = [];
+        sparaHandelser(lista);
+      }
+      setHandelser(lista);
+      setHydrated(true);
+    }
+    laddaOm();
+    window.addEventListener(FORENING_AKTIV_EVENT, laddaOm);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, laddaOm);
   }, []);
 
   useEffect(() => {
@@ -404,13 +422,10 @@ export function ArshjulModul() {
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Styrelsemöten, byggmöten, OVK, sotning, energideklaration och
-          radonmätning — med månads- eller årsintervall. OVK läggs in med två
-          intervall på en gång: lägenheter (vart {OVK_INTERVALL_BOSTAD_AR}:e år)
-          och verksamhetslokaler/butiker/kontor (vart{" "}
-          {OVK_INTERVALL_VERKSAMHET_AR}:e år). Serier som styrelsemöte kan
-          begränsas till ett valt antal år. Hoppa över sommarmånader när ni inte
-          har möten.
+          Årshjulet är tomt tills ni själva lägger in händelser — styrelsemöten,
+          OVK, sotning m.m. Ni styr intervall och hur många år ni bokar. Valfria
+          mallar finns om ni vill ha ett snabbstart, men inget fylls i
+          automatiskt när föreningen skapas.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -441,18 +456,29 @@ export function ArshjulModul() {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={laggTillStandard}
+          onClick={() => {
+            setSkapaOppen(true);
+            setRedigeraId(null);
+            setForm(skapaTomHandelse());
+          }}
           className="rounded-lg border border-primary bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Lägg in standardkategorier
+          + Lägg till händelse
+        </button>
+        <button
+          type="button"
+          onClick={laggTillStandard}
+          className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-muted hover:border-primary/50"
+        >
+          Valfri mall: standardkategorier
         </button>
         <button
           type="button"
           onClick={laggTillOvkPaket}
-          className="rounded-lg border border-teal-600 bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-950 hover:bg-teal-100"
+          className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-muted hover:border-teal-500"
         >
-          Bocka in OVK (lägenheter {OVK_INTERVALL_BOSTAD_AR} år + verksamhet{" "}
-          {OVK_INTERVALL_VERKSAMHET_AR} år)
+          Valfri mall: OVK ({OVK_INTERVALL_BOSTAD_AR}+{OVK_INTERVALL_VERKSAMHET_AR}{" "}
+          år)
         </button>
         <button
           type="button"
@@ -470,21 +496,24 @@ export function ArshjulModul() {
         </button>
       </div>
       {handelser.length === 0 && (
-        <div className="rounded-xl border border-primary/30 bg-[#eef6f0] px-4 py-4">
-          <p className="text-sm font-semibold text-primary-dark">
-            Årshjulet är tomt
+        <div className="rounded-xl border border-border bg-surface/60 px-4 py-4">
+          <p className="text-sm font-semibold text-foreground">
+            Årshjulet är tomt — som det ska vara
           </p>
-          <p className="mt-1 text-sm text-foreground">
-            Börja med standardkategorier (möten, OVK, sotning m.m.) — sedan kan
-            ni lägga till egna påminnelser eller importera från underhållsplan
-            och projekt.
+          <p className="mt-1 text-sm text-muted">
+            Lägg till era egna möten och besiktningar, eller använd en valfri
+            mall om ni vill ha ett förslag att utgå från.
           </p>
           <button
             type="button"
-            onClick={laggTillStandard}
+            onClick={() => {
+              setSkapaOppen(true);
+              setRedigeraId(null);
+              setForm(skapaTomHandelse());
+            }}
             className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
           >
-            Lägg in standardkategorier
+            + Lägg till första händelsen
           </button>
         </div>
       )}
