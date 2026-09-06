@@ -11,6 +11,7 @@ import { PlattformAnvandarePanel } from "@/components/plattform/PlattformAnvanda
 import { PlattformGrundmallPanel } from "@/components/plattform/PlattformGrundmallPanel";
 import { PlattformMalPanel } from "@/components/plattform/PlattformMalPanel";
 import { PlattformOffertPanel } from "@/components/plattform/PlattformOffertPanel";
+import { PlattformStyrelsemassaPanel } from "@/components/plattform/PlattformStyrelsemassaPanel";
 import { InternNavetUpphandlingPanel } from "@/components/upphandling/InternNavetUpphandlingPanel";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 import { ABK_09_KORT } from "@/lib/abk-09";
@@ -303,6 +304,8 @@ export function PlattformDashboard() {
       </section>
 
       <PlattformOffertPanel />
+
+      <PlattformStyrelsemassaPanel />
 
       {statistik ? (
         <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">

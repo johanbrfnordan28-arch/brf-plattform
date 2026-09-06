@@ -5,9 +5,9 @@ import { ModulePage } from "@/components/ModulePage";
 import { OffertForfraganForm } from "@/components/offert/OffertForfraganForm";
 import { ABK_09_KORT, ABK_09_LANG } from "@/lib/abk-09";
 import {
-  PLATTFORM_STOD_EPOST,
-  plattformStodMailto,
-} from "@/lib/plattform-stod";
+  OFFERT_EPOST,
+  offertMailto,
+} from "@/lib/offert-mejl";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 export const metadata: Metadata = {
@@ -47,13 +47,13 @@ export default function OffertPage() {
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <a
-            href={plattformStodMailto(
+            href={offertMailto(
               "Styrelse-Navet — offertförfrågan",
               "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
             )}
             className="inline-flex rounded-lg border border-primary px-5 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
           >
-            Mejla {PLATTFORM_STOD_EPOST}
+            Mejla {OFFERT_EPOST}
           </a>
           <Link
             href={PROVA_GRATIS_PATH}

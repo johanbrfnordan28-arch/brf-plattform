@@ -17,6 +17,7 @@ import {
   genereraLokalLosenord,
   sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
+import { markeraStyrelsemassaLeadLokalSomSkapadeTest } from "@/lib/styrelsemassa-lager";
 
 export type SkapaForeningMedKontoResultat = {
   profil: ForeningProfil;
@@ -108,6 +109,10 @@ export async function skapaForeningMedKontoKlient(opts: {
       namn: skapareNamn,
       roll: String(skapareRoll),
     });
+    markeraStyrelsemassaLeadLokalSomSkapadeTest({
+      epost: skapareEpost,
+      foreningId: profil.id,
+    });
     return {
       profil,
       tillfalligtLosenord,
@@ -143,6 +148,11 @@ export async function skapaForeningMedKontoKlient(opts: {
       roll: String(skapareRoll),
     });
   }
+
+  markeraStyrelsemassaLeadLokalSomSkapadeTest({
+    epost: skapareEpost,
+    foreningId: profil.id,
+  });
 
   return {
     profil,

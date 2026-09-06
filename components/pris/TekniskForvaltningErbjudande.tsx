@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ABK_09_KORT } from "@/lib/abk-09";
-import { plattformStodMailto } from "@/lib/plattform-stod";
+import { offertMailto } from "@/lib/offert-mejl";
 
 const TJANSTER = [
   {
@@ -88,7 +88,7 @@ export function TekniskForvaltningErbjudande() {
               Begär offert
             </Link>
             <a
-              href={plattformStodMailto(
+              href={offertMailto(
                 "Styrelse-Navet — offertförfrågan",
                 "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
               )}

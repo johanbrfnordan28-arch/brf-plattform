@@ -590,6 +590,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   >
                     Vi vill pröva gratis i 30 dagar
                   </Link>
+                  <Link
+                    href={`${PROVA_GRATIS_PATH}#mejla-lank`}
+                    className="mt-3 self-start text-sm font-medium text-primary-dark underline hover:no-underline"
+                  >
+                    Mejla mig en länk istället
+                  </Link>
                 </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <PublikPrisInfo />

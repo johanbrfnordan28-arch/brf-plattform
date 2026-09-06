@@ -34,6 +34,7 @@ import {
   tillDto,
   type ForeningServerDto,
 } from "@/lib/forening-server";
+import { markeraStyrelsemassaLeadSomSkapadeTest } from "@/lib/styrelsemassa-lead-server";
 
 export type SkapaForeningAuthInput = {
   foreningId: string;
@@ -182,6 +183,13 @@ export async function skapaForeningMedKonto(
           ].join("\n"),
         },
   );
+
+  await markeraStyrelsemassaLeadSomSkapadeTest({
+    epost,
+    foreningId: rad.forening.id,
+  }).catch(() => {
+    /* valfri uppföljning — ska inte stoppa skapande */
+  });
 
   return {
     forening: tillDto(rad.forening),
