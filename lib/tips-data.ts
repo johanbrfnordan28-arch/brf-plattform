@@ -7,24 +7,29 @@ export type TipsPunkt = {
 export const tips: Record<string, TipsPunkt[]> = {
   underhallsplan: [
     {
+      ikon: "🏗️",
+      titel: "Professionell grund först",
+      text: "Det är viktigt att planen tas fram av en professionell part. Då får ni rätt omfattning, intervall och kostnadsläge — styrelse och förvaltare kan sedan arbeta vidare i det levande dokumentet.",
+    },
+    {
       ikon: "💡",
       titel: "Adresser före fasader",
-      text: "I steg 1: planinställningar, uppgifter och adresser först. Fasader per byggnad öppnas först när byggnader lagts in — då blir planen mer överskådlig.",
+      text: "I steg 1: börja med planinställningar, uppgifter och adresser. Fasader per byggnad öppnas när byggnader lagts in — då blir planen lättare att överblicka.",
     },
     {
       ikon: "📥",
-      titel: "Er plan, er kontroll",
-      text: "Styrelsen ändrar fritt i föreningens underhållsplan. Öppna grundmallen skrivskyddat för att se den, och importera saknade delar i steg 3 — utan att er sparade plan skrivs över automatiskt.",
+      titel: "Lägg till och ta bort",
+      text: "I steg 3: aktivera det som ingår, ta bort det som inte hör till er fastighet, och lägg till egna komponenter vid behov. Håll bara kvar det som behövs — så blir planen överskådlig för nästa styrelse.",
     },
     {
       ikon: "📐",
       titel: "K3 och avskrivningstider",
-      text: "Från 2026 gäller K3 för BRF. I komponentregistret anges avskrivningstid per del — underlag till anläggningsregistret, skilt från underhållsintervall. Se slutsidans K3-avsnitt.",
+      text: "Från 2026 gäller K3 för BRF. I komponentregistret anges avskrivningstid per del — underlag till anläggningsregistret, skilt från underhållsintervall. Se K3-avsnittet på slutsidan.",
     },
     {
       ikon: "📋",
-      titel: "Redo för stämman",
-      text: "Slutsidan genererar en 50-årsbudget med avsättningsförslag — enkel att skriva ut eller spara som PDF till stämmounderlaget.",
+      titel: "Slutprodukt för kommande styrelse",
+      text: "Slutsidan summerar planen med budgetunderlag och checklista. Skriv ut eller spara som PDF — en tydlig utgångspunkt när styrelsen byts ut.",
     },
   ],
 

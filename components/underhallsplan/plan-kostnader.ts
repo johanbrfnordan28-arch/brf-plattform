@@ -8,8 +8,8 @@ import {
 /** Genomsnittlig årlig byggkostnadsuppräkning (planering). */
 export const STANDARD_BYGGINDEX_ARLIG = 0.028;
 
-export const STANDARD_UPPHANDLING_PROCENT = 5;
-export const STANDARD_PROJEKTLEDNING_PROCENT = 10;
+export const STANDARD_UPPHANDLING_PROCENT = 3;
+export const STANDARD_PROJEKTLEDNING_PROCENT = 7;
 export const STANDARD_INDEX_PROCENT = STANDARD_BYGGINDEX_ARLIG * 100;
 
 export type PlanKostnaderNormaliserade = {

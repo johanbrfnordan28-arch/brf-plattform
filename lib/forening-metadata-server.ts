@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 import { GRUNDMALL_FORENING_ID, GRUNDMALL_NAMN } from "@/lib/forening-registry";
 
 const COOKIE_AKTIV_ID = "brf_aktiv_fid";
@@ -40,8 +39,9 @@ export async function hamtaAktivForeningsNamnServer(): Promise<string> {
 }
 
 export async function foreningForstasidaMetadata(): Promise<Metadata> {
+  const namn = await hamtaAktivForeningsNamnServer();
   return {
-    title: STYRELSEFLOW_NAMN,
+    title: namn,
     description: "Styrelseflöde för upphandling, underhållsplan och dokumentation.",
   };
 }

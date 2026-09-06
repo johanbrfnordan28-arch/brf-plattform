@@ -6,6 +6,8 @@ import {
 } from "@/components/medlemmar/vvs-renovering-krav";
 
 export type RenoveringsUndermappTyp =
+  | "badrum"
+  | "kok"
   | "ritning"
   | "handlingar"
   | "myndigheter"
@@ -13,6 +15,7 @@ export type RenoveringsUndermappTyp =
   | "ovrigt";
 
 export type RenoveringsMallId =
+  | "renovering"
   | "badrum"
   | "kok"
   | "malning"
@@ -29,6 +32,16 @@ export type RenoveringsUndermappDef = {
 };
 
 export const renoveringsUndermappTyper: RenoveringsUndermappDef[] = [
+  {
+    typ: "badrum",
+    etikett: "Badrum",
+    beskrivning: "Färdig undermapp för badrumsrenovering — handlingar och bilder.",
+  },
+  {
+    typ: "kok",
+    etikett: "Kök",
+    beskrivning: "Färdig undermapp för köksrenovering — handlingar och bilder.",
+  },
   {
     typ: "ritning",
     etikett: "Ritning",
@@ -68,6 +81,8 @@ export type RenoveringsMall = {
 };
 
 export const standardRenoveringsUndermappTyper: RenoveringsUndermappTyp[] = [
+  "badrum",
+  "kok",
   "ritning",
   "handlingar",
   "myndigheter",
@@ -75,7 +90,13 @@ export const standardRenoveringsUndermappTyper: RenoveringsUndermappTyp[] = [
   "ovrigt",
 ];
 
-/** Målning och slipning — utan ritning och myndigheter. */
+/** Färdiga rum-undermappar som skapas automatiskt i en renoveringsmapp. */
+export const renoveringsRumUndermappTyper: RenoveringsUndermappTyp[] = [
+  "badrum",
+  "kok",
+];
+
+/** Målning och slipning — utan ritning, myndigheter och rummappar. */
 export const enklareRenoveringsUndermappTyper: RenoveringsUndermappTyp[] = [
   "handlingar",
   "egenkontroller",
@@ -130,34 +151,60 @@ export function forvantadeDokumentForMall(
 }
 
 const gemensammaGuider: Record<RenoveringsUndermappTyp, string[]> = {
-  ritning: ["Före — Ritning/skiss", "Efter — Ritning/skiss"],
+  badrum: [
+    "Våtrumsdokument / våtrumscertifikat",
+    "Bilder före/efter badrum",
+    "Fuktmätning (vid behov)",
+  ],
+  kok: [
+    "Vitvaruspecifikation",
+    "Elinstallationsintyg",
+    "Bilder före/efter kök",
+  ],
+  ritning: ["Ritning/skiss före", "Ritning/skiss efter"],
   handlingar: [
-    "Före — Renoveringsanmälan",
-    "Före — Entreprenörsavtal eller offert",
-    "Före — Försäkringsintyg",
-    "Efter — Slutdokumentation från entreprenör",
+    "Renoveringsanmälan",
+    "Entreprenörsavtal eller offert",
+    "Försäkringsintyg",
   ],
-  myndigheter: [
-    "Före — Styrelsens godkännande",
-    "Före — Eventuell bygganmälan",
-  ],
+  myndigheter: ["Styrelsens godkännande", "Eventuell bygganmälan"],
   egenkontroller: [
-    "Före — Startbesiktning med bilder på befintliga skador (BankID)",
-    "Efter — Signerad egenkontroll (BankID)",
+    "Startbesiktning — bilder på befintliga skador (signerad med BankID)",
+    "Signerad egenkontroll (BankID)",
   ],
   ovrigt: [
-    "Före — Bilder på skador i lägenhet, fastighet och angränsande lägenheter",
-    "Efter — Foton efter renovering",
-    "Efter — Garantibevis",
+    "Bilder — skador i lägenhet, fastighet och angränsande lägenheter",
+    "Foton före/efter",
+    "Garantibevis",
   ],
 };
 
 export const renoveringsMallar: RenoveringsMall[] = [
   {
+    id: "renovering",
+    etikett: "Renoveringsmapp",
+    beskrivning:
+      "Standardmapp för renovering — med färdiga undermappar för badrum och kök.",
+    standardNamn: "Renoveringsmapp",
+    undermappTyper: standardRenoveringsUndermappTyper,
+    egenkontrollPunkter: [
+      { id: "ren-slut", text: "Slutkontroll och dokumentation komplett." },
+    ],
+    forvantadeDokument: gemensammaGuider,
+  },
+  {
     id: "badrum",
-    etikett: "Badrum",
+    etikett: "Badrum (special)",
     beskrivning: "Våtrumsrenovering med våtrumsdokument och stamkoordinering.",
     standardNamn: "Badrumsrenovering",
+    undermappTyper: [
+      "badrum",
+      "ritning",
+      "handlingar",
+      "myndigheter",
+      "egenkontroller",
+      "ovrigt",
+    ],
     egenkontrollPunkter: [
       {
         id: "badrum-fukt-efter-rivning",
@@ -199,9 +246,17 @@ export const renoveringsMallar: RenoveringsMall[] = [
   },
   {
     id: "kok",
-    etikett: "Kök",
+    etikett: "Kök (special)",
     beskrivning: "Byte av skåp, bänkskiva, vitvaror och ytskikt.",
     standardNamn: "Köksrenovering",
+    undermappTyper: [
+      "kok",
+      "ritning",
+      "handlingar",
+      "myndigheter",
+      "egenkontroller",
+      "ovrigt",
+    ],
     egenkontrollPunkter: [
       { id: "kok-el", text: "Elarbete och jordfelsbrytare kontrollerat." },
       { id: "kok-flakt", text: "Köksfläkt och ventilation enligt anvisning." },
@@ -232,6 +287,8 @@ export const renoveringsMallar: RenoveringsMall[] = [
       { id: "malning-slut", text: "Slutkontroll — inga spår i trapphus eller ventiler öppnade." },
     ],
     forvantadeDokument: {
+      badrum: [],
+      kok: [],
       ritning: [],
       myndigheter: [],
       handlingar: [...gemensammaGuider.handlingar, "Produktblad färg/lack"],
@@ -250,6 +307,8 @@ export const renoveringsMallar: RenoveringsMall[] = [
       { id: "golv-slut", text: "Slutbesiktning yta och ventilation återställd." },
     ],
     forvantadeDokument: {
+      badrum: [],
+      kok: [],
       ritning: [],
       myndigheter: [],
       handlingar: [...gemensammaGuider.handlingar, "Ytbehandlingsprodukt (olja/lack)"],
@@ -339,10 +398,11 @@ export function hamtaRenoveringsMall(
 export function foreslagetMappNamn(
   mallId: RenoveringsMallId,
   befintliga: { name: string; mallId?: RenoveringsMallId }[],
+  ar?: number,
 ): string {
   const mall = hamtaRenoveringsMall(mallId);
-  const ar = new Date().getFullYear();
-  const bas = `${mall.standardNamn} ${ar}`;
+  const arTal = ar ?? new Date().getFullYear();
+  const bas = `${mall.standardNamn} ${arTal}`;
   const liknande = befintliga.filter(
     (f) => f.mallId === mallId || f.name.startsWith(mall.standardNamn),
   );

@@ -14,29 +14,24 @@ import {
 import { beraknaSenastGarantibesiktning } from "@/components/projekt/garantibesiktning";
 import { importeraTidsplanerFranProjekt } from "@/components/projekt/tidsplan-arshjul";
 
+function kategoriFranBesiktning(id: string): ArshjulHandelse["kategori"] {
+  if (id === "ovk") return "ovk";
+  if (id === "sotning") return "sotning";
+  if (id === "radon") return "radon";
+  if (id === "energideklaration") return "energideklaration";
+  return "besiktning";
+}
+
 function besiktningTillHandelse(b: Besiktning): ArshjulHandelse {
-  const ar = b.intervallAr >= 1 ? b.intervallAr : 1;
-  const intervall =
-    ar === 10
-      ? "vart_10_ar"
-      : ar === 6
-        ? "vart_6_ar"
-        : ar === 3
-          ? "vart_3_ar"
-          : ar === 1
-            ? "arlig"
-            : ar >= 8
-              ? "vart_10_ar"
-              : ar >= 5
-                ? "vart_6_ar"
-                : "vart_3_ar";
+  const intervall = b.intervallAr >= 1 ? b.intervallAr : 1;
   return normaliseraHandelse({
     id: skapaHandelseId(),
     titel: b.namn,
-    beskrivning: `Importerat från underhållsplanen. Nästa planerat år: ${b.nastaBesiktningAr}, ${intervall === "arlig" ? "årligen" : `intervall ${ar} år`}.`,
-    kategori: "besiktning",
-    intervall,
+    beskrivning: `Importerat från underhållsplanen. Nästa planerat år: ${b.nastaBesiktningAr}, intervall ${intervall} år.`,
+    kategori: kategoriFranBesiktning(b.id),
+    typ: "intervall",
     startAr: b.nastaBesiktningAr,
+    intervallAr: intervall,
     senastKlarAr: b.senastUtförtAr,
     manad: 6,
     dag: 1,
@@ -59,10 +54,10 @@ function garantiTillHandelse(p: Projekt): ArshjulHandelse | null {
   const [ar, manad, dag] = senast.split("-").map(Number);
   return normaliseraHandelse({
     id: skapaHandelseId(),
-    titel: `Garantibesiktning — ${p.titel}`,
+    titel: `Garantbesiktning — ${p.titel}`,
     beskrivning: `2-årsbesiktning för projekt ${p.titel}. Senast ${senast}.`,
-    kategori: "besiktning",
-    intervall: "engang",
+    kategori: "garantbesiktning",
+    typ: "engang",
     datum: senast,
     startAr: ar,
     manad,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { Besiktningar } from "@/components/underhallsplan/BesiktningarSteg";
 import { BildstodAnalys } from "@/components/underhallsplan/BildstodAnalys";
@@ -10,6 +9,7 @@ import { TestplanValjare } from "@/components/underhallsplan/TestplanValjare";
 import { UnderhallsplanBudget } from "@/components/underhallsplan/UnderhallsplanBudget";
 import { KommandeProjektSteg } from "@/components/underhallsplan/KommandeProjektSteg";
 import { UnderhallsplanSlutsida } from "@/components/underhallsplan/UnderhallsplanSlutsida";
+import { PLAN_BEGREPP } from "@/components/underhallsplan/plan-terminologi";
 import {
   skapaStandardBesiktningar,
   synkaNastaBesiktningFranUtfört,
@@ -69,6 +69,10 @@ import {
   importeraSaknadeKomponenterFranGrundmall,
   lasGrundmallUnderhallsplanState,
 } from "@/components/underhallsplan/importera-fran-grundmall";
+import {
+  appliceraImporteradeKomponentVarden,
+  type ImporteradUnderhallsplanExcel,
+} from "@/components/underhallsplan/importera-underhallsplan-excel";
 import {
   ForeningPlanLagePanel,
   type ForeningPlanLage,
@@ -264,7 +268,7 @@ const WIZARD_STEG_META: Record<
   register: { stegNummer: 3, titel: "Kommande underhåll" },
   besiktningar: { stegNummer: 4, titel: "Schema besiktningar" },
   bildstod: { stegNummer: 5, titel: "Bildstöd" },
-  arsbudget: { stegNummer: 6, titel: "Utgifter i årsbudgeten" },
+  arsbudget: { stegNummer: 6, titel: PLAN_BEGREPP.arsbudgetSteg },
   slutsida: { stegNummer: 7, titel: "Slutsida" },
   kommandeProjekt: { stegNummer: 8, titel: "Kommande projekt" },
 };
@@ -616,7 +620,7 @@ export function UnderhallsplanWizard() {
         grund,
         planNamn:
           planNamnFranForeningsnamn(
-            "Bostadsrättsföreningen Sailor",
+            "Bostadsrättsföreningen Trazie",
             lgh,
           ) ?? sparad.planNamn,
         planNotering: utkast.planNotering,
@@ -1111,6 +1115,56 @@ export function UnderhallsplanWizard() {
     setKomponenterSaved(false);
   }
 
+  function importeraFranExcel(data: ImporteradUnderhallsplanExcel) {
+    if (skrivskyddad) return;
+    if (Object.keys(data.grundPatch).length > 0) {
+      setGrund((current) =>
+        normaliseraGrund({
+          ...current,
+          ...data.grundPatch,
+          adresser: data.grundPatch.adresser ?? current.adresser,
+        }),
+      );
+      setGrundSaved(false);
+    }
+    if (data.krPerKvmAr != null) {
+      setKrPerKvmAr(begransaAvsattningKrPerKvmAr(data.krPerKvmAr));
+    }
+    if (data.planNotering != null) {
+      setPlanNotering(data.planNotering);
+    }
+    if (data.planNamn?.trim()) {
+      setPlanNamn(data.planNamn.trim());
+    }
+    if (data.planStartAr != null || data.planSlutAr != null) {
+      setPlaninstallningar((current) => {
+        const start =
+          data.planStartAr != null
+            ? normaliseraPlanStartAr(String(data.planStartAr))
+            : normaliseraPlanStartAr(current.planStartAr);
+        const slut =
+          data.planSlutAr != null
+            ? data.planSlutAr
+            : start + normaliseraPlanLangdAr(current.planLangdAr) - 1;
+        const langd = Math.max(
+          minPlanLangdAr,
+          Math.min(maxPlanLangdAr, slut - start + 1),
+        );
+        return normaliseraPlaninstallningar({
+          ...current,
+          planStartAr: String(start),
+          planLangdAr: String(langd),
+        });
+      });
+    }
+    if (data.komponentVarden.length > 0) {
+      setKomponentDetaljer((current) =>
+        appliceraImporteradeKomponentVarden(current, data.komponentVarden),
+      );
+      setKomponenterSaved(false);
+    }
+  }
+
   function addCustomComponent() {
     const trimmed = customComponent.trim();
     if (!trimmed || !renoveringarSaved || activeComponents.includes(trimmed)) return;
@@ -1399,10 +1453,10 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan.
-              Den ska bli enkel och anpassad för just er förening. Öppna
-              grundmallen för att se den centrala mallen; importera saknade
-              komponenter i steg 3.
+              Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan —
+              anpassad för just er fastighet. Öppna grundmallen för att se den
+              centrala mallen. I steg 3 importerar ni saknade delar och tar bort
+              det som inte är aktuellt, så planen blir mer överskådlig.
             </>
           )}
         </p>
@@ -1422,8 +1476,10 @@ export function UnderhallsplanWizard() {
                 2.
               </span>
               <span>
-                Därefter kan ni fylla i <strong>steg 2–6 i valfri ordning</strong> —
-                ett steg i taget. Allt sparas automatiskt i er plan.
+                Fortsätt i ordning:{" "}
+                <strong>steg 2 → 3 → 4</strong> (utförda arbeten, komponenter,
+                besiktningar). Steg 5 (bildstöd) och steg 6 (årsbudget) öppnas
+                när föregående steg sparats. Allt sparas i er plan.
               </span>
             </li>
             <li className="flex gap-2">
@@ -1431,22 +1487,17 @@ export function UnderhallsplanWizard() {
                 3.
               </span>
               <span>
-                <strong>Steg 7 — Summering</strong> visar utkast av 50-årsbudgeten.
-                Justera kostnader där så planen blir överskådlig.
+                <strong>Steg 7 — Summering</strong> ger en överskådlig slutprodukt
+                för styrelsemötet och för nästa styrelse. Justera kostnader där
+                vid behov.
               </span>
             </li>
           </ul>
         )}
         <p className="mt-3 text-xs text-muted">
-          Behöver ni bara en enkel åtgärds- och kostnadslista utan 50-årsbudget?
-          Det finns en separat{" "}
-          <Link
-            href="/forening/plan"
-            className="font-medium text-primary-dark underline hover:no-underline"
-          >
-            enkel åtgärdslista
-          </Link>{" "}
-          — den är inte samma sak som underhållsplanen.
+          Underhållsplanen är den långsiktiga 50-årsplanen med budget och
+          livslängder. Börja i steg 1 (grunduppgifter) och gå vidare steg för
+          steg — summeringen i steg 7 är underlaget till styrelsemötet.
         </p>
       </div>
 
@@ -1741,13 +1792,42 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Stäng av eller ta bort det som inte ingår så planen blir enkel och
-              anpassad för er. Er förenings plan är egen — uppdateringar i
-              grundmallen påverkar inte det ni redan sparat. Saknas något kan ni
-              importera från grundmallen nedan.
+              Anpassa planen för er fastighet: aktivera det som ingår, ta bort
+              delar som inte är aktuella och lägg till egna komponenter vid
+              behov. Då blir planen överskådlig — även för nästa styrelse.
+              Uppdateringar i grundmallen skriver inte över det ni redan sparat.
             </>
           )}
         </p>
+
+        {!skrivskyddad && (
+          <div className="mt-3 rounded-lg border border-border bg-background px-3 py-3 text-xs leading-relaxed text-muted">
+            <p className="font-medium text-foreground">
+              Lägg till och ta bort — så fungerar knapparna
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              <li>
+                <strong className="text-foreground">Aktiv / Inaktiv</strong> —
+                döljer eller visar komponenten i planen. Sparade tillfällen och
+                priser behålls när ni sätter den inaktiv.
+              </li>
+              <li>
+                <strong className="text-foreground">Ta bort</strong> — raderar
+                komponenten och dess tillfällen från er plan (går inte att ångra
+                utan att lägga in på nytt).
+              </li>
+              <li>
+                <strong className="text-foreground">Lägg till egen</strong> —
+                skapa huvudkomponent som saknas i listan (t.ex. solceller).
+              </li>
+              <li>
+                Inne i varje aktiv komponent: lägg till eller ta bort
+                underkomponenter och underhållstillfällen så registret speglar
+                just er fastighet.
+              </li>
+            </ul>
+          </div>
+        )}
 
         {!skrivskyddad && (
           <p className="mt-3 rounded-lg border border-primary/20 bg-[#eef6f0]/50 px-3 py-2 text-xs leading-relaxed text-muted">
@@ -1834,9 +1914,10 @@ export function UnderhallsplanWizard() {
             className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
           >
             <p className="text-xs text-muted">
-              Centrala uppdateringar görs i grundmallen. Här kan ni bara hämta in
-              komponenter som saknas i er plan — befintliga priser och tillfällen
-              behålls.
+              Centrala uppdateringar görs i grundmallen. Här hämtar ni in
+              komponenter som saknas — och tar bort det som inte är aktuellt för
+              er fastighet (knappen «Ta bort» på varje del ovan). Befintliga
+              priser och tillfällen behålls vid import.
             </p>
             <button
               type="button"
@@ -1922,7 +2003,7 @@ export function UnderhallsplanWizard() {
         {...stegPanelNavProps("besiktningar")}
         summary={
           besiktningarSaved
-            ? "Sparat — gå vidare till bildstöd (steg 5) eller utgifter i årsbudgeten (steg 6)."
+            ? "Sparat — gå vidare till bildstöd (steg 5) eller underlag till årsbudgeten (steg 6)."
             : "Intervall, nästa år och pris — senast utfört fylls i steg 2."
         }
       >
@@ -1978,7 +2059,7 @@ export function UnderhallsplanWizard() {
             onClick={() => stangOchOppnaSteg("arsbudget")}
             className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
           >
-            Öppna steg 6 (årsbudget)
+            Öppna steg 6 (budgetunderlag)
           </button>
         </div>
       </StegPanel>
@@ -1986,11 +2067,11 @@ export function UnderhallsplanWizard() {
       <StegPanel
         id="arsbudget"
         stegNummer={6}
-        titel="Utgifter i årsbudgeten"
+        titel={PLAN_BEGREPP.arsbudgetSteg}
         isOpen={openSteg === "arsbudget"}
         onToggle={toggleSteg}
         {...stegPanelNavProps("arsbudget")}
-        summary="Avsättning kr/m²/år och besiktningar det år de utförs — skilt från investeringar i underhållsplanen."
+        summary="Underlag till budgeten: avsättning, besiktningar och periodiskt underhåll (kostnadsförs direkt). Planerat underhåll — investeringar i fastigheten — visas separat."
       >
         <UnderhallsplanBudget
           unlocked={besiktningarSaved}
@@ -2045,6 +2126,7 @@ export function UnderhallsplanWizard() {
           planKostnader={planKostnader}
           varderingsUnderlag={varderingsUnderlag}
           onKostnadJustering={skrivskyddad ? undefined : justeraTillfalleKostnad}
+          onImporteraFranExcel={skrivskyddad ? undefined : importeraFranExcel}
           visaSomCentralGrundmall={skrivskyddad || arCentralGrundmall}
         />
         <div className="mt-6 print:hidden">

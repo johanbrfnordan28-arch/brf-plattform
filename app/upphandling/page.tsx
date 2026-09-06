@@ -1,22 +1,12 @@
 import type { Metadata } from "next";
-import { ModulePage } from "@/components/ModulePage";
-import { PubliceradeUpphandlingarPanel } from "@/components/upphandling/PubliceradeUpphandlingarPanel";
-import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
+import { AktuellaUpphandlingarSida } from "@/components/upphandling/AktuellaUpphandlingarSida";
 
 export const metadata: Metadata = {
-  title: `Upphandling — ${BRF_NAVET_NAMN}`,
+  title: "Aktuella upphandlingar — Styrelse-Navet",
   description:
-    "Publicerade upphandlingar från BRF-föreningar — titel, ort, kategori och sista anbudsdag.",
+    "Aktuella upphandlingar via Styrelse-Navet. Begränsad publik information — underlag och anbud endast för inbjudna entreprenörer.",
 };
 
 export default function UpphandlingPage() {
-  return (
-    <ModulePage
-      title="Upphandling"
-      icon="📋"
-      intro="Aktuella uppdrag som föreningar publicerat. Anbud och offerter visas inte här — bara det som styrelsen valt att lägga ut."
-    >
-      <PubliceradeUpphandlingarPanel publik />
-    </ModulePage>
-  );
+  return <AktuellaUpphandlingarSida />;
 }

@@ -1,12 +1,15 @@
 import Link from "next/link";
-import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
+import { HeaderKundLogin } from "@/components/HeaderKundLogin";
+import { HeaderTestperiodLank } from "@/components/HeaderTestperiodLank";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { TEST_LOGIN_PATH } from "@/lib/forening-kund";
 
 const nav = [
-  { href: "#fokus", label: "Underhåll & upphandling" },
+  { href: "#moduler", label: "Moduler" },
+  { href: "/upphandling", label: "Aktuella upphandlingar" },
   { href: "#intro-film", label: "Film & pris" },
   { href: "#priser", label: "Priser" },
-  { href: "#moduler", label: "Moduler" },
+  { href: TEST_LOGIN_PATH, label: "Testperiod" },
 ];
 
 export function Header() {
@@ -22,7 +25,7 @@ export function Header() {
             B
           </span>
           <span className="text-lg font-semibold tracking-tight text-foreground">
-            {BRF_NAVET_NAMN}
+            Styrelse-Navet
           </span>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
@@ -38,17 +41,13 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           <Link
-            href="/styrelse-login"
-            className="hidden rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:inline-flex"
-          >
-            Logga in
-          </Link>
-          <Link
             href={PROVA_GRATIS_PATH}
-            className="brf-knapp-gron px-5 py-2.5 text-sm font-semibold sm:px-6 sm:py-3 sm:text-base"
+            className="brf-knapp-neutral hidden px-3 py-2 text-sm sm:inline-flex"
           >
-            Pröva gratis
+            Pröva gratis 30 dagar
           </Link>
+          <HeaderTestperiodLank />
+          <HeaderKundLogin />
         </div>
       </div>
     </header>

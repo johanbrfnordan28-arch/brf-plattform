@@ -51,6 +51,12 @@ export function LokalKomplementPanel({
 }: LokalKomplementPanelProps) {
   return (
     <div className="space-y-6">
+      <p className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-3 py-2 text-xs leading-relaxed text-muted">
+        <strong className="font-medium text-foreground">{titel}</strong> i
+        komponentregistret. Registrera byggnadens väggar, golv och tak nedan —
+        samt inventarier. Oisolerade komplementbyggnader med plåttak och
+        träväggar fylls i här (inte under Tak/Fasad för bostadshusen).
+      </p>
       <LokalYtskiktPanel rader={ytskiktRader} onChange={onYtskiktChange} />
 
       {visaForradPartition && onForradChange && forradMaterial != null && (

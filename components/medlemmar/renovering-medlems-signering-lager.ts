@@ -1,11 +1,19 @@
-import { lasLagenhetsarkiv, sparaLagenhetsarkiv } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
+import {
+  lasLagenhetsarkiv,
+  sparaLagenhetsarkiv,
+} from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
+import {
+  skapaLagenhetsDokumentId,
+  type LagenhetsDokument,
+} from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 import type { MedlemsKravPunkt } from "@/components/lagenhetsarkiv/medlems-krav";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 
 const RENOVERING_SIGNERING_BASE = "brf-renovering-medlem-signering";
 
-export const RENOVERING_MEDLEM_SIGNERING_EVENT = "renovering-medlem-signering-uppdaterad";
+export const RENOVERING_MEDLEM_SIGNERING_EVENT =
+  "renovering-medlem-signering-uppdaterad";
 
 export type RenoveringMedlemsSignering = {
   id: string;
@@ -16,8 +24,6 @@ export type RenoveringMedlemsSignering = {
   apartmentId: number;
   mallEtikett: string;
   punkter: Pick<MedlemsKravPunkt, "id" | "text" | "sektionEtikett">[];
-  /** Färdigt ombyggnadsavtal som medlemmen ska godkänna. */
-  avtalText?: string;
   skapad: string;
   status: "vantar" | "signerad";
   signeradDatum?: string;
@@ -40,9 +46,15 @@ function lasAlla(foreningId: string): RenoveringMedlemsSignering[] {
   }
 }
 
-function sparaAlla(foreningId: string, poster: RenoveringMedlemsSignering[]): boolean {
+function sparaAlla(
+  foreningId: string,
+  poster: RenoveringMedlemsSignering[],
+): boolean {
   if (typeof window === "undefined") return false;
-  const ok = safeSetLocalStorage(storageKey(foreningId), JSON.stringify(poster)).ok;
+  const ok = safeSetLocalStorage(
+    storageKey(foreningId),
+    JSON.stringify(poster),
+  ).ok;
   if (ok) {
     window.dispatchEvent(new Event(RENOVERING_MEDLEM_SIGNERING_EVENT));
   }
@@ -63,7 +75,10 @@ export function skapaRenoveringMedlemsSignering(
     status: "vantar",
   };
   const poster = lasAlla(data.foreningId);
-  sparaAlla(data.foreningId, [signering, ...poster.filter((p) => p.id !== signering.id)]);
+  sparaAlla(data.foreningId, [
+    signering,
+    ...poster.filter((p) => p.id !== signering.id),
+  ]);
   return signering;
 }
 
@@ -72,6 +87,17 @@ export function lasRenoveringMedlemsSignering(
   id: string,
 ): RenoveringMedlemsSignering | null {
   return lasAlla(foreningId).find((p) => p.id === id) ?? null;
+}
+
+function skapaOverenskommelseDokument(
+  signering: RenoveringMedlemsSignering,
+): LagenhetsDokument {
+  const datum = signering.signeradDatum ?? new Date().toLocaleDateString("sv-SE");
+  return {
+    id: skapaLagenhetsDokumentId(),
+    filnamn: `Överenskommelse BankID — ${signering.mappNamn} — ${datum}.pdf`,
+    uppladdad: datum,
+  };
 }
 
 export function signeraRenoveringMedlemsKrav(
@@ -94,6 +120,7 @@ export function signeraRenoveringMedlemsKrav(
 
   const state = lasLagenhetsarkiv();
   if (state) {
+    const dokument = skapaOverenskommelseDokument(signerad);
     const apartments = state.apartments.map((apt) => {
       if (apt.id !== signerad.apartmentId) return apt;
       return {
@@ -101,16 +128,38 @@ export function signeraRenoveringMedlemsKrav(
         folders: apt.folders.map((m) => {
           if (m.id !== signerad.mappId) return m;
           if (!m.medlemsKrav) return m;
+
+          // Spara i handlingar-undermappen, skapa den om den saknas.
+          let undermappar = m.undermappar;
+          const handlingar = undermappar.find((u) => u.typ === "handlingar");
+          if (handlingar) {
+            undermappar = undermappar.map((u) =>
+              u.typ === "handlingar"
+                ? { ...u, dokument: [dokument, ...u.dokument] }
+                : u,
+            );
+          } else {
+            undermappar = [
+              {
+                id: `${m.id}-handlingar-${Date.now()}`,
+                typ: "handlingar" as const,
+                dokument: [dokument],
+              },
+              ...undermappar,
+            ];
+          }
+
           return {
             ...m,
+            undermappar,
             medlemsKrav: {
               ...m.medlemsKrav,
-              status: "signerad" as const,
               medlemSignerad: {
                 datum: signerad.signeradDatum!,
                 av: signeradAv,
                 metod: "bankid" as const,
               },
+              sparadOverenskommelseFilnamn: dokument.filnamn,
             },
           };
         }),

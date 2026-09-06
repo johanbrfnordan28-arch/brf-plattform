@@ -9,6 +9,7 @@ import {
 } from "@/lib/forening-registry";
 import { korPlattformMigreringarForForening } from "@/lib/forening-plattform-migrering";
 import { rensaSkapaParametrarFranUrl } from "@/lib/skapa-forening-navigering";
+import { rensaUtgangnaProvoperioder } from "@/lib/forening-kund";
 
 /**
  * Bootstrapar aktiv förening en gång vid sidladdning — innan övriga komponenter läser lagring.
@@ -20,6 +21,7 @@ export function ForeningAktivator() {
     if (gjort.current) return;
     gjort.current = true;
 
+    rensaUtgangnaProvoperioder();
     const profil = aktiveraForeningVidSidladdning();
 
     const id = hamtaAktivForeningId();

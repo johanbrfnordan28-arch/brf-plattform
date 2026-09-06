@@ -28,9 +28,9 @@ export type ForeningsUndermappNod = {
 export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
   {
     id: "styrelse-stadgar",
-    titel: "1. Styrelse och stadgar",
+    titel: "1. Styrelse Arkiv",
     beskrivning:
-      "Styrelseprotokoll, stadgar, ekonomisk plan, avtal, försäkring och nyckel kvittenser.",
+      "Styrelseprotokoll, årsstämma, nyckel kvittenser, stadgar, ekonomisk plan, avtal och försäkring.",
     undermappar: [
       {
         id: "styrelseprotokoll",
@@ -38,6 +38,14 @@ export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
         beskrivning: "Protokoll från styrelsemöten och beslut.",
         vägledning:
           "Ladda upp protokoll kronologiskt. Märk gärna datum i filnamnet.",
+      },
+      {
+        id: "arsstamma",
+        titel: "Årsstämma",
+        beskrivning:
+          "Kallelser, stämmoprotokoll, årsredovisning och handlingar till årsstämman.",
+        vägledning:
+          "Spara kallelse, dagordning, protokoll och bilagor per stämma — märk gärna år i filnamnet.",
       },
       {
         id: "nyckel-kvittenser",

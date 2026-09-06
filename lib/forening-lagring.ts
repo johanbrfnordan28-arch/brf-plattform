@@ -39,3 +39,13 @@ export function cookieSattSenastProfil(json: string): void {
 export function cookieHamtaSenastProfil(): string | null {
   return cookieHamta(COOKIE_PROFIL);
 }
+
+/** Tar bort cookie med senast skapad profil. */
+export function cookieRensaSenastProfil(): void {
+  if (typeof document === "undefined") return;
+  try {
+    document.cookie = `${COOKIE_PROFIL}=;path=/;max-age=0;SameSite=Lax`;
+  } catch {
+    /* ignore */
+  }
+}

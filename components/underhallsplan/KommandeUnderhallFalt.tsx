@@ -196,7 +196,7 @@ export function KommandeUnderhallFalt({
 
       {arDirektkostnad && (
         <p className="mt-2 rounded-md border border-amber-200 bg-amber-50/90 px-2.5 py-1.5 text-xs text-amber-950">
-          Kostnadsfört underhåll — {DIREKTKOSTNAD_FORKLARING} Aktivera delen,
+          Kostnadsförs direkt — {DIREKTKOSTNAD_FORKLARING} Aktivera delen,
           ange nästa år, intervall och kostnad.
         </p>
       )}

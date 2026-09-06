@@ -6,7 +6,6 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
-import { arStandardTestForening, arStandardTestStartNamn } from "@/lib/testforeningar";
 import { normaliseraGrund } from "@/components/underhallsplan/grund-synk";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
@@ -16,6 +15,7 @@ export type StyrelseKontakt = {
   epost: string;
   kontaktperson: string;
   postadress: string;
+  postnummer: string;
   ort: string;
 };
 
@@ -28,6 +28,7 @@ export function styrelseKontaktFranProfil(
     epost: profil.epost.trim(),
     kontaktperson: profil.kontaktperson.trim(),
     postadress: profil.postadress.trim(),
+    postnummer: profil.postnummer.trim(),
     ort: profil.ort.trim(),
   };
 }
@@ -52,37 +53,6 @@ export function arStyrelseKontaktKomplett(kontakt: StyrelseKontakt): boolean {
   );
 }
 
-/**
- * Saknas obligatoriska föreningsuppgifter (eller testförening har kvar startnamn)
- * → användaren ska till /forening/uppgifter.
- */
-export function behoverFyllaForeningsuppgifter(foreningId?: string): boolean {
-  if (typeof window === "undefined") return false;
-  const id = foreningId ?? lasAktivForeningId();
-  if (!id || arGrundmallForening(id)) return false;
-
-  const kontakt = hamtaStyrelseKontakt(id);
-  if (!kontakt) return true;
-  if (!arStyrelseKontaktKomplett(kontakt)) return true;
-
-  // Testföreningar ska döpas om från «Brf Test N» innan de räknas som klara.
-  if (
-    arStandardTestForening(id) &&
-    arStandardTestStartNamn(kontakt.foreningsnamn)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-/** Startsida efter inloggning: uppgifter om något saknas, annars portalen. */
-export function hamtaForeningStartPath(foreningId?: string): string {
-  return behoverFyllaForeningsuppgifter(foreningId)
-    ? "/forening/uppgifter"
-    : "/forening";
-}
-
 export function formateraStyrelseKontaktBlock(
   kontakt: StyrelseKontakt | null,
 ): string {
@@ -97,9 +67,9 @@ export function formateraStyrelseKontaktBlock(
   if (kontakt.organisationsnummer) {
     rader.push(`Org.nr: ${kontakt.organisationsnummer}`);
   }
-  if (kontakt.postadress || kontakt.ort) {
+  if (kontakt.postadress || kontakt.postnummer || kontakt.ort) {
     rader.push(
-      `Postadress: ${[kontakt.postadress, kontakt.ort].filter(Boolean).join(", ")}`,
+      `Postadress: ${[kontakt.postadress, [kontakt.postnummer, kontakt.ort].filter(Boolean).join(" ")].filter(Boolean).join(", ")}`,
     );
   }
   if (kontakt.kontaktperson) {
@@ -130,6 +100,22 @@ export function appliceraKontaktPaGrund(
 
 export function planNamnFranKontakt(kontakt: StyrelseKontakt | null): string | null {
   return kontakt?.foreningsnamn || null;
+}
+
+/** Startväg efter inloggning — uppgifter först om profilen saknar grundinfo. */
+export function behoverFyllaForeningsuppgifter(foreningId?: string): boolean {
+  if (typeof window === "undefined") return false;
+  const id = foreningId ?? lasAktivForeningId();
+  if (arGrundmallForening(id)) return false;
+  const profil = lasForeningProfil(id);
+  if (!profil || arGrundmallForening(profil.id)) return false;
+  return !profil.grundinfoPaborjad;
+}
+
+export function hamtaForeningStartPath(foreningId?: string): string {
+  return behoverFyllaForeningsuppgifter(foreningId)
+    ? "/forening/uppgifter"
+    : "/forening";
 }
 
 export function markeraGrundinfoPaborjad(): void {

@@ -18,7 +18,7 @@ export default function JuridikPage() {
       intro="Vägledande domar och avgöranden som byggs i grundmodulen och visas här för alla besökare. Materialet är underlag inför styrelsebeslut — inte juridisk rådgivning."
     >
       <ContentSection title="Domarbibliotek" plain>
-        <JuridikModul publik />
+        <JuridikModul />
       </ContentSection>
     </ModulePage>
   );

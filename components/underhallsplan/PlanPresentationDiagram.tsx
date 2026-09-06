@@ -183,11 +183,13 @@ export function PlanPresentationDiagram({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-foreground">
-              Utgifter och investeringar per år
+              Budgetunderlag och planerat underhåll per år
             </h3>
             <p className="mt-1 text-sm text-muted">
-              Grönt/orange = {PLAN_BEGREPP.utgifterArsbudget.toLowerCase()}. Lila =
-              investering enligt underhållsplanen (avskrivs, inte jämn årspost).
+              Grönt/orange = {PLAN_BEGREPP.utgifterArsbudget.toLowerCase()}{" "}
+              (avsättning, besiktningar och periodiskt underhåll som
+              kostnadsförs direkt). Lila = {PLAN_BEGREPP.investeringarPlan.toLowerCase()}{" "}
+              — investeringar i fastigheten enligt planen.
             </p>
           </div>
           {antalFonster > 1 && (
@@ -254,7 +256,7 @@ export function PlanPresentationDiagram({
             viewHeight={chartH}
             displayWidth={DIAGRAM_DISPLAY_W}
             displayHeight={DIAGRAM_DISPLAY_H}
-            ariaLabel="Diagram över utgifter i årsbudget och planerade investeringar"
+            ariaLabel="Diagram över budgetunderlag och planerat underhåll"
           >
             {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
               const y = padT + plotH * (1 - tick);
@@ -350,7 +352,7 @@ export function PlanPresentationDiagram({
         <h3 className="text-lg font-semibold text-foreground">Tidsaxel</h3>
         <p className="mt-1 text-sm text-muted">
           Planperiod {planStartAr}–{planSlutAr}. Markörer visar år med störst
-          sammanlagt kassaflöde (årsbudget + investering det året).
+          sammanlagt kassaflöde (budgetunderlag + planerat underhåll det året).
         </p>
 
         <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-white p-4">

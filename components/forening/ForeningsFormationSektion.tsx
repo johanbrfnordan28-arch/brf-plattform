@@ -132,7 +132,7 @@ export function ForeningsFormationSektion() {
           <p className="mb-4 text-center text-sm text-muted">
             Redo? Fyll i namnet, signera med BankID och er föreningssida skapas direkt.
           </p>
-          <SkapaForeningPanel kompakt visaSnabbstart visaBankId />
+          <SkapaForeningPanel kompakt />
         </div>
       </div>
     </section>

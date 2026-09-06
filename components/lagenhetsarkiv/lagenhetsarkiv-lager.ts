@@ -7,7 +7,7 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 
-const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v2";
+const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v3";
 
 export const LAGENHETSARKIV_EVENT = "lagenhetsarkiv-uppdaterad";
 
@@ -21,36 +21,46 @@ export type LagenhetsarkivState = {
 };
 
 export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
-  const badrum2024 = skapaRenoveringsMapp("badrum", {
+  let renovering2024 = skapaRenoveringsMapp("renovering", {
     id: 1,
-    namn: "Badrumsrenovering 2024",
+    namn: "Renoveringsmapp 2024",
     ar: 2024,
   });
-  const handlingar = badrum2024.undermappar.find((u) => u.typ === "handlingar");
-  if (handlingar) {
-    handlingar.dokument = [
-      {
-        id: skapaLagenhetsDokumentId(),
-        filnamn: "Renoveringsanmälan.pdf",
-        uppladdad: "2024-03-12",
-      },
-      {
-        id: skapaLagenhetsDokumentId(),
-        filnamn: "Intyg våtrum.pdf",
-        uppladdad: "2024-06-01",
-      },
-    ];
-  }
+  // Lägg exempel-dokument i badrum-undermappen
+  renovering2024 = {
+    ...renovering2024,
+    undermappar: renovering2024.undermappar.map((u) =>
+      u.typ === "badrum"
+        ? {
+            ...u,
+            dokument: [
+              {
+                id: skapaLagenhetsDokumentId(),
+                filnamn: "Renoveringsanmälan.pdf",
+                uppladdad: "2024-03-12",
+              },
+              {
+                id: skapaLagenhetsDokumentId(),
+                filnamn: "Intyg våtrum.pdf",
+                uppladdad: "2024-06-01",
+              },
+            ],
+          }
+        : u,
+    ),
+  };
 
   const apartments: ApartmentFolder[] = [
     {
       id: 1,
       lagenhetsnummer: "1001",
       basePages: [...lagenhetsBasSidor],
-      folders: [badrum2024],
+      folders: [renovering2024],
       adress: "Storgatan 1, lgh 1001",
       vaning: "3",
       boyta: "78",
+      andelstal: "0,7842",
+      antalRum: "3 rok",
       antalBadrum: "1",
       antalWC: "1",
       lagenhetsRum: {
@@ -60,12 +70,21 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
         },
         kok: {
           senasteRenovering: { ar: "2019", harDokumentation: true },
-          lackagekydd: { diskmaskin: true, kylFrys: true },
+          lackagekydd: {
+            diskmaskin: true,
+            kylskap: true,
+            frys: true,
+            diskbanksskap: true,
+          },
           besiktning: { status: "observera" },
           uppvarmning: { typ: "golvvarme-vatten", antal: "1" },
         },
         badrum: {
-          senasteRenovering: { ar: "2024", harBilder: true },
+          senasteRenovering: {
+            ar: "2024",
+            harBilder: true,
+            foljtBranschregler: true,
+          },
           besiktning: { status: "bra" },
           kontrollpunkter: {
             tatskiktGolvbrunn: "ok",
@@ -136,14 +155,18 @@ export function lasLagenhetsarkiv(): LagenhetsarkivState | null {
   }
 }
 
-export function sparaLagenhetsarkiv(state: LagenhetsarkivState): boolean {
-  if (typeof window === "undefined") return false;
-  const ok = safeSetLocalStorage(
+export function sparaLagenhetsarkiv(
+  state: LagenhetsarkivState,
+): { ok: true } | { ok: false; error: import("@/lib/localStorage").LocalStorageSetError } {
+  if (typeof window === "undefined") {
+    return { ok: false, error: "unavailable" };
+  }
+  const result = safeSetLocalStorage(
     lagenhetsarkivStorageKey(),
     JSON.stringify(state),
-  ).ok;
-  if (ok) {
+  );
+  if (result.ok) {
     window.dispatchEvent(new Event(LAGENHETSARKIV_EVENT));
   }
-  return ok;
+  return result;
 }

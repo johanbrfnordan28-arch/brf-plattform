@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
-import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
+import { useHubbNamn } from "@/components/forening/useHubbNamn";
 
 export function ModuleBackLink() {
   const pathname = usePathname();
   const isForening = pathname.startsWith("/forening");
-  const foreningsNamn = useAktivForeningsNamn();
+  const hubbNamn = useHubbNamn();
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -16,16 +15,11 @@ export function ModuleBackLink() {
         href={isForening ? "/forening" : "/"}
         className="brf-lank-gron text-sm"
       >
-        {isForening
-          ? `← Till ${foreningsNamn} huvudsida`
-          : `← Tillbaka till ${BRF_NAVET_NAMN}`}
+        {isForening ? `← Till ${hubbNamn}` : "← Åter till Huvudsidan"}
       </Link>
       {isForening && (
-        <Link
-          href="/"
-          className="text-sm font-medium text-muted hover:text-primary-dark"
-        >
-          {BRF_NAVET_NAMN}s huvudsida
+        <Link href="/" className="text-sm font-medium text-muted hover:text-primary-dark">
+          Åter till Huvudsidan
         </Link>
       )}
     </div>

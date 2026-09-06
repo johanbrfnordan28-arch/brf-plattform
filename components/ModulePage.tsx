@@ -1,4 +1,5 @@
 import { ForeningModulKontakt } from "@/components/forening/ForeningModulKontakt";
+import { PlattformHjalpBanner } from "@/components/plattform/PlattformHjalpBanner";
 import { ModuleBackLink } from "@/components/ModuleBackLink";
 
 type ModulePageProps = {
@@ -33,6 +34,7 @@ export function ModulePage({ title, icon, intro, children }: ModulePageProps) {
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+        <PlattformHjalpBanner kompakt className="mb-4" />
         <ForeningModulKontakt />
         <div className="space-y-8">{children}</div>
       </section>

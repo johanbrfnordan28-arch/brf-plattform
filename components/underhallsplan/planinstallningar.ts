@@ -53,8 +53,8 @@ export function standardPlaninstallningar(): Planinstallningar {
   return {
     planStartAr: String(planStartAr),
     planLangdAr: String(standardPlanLangdAr),
-    upphandlingProcent: "5",
-    projektledningProcent: "10",
+    upphandlingProcent: "3",
+    projektledningProcent: "7",
     indexForePlanProcent: "2.8",
     indexProcentPerAr,
   };

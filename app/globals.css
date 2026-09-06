@@ -89,6 +89,61 @@ body {
   text-decoration: underline;
 }
 
+/* Testperiod — samma gula ton som märket «Testperiod» på skapade föreningar */
+.brf-knapp-amber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fcd34d;
+  border-radius: 0.5rem;
+  background-color: #fffbeb;
+  color: #92400e;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.brf-knapp-amber:hover:not(:disabled) {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+}
+
+/* Pröva gratis — lugn, neutral knappton */
+.brf-knapp-neutral {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #c5d0c9;
+  border-radius: 0.5rem;
+  background-color: #f7f9f8;
+  color: #3d5248;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.brf-knapp-neutral:hover:not(:disabled) {
+  background-color: #eef2f0;
+  border-color: #9aada3;
+  color: #1a2e22;
+}
+
+@keyframes navetFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Rondering — utskrift av anpassad checklista */
 @media print {
   body.rondering-print-lage * {

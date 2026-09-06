@@ -13,6 +13,8 @@ type InformationsFilmSpelareProps = {
   scenMs?: number;
   /** Starta uppspelning direkt (t.ex. på föreningssidan). */
   autoSpela?: boolean;
+  /** Fyll höjden i kortlayout istället för fast 16:9. */
+  kompakt?: boolean;
   className?: string;
 };
 
@@ -20,6 +22,7 @@ export function InformationsFilmSpelare({
   scener,
   scenMs = 5000,
   autoSpela = false,
+  kompakt = false,
   className = "",
 }: InformationsFilmSpelareProps) {
   const [aktivScen, setAktivScen] = useState(0);
@@ -46,7 +49,11 @@ export function InformationsFilmSpelare({
       : 100;
 
   return (
-    <div className={`relative overflow-hidden rounded-xl bg-[#1a2e22] ${className}`.trim()}>
+    <div
+      className={`relative flex overflow-hidden rounded-xl bg-[#1a2e22] ${
+        kompakt ? "h-full min-h-[16rem]" : ""
+      } ${className}`.trim()}
+    >
       <div
         className={`absolute inset-0 transition-opacity duration-500 ${
           spelar ? "opacity-100" : "opacity-60"
@@ -67,7 +74,11 @@ export function InformationsFilmSpelare({
         aria-hidden
       />
 
-      <div className="relative aspect-video flex flex-col justify-between p-4 sm:p-6">
+      <div
+        className={`relative flex w-full flex-col justify-between p-4 sm:p-5 ${
+          kompakt ? "min-h-[16rem] flex-1" : "aspect-video"
+        }`}
+      >
         <div className="flex items-center justify-between gap-2 text-white/80">
           <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium backdrop-blur">
             {spelar ? "Spelar" : "Pausad"} · ca {totalSek} sek
@@ -78,12 +89,22 @@ export function InformationsFilmSpelare({
         </div>
 
         <div
-          className={`my-4 flex-1 transition-opacity duration-300 ${
+          className={`my-3 flex-1 transition-opacity duration-300 ${
             fade ? "opacity-100" : "opacity-0"
           }`}
         >
-          <h3 className="text-lg font-bold text-white sm:text-xl">{scen.titel}</h3>
-          <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/90 sm:text-base">
+          <h3
+            className={`font-bold text-white ${
+              kompakt ? "text-base sm:text-lg" : "text-lg sm:text-xl"
+            }`}
+          >
+            {scen.titel}
+          </h3>
+          <p
+            className={`mt-2 max-w-lg leading-relaxed text-white/90 ${
+              kompakt ? "text-xs sm:text-sm" : "text-sm sm:text-base"
+            }`}
+          >
             {scen.text}
           </p>
         </div>
@@ -121,8 +142,10 @@ export function InformationsFilmSpelare({
                   setAktivScen(index);
                   setFade(true);
                 }}
-                className={`h-2 flex-1 min-w-[2rem] max-w-12 rounded-full transition-colors ${
-                  index === aktivScen ? "bg-white" : "bg-white/30 hover:bg-white/50"
+                className={`h-2 min-w-[2rem] max-w-12 flex-1 rounded-full transition-colors ${
+                  index === aktivScen
+                    ? "bg-white"
+                    : "bg-white/30 hover:bg-white/50"
                 }`}
                 aria-label={`Gå till scen ${index + 1}`}
               />
@@ -138,7 +161,13 @@ export function InformationsFilmSpelare({
           className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
           aria-label="Spela film"
         >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-2xl text-primary-dark shadow-lg sm:h-20 sm:w-20">
+          <span
+            className={`flex items-center justify-center rounded-full bg-white/95 text-primary-dark shadow-lg ${
+              kompakt
+                ? "h-14 w-14 text-xl"
+                : "h-16 w-16 text-2xl sm:h-20 sm:w-20"
+            }`}
+          >
             ▶
           </span>
         </button>

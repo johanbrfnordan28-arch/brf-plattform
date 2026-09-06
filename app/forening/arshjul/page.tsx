@@ -2,15 +2,13 @@ import type { Metadata } from "next";
 import { ArshjulModul } from "@/components/arshjul/ArshjulModul";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
-import { TipsPanel } from "@/components/TipsPanel";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
-import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Årshjul")),
     description:
-      "Styrelsens årshjul med påminnelser — årliga uppgifter och besiktningar flera år framåt.",
+      "Årshjulet ger översikt och gör planeringen av styrelsearbetet mer överskådlig — med påminnelser flera år framåt.",
   };
 }
 
@@ -19,13 +17,10 @@ export default function ForeningArshjulPage() {
     <ModulePage
       title="Årshjul"
       icon="📅"
-      intro="Planera hela styrelseåret i förväg — OVK, stämma, bokslut och besiktningar med påminnelse i rätt tid. Slipp glömma deadlines som kostar föreningen pengar."
+      intro="Styrelsemöten, byggmöten, garantbesiktning, OVK, sotning, energideklaration och radon — med månads- eller årsintervall. Hoppa över sommaren när ni inte har möten."
     >
-      <TipsPanel tips={tips.arshjul} />
-      <ContentSection title="Styrelsens kalender" plain>
-        <div id="kalender">
-          <ArshjulModul />
-        </div>
+      <ContentSection title="Styrelsens årshjul" plain>
+        <ArshjulModul />
       </ContentSection>
     </ModulePage>
   );

@@ -37,11 +37,11 @@ export function LokalYtskiktPanel({ rader, onChange }: LokalYtskiktPanelProps) {
     <div className="space-y-4 rounded-xl border-2 border-primary/20 bg-[#fafcfa] p-4">
       <div>
         <p className="text-sm font-semibold text-primary-dark">
-          Väggar, golv och tak
+          Byggnad — väggar, golv och tak
         </p>
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          Välj material och planerad åtgärd per del. Yta i m² är valfritt men
-          underlättar kostnadsplanering.
+          Material och planerad åtgärd per del ingår i komponentregistret. Yta i
+          m² är valfritt.
         </p>
       </div>
 

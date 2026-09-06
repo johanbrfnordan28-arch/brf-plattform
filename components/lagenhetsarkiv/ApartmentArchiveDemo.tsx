@@ -8,6 +8,7 @@ import {
   formatLagenhetEtikett,
   hamtaNastaLagenhetsnummer,
   lagenhetsBasSidor,
+  renoveringsMappOversiktEtikett,
   skapaLagenhetsDokumentId,
   skapaRenoveringsMapp,
   type ApartmentFolder,
@@ -17,6 +18,10 @@ import {
   laggaTillMappDel,
   taBortMappDel,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
+import {
+  LagenhetGrunduppgifterKort,
+  LagenhetsarkivSammanstallning,
+} from "@/components/lagenhetsarkiv/LagenhetGrunduppgifter";
 import {
   lasLagenhetsarkiv,
   skapaGrundmallDemoArkiv,
@@ -39,10 +44,6 @@ import {
 } from "@/components/lagenhetsarkiv/RenoveringsMappPanel";
 import { LagenhetInfoPanel } from "@/components/lagenhetsarkiv/LagenhetInfoPanel";
 import {
-  LagenhetGrunduppgifterKort,
-  LagenhetsarkivSammanstallning,
-} from "@/components/lagenhetsarkiv/LagenhetGrunduppgifter";
-import {
   foreslagetMappNamn,
   hamtaRenoveringsMall,
   renoveringsMallar,
@@ -50,6 +51,8 @@ import {
   type RenoveringsMallId,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
+import { localStorageFelMeddelande } from "@/lib/localStorage";
+import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 
 function uppdateraRenoveringsMapp(
   mappar: RenoveringsMapp[],
@@ -65,13 +68,16 @@ export function ApartmentArchiveDemo() {
   const [nextApartmentNumber, setNextApartmentNumber] = useState(1002);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
-  const [valdMall, setValdMall] = useState<RenoveringsMallId>("badrum");
+  const [valdMall, setValdMall] = useState<RenoveringsMallId>("renovering");
   const [parallellaMallVal, setParallellaMallVal] = useState<RenoveringsMallId[]>(
     [],
   );
   const [nyMappNamn, setNyMappNamn] = useState("");
+  const [nyMappAr, setNyMappAr] = useState(String(new Date().getFullYear()));
+  const [historiskMapp, setHistoriskMapp] = useState(false);
   const [valdaRenoveringstyper, setValdaRenoveringstyper] = useState<string[]>([]);
   const [skapadFeedback, setSkapadFeedback] = useState<string | null>(null);
+  const [sparFel, setSparFel] = useState<string | null>(null);
   const [frånLagenhetsnummer, setFrånLagenhetsnummer] = useState("");
   const [tillLagenhetsnummer, setTillLagenhetsnummer] = useState("");
   const [nummerbyteMeddelande, setNummerbyteMeddelande] = useState<{
@@ -104,10 +110,15 @@ export function ApartmentArchiveDemo() {
       skipFirstSave.current = false;
       return;
     }
-    sparaLagenhetsarkiv({
+    const resultat = sparaLagenhetsarkiv({
       apartments,
       nextApartmentNumber,
     });
+    if (resultat.ok) {
+      setSparFel(null);
+    } else {
+      setSparFel(localStorageFelMeddelande(resultat.error));
+    }
   }, [apartments, nextApartmentNumber, hydrated]);
 
   useEffect(() => {
@@ -245,13 +256,23 @@ export function ApartmentArchiveDemo() {
     const apartment = apartments.find((a) => a.id === apartmentId);
     if (!apartment || mallIds.length === 0) return;
 
+    const arParsed = Number.parseInt(nyMappAr, 10);
+    const ar =
+      Number.isFinite(arParsed) && arParsed >= 1900 && arParsed <= 2100
+        ? arParsed
+        : new Date().getFullYear();
+
     let tempFolders = [...apartment.folders];
     const nyaMappar = mallIds.map((mallId) => {
       const namn =
         mallIds.length === 1 && egnaNamn?.trim()
           ? egnaNamn.trim()
-          : foreslagetMappNamn(mallId, tempFolders);
-      const mapp = skapaRenoveringsMapp(mallId, { namn });
+          : foreslagetMappNamn(mallId, tempFolders, ar);
+      const mapp = skapaRenoveringsMapp(mallId, {
+        namn,
+        ar,
+        historisk: historiskMapp,
+      });
       tempFolders = [mapp, ...tempFolders];
       return mapp;
     });
@@ -264,9 +285,10 @@ export function ApartmentArchiveDemo() {
     const sista = nyaMappar[0];
     setValdMall(sista.mallId ?? mallIds[mallIds.length - 1]);
     setNyMappNamn("");
+    setHistoriskMapp(false);
     setSkapadFeedback(
       nyaMappar.length === 1
-        ? `${sista.name} skapad. Välj annan typ ovan om flera åtgärder pågår parallellt.`
+        ? `${sista.name} skapad${historiskMapp ? " (historisk)" : ""}. Välj annan typ ovan om flera åtgärder pågår parallellt.`
         : `${nyaMappar.length} renoveringsmappar skapade (${nyaMappar.map((m) => m.name).join(", ")}).`,
     );
   }
@@ -504,6 +526,15 @@ export function ApartmentArchiveDemo() {
 
   return (
     <div className="rounded-3xl border border-border bg-surface shadow-sm">
+      {sparFel && (
+        <div
+          className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-950 sm:px-6"
+          role="alert"
+        >
+          <p className="font-medium">Kunde inte spara lägenhetsarkivet</p>
+          <p className="mt-0.5">{sparFel}</p>
+        </div>
+      )}
       <div className="border-b border-border p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -511,8 +542,8 @@ export function ApartmentArchiveDemo() {
               Lägenhetsregister
             </p>
             <p className="mt-1 text-sm text-muted">
-              Grunduppgifterna visas direkt på varje kort. Öppna en lägenhet för
-              att redigera detaljer, besiktning och renoveringsarkiv.
+              Sammanställning av alla lägenheter högst upp. Öppna en lägenhet för
+              grunduppgifter, renoveringsmappar och signerade överenskommelser.
             </p>
           </div>
           <button
@@ -532,112 +563,75 @@ export function ApartmentArchiveDemo() {
           const oppen = apartment.id === oppenLagenhetsId;
           const foreslagnaMallar = hamtaForeslagnaMallar(apartment);
           const etikett = formatLagenhetEtikett(apartment.lagenhetsnummer);
+          const renoveringsOversikt = [...apartment.folders]
+            .map((m) => ({
+              mapp: m,
+              etikett: renoveringsMappOversiktEtikett(m),
+            }))
+            .sort((a, b) => (b.mapp.ar ?? 0) - (a.mapp.ar ?? 0));
 
           return (
             <article
               key={apartment.id}
               className="rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20"
             >
-              <div className="p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-bold text-foreground">{etikett}</h3>
-                    <p className="mt-1 text-xs text-muted">
-                      {apartment.folders.length > 0
-                        ? `${apartment.folders.length} renoveringsmapp${
-                            apartment.folders.length > 1 ? "ar" : ""
-                          }`
-                        : "Inga renoveringsmappar"}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    {oppen && apartments.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setBekraftarBorttagningLagenhetId(apartment.id)
-                        }
-                        className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-300 hover:bg-red-50"
-                      >
-                        Ta bort
-                      </button>
-                    )}
-                    <OppnaStangKnapp
-                      oppen={oppen}
-                      onClick={() => vaxlaOppenLagenhet(apartment.id)}
-                      ariaLabel={
-                        oppen
-                          ? `Stäng lägenhet ${etikett}`
-                          : `Öppna lägenhet ${etikett}`
-                      }
-                    />
-                  </div>
-                </div>
-
-                {oppen && bekraftarBorttagningLagenhetId === apartment.id && (
-                  <div
-                    className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-4"
-                    role="alertdialog"
-                    aria-labelledby={`bekrafta-borttagning-lgh-${apartment.id}`}
-                  >
-                    <p
-                      id={`bekrafta-borttagning-lgh-${apartment.id}`}
-                      className="text-sm font-semibold text-foreground"
-                    >
-                      Bekräfta borttagning av lägenhet
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted">
-                      Lägenhet {etikett} tas bort från registret tillsammans med
-                      alla tillhörande mappar och uppladdad dokumentation.
-                      Åtgärden är permanent och kan inte ångras.
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setBekraftarBorttagningLagenhetId(null)}
-                        className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
-                      >
-                        Avbryt
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteApartment(apartment.id)}
-                        className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-900"
-                      >
-                        Ja, ta bort lägenheten
-                      </button>
+              <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-bold text-foreground">{etikett}</h3>
+                  <p className="mt-1 text-xs text-muted">
+                    {apartment.folders.length > 0
+                      ? `${apartment.folders.length} renoveringsmapp${
+                          apartment.folders.length > 1 ? "ar" : ""
+                        }`
+                      : "Inga renoveringsmappar"}
+                    {apartment.adress ? ` · ${apartment.adress}` : ""}
+                  </p>
+                  {renoveringsOversikt.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {renoveringsOversikt.map(({ mapp, etikett: chip }) => (
+                        <span
+                          key={mapp.id}
+                          className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                            mapp.historisk
+                              ? "border-border bg-background text-muted"
+                              : "border-primary/25 bg-[#eef6f0] text-primary-dark"
+                          }`}
+                          title={mapp.name}
+                        >
+                          {chip}
+                          {mapp.historisk ? " (historisk)" : ""}
+                        </span>
+                      ))}
                     </div>
-                  </div>
-                )}
-
-                <LagenhetGrunduppgifterKort apartment={apartment} />
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <OppnaStangKnapp
+                    oppen={oppen}
+                    onClick={() => vaxlaOppenLagenhet(apartment.id)}
+                    ariaLabel={
+                      oppen
+                        ? `Stäng lägenhet ${etikett}`
+                        : `Öppna lägenhet ${etikett}`
+                    }
+                  />
+                </div>
               </div>
 
               {oppen && (
                 <div className="space-y-6 border-t border-border px-4 pb-5 pt-4 sm:px-5">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-                      Lägenhetsmappar
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      Grundmappar för {etikett}.
-                    </p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      {apartment.basePages.map((page) => (
-                        <div
-                          key={page}
-                          className="rounded-xl border border-border bg-background p-4 shadow-sm"
-                        >
-                          <p className="text-sm font-semibold text-foreground">
-                            {page}
-                          </p>
-                          <p className="mt-1 text-xs text-muted">
-                            Grundmapp för dokument
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <LagenhetGrunduppgifterKort
+                    apartment={apartment}
+                    onUppdatera={(patch) =>
+                      uppdateraLägenhet(apartment.id, (a) => ({ ...a, ...patch }))
+                    }
+                  />
+
+                  <p className="rounded-lg border border-border bg-[#fafcfa] px-3 py-2 text-xs text-muted">
+                    Dokument för anmälningar, beslut och sluthandlingar läggs i
+                    renoveringsmapparna nedan — öppna en mapp och ladda upp där.
+                  </p>
+                  <DemoFilSparningNotis />
 
                   <div id="lagenhetsuppgifter" className="scroll-mt-24">
                     <LagenhetInfoPanel
@@ -726,9 +720,10 @@ export function ApartmentArchiveDemo() {
               Ny renoveringsmapp
             </h4>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Välj en eller flera typer för parallella projekt. Skapa tomma mappar
-              och lägg sedan till delar — handlingar, egenkontroller, ritning m.m.
-              — steg för steg i respektive mapp.
+              Skapa en renoveringsmapp per projekt. Den får färdiga undermappar
+              för <strong className="font-medium text-foreground">Badrum</strong> och{" "}
+              <strong className="font-medium text-foreground">Kök</strong>. Flera
+              mappar kan läggas till — även historiska i efterhand.
             </p>
 
             {foreslagnaMallar.length > 0 && (
@@ -819,6 +814,31 @@ export function ApartmentArchiveDemo() {
               })}
             </div>
 
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                <span className="text-xs font-medium text-muted">År</span>
+                <input
+                  type="number"
+                  min={1900}
+                  max={2100}
+                  value={nyMappAr}
+                  onChange={(e) => setNyMappAr(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="flex items-end gap-2 pb-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={historiskMapp}
+                  onChange={(e) => setHistoriskMapp(e.target.checked)}
+                  className="h-4 w-4 rounded border-border text-primary"
+                />
+                <span className="text-xs leading-snug text-muted">
+                  Historisk renovering (lägg till i efterhand)
+                </span>
+              </label>
+            </div>
+
             <label className="mt-4 block text-sm">
               <span className="text-xs font-medium text-muted">
                 Mappnamn (valfritt)
@@ -826,7 +846,11 @@ export function ApartmentArchiveDemo() {
               <input
                 value={nyMappNamn}
                 onChange={(e) => setNyMappNamn(e.target.value)}
-                placeholder={foreslagetMappNamn(valdMall, apartment.folders)}
+                placeholder={foreslagetMappNamn(
+                  valdMall,
+                  apartment.folders,
+                  Number.parseInt(nyMappAr, 10) || undefined,
+                )}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
@@ -846,7 +870,10 @@ export function ApartmentArchiveDemo() {
                   onClick={() => skapaParallellaMappar(apartment.id)}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
                 >
-                  Skapa {valdMallObj.etikett.toLowerCase()}-mapp
+                  Skapa{" "}
+                  {valdMall === "renovering"
+                    ? "renoveringsmapp"
+                    : `${valdMallObj.etikett.toLowerCase()}-mapp`}
                 </button>
               )}
               {apartment.folders.length > 0 && (
@@ -872,8 +899,8 @@ export function ApartmentArchiveDemo() {
             )}
             {apartment.folders.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">
-                Inga renoveringsmappar ännu. Skapa en mapp ovan och lägg till
-                delar steg för steg.
+                Inga renoveringsmappar ännu. Skapa en renoveringsmapp ovan — den
+                får färdiga undermappar för badrum och kök.
               </p>
             ) : (
               apartment.folders.map((mapp) => (
@@ -928,6 +955,59 @@ export function ApartmentArchiveDemo() {
               ))
             )}
           </div>
+
+                  {apartments.length > 1 && (
+                    <div className="border-t border-border pt-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+                        Administration
+                      </p>
+                      {bekraftarBorttagningLagenhetId === apartment.id ? (
+                        <div
+                          className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-4"
+                          role="alertdialog"
+                          aria-labelledby={`bekrafta-borttagning-lgh-${apartment.id}`}
+                        >
+                          <p
+                            id={`bekrafta-borttagning-lgh-${apartment.id}`}
+                            className="text-sm font-semibold text-foreground"
+                          >
+                            Bekräfta borttagning av lägenhet
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-muted">
+                            Lägenhet {etikett} tas bort från registret tillsammans
+                            med alla tillhörande mappar och uppladdad dokumentation.
+                            Åtgärden är permanent och kan inte ångras.
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setBekraftarBorttagningLagenhetId(null)}
+                              className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
+                            >
+                              Avbryt
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteApartment(apartment.id)}
+                              className="rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white hover:bg-red-900"
+                            >
+                              Ja, ta bort lägenheten
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setBekraftarBorttagningLagenhetId(apartment.id)
+                          }
+                          className="mt-3 text-sm font-medium text-red-800 hover:text-red-900"
+                        >
+                          Ta bort lägenhet ur registret…
+                        </button>
+                      )}
+                    </div>
+                  )}
                   </div>
                 </div>
               )}

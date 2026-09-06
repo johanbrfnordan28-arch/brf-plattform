@@ -5,17 +5,17 @@ import { ModulePage } from "@/components/ModulePage";
 import { antalForeningsHuvudmappar, foreningsHuvudmappar } from "@/components/foreningsinformation/mappar";
 
 export const metadata: Metadata = {
-  title: "Föreningsinformation — BRF Företag",
+  title: "Styrning och Dokument — BRF Företag",
   description:
-    "Stadgar, ekonomisk plan, besiktningsprotokoll och övriga dokument för BRF.",
+    "Styrelsearkiv, stadgar, protokoll och övriga dokument för BRF.",
 };
 
 export default function ForeningsinformationPage() {
   return (
     <ModulePage
-      title="Föreningsinformation"
+      title="Styrning och Dokument"
       icon="📁"
-      intro={`En central plats för föreningens dokument — ${antalForeningsHuvudmappar} huvudmappar: styrelse och stadgar, besiktningar (hiss), service (undercentral), ventilation och tioårsbesiktningar.`}
+      intro={`En central plats för föreningens dokument — ${antalForeningsHuvudmappar} huvudmappar: Styrelse Arkiv, besiktningar (hiss), service (undercentral), ventilation och tioårsbesiktningar.`}
     >
       <ContentSection title={`Struktur — ${antalForeningsHuvudmappar} huvudmappar`}>
         <ul className="space-y-4 text-foreground">

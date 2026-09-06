@@ -3,24 +3,26 @@
 import { useMemo, useState } from "react";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import {
-  hamtaOmbyggnadsavtalStatus,
   kompileraMedlemsKrav,
   grupperaMedlemsKrav,
   laggTillEgenMedlemsKravPunkt,
-  OMBYGGNADSAVTAL_STATUS_ETIKETT,
   skapaMedlemsKravForTyp,
   taBortMedlemsKravPunkt,
   type MedlemsKravState,
-  type OmbyggnadsavtalStatus,
 } from "@/components/lagenhetsarkiv/medlems-krav";
-import { byggOmbyggnadsavtalText, laddaNerOmbyggnadsavtalWord, skrivUtOmbyggnadsavtalPdf } from "@/components/lagenhetsarkiv/ombyggnadsavtal";
 import type { RenoveringsMallId } from "@/components/lagenhetsarkiv/renoverings-mallar";
-import { lasAktivForeningId } from "@/lib/forening-registry";
-import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
+import {
+  lasAktivForeningId,
+  lasForeningProfil,
+} from "@/lib/forening-registry";
 import {
   renoveringSigneringLank,
   skapaRenoveringMedlemsSignering,
 } from "@/components/medlemmar/renovering-medlems-signering-lager";
+import {
+  byggOverenskommelseBrodtext,
+  registreraOverenskommelseMejl,
+} from "@/components/lagenhetsarkiv/overenskommelse-mejl";
 
 type MedlemsKravPanelProps = {
   medlemsKrav: MedlemsKravState | undefined;
@@ -33,11 +35,6 @@ type MedlemsKravPanelProps = {
   onUppdatera: (krav: MedlemsKravState) => void;
 };
 
-function byggMailto(till: string, amne: string, kropp: string): string {
-  const to = till.trim();
-  return `mailto:${to}?subject=${encodeURIComponent(amne)}&body=${encodeURIComponent(kropp)}`;
-}
-
 export function MedlemsKravPanel({
   medlemsKrav: råKrav,
   mallId,
@@ -49,24 +46,16 @@ export function MedlemsKravPanel({
   onUppdatera,
 }: MedlemsKravPanelProps) {
   const medlemsKrav = råKrav ?? skapaMedlemsKravForTyp(mallId);
-  const status = hamtaOmbyggnadsavtalStatus(medlemsKrav);
   const [oppnaSektioner, setOppnaSektioner] = useState<Record<string, boolean>>(
     {},
   );
   const [nyaPunkter, setNyaPunkter] = useState<Record<string, string>>({});
-  const [skickadLank, setSkickadLank] = useState<string | null>(
-    medlemsKrav.signeringId
-      ? renoveringSigneringLank(
-          medlemsKrav.signeringId,
-          lasAktivForeningId(),
-        )
-      : null,
-  );
+  const [skickadLank, setSkickadLank] = useState<string | null>(null);
   const [meddelande, setMeddelande] = useState<string | null>(null);
-  const [medlemsEpost, setMedlemsEpost] = useState("");
-  const [visaAvtal, setVisaAvtal] = useState(
-    status === "styrelsegranskning" || status === "skickad" || status === "signerad",
+  const [medlemEpost, setMedlemEpost] = useState(
+    medlemsKrav.medlemEpost ?? "",
   );
+  const [skickar, setSkickar] = useState(false);
 
   const grupper = useMemo(
     () => grupperaMedlemsKrav(medlemsKrav.punkter),
@@ -74,8 +63,19 @@ export function MedlemsKravPanel({
   );
 
   const valda = kompileraMedlemsKrav(medlemsKrav);
-  const lasst = status === "signerad";
-  const kanRedigera = status === "utkast" || status === "styrelsegranskning";
+  const redanStyrelse = Boolean(medlemsKrav.skickadTillStyrelse);
+  const redanSkickad = Boolean(medlemsKrav.skickadTillMedlem);
+  const redanSignerad = Boolean(medlemsKrav.medlemSignerad);
+
+  const styrelseEposter = useMemo(() => {
+    const profil = lasForeningProfil();
+    const franLedamoter = (profil?.styrelseledamoter ?? [])
+      .map((l) => l.epost.trim())
+      .filter(Boolean);
+    if (franLedamoter.length > 0) return franLedamoter;
+    const fallback = profil?.epost?.trim();
+    return fallback ? [fallback] : [];
+  }, []);
 
   function arSektionOppen(sektionId: string) {
     return oppnaSektioner[sektionId] ?? false;
@@ -93,75 +93,18 @@ export function MedlemsKravPanel({
     setMeddelande(null);
   }
 
-  function byggAvtal(punkter = valda): string {
-    const kontakt = hamtaStyrelseKontakt();
-    return byggOmbyggnadsavtalText(punkter, {
-      foreningsnamn: kontakt?.foreningsnamn ?? "",
-      organisationsnummer: kontakt?.organisationsnummer,
-      lagenhetsnummer,
-      mappNamn,
-      mallEtikett,
-      datum: new Date().toLocaleDateString("sv-SE"),
-      postadress: kontakt?.postadress,
-      ort: kontakt?.ort,
-    });
-  }
-
-  function avtalMeta() {
-    const kontakt = hamtaStyrelseKontakt();
-    return {
-      foreningsnamn: kontakt?.foreningsnamn ?? "",
-      organisationsnummer: kontakt?.organisationsnummer,
-      lagenhetsnummer,
-      mappNamn,
-      mallEtikett,
-      datum: new Date().toLocaleDateString("sv-SE"),
-      postadress: kontakt?.postadress,
-      ort: kontakt?.ort,
-    };
-  }
-
-  function sparaSomWord() {
-    if (valda.length === 0) {
-      setMeddelande("Välj minst ett moment innan du sparar ombyggnadsavtalet.");
-      return;
-    }
-    laddaNerOmbyggnadsavtalWord(valda, avtalMeta());
-    setVisaAvtal(true);
-    setMeddelande(
-      "Ombyggnadsavtal sparat som Word-fil (.doc). Öppna i Word eller Pages.",
-    );
-  }
-
-  function sparaSomPdf() {
-    if (valda.length === 0) {
-      setMeddelande("Välj minst ett moment innan du sparar ombyggnadsavtalet.");
-      return;
-    }
-    skrivUtOmbyggnadsavtalPdf(valda, avtalMeta());
-    setVisaAvtal(true);
-    setMeddelande(
-      "Utskriftsfönster öppnat — välj \"Spara som PDF\" i utskriftsdialogen.",
-    );
-  }
-
   function toggleIngar(punktId: string) {
-    if (!kanRedigera) return;
+    if (redanSignerad) return;
     uppdatera({
       ...medlemsKrav,
-      status: "utkast",
-      styrelseSkickad: undefined,
-      skickadTillMedlem: undefined,
-      signeringId: undefined,
       punkter: medlemsKrav.punkter.map((p) =>
         p.id === punktId ? { ...p, ingar: !p.ingar } : p,
       ),
     });
-    setSkickadLank(null);
   }
 
   function laggTillPunkt(sektionId: string, sektionEtikett: string) {
-    if (!kanRedigera) return;
+    if (redanSignerad) return;
     const text = nyaPunkter[sektionId] ?? "";
     const next = laggTillEgenMedlemsKravPunkt(
       medlemsKrav,
@@ -172,201 +115,216 @@ export function MedlemsKravPanel({
     uppdatera(next);
     setNyaPunkter((prev) => ({ ...prev, [sektionId]: "" }));
     setOppnaSektioner((prev) => ({ ...prev, [sektionId]: true }));
-    setSkickadLank(null);
   }
 
   function taBortPunkt(punktId: string) {
-    if (!kanRedigera) return;
+    if (redanSignerad) return;
     uppdatera(taBortMedlemsKravPunkt(medlemsKrav, punktId));
-    setSkickadLank(null);
   }
 
   function aterstallFranMall() {
-    if (lasst) return;
+    if (redanSignerad) return;
     uppdatera(skapaMedlemsKravForTyp(mallId));
     setSkickadLank(null);
-    setVisaAvtal(false);
   }
 
-  function skickaTillStyrelse() {
+  async function mejlaTillStyrelse() {
     if (valda.length === 0) {
-      setMeddelande("Välj minst ett moment som ska ingå i ombyggnadsavtalet.");
+      setMeddelande(
+        "Välj minst en checkpunkt som ska ingå i överenskommelsen.",
+      );
+      return;
+    }
+    if (styrelseEposter.length === 0) {
+      setMeddelande(
+        "Inga e-postadresser finns på styrelsen. Lägg till dem under Föreningsuppgifter.",
+      );
       return;
     }
 
-    const avtalText = byggAvtal();
-    const kontakt = hamtaStyrelseKontakt();
-    const till = kontakt?.epost ?? "";
-    const amne = `Ombyggnadsavtal utkast — lght ${lagenhetsnummer} (${mappNamn})`;
-    const kropp = [
-      "Hej,",
-      "",
-      "Här är utkastet till ombyggnadsavtal för granskning av styrelsen.",
-      "Gå igenom momenten, justera vid behov i portalen och godkänn sedan",
-      "innan dokumentet skickas till medlemmen för BankID-signering.",
-      "",
-      "—",
-      "",
-      avtalText,
-    ].join("\n");
+    setSkickar(true);
+    try {
+      const brodtext = byggOverenskommelseBrodtext({
+        lagenhetsnummer,
+        mappNamn,
+        mallEtikett,
+        punkter: valda.map((p) => ({
+          text: p.text,
+          sektionEtikett: p.sektionEtikett,
+        })),
+        steg: "styrelse",
+      });
 
-    if (till) {
-      window.open(byggMailto(till, amne, kropp));
-    } else {
-      void navigator.clipboard.writeText(avtalText);
+      for (const till of styrelseEposter) {
+        await registreraOverenskommelseMejl({
+          till,
+          amne: `Överenskommelse renovering — lght ${lagenhetsnummer} (styrelsegranskning)`,
+          brodtext,
+        });
+      }
+
+      uppdatera({
+        ...medlemsKrav,
+        skickadTillStyrelse: new Date().toLocaleDateString("sv-SE"),
+        styrelseMottagare: styrelseEposter,
+      });
+
+      setMeddelande(
+        `Överenskommelsen mejlades till styrelsen (${styrelseEposter.join(", ")}). När styrelsen är överens kan den skickas till medlemmen för BankID-signering.`,
+      );
+    } finally {
+      setSkickar(false);
     }
-
-    uppdatera({
-      ...medlemsKrav,
-      status: "styrelsegranskning",
-      avtalText,
-      styrelseSkickad: new Date().toLocaleDateString("sv-SE"),
-    });
-    setVisaAvtal(true);
-    setMeddelande(
-      till
-        ? "Utkastet är mejlat till styrelsen (öppnas i din e-postklient). Granska avtalet nedan och skicka sedan till medlemmen."
-        : "Utkastet är kopierat. Lägg in styrelsens e-post under Föreningsuppgifter för att mejla nästa gång. Granska avtalet nedan.",
-    );
   }
 
-  function tillbakaTillUtkast() {
-    if (lasst) return;
-    uppdatera({
-      ...medlemsKrav,
-      status: "utkast",
-      styrelseSkickad: undefined,
-      skickadTillMedlem: undefined,
-      signeringId: undefined,
-    });
-    setSkickadLank(null);
-    setMeddelande("Tillbaka till utkast — du kan lägga till och ta bort moment.");
-  }
-
-  function skickaTillMedlem() {
+  async function mejlaTillMedlem() {
     if (valda.length === 0) {
-      setMeddelande("Välj minst ett moment som ska ingå i ombyggnadsavtalet.");
+      setMeddelande(
+        "Välj minst en checkpunkt som ska ingå i överenskommelsen.",
+      );
+      return;
+    }
+    if (!redanStyrelse) {
+      setMeddelande(
+        "Mejla överenskommelsen till styrelsen först, innan den skickas till medlemmen.",
+      );
+      return;
+    }
+    const epost = medlemEpost.trim();
+    if (!epost || !epost.includes("@")) {
+      setMeddelande("Ange medlemmens e-postadress.");
       return;
     }
 
-    const avtalText = medlemsKrav.avtalText?.trim() || byggAvtal();
-    const foreningId = lasAktivForeningId();
-    const signering = skapaRenoveringMedlemsSignering({
-      foreningId,
-      lagenhetsnummer,
-      mappNamn,
-      mappId,
-      apartmentId,
-      mallEtikett,
-      avtalText,
-      punkter: valda.map((p) => ({
-        id: p.id,
-        text: p.text,
-        sektionEtikett: p.sektionEtikett,
-      })),
-    });
+    setSkickar(true);
+    try {
+      const foreningId = lasAktivForeningId();
+      const signering = skapaRenoveringMedlemsSignering({
+        foreningId,
+        lagenhetsnummer,
+        mappNamn,
+        mappId,
+        apartmentId,
+        mallEtikett,
+        punkter: valda.map((p) => ({
+          id: p.id,
+          text: p.text,
+          sektionEtikett: p.sektionEtikett,
+        })),
+      });
 
-    const lank = renoveringSigneringLank(signering.id, foreningId);
-    setSkickadLank(lank);
+      const lank = renoveringSigneringLank(signering.id, foreningId);
+      setSkickadLank(lank);
 
-    const till = medlemsEpost.trim();
-    const amne = `Ombyggnadsavtal för signering — lght ${lagenhetsnummer}`;
-    const kropp = [
-      "Hej,",
-      "",
-      "Styrelsen har godkänt ombyggnadsavtalet för din renovering.",
-      "Läs igenom dokumentet och signera med BankID via länken nedan.",
-      "",
-      lank,
-      "",
-      "—",
-      "",
-      avtalText,
-    ].join("\n");
+      const brodtext = byggOverenskommelseBrodtext({
+        lagenhetsnummer,
+        mappNamn,
+        mallEtikett,
+        punkter: valda.map((p) => ({
+          text: p.text,
+          sektionEtikett: p.sektionEtikett,
+        })),
+        steg: "medlem",
+        signeringLank: lank,
+      });
 
-    if (till) {
-      window.open(byggMailto(till, amne, kropp));
-    } else {
-      void navigator.clipboard.writeText(`${lank}\n\n${avtalText}`);
+      await registreraOverenskommelseMejl({
+        till: epost,
+        amne: `Överenskommelse renovering — lght ${lagenhetsnummer} (signera med BankID)`,
+        brodtext,
+      });
+
+      uppdatera({
+        ...medlemsKrav,
+        skickadTillMedlem: new Date().toLocaleDateString("sv-SE"),
+        medlemEpost: epost,
+        signeringId: signering.id,
+      });
+
+      setMeddelande(
+        `Överenskommelsen mejlades till medlemmen (${epost}) för BankID-signering.`,
+      );
+    } finally {
+      setSkickar(false);
     }
-
-    uppdatera({
-      ...medlemsKrav,
-      status: "skickad",
-      avtalText,
-      skickadTillMedlem: new Date().toLocaleDateString("sv-SE"),
-      signeringId: signering.id,
-    });
-    setVisaAvtal(true);
-    setMeddelande(
-      till
-        ? "Ombyggnadsavtalet är mejlat till medlemmen med länk för BankID-signering."
-        : "Länk och avtal är kopierade. Ange medlemmens e-post ovan för att mejla nästa gång, eller klistra in länken manuellt.",
-    );
   }
-
-  const statusFarg: Record<OmbyggnadsavtalStatus, string> = {
-    utkast: "bg-amber-50 text-amber-900 border-amber-200",
-    styrelsegranskning: "bg-[#eef6f0] text-primary-dark border-primary/30",
-    skickad: "bg-sky-50 text-sky-900 border-sky-200",
-    signerad: "bg-primary/10 text-primary-dark border-primary/30",
-  };
 
   return (
     <div className="rounded-2xl border border-primary/25 bg-[#fafcfa] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h4 className="font-semibold text-foreground">Ombyggnadsavtal</h4>
+          <h4 className="font-semibold text-foreground">
+            Överenskommelse — krav och villkor
+          </h4>
           <p className="mt-1 text-xs leading-relaxed text-muted">
-            Börja med ett utkast: lägg till eller ta bort moment. Skicka till
-            styrelsen för granskning. När avtalet är klart skickas det till
-            medlemmen för genomläsning och BankID-signering.
+            Sammanställ vad medlemmen ska uppfylla. Mejla först till styrelsen
+            för granskning, därefter till medlemmen som signerar med BankID.
+            Den signerade överenskommelsen sparas i lägenhetsarkivet.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span
-            className={`rounded-full border px-3 py-1 text-xs font-medium ${statusFarg[status]}`}
-          >
-            {OMBYGGNADSAVTAL_STATUS_ETIKETT[status]}
-          </span>
-          <span className="text-xs text-muted">
-            {valda.length} moment valda av {medlemsKrav.punkter.length}
-          </span>
-        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-primary-dark">
+          {valda.length} valda av {medlemsKrav.punkter.length}
+        </span>
       </div>
 
-      {status === "signerad" && medlemsKrav.medlemSignerad && (
+      <ol className="mt-3 grid gap-2 sm:grid-cols-3">
+        <li
+          className={`rounded-lg border px-3 py-2 text-xs ${
+            redanStyrelse
+              ? "border-primary/30 bg-white text-primary-dark"
+              : "border-border bg-white text-muted"
+          }`}
+        >
+          <span className="font-semibold">1. Styrelsen</span>
+          <p className="mt-0.5">
+            {redanStyrelse
+              ? `Mejlad ${medlemsKrav.skickadTillStyrelse}`
+              : "Mejla för granskning"}
+          </p>
+        </li>
+        <li
+          className={`rounded-lg border px-3 py-2 text-xs ${
+            redanSkickad
+              ? "border-primary/30 bg-white text-primary-dark"
+              : "border-border bg-white text-muted"
+          }`}
+        >
+          <span className="font-semibold">2. Medlem</span>
+          <p className="mt-0.5">
+            {redanSkickad
+              ? `Mejlad ${medlemsKrav.skickadTillMedlem}`
+              : "Mejla för signering"}
+          </p>
+        </li>
+        <li
+          className={`rounded-lg border px-3 py-2 text-xs ${
+            redanSignerad
+              ? "border-primary/30 bg-white text-primary-dark"
+              : "border-border bg-white text-muted"
+          }`}
+        >
+          <span className="font-semibold">3. BankID</span>
+          <p className="mt-0.5">
+            {redanSignerad
+              ? `Signerat ${medlemsKrav.medlemSignerad?.datum}`
+              : "Väntar på signering"}
+          </p>
+        </li>
+      </ol>
+
+      {redanSignerad && medlemsKrav.medlemSignerad && (
         <p className="mt-3 rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm text-primary-dark">
-          Medlemmen har godkänt ombyggnadsavtalet och signerat med BankID{" "}
+          Medlemmen har godkänt och signerat med BankID{" "}
           {medlemsKrav.medlemSignerad.datum}
           {medlemsKrav.medlemSignerad.av
             ? ` (${medlemsKrav.medlemSignerad.av})`
             : ""}
           .
+          {medlemsKrav.sparadOverenskommelseFilnamn
+            ? ` Sparad i arkivet: ${medlemsKrav.sparadOverenskommelseFilnamn}.`
+            : " Överenskommelsen är sparad i lägenhetsarkivet."}
         </p>
       )}
-
-      <ol className="mt-4 grid gap-2 text-xs text-muted sm:grid-cols-4">
-        {(
-          [
-            ["utkast", "1. Utkast"],
-            ["styrelsegranskning", "2. Styrelse"],
-            ["skickad", "3. Till medlem"],
-            ["signerad", "4. Signerat"],
-          ] as const
-        ).map(([steg, etikett]) => (
-          <li
-            key={steg}
-            className={`rounded-lg border px-2.5 py-2 ${
-              status === steg
-                ? "border-primary bg-white font-medium text-foreground"
-                : "border-border bg-background"
-            }`}
-          >
-            {etikett}
-          </li>
-        ))}
-      </ol>
 
       <div className="mt-4 space-y-2">
         {grupper.map((grupp) => {
@@ -384,7 +342,7 @@ export function MedlemsKravPanel({
                     {grupp.sektionEtikett}
                   </p>
                   <p className="text-xs text-muted">
-                    {antalValda} av {grupp.punkter.length} ingår i avtalet
+                    {antalValda} av {grupp.punkter.length} ingår
                   </p>
                 </div>
                 <OppnaStangKnapp
@@ -414,7 +372,7 @@ export function MedlemsKravPanel({
                         <input
                           type="checkbox"
                           checked={punkt.ingar}
-                          disabled={!kanRedigera}
+                          disabled={redanSignerad}
                           onChange={() => toggleIngar(punkt.id)}
                           className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary"
                         />
@@ -426,7 +384,7 @@ export function MedlemsKravPanel({
                             </span>
                           )}
                         </span>
-                        {kanRedigera && (
+                        {punkt.egen && !redanSignerad && (
                           <button
                             type="button"
                             onClick={() => taBortPunkt(punkt.id)}
@@ -439,7 +397,7 @@ export function MedlemsKravPanel({
                     ))}
                   </ul>
 
-                  {kanRedigera && (
+                  {!redanSignerad && (
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <input
                         value={nyaPunkter[grupp.sektionId] ?? ""}
@@ -455,7 +413,7 @@ export function MedlemsKravPanel({
                             laggTillPunkt(grupp.sektionId, grupp.sektionEtikett);
                           }
                         }}
-                        placeholder="Lägg till eget moment…"
+                        placeholder="Lägg till egen punkt…"
                         className="min-w-0 flex-1 rounded-lg border border-border px-2.5 py-1.5 text-sm"
                       />
                       <button
@@ -465,7 +423,7 @@ export function MedlemsKravPanel({
                         }
                         className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
                       >
-                        Lägg till moment
+                        Lägg till punkt
                       </button>
                     </div>
                   )}
@@ -476,168 +434,55 @@ export function MedlemsKravPanel({
         })}
       </div>
 
-      {(visaAvtal || medlemsKrav.avtalText) && (
-        <div className="mt-4 rounded-xl border border-border bg-white p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground">
-              Ombyggnadsavtal — förhandsvisning
-            </p>
+      {!redanSignerad && (
+        <div className="mt-4 space-y-3 rounded-xl border border-border bg-white p-3">
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">
+              Medlemmens e-post (steg 2)
+            </span>
+            <input
+              type="email"
+              value={medlemEpost}
+              onChange={(e) => setMedlemEpost(e.target.value)}
+              placeholder="medlem@exempel.se"
+              className="mt-1 w-full rounded-lg border border-border px-2.5 py-1.5 text-sm"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setVisaAvtal((v) => !v)}
-              className="text-xs font-medium text-primary-dark hover:underline"
+              disabled={skickar}
+              onClick={() => void mejlaTillStyrelse()}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
             >
-              {visaAvtal ? "Dölj" : "Visa"}
+              {redanStyrelse
+                ? "Mejla uppdaterad version till styrelsen"
+                : "1. Mejla till styrelsen"}
+            </button>
+            <button
+              type="button"
+              disabled={skickar || !redanStyrelse}
+              onClick={() => void mejlaTillMedlem()}
+              className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0] disabled:opacity-50"
+            >
+              {redanSkickad
+                ? "Mejla uppdaterad version till medlem"
+                : "2. Mejla till medlem (BankID)"}
+            </button>
+            <button
+              type="button"
+              onClick={aterstallFranMall}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
+            >
+              Återställ punkter
             </button>
           </div>
-          {visaAvtal && (
-            <>
-              <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-background p-3 text-xs leading-relaxed text-foreground">
-                {medlemsKrav.avtalText?.trim() || byggAvtal()}
-              </pre>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={sparaSomWord}
-                  className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
-                >
-                  Spara som Word (.doc)
-                </button>
-                <button
-                  type="button"
-                  onClick={sparaSomPdf}
-                  className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
-                >
-                  Spara som PDF (skriv ut)
-                </button>
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-muted">
-                Dokumentet heter Ombyggnadsavtal och innehåller juridisk bastext
-                (ägande, skadeansvar inkl. lägenheter under, handlingar före/efter).
-                Mall på basnivå — vid komplicerade ärenden bör jurist rådfrågas.
-              </p>
-            </>
+          {styrelseEposter.length === 0 && (
+            <p className="text-xs text-amber-800">
+              Tip: lägg till e-post på styrelseledamöter under Föreningsuppgifter
+              så steg 1 fungerar.
+            </p>
           )}
-        </div>
-      )}
-
-      {!lasst && (
-        <div className="mt-4 space-y-3">
-          {(status === "styrelsegranskning" || status === "skickad") && (
-            <label className="block text-sm">
-              <span className="font-medium text-foreground">
-                Medlemmens e-post (för utskick)
-              </span>
-              <input
-                type="email"
-                value={medlemsEpost}
-                onChange={(e) => setMedlemsEpost(e.target.value)}
-                placeholder="medlem@exempel.se"
-                className="mt-1 w-full max-w-md rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-            </label>
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            {(status === "utkast" || status === "styrelsegranskning") && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (valda.length === 0) {
-                      setMeddelande(
-                        "Välj minst ett moment innan du sparar ombyggnadsavtalet.",
-                      );
-                      return;
-                    }
-                    uppdatera({
-                      ...medlemsKrav,
-                      avtalText: byggAvtal(),
-                    });
-                    setVisaAvtal(true);
-                    setMeddelande(
-                      "Utkastet till ombyggnadsavtal är uppdaterat. Du kan spara som Word eller PDF.",
-                    );
-                  }}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/5"
-                >
-                  Uppdatera avtalstext
-                </button>
-                <button
-                  type="button"
-                  onClick={sparaSomWord}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
-                >
-                  Spara Word
-                </button>
-                <button
-                  type="button"
-                  onClick={sparaSomPdf}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
-                >
-                  Spara PDF
-                </button>
-              </>
-            )}
-
-            {status === "utkast" && (
-              <button
-                type="button"
-                onClick={skickaTillStyrelse}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
-              >
-                Skicka utkast till styrelsen
-              </button>
-            )}
-
-            {status === "styrelsegranskning" && (
-              <>
-                <button
-                  type="button"
-                  onClick={skickaTillMedlem}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
-                >
-                  Godkänn och skicka till medlem
-                </button>
-                <button
-                  type="button"
-                  onClick={tillbakaTillUtkast}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
-                >
-                  Tillbaka till utkast
-                </button>
-              </>
-            )}
-
-            {status === "skickad" && (
-              <>
-                <button
-                  type="button"
-                  onClick={skickaTillMedlem}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
-                >
-                  Skicka om till medlem
-                </button>
-                <button
-                  type="button"
-                  onClick={tillbakaTillUtkast}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
-                >
-                  Öppna för ny redigering
-                </button>
-              </>
-            )}
-
-            {kanRedigera && (
-              <button
-                type="button"
-                onClick={aterstallFranMall}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
-              >
-                Återställ moment från mall
-              </button>
-            )}
-          </div>
         </div>
       )}
 
@@ -647,10 +492,10 @@ export function MedlemsKravPanel({
         </p>
       )}
 
-      {skickadLank && status !== "utkast" && (
+      {skickadLank && (
         <div className="mt-3 rounded-lg border border-border bg-white p-3">
           <p className="text-xs font-medium text-foreground">
-            Länk till medlemmen (ombyggnadsavtal + BankID)
+            Signeringslänk till medlemmen (BankID)
           </p>
           <p className="mt-1 break-all text-xs text-primary-dark">{skickadLank}</p>
           <button

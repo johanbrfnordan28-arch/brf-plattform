@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
 import { hamtaAktivForeningsNamn, arGrundmallForening } from "@/lib/forening-registry";
 import { formatKr } from "@/components/underhallsplan/besiktningar";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 import { laddaNerUnderhallsplanExcel } from "@/components/underhallsplan/exportera-underhallsplan-excel";
+import {
+  lasUnderhallsplanExcelFil,
+  type ImporteradUnderhallsplanExcel,
+} from "@/components/underhallsplan/importera-underhallsplan-excel";
 import {
   beraknaPlanAvsattning,
   beraknaPlanUtgiftsRader,
@@ -54,6 +58,7 @@ import {
   PLAN_SLUTSIDA_CHECKLISTA,
   PLAN_SLUTSIDA_ERFARENHET,
   PLAN_SLUTSIDA_LEVANDE_PLAN,
+  PLAN_SLUTSIDA_PROFFS,
   PLAN_SLUTSIDA_RAD,
 } from "@/components/underhallsplan/plan-slutsida-rad";
 
@@ -85,6 +90,8 @@ type UnderhallsplanSlutsidaProps = {
     tillfalleId: string,
     nyKostnadKr: number,
   ) => void;
+  /** Importera grunddata/avsättning/notering/komponentvärden från Excel. */
+  onImporteraFranExcel?: (data: ImporteradUnderhallsplanExcel) => void;
   /** Visar central grundmall-rubrik (även när förening tittar skrivskyddat). */
   visaSomCentralGrundmall?: boolean;
 };
@@ -137,8 +144,12 @@ export function UnderhallsplanSlutsida({
   planKostnader,
   varderingsUnderlag = null,
   onKostnadJustering,
+  onImporteraFranExcel,
   visaSomCentralGrundmall = false,
 }: UnderhallsplanSlutsidaProps) {
+  const excelInputRef = useRef<HTMLInputElement>(null);
+  const [excelStatus, setExcelStatus] = useState<string | null>(null);
+  const [excelFel, setExcelFel] = useState<string | null>(null);
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const grundNorm = normaliseraGrund(grund);
   const avsattningsYtaM2 = hamtaAvsattningsYtaM2(grundNorm);
@@ -335,6 +346,21 @@ export function UnderhallsplanSlutsida({
     );
   }
 
+  async function onExcelFilVald(fil: File | null) {
+    setExcelFel(null);
+    setExcelStatus(null);
+    if (!fil || !onImporteraFranExcel) return;
+    try {
+      const data = await lasUnderhallsplanExcelFil(fil);
+      onImporteraFranExcel(data);
+      setExcelStatus(data.meddelande);
+    } catch (error) {
+      setExcelFel(
+        error instanceof Error ? error.message : "Kunde inte importera Excel.",
+      );
+    }
+  }
+
   return (
     <section className="rounded-2xl border-2 border-primary bg-surface shadow-md print:border-0 print:shadow-none">
       <div className="rounded-t-2xl bg-primary px-6 py-8 text-white sm:px-10 print:rounded-none">
@@ -348,7 +374,7 @@ export function UnderhallsplanSlutsida({
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/90">
           {arCentralGrundmall
             ? "Sammanfattning av den centrala grunden. Ändringar här görs bara centralt — föreningar bygger egen plan och kan importera saknade delar."
-            : "Sammanfattning av föreningens egen underhållsplan: avsättning, utgifter och planerade tider. Anpassad för er — lämpligt att skriva ut eller spara som PDF."}
+            : "Sammanfattning av föreningens egen underhållsplan: avsättning, utgifter och planerade tider. Summeringen är klar till styrelsemötet — skriv ut eller spara som PDF inför beslut."}
         </p>
         {planNotering && (
           <p className="mt-4 max-w-2xl rounded-lg bg-white/10 px-4 py-3 text-sm leading-relaxed text-white/95">
@@ -554,7 +580,8 @@ export function UnderhallsplanSlutsida({
                 {formatKr(medelArsbudget)}
               </p>
               <p className="text-xs text-muted">
-                Avsättning + besiktningar + kostnadsfört underhåll
+                Avsättning + besiktningar +{" "}
+                {PLAN_BEGREPP.direktkostnader.toLowerCase()}
               </p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
@@ -567,12 +594,12 @@ export function UnderhallsplanSlutsida({
             </div>
             <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
               <p className="text-xs font-medium uppercase text-amber-900/80">
-                Summa kostnadsfört underhåll
+                Summa {PLAN_BEGREPP.direktkostnader.toLowerCase()}
               </p>
               <p className="mt-1 text-xl font-bold text-amber-950">
                 {formatKrStor(summaDirektkostnader)}
               </p>
-              <p className="text-xs text-muted">Kostnadsförs — aktiveras ej</p>
+              <p className="text-xs text-muted">Kostnadsförs direkt — aktiveras ej</p>
             </div>
             <div className="rounded-xl border border-border bg-background p-4">
               <p className="text-xs font-medium uppercase text-muted">
@@ -586,20 +613,21 @@ export function UnderhallsplanSlutsida({
           </div>
 
           <p className="mt-6 text-sm font-medium text-foreground">
-            Summa utgifter i årsbudgeten ({planLangdAr} år):{" "}
+            Summa i budgetunderlaget ({planLangdAr} år):{" "}
             {formatKrStor(summaArsbudget)}
             {(summaInvestering > 0 || summaDirektkostnader > 0) && (
               <span className="mt-1 block font-normal text-muted">
                 {summaDirektkostnader > 0 && (
                   <>
-                    Kostnadsfört underhåll: {formatKrStor(summaDirektkostnader)}
+                    {PLAN_BEGREPP.direktkostnader} (kostnadsförs direkt):{" "}
+                    {formatKrStor(summaDirektkostnader)}
                     {summaInvestering > 0 ? " · " : ""}
                   </>
                 )}
                 {summaInvestering > 0 && (
                   <>
-                    Planerade investeringar (aktiveras/avskrivs):{" "}
-                    {formatKrStor(summaInvestering)}
+                    {PLAN_BEGREPP.investeringarPlan} (investeringar i
+                    fastigheten): {formatKrStor(summaInvestering)}
                   </>
                 )}{" "}
                 · Kassaflöde totalt: {formatKrStor(summaKassaflode)}
@@ -617,19 +645,20 @@ export function UnderhallsplanSlutsida({
             />
           ) : (
             <p className="text-sm text-muted">
-              Fyll i årsbudget (steg 6) och komponentregister för att visa diagram.
+              Fyll i budgetunderlaget (steg 6) och komponentregister för att visa
+              diagram.
             </p>
           )}
         </PrintSida>
 
-        <PrintSida sidnummer={3} titel="Utgifter och investeringar per år">
+        <PrintSida sidnummer={3} titel="Budgetunderlag och planerat underhåll per år">
           <h3 className="text-lg font-semibold text-foreground">
             Årsvis översikt
           </h3>
           <p className="mt-1 text-sm text-muted">
-            Kolumnen {PLAN_BEGREPP.utgifterArsbudget} är det som ska in i
-            föreningens årsbudget det året. Investeringar enligt planen visas
-            separat.
+            Kolumnen {PLAN_BEGREPP.utgifterArsbudget} är underlag till
+            föreningens årsbudget det året. {PLAN_BEGREPP.investeringarPlan}{" "}
+            (investeringar i fastigheten) visas separat.
           </p>
           <div className="mt-4 max-h-[36rem] overflow-auto rounded-xl border border-border">
             <table className="w-full min-w-[640px] text-left text-sm">
@@ -715,7 +744,7 @@ export function UnderhallsplanSlutsida({
                     <span className="font-bold text-primary-dark">
                       {formatKr(rad.utgifterArsbudget)}
                       <span className="ml-1 text-xs font-normal text-muted">
-                        årsbudget
+                        budgetunderlag
                       </span>
                     </span>
                   </div>
@@ -757,8 +786,9 @@ export function UnderhallsplanSlutsida({
               Utgifter per komponent
             </h3>
             <p className="mt-1 text-sm text-muted">
-              Besiktningar, kostnadsfört underhåll och investeringar med vilken
-              komponent i planen som avses.
+              Besiktningar, {PLAN_BEGREPP.direktkostnader.toLowerCase()} och{" "}
+              {PLAN_BEGREPP.investeringarPlan.toLowerCase()} med vilken komponent
+              i planen som avses.
             </p>
             <div className="mt-4 space-y-3">
               {utgiftsRader
@@ -799,7 +829,7 @@ export function UnderhallsplanSlutsida({
                             {" · "}
                             {p.namn}: {formatKr(p.belopp)}
                             <span className="ml-1 text-[10px] uppercase tracking-wide text-amber-800/80">
-                              kostnadsfört
+                              kostnadsförs direkt
                             </span>
                           </li>
                         ))}
@@ -827,8 +857,8 @@ export function UnderhallsplanSlutsida({
                   r.investeringPoster.length === 0,
               ) && (
                 <p className="text-sm text-muted">
-                  Inga besiktningar, kostnadsfört underhåll eller investeringar
-                  schemalagda i perioden.
+                  Inga besiktningar, periodiskt underhåll eller planerat
+                  underhåll schemalagda i perioden.
                 </p>
               )}
             </div>
@@ -1051,8 +1081,8 @@ export function UnderhallsplanSlutsida({
             </div>
           ) : (
             <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-              Aktivera komponenter i steg 3. Ta bort sådant som inte är aktuellt
-              för er förening.
+              Aktivera komponenter i steg 3. Ta bort delar som inte är aktuella
+              för er fastighet — så blir planen mer överskådlig.
             </p>
           )}
 
@@ -1182,9 +1212,9 @@ export function UnderhallsplanSlutsida({
           className="print:break-after-auto"
         >
           <p className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-4 py-3 text-sm leading-relaxed text-foreground">
-            Planen visar siffror och tider — nedan kompletterar erfarenhetsbaserade
-            råd ({PLAN_SLUTSIDA_ERFARENHET.bygg} och{" "}
-            {PLAN_SLUTSIDA_ERFARENHET.styrelse}). Använd dem tillsammans med
+            {PLAN_SLUTSIDA_PROFFS} Planen visar siffror och tider — nedan
+            kompletterar erfarenhetsbaserade råd ({PLAN_SLUTSIDA_ERFARENHET.bygg}{" "}
+            och {PLAN_SLUTSIDA_ERFARENHET.styrelse}). Använd dem tillsammans med
             besiktningar och offerter för just er förening.
           </p>
 
@@ -1247,10 +1277,41 @@ export function UnderhallsplanSlutsida({
           >
             Ladda ner Excel
           </button>
-          <p className="self-center text-xs text-muted">
-            PDF via utskriftsdialogen. Excel-filen innehåller grunddata, utgifter
-            per år, poster med komponent samt åtgärder.
+          {onImporteraFranExcel && (
+            <>
+              <input
+                ref={excelInputRef}
+                type="file"
+                accept=".xls,application/vnd.ms-excel,text/xml"
+                className="hidden"
+                onChange={(e) => {
+                  void onExcelFilVald(e.target.files?.[0] ?? null);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => excelInputRef.current?.click()}
+                className="rounded-lg border border-primary bg-[#eef6f0] px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+              >
+                Ladda upp plan från Excel
+              </button>
+            </>
+          )}
+          <p className="basis-full self-center text-xs text-muted sm:basis-auto">
+            PDF via utskriftsdialogen. Excel: ladda ner, redigera grunddata och
+            komponentvärden, ladda sedan upp igen.
           </p>
+          {excelStatus && (
+            <p className="basis-full text-sm text-primary-dark" role="status">
+              {excelStatus}
+            </p>
+          )}
+          {excelFel && (
+            <p className="basis-full text-sm text-red-700" role="alert">
+              {excelFel}
+            </p>
+          )}
         </div>
       </div>
     </section>

@@ -38,11 +38,15 @@ export type RenoveringsMapp = {
   id: number;
   name: string;
   mallId?: RenoveringsMallId;
+  /** År då renoveringen utfördes eller planeras. */
+  ar?: number;
+  /** True om mappen lagts till i efterhand (historisk renovering). */
+  historisk?: boolean;
   undermappar: RenoveringsUndermapp[];
   egenkontroller: EgenkontrollPunkt[];
   /** Redigerbar checklista — handlingar som ska laddas upp. */
   forvantadeHandlingar?: string[];
-  /** Krav som medlemmen ska godkänna (checkpunkter + BankID). */
+  /** Krav/överenskommelse som medlemmen ska godkänna (checkpunkter + BankID). */
   medlemsKrav?: MedlemsKravState;
 };
 
@@ -102,6 +106,13 @@ export type ApartmentFolder = {
   biyta?: string;
   /** Uppmätt yta — kan avvika från registrerad. */
   uppmattYta?: string;
+  /**
+   * Golvyta (m²) — används ofta för vindsvåningar där boyta mäts som golvyta
+   * under snedtak snarare än BOA.
+   */
+  golvyta?: string;
+  /** Mätbevis för uppmätt yta (krav när uppmätt yta anges). */
+  matbevis?: LagenhetsDokument;
   /** Andelstal/insats, t.ex. "0,7842 %" eller "550 000 kr". */
   andelstal?: string;
   /** Referens till ritning — filnamn eller länk. */
@@ -159,21 +170,67 @@ export function skapaLagenhetsDokumentId(): string {
 
 export function skapaRenoveringsMapp(
   mallId: RenoveringsMallId,
-  options?: { namn?: string; ar?: number; id?: number },
+  options?: {
+    namn?: string;
+    ar?: number;
+    id?: number;
+    historisk?: boolean;
+  },
 ): RenoveringsMapp {
   const mall = hamtaRenoveringsMall(mallId);
   const ar = options?.ar ?? new Date().getFullYear();
   const mappId = options?.id ?? Date.now();
   const name = options?.namn?.trim() || `${mall.standardNamn} ${ar}`;
 
+  // Renoveringsmapp får färdiga undermappar för badrum och kök direkt.
+  const startUndermappar =
+    mallId === "renovering" || mallId === "ovrigt"
+      ? (["badrum", "kok"] as const).map((typ) => ({
+          id: `${mappId}-${typ}`,
+          typ: typ as RenoveringsUndermappTyp,
+          dokument: [] as LagenhetsDokument[],
+        }))
+      : mallId === "badrum"
+        ? [
+            {
+              id: `${mappId}-badrum`,
+              typ: "badrum" as RenoveringsUndermappTyp,
+              dokument: [] as LagenhetsDokument[],
+            },
+          ]
+        : mallId === "kok"
+          ? [
+              {
+                id: `${mappId}-kok`,
+                typ: "kok" as RenoveringsUndermappTyp,
+                dokument: [] as LagenhetsDokument[],
+              },
+            ]
+          : [];
+
   return {
     id: mappId,
     name,
     mallId,
-    undermappar: [],
+    ar,
+    historisk: options?.historisk === true,
+    undermappar: startUndermappar,
     egenkontroller: [],
     medlemsKrav: skapaMedlemsKravForTyp(mallId),
   };
+}
+
+/** Kort etikett för översikt: "2024 · Badrum". */
+export function renoveringsMappOversiktEtikett(mapp: RenoveringsMapp): string {
+  const mall = hamtaRenoveringsMall(mapp.mallId ?? "ovrigt");
+  const ar =
+    mapp.ar ??
+    (() => {
+      const match = mapp.name.match(/\b(19|20)\d{2}\b/);
+      return match ? Number(match[0]) : undefined;
+    })();
+  const typ = mall.etikett;
+  return ar ? `${ar} · ${typ}` : typ;
 }
 
 export function mappDelEtikett(del: RenoveringsMappDel): string {

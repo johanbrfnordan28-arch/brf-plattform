@@ -16,6 +16,11 @@ export type FasadAtgardTillfalle = {
   nastaAr: string;
   intervallAr: string;
   atgarder: FasadAtgardId[];
+  /**
+   * false = räknas som investering (aktiverbar, som stambyte/fönsterbyte).
+   * true/undefined = följer standardklassning (målning/puts oftast kostnadsfört).
+   */
+  direktkostnad?: boolean;
 };
 
 export type FasadAtgardData = {
@@ -93,6 +98,9 @@ function normaliseraTillfalle(
     nastaAr: raw.nastaAr?.trim() ?? "",
     intervallAr: raw.intervallAr?.trim() ?? "",
     atgarder: normaliseraAtgardLista(raw.atgarder),
+    ...(typeof raw.direktkostnad === "boolean"
+      ? { direktkostnad: raw.direktkostnad }
+      : {}),
   };
 }
 

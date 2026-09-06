@@ -16,17 +16,12 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { useHubbNamn } from "@/components/forening/useHubbNamn";
 import {
   appliceraKontaktPaGrund,
-  behoverFyllaForeningsuppgifter,
   planNamnFranKontakt,
   styrelseKontaktFranProfil,
 } from "@/lib/styrelse-kontakt";
-import { arStandardTestForening, arStandardTestStartNamn } from "@/lib/testforeningar";
-import {
-  hamtaAntalLagenheterFranGrund,
-  planNamnFranForeningsnamn,
-} from "@/components/underhallsplan/grund-synk";
 
 function lasAktivProfilForFormular(): ForeningProfil | null {
   repareraForeningRegistry();
@@ -37,11 +32,13 @@ function lasAktivProfilForFormular(): ForeningProfil | null {
 }
 
 export function ForeningProfilFormular() {
+  const hubbNamn = useHubbNamn();
   const [profil, setProfil] = useState<ForeningProfil | null>(null);
   const [redo, setRedo] = useState(false);
   const [redigerad, setRedigerad] = useState<ForeningProfil | null>(null);
   const [sparad, setSparad] = useState(false);
   const [sparFel, setSparFel] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   const laddaProfil = useCallback(() => {
     setProfil(lasAktivProfilForFormular());
@@ -58,6 +55,7 @@ export function ForeningProfilFormular() {
     setRedigerad(null);
     setSparad(false);
     setSparFel(null);
+    setServerStatus(null);
   }, [profil?.id]);
 
   const visningsProfil = redigerad ?? profil;
@@ -70,21 +68,13 @@ export function ForeningProfilFormular() {
 
   if (!profil || !visningsProfil) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-5 text-sm text-muted shadow-sm">
-        <p className="font-semibold text-foreground">Grundmall — ingen kontaktprofil</p>
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+        <p className="font-semibold">Ingen förening vald</p>
         <p className="mt-2">
-          Kontaktuppgifter fylls i per skapad förening. När du är inloggad som
-          grundmall sparar du mallens moduldata med{" "}
-          <strong className="text-foreground">Spara grundmallens data</strong>{" "}
-          nedan.
-        </p>
-        <p className="mt-2">
-          Vill du skapa eller välja en förening? Använd menyn uppe till höger,
-          eller{" "}
-          <Link href="/prova-gratis" className="font-medium text-primary-dark underline">
-            skapa er förening
-          </Link>
-          .
+          <Link href="/prova-gratis" className="font-medium underline">
+            Skapa er förening
+          </Link>{" "}
+          först, eller välj en befintlig förening i menyn uppe till höger.
         </p>
       </div>
     );
@@ -99,18 +89,16 @@ export function ForeningProfilFormular() {
 
   function spara() {
     setSparFel(null);
+    setServerStatus(null);
     const uppdaterad = { ...visningsProfil, grundinfoPaborjad: true } as ForeningProfil;
     try {
-      sparaForeningProfil(uppdaterad);
+      sparaForeningProfil(uppdaterad, { synkaServer: false });
       const kontakt = styrelseKontaktFranProfil(uppdaterad);
       const plan = lasUnderhallsplanState();
       if (plan) {
-        const lgh = hamtaAntalLagenheterFranGrund(plan.grund);
         sparaUnderhallsplanState({
           ...plan,
-          planNamn:
-            planNamnFranForeningsnamn(kontakt.foreningsnamn, lgh) ||
-            planNamnFranKontakt(kontakt),
+          planNamn: plan.planNamn || planNamnFranKontakt(kontakt),
           grund: appliceraKontaktPaGrund(plan.grund, kontakt),
           sparad: new Date().toISOString(),
         });
@@ -120,12 +108,16 @@ export function ForeningProfilFormular() {
       setRedigerad(null);
       setSparad(true);
 
-      // När allt obligatoriskt är ifyllt → vidare till portalen (inte vid varje inloggning igen).
-      if (!behoverFyllaForeningsuppgifter(uppdaterad.id)) {
-        window.setTimeout(() => {
-          window.location.assign("/forening");
-        }, 500);
-      }
+      void import("@/lib/forening-server-sync").then(
+        async ({ synkaForeningTillServer }) => {
+          const resultat = await synkaForeningTillServer(uppdaterad);
+          setServerStatus(
+            resultat.ok
+              ? "Sparat lokalt och på servern."
+              : `Sparat lokalt. Server: ${resultat.fel}`,
+          );
+        },
+      );
     } catch (e) {
       setSparFel(
         e instanceof Error ? e.message : "Kunde inte spara — försök igen.",
@@ -133,22 +125,19 @@ export function ForeningProfilFormular() {
     }
   }
 
-  const visaTestNamnTips =
-    arStandardTestForening(profil.id) &&
-    arStandardTestStartNamn(visningsProfil.namn);
-
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-      <p className="text-sm text-muted">
-        Uppgifterna sparas för <strong className="text-foreground">{profil.namn}</strong>{" "}
-        och används i dokument, städschema och underhållsplanen.
+      <h2 className="text-lg font-semibold text-foreground">
+        Föreningens identitet
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Namn och organisationsnummer anges vid uppstart och kan kompletteras
+        här. Adresser, styrelse och storlek fylls i under{" "}
+        <a href="#grunduppgifter" className="font-medium text-primary-dark underline">
+          grunduppgifter
+        </a>
+        .
       </p>
-      {visaTestNamnTips && (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-          Byt namnet från «{visningsProfil.namn}» till er riktiga förening — t.ex.
-          Brf Solsidan — så syns det i menyn och i dokument.
-        </p>
-      )}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm sm:col-span-2">
           <span className="font-medium text-foreground">Föreningens namn</span>
@@ -156,7 +145,6 @@ export function ForeningProfilFormular() {
             type="text"
             value={visningsProfil.namn}
             onChange={(e) => uppdatera("namn", e.target.value)}
-            placeholder="t.ex. Brf Solsidan"
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
         </label>
@@ -180,33 +168,6 @@ export function ForeningProfilFormular() {
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
         </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">Kontaktperson</span>
-          <input
-            type="text"
-            value={visningsProfil.kontaktperson}
-            onChange={(e) => uppdatera("kontaktperson", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          <span className="font-medium text-foreground">Postadress</span>
-          <input
-            type="text"
-            value={visningsProfil.postadress}
-            onChange={(e) => uppdatera("postadress", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">Ort</span>
-          <input
-            type="text"
-            value={visningsProfil.ort}
-            onChange={(e) => uppdatera("ort", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-          />
-        </label>
       </div>
 
       {sparFel && (
@@ -224,25 +185,26 @@ export function ForeningProfilFormular() {
           onClick={spara}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Spara föreningsuppgifter
+          Spara identitet
         </button>
-        <Link
-          href="/forening/underhallsplan#grund"
+        <a
+          href="#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
           Fortsätt till grunduppgifter
-        </Link>
+        </a>
         <Link
           href="/forening"
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted hover:text-foreground"
         >
-          Till {visningsProfil.namn} huvudsida
+          Tillbaka till {hubbNamn}
         </Link>
       </div>
 
       {sparad && (
         <p className="mt-3 text-sm text-primary-dark" role="status">
-          Sparat. Data ligger i den här webbläsaren under {visningsProfil.namn}.
+          {serverStatus ??
+            "Sparat lokalt. Synkar till servern … Nästa steg: grunduppgifter nedan."}
         </p>
       )}
     </div>

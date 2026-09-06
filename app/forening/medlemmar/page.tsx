@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ApartmentArchiveDemo } from "@/components/lagenhetsarkiv/ApartmentArchiveDemo";
 import { RenoveringsAnmalan } from "@/components/medlemmar/RenoveringsAnmalan";
 import { ContentSection } from "@/components/ContentSection";
+import { ModuleBackLink } from "@/components/ModuleBackLink";
 import { ModulePage } from "@/components/ModulePage";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
 
@@ -9,23 +10,24 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Medlemmar")),
     description:
-      "Lägenhetsarkiv, renoveringshistorik och anmälningar för styrelsen och medlemmarna.",
+      "Lägenhetsarkiv, överenskommelser och renoveringar för styrelsen och medlemmarna.",
   };
 }
 
 export default function ForeningMedlemmarPage() {
   return (
     <ModulePage
-      title="Medlemmar"
+      title="Medlemmar & lägenhetsarkiv"
       icon="👥"
-      intro="Lägenhetsuppgifter, renoveringshistorik och anmälningar samlade på ett ställe — med tydliga krav innan medlemmen får påbörja."
+      intro="Börja i lägenhetsarkivet högst upp — öppna en lägenhet, fyll i uppgifter och spara. Renoveringar och överenskommelser hanteras under samma modul."
     >
       <ContentSection title="Så fungerar modulen">
         <p>
-          Styrelsen bygger upp ett lägenhetsarkiv med grunduppgifter och dokument per
-          lägenhet. När en medlem planerar renovering väljer styrelsen typ av åtgärd — då
-          skapas en checklista med grundkrav och tillägg. Medlemmen ser samma krav,
-          laddar upp underlag och får klartecken när allt är godkänt.
+          Styrelsen bygger upp ett lägenhetsarkiv med sammanställning, grunduppgifter
+          och flera renoveringsmappar per lägenhet (även historiska). När en medlem
+          renoverar sammanställs en överenskommelse som mejlas till styrelsen först,
+          därefter till medlemmen som signerar med BankID — dokumentet sparas i
+          lägenhetens arkiv.
         </p>
       </ContentSection>
 
@@ -33,12 +35,10 @@ export default function ForeningMedlemmarPage() {
         <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-foreground">Lägenhetsarkiv</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Välj lägenhet ovan — panelen{" "}
-            <strong className="font-medium text-foreground">
-              Lägenhetsuppgifter & tekniska installationer
-            </strong>{" "}
-            visas direkt under lägenhetslistan med statusöversikt, rum, besiktning
-            och installationer. Skapa renoveringsmappar längre ned i samma vy.
+            Sammanställning av alla skapade lägenheter högst upp. Per lägenhet syns
+            år och typ av renovering. Flera mappar kan läggas till — inklusive
+            äldre renoveringar i efterhand. Signerade överenskommelser ligger i
+            respektive mapp.
           </p>
 
           <div className="mt-8">
@@ -64,6 +64,9 @@ export default function ForeningMedlemmarPage() {
         </article>
       </section>
 
+      <div className="mt-4">
+        <ModuleBackLink />
+      </div>
     </ModulePage>
   );
 }
