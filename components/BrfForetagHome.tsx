@@ -14,6 +14,7 @@ import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { MASSA_PATH } from "@/lib/massa-lank";
 
 type BrfForetagHomeProps = {
   mode: "public" | "forening";
@@ -591,7 +592,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     Vi vill pröva gratis i 30 dagar
                   </Link>
                   <Link
-                    href={`${PROVA_GRATIS_PATH}#mejla-lank`}
+                    href={MASSA_PATH}
                     className="mt-3 self-start text-sm font-medium text-primary-dark underline hover:no-underline"
                   >
                     Mejla mig en länk istället

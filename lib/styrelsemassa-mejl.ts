@@ -1,4 +1,4 @@
-import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { MASSA_PATH } from "@/lib/massa-lank";
 
 export function byggStyrelsemassaLankMejl(opts: {
   till: string;
@@ -6,7 +6,7 @@ export function byggStyrelsemassaLankMejl(opts: {
   kontaktperson?: string;
   basUrl: string;
 }): { till: string; amne: string; brodtext: string } {
-  const lank = `${opts.basUrl.replace(/\/$/, "")}${PROVA_GRATIS_PATH}`;
+  const lank = `${opts.basUrl.replace(/\/$/, "")}${MASSA_PATH}`;
   const hälsning = opts.kontaktperson?.trim()
     ? `Hej ${opts.kontaktperson.trim()},`
     : "Hej,";
