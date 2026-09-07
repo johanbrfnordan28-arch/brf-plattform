@@ -12,6 +12,7 @@ import {
   type OffertForfraganStatus,
   type OffertTjanst,
 } from "@/components/offert/offert-forfragan-lager";
+import { mejlaOffertTillTeam } from "@/lib/offert-mejl-klient";
 
 const STATUS_ETIKETT: Record<OffertForfraganStatus, string> = {
   ny: "Ny",
@@ -63,7 +64,7 @@ export function PlattformOffertPanel() {
     ladda(valdId);
   }
 
-  function forberedOffert(e: FormEvent) {
+  async function forberedOffert(e: FormEvent) {
     e.preventDefault();
     setMailto(null);
     setOk(null);
@@ -81,11 +82,18 @@ export function PlattformOffertPanel() {
     });
     const lank = mailtoOffertTillKund({ forfragan: vald, brodtext });
     setMailto(lank);
+    await mejlaOffertTillTeam({
+      forfragan: vald,
+      prisText: prisText.trim(),
+      brodtextTillKund: brodtext,
+    });
     uppdateraOffertForfragan(vald.id, {
       status: "offert-skickad",
       senastOffertSkickad: new Date().toISOString(),
     });
-    setOk("Offertmejlet är förberett — öppna mejlklienten och skicka.");
+    setOk(
+      "Offertmejlet är förberett — öppna mejlklienten till kunden. Teamet har fått kopia.",
+    );
     ladda(vald.id);
   }
 

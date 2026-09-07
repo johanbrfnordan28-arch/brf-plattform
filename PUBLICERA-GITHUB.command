@@ -1,17 +1,23 @@
 #!/bin/bash
-# Dubbelklicka EN gång efter att du skapat repot brf-plattform på github.com.
-# Logga in om webbläsaren frågar. Tryck Enter i slutet för att stänga fönstret.
+# Dubbelklicka för att skicka upp alla ändringar till GitHub.
+# Gör automatiskt: git add → commit → push
 
 cd "$(dirname "$0")"
 
-echo "Skickar upp koden till GitHub..."
+echo "════════════════════════════════════════"
+echo "  BRF-plattform → GitHub"
+echo "════════════════════════════════════════"
 echo ""
 
 if ! ./scripts/publicera.sh; then
   echo ""
-  echo "Det gick inte än. Kontrollera:"
-  echo "  1. Repot brf-plattform finns på github.com"
+  echo "✗ Det gick inte. Kontrollera:"
+  echo "  1. Repot ${REPO_NAME:-brf-plattform} finns på github.com"
   echo "  2. Du är inloggad med rätt konto"
+  echo "  3. Du har internet"
+  echo ""
+  echo "Tips: kör manuellt i terminalen med:"
+  echo "  cd $(pwd) && npm run publicera"
   echo ""
 fi
 

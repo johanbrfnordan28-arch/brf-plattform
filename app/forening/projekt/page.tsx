@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { TipsPanel } from "@/components/TipsPanel";
 import { ProjektModul } from "@/components/projekt/ProjektModul";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
+import { tips } from "@/lib/tips-data";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -17,8 +19,9 @@ export default function ForeningProjektPage() {
     <ModulePage
       title="Projekt"
       icon="📐"
-      intro="Samla dokument per projekt och år. Skapa nytt projekt när ett är klart, eller lägg in handlingar för äldre projekt — de sorteras med nyaste år först."
+      intro="En mapp per projekt — kontrakt, ritningar, protokoll och garantidokument samlade på rätt ställe. Garantibesiktningsmodulen påminner er i rätt tid."
     >
+      <TipsPanel tips={tips.projekt} />
       <ContentSection title="Projektbibliotek" plain>
         <ProjektModul />
       </ContentSection>

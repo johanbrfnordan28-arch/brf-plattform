@@ -60,15 +60,15 @@ export default function ForeningsplattformPage() {
     <ModulePage
       title="Föreningsplattform"
       icon="🏢"
-      intro="Föreningssidan skapas först efter accepterad offert. Styrelsen går först in på vår publika sida, väljer Logga in styrelse och får därefter tillgång till sin egen kopierade föreningsplattform."
+      intro="Föreningssidan skapas först efter accepterad offert. Styrelsen loggar sedan in med BankID via Logga in — utan att någon kundlista visas publikt."
     >
       <ContentSection title="Flödet för styrelsen">
         <p>
           Styrelsen börjar på vår publika sida. När offert är accepterad skapas
-          föreningens egen sida och behöriga styrelsepersoner får separat
-          inloggning via knappen Logga in styrelse. Den interna portalen är
-          separat och används av er organisation för administration och
-          behörighetsstyrning.
+          föreningens egen sida. Behöriga personer loggar in med BankID via
+          Logga in. Styrelsen styr själva vilka som får logga in. Support och
+          anställda har en separat väg in för att hjälpa till — kundkatalogen
+          exponeras aldrig.
         </p>
       </ContentSection>
 

@@ -150,7 +150,7 @@ export function EntreprenorRonderingSignering() {
             <p className="mt-1 text-sm text-muted">
               Metod:{" "}
               {(befintlig?.metod ?? metod) === "bankid"
-                ? "BankID (demo)"
+                ? "BankID"
                 : `Uppladdat dokument${befintlig?.filnamn ? `: ${befintlig.filnamn}` : ""}`}
             </p>
             {befintlig?.genomfordaPunktIds && befintlig.genomfordaPunktIds.length > 0 && (
@@ -211,7 +211,7 @@ export function EntreprenorRonderingSignering() {
                   className="mt-3 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >
                   {bankidSteg === "pågår"
-                    ? "Öppnar BankID (demo)…"
+                    ? "Öppnar BankID…"
                     : "Signera med BankID"}
                 </button>
               </div>

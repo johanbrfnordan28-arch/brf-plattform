@@ -1,13 +1,14 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { ForeningHeader } from "@/components/ForeningHeader";
 import { ForeningAktivator } from "@/components/forening/ForeningAktivator";
 import { ForeningSidTitel } from "@/components/forening/ForeningSidTitel";
 import { ForeningDataScope } from "@/components/forening/ForeningDataScope";
 import { ForeningPlattformSync } from "@/components/forening/ForeningPlattformSync";
+import { ForeningUppgifterGate } from "@/components/forening/ForeningUppgifterGate";
 import { Header } from "@/components/Header";
+import { usePathname } from "next/navigation";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,6 +34,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       {isForening ? (
         <>
           <ForeningAktivator />
+          <ForeningUppgifterGate />
           <ForeningSidTitel />
           <ForeningPlattformSync />
           <ForeningHeader />

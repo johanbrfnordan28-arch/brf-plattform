@@ -1,5 +1,5 @@
 /**
- * Utkast till Brf Trazies underhållsplan — fasta fakta om fastigheten.
+ * Utkast till Brf Sailors underhållsplan — fasta fakta om fastigheten.
  * Taxering/anskaffning ligger i SAILOR_VARDERING_UNDERLAG (visas inte för föreningen).
  * Yta och ekonomi enligt årsredovisning 2024 (2 756 kvm, 40 bostadsrätter).
  */
@@ -25,11 +25,6 @@ import {
   synkaUnderhallsplanState,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
-import { skapaTomLokalInventar } from "@/components/underhallsplan/lokal-inventar";
-import {
-  skapaTomLokalYtskikt,
-  type LokalYtskiktDelRad,
-} from "@/components/underhallsplan/lokal-ytskikt";
 import { skapaTomPPlatserData } from "@/components/underhallsplan/p-platser";
 import {
   beraknaRekommenderadKrPerKvmAr,
@@ -78,14 +73,14 @@ export const SAILOR_PLAN_NOTERING = [
   "JM-bygge 2013, Gustavsberg 1:395.",
   "Planperiod från 2027.",
   "40 bostadsrätter, 2 756 kvm boyta, tomtyta 4 688 kvm, 50 badrum. Inga eldstäder (sotning ej aktuell).",
-  "40 p-platser varav 10 med motorvärmare och 10 med elbilsladdning — totalt 10 stolpar med två uttag på varje (installerade 2026).",
-  "Fasad: tunnputs — bättringsputs och ommålning planeras 2027 som investering i underhållsplanen.",
+  "40 p-platser varav 20 med motorvärmare och 10 med laddstolpe.",
+  "Fasad: tunnputs — bättringsputs, fasadtvätt och ommålning planeras 2027.",
   "Tak: bandlagt plåttak.",
   "36 balkonger. Hiss i respektive trapphus (nödtelefoner enligt AR).",
-  "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som periodiskt underhåll (kostnadsförs direkt).",
+  "VVS: avloppsspolning utförd 2022 (44 447 kr inkl. moms), intervall 10 år; filmning som kostnadsfört underhåll.",
   "Ventilation: FX (frånluft med värmeåtervinning) — två aggregat på vind, Exhausto FX 15 (FF01, hus 25) och FX 22 (FF02, hus 27–29). Inst.år 2013. OVK godkänd 2026-03-02, nästa 2032-03-02 (Airteam). Filterbyte 1 gång/år.",
-  "Energideklaration utförd 2026. Offert radonmätning finns.",
-  "Två oisolerade komplementbyggnader i markplan: cykelförråd och soprum (miljörum) med separat rum för fjärrvärmeundercentral. Plåttak, träväggar och golv av släta betongplattor. Soprummet har sopkärl samt vatten och avlopp för spolning av ytan.",
+  "10 laddstolpar installerade (2026). Energideklaration utförd 2026. Offert radonmätning finns.",
+  "Stort cykelrum och stort miljörum (soprum) där undercentral för fjärrvärme finns.",
   "Individuell mätning av vatten (och avlopp/debitering per lägenhet).",
   "Gemensam gård sköts av Farstadals samfällighetsförening — ingår inte i föreningens egna markåtgärder.",
 ].join(" ");
@@ -119,70 +114,6 @@ function aktivera(
       return { ...r, aktiv: true, ...(extra?.(r) ?? {}) };
     }),
   };
-}
-
-/** Oisolerad komplementbyggnad: plåttak, träväggar, släta betongplattor. */
-function sailorKomplementYtskikt(): LokalYtskiktDelRad[] {
-  return skapaTomLokalYtskikt().map((rad) => {
-    if (rad.delId === "golv") {
-      return {
-        ...rad,
-        aktiv: true,
-        materialId: "betongplattor",
-        atgardId: "underhall",
-        kvm: "",
-      };
-    }
-    if (rad.delId === "vaggar") {
-      return {
-        ...rad,
-        aktiv: true,
-        materialId: "tra",
-        atgardId: "malning",
-        kvm: "",
-      };
-    }
-    if (rad.delId === "tak") {
-      return {
-        ...rad,
-        aktiv: true,
-        materialId: "bandlagd-plat",
-        atgardId: "underhall",
-        kvm: "",
-      };
-    }
-    return rad;
-  });
-}
-
-function sailorSoprumInventar() {
-  return skapaTomLokalInventar("soprum").map((rad) => {
-    if (rad.delId === "sortering") {
-      return { ...rad, aktiv: true, antal: "1" };
-    }
-    if (rad.delId === "vatten-avlopp") {
-      return { ...rad, aktiv: true, antal: "1" };
-    }
-    if (rad.delId === "golvbrunn") {
-      return { ...rad, aktiv: true, antal: "1" };
-    }
-    if (rad.delId === "undercentral-rum") {
-      return { ...rad, aktiv: true, antal: "1" };
-    }
-    if (rad.delId === "diskbank") {
-      return { ...rad, aktiv: true, antal: "1" };
-    }
-    return rad;
-  });
-}
-
-function sailorCykelforradInventar() {
-  return skapaTomLokalInventar("cykelforrad").map((rad) => {
-    if (rad.delId === "cykelstall" || rad.delId === "belysning") {
-      return { ...rad, aktiv: true, antal: "1" };
-    }
-    return rad;
-  });
 }
 
 function byggSailorBesiktningar(): Besiktning[] {
@@ -256,7 +187,7 @@ function byggSailorBesiktningar(): Besiktning[] {
   });
 }
 
-/** Bygger Trazies komponentregister + samfällighet för underhållsplanen. */
+/** Bygger Sailors komponentregister + samfällighet för underhållsplanen. */
 export function byggSailorKomponentUtkast(): {
   activeComponents: string[];
   komponentDetaljer: Record<string, KomponentDetaljData>;
@@ -400,19 +331,17 @@ export function byggSailorKomponentUtkast(): {
             {
               id: "sailor-fasad-1",
               titel: "Bättringsputs och ommålning (tunnputs)",
-              /** Planstart 2027 — räknas som investering (som stambyte/fönsterbyte). */
+              /** Tidigarelagt till planstart — tunnputs åtgärdas 2027. */
               nastaAr: String(SAILOR_PLAN_START_AR),
               intervallAr: "12",
-              atgarder: ["putsreparation", "ommalning"],
-              direktkostnad: false,
+              atgarder: ["putsreparation", "ommalning", "fasadtvatt"],
             },
           ],
         },
       },
       /**
-       * Putsreparation + ommålning 2027 — investering i planen (ingår i
-       * planerade investeringar / avsättning), inte kostnadsfört underhåll.
-       * Totalt 1 100 000 kr per tillfälle (puts 420 tkr + ommålning 680 tkr).
+       * Löpande tunnputs — kostnadsförs i resultaträkningen (ingår ej i kr/m²).
+       * Totalt ca 1 195 000 kr per tillfälle (puts + ommålning + tvätt).
        */
       fasadAtgardPrisRegister: {
         fasadmaterial: {
@@ -427,6 +356,12 @@ export function byggSailorKomponentUtkast(): {
             enhetsprisKr: "680000",
             mangd: "1800",
             totalKr: "680000",
+          },
+          fasadtvatt: {
+            prisEnhet: "total",
+            enhetsprisKr: "95000",
+            mangd: "1800",
+            totalKr: "95000",
           },
         },
       },
@@ -637,47 +572,15 @@ export function byggSailorKomponentUtkast(): {
               underhallMomsAvdragenKr: "87350",
             };
           }
-          if (r.id === "cykelrum") {
-            return {
-              värde: "1",
-              avskrivningAr: "40",
-              installationskostnadKr: "480000",
-              underhallNastaAr: sailorNastaAr(12),
-              underhallIntervallAr: "12",
-              underhallPrisEnhet: "total",
-              underhallKostnadKr: "85000",
-              underhallUtförtAr: String(SAILOR_BYGGAR),
-            };
-          }
-          if (r.id === "soprum") {
-            return {
-              värde: "1",
-              avskrivningAr: "40",
-              installationskostnadKr: "620000",
-              underhallNastaAr: sailorNastaAr(12),
-              underhallIntervallAr: "12",
-              underhallPrisEnhet: "total",
-              underhallKostnadKr: "95000",
-              underhallUtförtAr: String(SAILOR_BYGGAR),
-            };
-          }
           return { värde: "1" };
         },
       ),
       valdaDeltyper: ["mark"],
-      lokalYtskiktRegister: {
-        cykelrum: sailorKomplementYtskikt(),
-        soprum: sailorKomplementYtskikt(),
-      },
-      lokalInventarRegister: {
-        cykelrum: sailorCykelforradInventar(),
-        soprum: sailorSoprumInventar(),
-      },
       pPlatserRegister: {
         [P_PLATSER_ID]: {
           ...skapaTomPPlatserData(),
-          motordvarmare: "10",
-          "p-plats": "20",
+          motordvarmare: "20",
+          "p-plats": "10",
           elbilsladdare: "10",
         },
       },
@@ -732,7 +635,7 @@ export function byggSailorKomponentUtkast(): {
     SAILOR_PLAN_START_AR,
     standardPlanLangdAr,
   );
-  /** Jämn avsättning = periodens investeringar (inkl. upphandling/projektledning) / (bostadsyta × planlängd). */
+  /** Jämn avsättning = periodens investeringar (inkl. upphandling/projektledning) / (yta × år). */
   const krPerKvmAr =
     beraknaRekommenderadKrPerKvmAr(
       summaInvesteringKr,

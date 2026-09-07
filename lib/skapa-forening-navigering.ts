@@ -3,14 +3,14 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 
-/** Bygger URL till nyss skapad förening — namn i URL så sidan fungerar även utan localStorage. */
+/** Bygger URL till nyss skapad förening — landar på uppgifter så styrelsen fyller i kontakt först. */
 export function byggNyForeningUrl(foreningId: string, namn: string): string {
   const params = new URLSearchParams({
     ny: "1",
     foreningId,
     namn,
   });
-  return `/forening?${params.toString()}`;
+  return `/forening/uppgifter?${params.toString()}`;
 }
 
 /** Lätt aktiveringssida före huvudsidan — Safari hinner spara mellan sidor. */

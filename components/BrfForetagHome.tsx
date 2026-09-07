@@ -13,6 +13,7 @@ import { TekniskForvaltningErbjudande } from "@/components/pris/TekniskForvaltni
 import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+import { MejlaLankStartRuta } from "@/components/styrelsemassa/MejlaLankStartRuta";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
@@ -593,6 +594,20 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <PublikPrisInfo />
+                </div>
+
+                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Etablerad kund
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-foreground">
+                    Logga in till er förening
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
+                    Har styrelsen redan skapat er förening? Logga in för att
+                    fortsätta arbeta med underhållsplan, årshjul och övriga
+                    moduler.
+                  </p>
                   <Link
                     href="/kund-login"
                     className="mt-6 self-start rounded-lg border border-primary px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
@@ -600,6 +615,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     Logga in till er BRF
                   </Link>
                 </div>
+                <MejlaLankStartRuta />
 
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">

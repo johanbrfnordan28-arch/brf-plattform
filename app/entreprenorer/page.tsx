@@ -13,9 +13,12 @@ export default function EntreprenorerPage() {
     <ModulePage
       title="Entreprenörer"
       icon="🏗️"
-      intro="Sök entreprenör för ert projekt. Vi tar referenser på företagen i registret och rekommenderar att ni även tar egna referenser innan ni väljer entreprenör."
+      intro="Sök bland rekommenderade entreprenörer. Kontrollera egna referenser, beställ skriftligt och var medveten om att företag kan byta ägare och personal."
     >
-      <EntreprenorerRegister />
+      <EntreprenorerRegister
+        sokRubrik="Sök i det centrala registret"
+        sokIngress="Här visas företag vi har referenser på. Ni ansvarar själva för avtal, uppföljning och slutligt val."
+      />
     </ModulePage>
   );
 }

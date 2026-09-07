@@ -174,3 +174,23 @@ model ForeningSakerhetskopia {
   @@index([foreningsNamn])
 }
 
+/// Intresse från styrelsemässa / «mejla mig en länk» — uppföljning i personalytan.
+model StyrelsemassaLead {
+  id                 String    @id
+  foreningsNamn      String
+  epost              String
+  epostNyckel        String
+  kontaktperson      String    @default("")
+  telefon            String    @default("")
+  /// lank_skickad | skapade_test
+  status             String    @default("lank_skickad")
+  foreningId         String?
+  skapadTidpunkt     DateTime  @default(now())
+  testSkapadTidpunkt DateTime?
+  mejlSkickad        Boolean   @default(false)
+
+  @@index([epostNyckel])
+  @@index([status])
+  @@index([skapadTidpunkt])
+}
+

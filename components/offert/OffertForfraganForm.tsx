@@ -7,7 +7,8 @@ import {
   skapaOffertForfragan,
   type OffertTjanst,
 } from "@/components/offert/offert-forfragan-lager";
-import { PLATTFORM_STOD_EPOST } from "@/lib/plattform-stod";
+import { OFFERT_EPOST } from "@/lib/offert-mejl";
+import { mejlaOffertForfraganTillTeam } from "@/lib/offert-mejl-klient";
 
 /**
  * Publikt formulär — sparar förfrågan så personal ser den under /plattform.
@@ -29,12 +30,12 @@ export function OffertForfraganForm() {
     );
   }
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setFel(null);
     setOk(false);
     try {
-      skapaOffertForfragan({
+      const rad = skapaOffertForfragan({
         foreningsNamn,
         kontaktperson,
         epost,
@@ -43,6 +44,7 @@ export function OffertForfraganForm() {
         tjanster,
         meddelande,
       });
+      await mejlaOffertForfraganTillTeam(rad);
       setOk(true);
       setForeningsNamn("");
       setKontaktperson("");
@@ -156,7 +158,7 @@ export function OffertForfraganForm() {
       {ok && (
         <p className="text-sm text-primary-dark" role="status">
           Tack — er förfrågan är skickad. Vi återkommer till er e-post. Vid
-          akut fråga: {PLATTFORM_STOD_EPOST}
+          akut fråga: {OFFERT_EPOST}
         </p>
       )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { OppnaStangIkon, OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { ProjektChecklista } from "@/components/projekt/ProjektChecklista";
@@ -626,7 +627,7 @@ export function ProjektModul() {
                       )}
                       </span>
                     </span>
-                    <span className="text-sm text-muted">{p.öppen ? "−" : "+"}</span>
+                    <OppnaStangIkon oppen={p.öppen} />
                   </button>
                   {p.öppen && (
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -773,13 +774,16 @@ export function ProjektModul() {
                                   Ta bort mapp
                                 </button>
                               )}
-                              <button
-                                type="button"
+                              <OppnaStangKnapp
+                                oppen={state.öppen}
                                 onClick={() => toggleUndermapp(p.id, mapp.id)}
-                                className="shrink-0 text-sm text-muted"
-                              >
-                                {state.öppen ? "−" : "+"}
-                              </button>
+                                storlek="sm"
+                                ariaLabel={
+                                  state.öppen
+                                    ? `Stäng mappen ${mapp.titel}`
+                                    : `Öppna mappen ${mapp.titel}`
+                                }
+                              />
                             </div>
 
                             {state.öppen && (

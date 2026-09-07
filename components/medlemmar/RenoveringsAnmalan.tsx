@@ -96,14 +96,15 @@ export function RenoveringsAnmalan() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-foreground">
-          Renoveringsanmälan — styrelsen
+          Välj renoveringstyp
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Bocka i vad medlemmen planerar att renovera — då visas kraven direkt under
-          rutan och samlas i checklistan nedan.{" "}
+          Markera vad medlemmen planerar att renovera. Kraven visas direkt under
+          varje typ och samlas i checklistan nedan.{" "}
           <strong className="font-medium text-foreground">{grundkrav.etikett}</strong>{" "}
-          ingår alltid när minst en typ är vald, inklusive krav på att ventiler ska vara täckta
-          och byggdamm inte sprids till grannar eller föreningens ventilationssystem.
+          ingår alltid när minst en typ är vald — bland annat krav på täckta ventiler
+          och att byggdamm inte sprids till grannlägenheter eller föreningens
+          ventilationssystem.
         </p>
       </div>
 
@@ -138,7 +139,7 @@ export function RenoveringsAnmalan() {
               {vald && (
                 <ul className="mt-3 list-disc space-y-1.5 border-t border-primary/20 pt-3 pl-5 text-xs leading-relaxed text-foreground">
                   <li className="list-none pl-0 font-medium text-primary-dark">
-                    Krav som läggs till i checklistan:
+                    Tilläggskrav i checklistan:
                   </li>
                   {typ.punkter.map((punkt) => (
                     <li key={punkt.id}>{punkt.text}</li>
@@ -152,7 +153,7 @@ export function RenoveringsAnmalan() {
 
       {valdaTyper.length === 0 && (
         <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
-          Välj minst en renoveringstyp för att skapa checklista åt medlemmen.
+          Välj minst en renoveringstyp ovan för att skapa checklista.
         </p>
       )}
 
@@ -161,12 +162,11 @@ export function RenoveringsAnmalan() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-primary-dark">
-                Checklista till medlemmen
+                Checklista
               </p>
               <p className="mt-1 text-sm text-muted">
-                Medlemmen får inte påbörja renoveringen förrän punkterna är
-                godkända av styrelsen (demo: bocka av i takt med att underlag
-                kommer in).
+                Medlemmen får inte påbörja renoveringen förrän styrelsen godkänt
+                alla punkter. Bocka av i takt med att underlag kommer in.
               </p>
             </div>
             <p className="rounded-full bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
@@ -224,16 +224,16 @@ export function RenoveringsAnmalan() {
               onClick={sparaChecklista}
               className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
             >
-              Spara checklista (demo)
+              Spara checklista
             </button>
             {sparad && (
               <p className="text-sm font-medium text-primary-dark">
-                Sparat — medlemmen ser samma lista i sin vy (demo).
+                Checklistan är sparad. Medlemmen ser samma lista i sin vy.
               </p>
             )}
             {allaKlara && (
               <p className="text-sm font-medium text-primary-dark">
-                Alla krav uppfyllda — medlemmen kan få klartecken att påbörja.
+                Alla krav är uppfyllda — medlemmen kan få klartecken att påbörja.
               </p>
             )}
           </div>
@@ -243,11 +243,11 @@ export function RenoveringsAnmalan() {
       {sektioner.length > 0 && (
         <div className="rounded-xl border border-dashed border-primary/30 bg-[#eef6f0]/50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
-            Förhandsvisning — medlemmens vy
+            Medlemmens vy
           </p>
           <p className="mt-2 text-sm text-muted">
-            Medlemmen ser samma punkter och kan ladda upp underlag per rad (kommer i
-            nästa steg). Tills alla är godkända visas status:{" "}
+            Medlemmen ser samma punkter och kan ladda upp underlag per rad. Tills
+            styrelsen godkänt alla krav visas status:{" "}
             <em>Väntar på godkännande</em>.
           </p>
         </div>
