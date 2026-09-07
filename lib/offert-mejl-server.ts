@@ -47,14 +47,20 @@ export async function skickaOffertMejlTillTeam(meddelande: {
     return { skickade: mottagare.length, via: "demo" };
   }
 
-  let via: "resend" | "outbox" = "outbox";
+  let via: "resend" | "outbox" | "ingen" = "outbox";
   let skickade = 0;
 
   for (const till of mottagare) {
     const resultat = await skickaMejl({ till, ...meddelande });
-    via = resultat.via;
+    if (resultat.via === "resend") {
+      via = "resend";
+    } else if (resultat.via === "outbox" && via !== "resend") {
+      via = "outbox";
+    } else if (resultat.via === "ingen" && via === "outbox") {
+      via = "ingen";
+    }
     skickade += 1;
   }
 
-  return { skickade, via };
+  return { skickade, via: via === "ingen" ? "outbox" : via };
 }

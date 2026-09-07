@@ -17,6 +17,8 @@ import {
   SOMMAR_EXKLUDERADE_MANADER,
   SOTNING_FORESLAGET_INTERVALL_AR,
   STANDARD_PAMINNELSE_DAGAR,
+  OVK_INTERVALL_BOSTAD_AR,
+  OVK_INTERVALL_VERKSAMHET_AR,
   veckodagsnamn,
   type ArshjulHandelse,
   type ArshjulHandelseTyp,
@@ -71,7 +73,16 @@ function beskrivIntervall(h: ArshjulHandelse): string {
   if (h.typ === "arlig") {
     return `Varje år i ${manadsnamn[(h.manad ?? 1) - 1]}`;
   }
-  return `Vart ${h.intervallAr}:e år från ${h.startAr}`;
+  if (h.typ === "intervall") {
+    const ar = h.startAr ?? "?";
+    const intervall = h.intervallAr ?? "?";
+    if (h.utanFastDatum) {
+      return `Planeras ${ar}, vart ${intervall}:e år (datum bestäms under året)`;
+    }
+    const manad = h.manad ? manadsnamn[h.manad - 1] : "—";
+    return `Vart ${intervall}:e år från ${ar} (${manad})`;
+  }
+  return "—";
 }
 
 export function ArshjulModul() {
@@ -141,6 +152,16 @@ export function ArshjulModul() {
     return [...map.entries()].sort(([a], [b]) => a - b);
   }, [tillfallenTidslinje]);
 
+  const innevarandeArsKvar = useMemo(
+    () => tillfallenAr.filter((t) => !t.arKlar),
+    [tillfallenAr],
+  );
+
+  const innevarandeArsKlara = useMemo(
+    () => tillfallenAr.filter((t) => t.arKlar),
+    [tillfallenAr],
+  );
+
   function uppdateraHandelse(id: string, patch: Partial<ArshjulHandelse>) {
     setHandelser((current) =>
       current.map((h) => (h.id === id ? normaliseraHandelse({ ...h, ...patch }) : h)),
@@ -194,10 +215,18 @@ export function ArshjulModul() {
     if (!h) return;
     const nyckel = datumIso.slice(0, 10);
     const klarDatum = (h.klarDatum ?? []).filter((d) => d.slice(0, 10) !== nyckel);
-    uppdateraHandelse(id, {
+    const ar = Number(nyckel.slice(0, 4));
+    const patch: Partial<ArshjulHandelse> = {
       klarDatum: klarDatum.length > 0 ? klarDatum : undefined,
       klar: h.typ === "engang" ? false : h.klar,
-    });
+    };
+    if (h.typ === "intervall" && h.senastKlarAr === ar) {
+      const kvar = klarDatum
+        .map((d) => Number(d.slice(0, 4)))
+        .filter((y) => Number.isFinite(y));
+      patch.senastKlarAr = kvar.length > 0 ? Math.max(...kvar) : undefined;
+    }
+    uppdateraHandelse(id, patch);
   }
 
   function sparaForm(event: React.FormEvent) {
@@ -282,11 +311,13 @@ export function ArshjulModul() {
         <p className={`font-medium ${t.arKlar ? "line-through" : ""}`}>
           {t.titel}
         </p>
-        {t.dag > 1 && (
+        {t.planerasUnderAr ? (
+          <p className="opacity-80 italic">Planeras under {t.ar}</p>
+        ) : t.dag > 1 ? (
           <p className="opacity-80">
             {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
           </p>
-        )}
+        ) : null}
         {h && t.arKlar && (
           <button
             type="button"
@@ -318,9 +349,10 @@ export function ArshjulModul() {
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
           Styrelsemöten, byggmöten, OVK, sotning, energideklaration och
-          radonmätning — med månads- eller årsintervall. Hoppa över sommarmånader
-          när ni inte har möten. Sotning föreslås vart{" "}
-          {SOTNING_FORESLAGET_INTERVALL_AR}:e år (kan vara 1–4 beroende på eldstad).
+          radonmätning — med månads- eller årsintervall. OVK bostäder vart 3
+          eller 6 år, verksamhet vart 3 år — kan planeras som år utan fast datum
+          och bockas av när de är gjorda. Energideklaration och liknande kan ligga
+          som påminnelse i början av året tills tidpunkt bestäms.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -473,7 +505,8 @@ export function ArshjulModul() {
               </label>
             )}
 
-            {(form.typ === "arlig" || form.typ === "intervall") && (
+            {(form.typ === "arlig" ||
+              (form.typ === "intervall" && !form.utanFastDatum)) && (
               <label className="block">
                 <span className="text-sm font-medium">Månad</span>
                 <select
@@ -515,8 +548,8 @@ export function ArshjulModul() {
             )}
 
             {(form.typ === "arlig" ||
-              form.typ === "intervall" ||
-              form.typ === "manatlig") && (
+              form.typ === "manatlig" ||
+              (form.typ === "intervall" && !form.utanFastDatum)) && (
               <>
                 <label className="block">
                   <span className="text-sm font-medium">Veckodag (valfritt)</span>
@@ -586,8 +619,31 @@ export function ArshjulModul() {
 
             {form.typ === "intervall" && (
               <>
+                <label className="block sm:col-span-2">
+                  <span className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.utanFastDatum)}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          utanFastDatum: e.target.checked,
+                          manad: e.target.checked ? undefined : form.manad ?? 1,
+                        })
+                      }
+                      className="rounded border-border"
+                    />
+                    <span className="font-medium">
+                      Planeras under året — datum bestäms senare
+                    </span>
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">
+                    Visas i januari som påminnelse (t.ex. energideklaration, OVK
+                    innan upphandling är klar).
+                  </span>
+                </label>
                 <label className="block">
-                  <span className="text-sm font-medium">Första / nästa år</span>
+                  <span className="text-sm font-medium">Planerat / nästa år</span>
                   <input
                     type="number"
                     min={innevarandeAr - 5}
@@ -614,9 +670,57 @@ export function ArshjulModul() {
                     }
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
+                  {form.kategori === "ovk" && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            intervallAr: 6,
+                            titel: form.titel.includes("OVK")
+                              ? form.titel
+                              : "OVK — bostäder",
+                          })
+                        }
+                        className="rounded-full border border-border px-2.5 py-1 text-xs hover:border-primary/50"
+                      >
+                        Bostäder 6 år
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            intervallAr: 3,
+                            titel: form.titel.includes("OVK")
+                              ? form.titel
+                              : "OVK — bostäder (FT/FTX)",
+                          })
+                        }
+                        className="rounded-full border border-border px-2.5 py-1 text-xs hover:border-primary/50"
+                      >
+                        Bostäder 3 år
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            intervallAr: OVK_INTERVALL_VERKSAMHET_AR,
+                            titel: "OVK — verksamhet",
+                          })
+                        }
+                        className="rounded-full border border-border px-2.5 py-1 text-xs hover:border-primary/50"
+                      >
+                        Verksamhet 3 år
+                      </button>
+                    </div>
+                  )}
                   <span className="mt-1 block text-xs text-muted">
-                    OVK bostäder 3–6 år · OVK butik 3 år · sotning{" "}
-                    {SOTNING_FORESLAGET_INTERVALL_AR} år · energi/radon 10 år
+                    OVK bostäder {OVK_INTERVALL_BOSTAD_AR}/3 år · verksamhet{" "}
+                    {OVK_INTERVALL_VERKSAMHET_AR} år · sotning{" "}
+                    {SOTNING_FORESLAGET_INTERVALL_AR} år · energi 10 år
                   </span>
                 </label>
               </>
@@ -732,6 +836,78 @@ export function ArshjulModul() {
               </select>
             </label>
           </div>
+
+          {valtAr === innevarandeAr && tillfallenAr.length > 0 && (
+            <section className="rounded-2xl border border-primary/30 bg-white p-4 sm:p-5">
+              <h3 className="text-base font-semibold text-foreground">
+                Bocka av {innevarandeAr}
+              </h3>
+              <p className="mt-1 text-sm text-muted">
+                Händelser detta år — markera när de är genomförda. Planering utan
+                fast datum (t.ex. energideklaration) kan bockas av när åtgärden är
+                klar.
+              </p>
+              {innevarandeArsKvar.length > 0 ? (
+                <ul className="mt-4 space-y-2">
+                  {innevarandeArsKvar.map((t) => (
+                    <li
+                      key={`kvar-${t.handelseId}-${t.datumIso}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-[#f7f9f8] px-3 py-2 text-sm"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{t.titel}</p>
+                        <p className="text-xs text-muted">
+                          {t.planerasUnderAr
+                            ? `Planeras under ${t.ar}`
+                            : formatDatumKort(t.datumIso)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          markeraKlar(t.handelseId, {
+                            ar: t.ar,
+                            datumIso: t.datumIso,
+                          })
+                        }
+                        className="brf-knapp-neutral px-3 py-1.5 text-xs"
+                      >
+                        Markera klar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm text-primary-dark">
+                  Alla händelser för {innevarandeAr} är avbockade.
+                </p>
+              )}
+              {innevarandeArsKlara.length > 0 && (
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-sm font-medium text-muted">
+                    Klara ({innevarandeArsKlara.length})
+                  </summary>
+                  <ul className="mt-2 space-y-1">
+                    {innevarandeArsKlara.map((t) => (
+                      <li
+                        key={`klar-${t.handelseId}-${t.datumIso}`}
+                        className="flex items-center justify-between gap-2 text-sm text-muted"
+                      >
+                        <span className="line-through">{t.titel}</span>
+                        <button
+                          type="button"
+                          onClick={() => avmarkeraKlar(t.handelseId, t.datumIso)}
+                          className="text-xs underline"
+                        >
+                          Ångra
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </section>
+          )}
 
           <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/50 p-4 sm:p-6">
             <div className="mb-4 text-center">

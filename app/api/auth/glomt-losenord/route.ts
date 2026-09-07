@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { begärAterstallning } from "@/lib/auth/auth-tjanst";
+import { skickaAterstallningDemoMejl } from "@/lib/auth/demo-mejl";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -12,26 +13,58 @@ function basUrlFranRequest(req: Request): string {
 }
 
 export async function POST(req: Request) {
-  if (!databasArKonfigurerad()) {
-    return NextResponse.json(
-      { fel: "Databasen är inte konfigurerad." },
-      { status: 503 },
-    );
-  }
-
   try {
-    const body = (await req.json()) as { epost?: string };
+    const body = (await req.json()) as {
+      epost?: string;
+      aterstallningsLank?: string;
+      namn?: string;
+    };
+
     if (!body.epost?.trim()) {
       return NextResponse.json({ fel: "Ange e-post." }, { status: 400 });
     }
-    await begärAterstallning({
+
+    if (!databasArKonfigurerad()) {
+      const lank = body.aterstallningsLank?.trim();
+      if (lank) {
+        const mejl = await skickaAterstallningDemoMejl({
+          epost: body.epost,
+          aterstallningsLank: lank,
+          namn: body.namn,
+        });
+        return NextResponse.json({
+          ok: true,
+          demoLage: true,
+          aterstallningsLank: lank,
+          mejlVia: mejl.mejlVia,
+          meddelande:
+            mejl.mejlVia === "resend"
+              ? "Återställningslänken har skickats till din e-post."
+              : "Mejltjänsten saknas — använd länken nedan inom en timme.",
+        });
+      }
+
+      return NextResponse.json(
+        {
+          demoLage: true,
+          meddelande:
+            "Demoläge utan databas — återställning sker i webbläsaren där föreningen skapades.",
+        },
+        { status: 503 },
+      );
+    }
+
+    const resultat = await begärAterstallning({
       epost: body.epost,
       basUrl: basUrlFranRequest(req),
     });
     return NextResponse.json({
       ok: true,
       meddelande:
-        "Om kontot finns skickas en återställningslänk till e-postadressen.",
+        resultat.aterstallningsLank
+          ? "Mejltjänsten är inte konfigurerad — använd återställningslänken nedan inom en timme."
+          : "Om kontot finns skickas en återställningslänk till e-postadressen.",
+      aterstallningsLank: resultat.aterstallningsLank,
     });
   } catch (e) {
     return NextResponse.json(

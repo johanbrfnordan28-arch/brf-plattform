@@ -55,8 +55,14 @@ export default function ForeningUppgifterPage() {
             föreningen efter prövoperioden.
           </li>
           <li>
-            <strong>Säkerhetskopiering</strong> — ladda ner er data regelbundet.
-            Ansvaret för backup ligger hos föreningen.
+            <strong>Säkerhetskopiering</strong> — under{" "}
+            <Link
+              href="/forening/uppgifter#sakerhetskopiering"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              Föreningsuppgifter
+            </Link>
+            . Spara regelbundet och tryck Återställ om data försvinner.
           </li>
         </ol>
       </div>

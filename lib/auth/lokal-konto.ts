@@ -29,7 +29,14 @@ function lasAlla(): LokalKonto[] {
 }
 
 function sparaAlla(konton: LokalKonto[]): void {
-  safeSetLocalStorage(LOKAL_KONTON_KEY, JSON.stringify(konton));
+  const result = safeSetLocalStorage(LOKAL_KONTON_KEY, JSON.stringify(konton));
+  if (!result.ok) {
+    throw new Error(
+      result.error === "quota"
+        ? "Webbläsarens lagring är full — lösenordet kunde inte sparas lokalt."
+        : "Kunde inte spara lösenordet lokalt. Tillåt lagring i webbläsaren och försök igen.",
+    );
+  }
 }
 
 export function genereraLokalLosenord(langd = 12): string {
@@ -46,7 +53,9 @@ export function genereraLokalLosenord(langd = 12): string {
 
 export function sparaLokalKonto(konto: LokalKonto): void {
   const epost = konto.epost.trim().toLowerCase();
-  const ovriga = lasAlla().filter((k) => k.epost !== epost);
+  const ovriga = lasAlla().filter(
+    (k) => !(k.epost === epost && k.foreningId === konto.foreningId),
+  );
   sparaAlla([...ovriga, { ...konto, epost }]);
 }
 
@@ -72,16 +81,33 @@ export function uppdateraLokalLosenord(
 export function verifieraLokalKonto(
   epost: string,
   losenord: string,
+  foreningId?: string,
 ): LokalKonto | null {
-  const hittad = hamtaLokalKonto(epost);
-  if (!hittad) return null;
-  if (hittad.losenord !== losenord) return null;
-  return hittad;
+  const nyckel = epost.trim().toLowerCase();
+  const matchande = lasAlla().filter(
+    (k) => k.epost === nyckel && k.losenord === losenord,
+  );
+  if (foreningId) {
+    return matchande.find((k) => k.foreningId === foreningId) ?? null;
+  }
+  return matchande[matchande.length - 1] ?? null;
 }
 
-export function hamtaLokalKonto(epost: string): LokalKonto | null {
+export function hamtaLokalKonto(
+  epost: string,
+  foreningId?: string,
+): LokalKonto | null {
   const nyckel = epost.trim().toLowerCase();
-  return lasAlla().find((k) => k.epost === nyckel) ?? null;
+  const matchande = lasAlla().filter((k) => k.epost === nyckel);
+  if (foreningId) {
+    return matchande.find((k) => k.foreningId === foreningId) ?? null;
+  }
+  return matchande[matchande.length - 1] ?? null;
+}
+
+export function listaLokalaKontonForEpost(epost: string): LokalKonto[] {
+  const nyckel = epost.trim().toLowerCase();
+  return lasAlla().filter((k) => k.epost === nyckel);
 }
 
 export function listaLokalaKontonForForening(foreningId: string): LokalKonto[] {

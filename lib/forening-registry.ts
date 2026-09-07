@@ -231,6 +231,52 @@ export function taBortForeningFranRegistryOchLagring(foreningId: string): void {
 }
 
 /**
+ * Sparar borttagen förenings data i sessionStorage så den kan återställas via filuppladdning.
+ */
+function sparaNodfallskopiaForening(foreningId: string, anledning: string): void {
+  if (typeof window === "undefined" || !foreningId) return;
+  const prefix = `brf-f-${foreningId}--`;
+  const keys: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(prefix)) continue;
+    const varde = localStorage.getItem(key);
+    if (varde != null) keys[key] = varde;
+  }
+  if (Object.keys(keys).length === 0) return;
+
+  let profil: ForeningProfil | null = null;
+  try {
+    const raw = localStorage.getItem(profilStorageKey(foreningId));
+    if (raw) profil = JSON.parse(raw) as ForeningProfil;
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    const NODFALL_KEY = "brf-nodfallskopior";
+    const raw = sessionStorage.getItem(NODFALL_KEY);
+    const lista: Array<{
+      anledning: string;
+      foreningId: string;
+      sparad: string;
+      profil: ForeningProfil | null;
+      keys: Record<string, string>;
+    }> = raw ? JSON.parse(raw) : [];
+    lista.unshift({
+      anledning,
+      foreningId,
+      sparad: new Date().toISOString(),
+      profil,
+      keys,
+    });
+    sessionStorage.setItem(NODFALL_KEY, JSON.stringify(lista.slice(0, 10)));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
  * Behåller en förening per namn — tar bort dubbletter från registret och lagring.
  */
 export function rengoraDubblettForeningar(): boolean {
@@ -279,6 +325,7 @@ export function rengoraDubblettForeningar(): boolean {
   registry.poster = nyaPoster;
 
   for (const id of borttagna) {
+    sparaNodfallskopiaForening(id, "dubblettnamn");
     taBortForeningFranLagring(id);
   }
 

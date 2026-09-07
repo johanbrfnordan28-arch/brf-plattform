@@ -147,6 +147,9 @@ export function listaEgnaTestForeningar(): ForeningProfil[] {
 /**
  * Rensar historik över tidigare skapade testföreningar i den här webbläsaren.
  * Kundföreningar med tecknat avtal behålls.
+ *
+ * Destruktiv — anropa inte automatiskt vid sidladdning. Använd endast efter
+ * explicit användarbekräftelse.
  */
 export function rensaEgnaTestForeningHistorik(): number {
   if (typeof window === "undefined") return 0;

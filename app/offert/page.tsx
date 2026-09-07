@@ -9,6 +9,14 @@ import {
   offertMailto,
 } from "@/lib/offert-mejl";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import {
+  formatKampanjDatum,
+  UNDERHALLSPLAN_FRAN_PRIS_KR,
+  UNDERHALLSPLAN_KAMPANJ_GALLER_TOM,
+  UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT,
+  underhallsplanKampanjPrisFran,
+} from "@/lib/underhallsplan-kampanj";
+import { formatKr } from "@/lib/prislista";
 
 export const metadata: Metadata = {
   title: "Offert — Styrelse-Navet",
@@ -21,7 +29,7 @@ export default function OffertPage() {
     <ModulePage
       title="Offert"
       icon="💬"
-      intro="Begär offert på teknisk förvaltning och övriga konsulttjänster. Priset beror på fastigheten och omfattningen — fasta priser eller löpande debitering."
+      intro="Begär offert på underhållsplan, teknisk förvaltning och övriga konsulttjänster. Priset beror på fastigheten och omfattningen — fasta priser eller löpande debitering. Förfrågan mejlas till teamet via formuläret."
     >
       <ContentSection title="Avtal — ABK 09">
         <p>{ABK_09_LANG}</p>
@@ -30,6 +38,12 @@ export default function OffertPage() {
 
       <ContentSection title="Vad ni kan begära offert på">
         <ul className="list-disc space-y-2 pl-5">
+          <li>
+            Underhållsplan — ordinarie från {formatKr(UNDERHALLSPLAN_FRAN_PRIS_KR)}{" "}
+            exkl. moms (kampanj {UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT}&nbsp;%
+            t.o.m. {formatKampanjDatum(UNDERHALLSPLAN_KAMPANJ_GALLER_TOM)} — från{" "}
+            {formatKr(underhallsplanKampanjPrisFran())})
+          </li>
           <li>Teknisk förvaltning till fördelaktigt pris</li>
           <li>Projektledning</li>
           <li>Skadeutredning</li>

@@ -50,7 +50,7 @@ export type SkapaForeningAuthResultat = {
   accessNyckel: string;
   epost: string;
   tillfalligtLosenord: string;
-  mejlVia: "resend" | "outbox";
+  mejlVia: "resend" | "outbox" | "ingen";
   kontoId: string;
 };
 
@@ -85,11 +85,6 @@ export async function skapaForeningMedKonto(
   const befintligtKonto = await prisma.konto.findUnique({
     where: { epostNyckel: epost },
   });
-  if (befintligtKonto?.typ === "PLATTFORM") {
-    throw new Error(
-      "Den e-postadressen är reserverad och kan inte användas för en förening.",
-    );
-  }
 
   const nyttKonto = !befintligtKonto;
   const tillfalligtLosenord = nyttKonto
@@ -161,6 +156,7 @@ export async function skapaForeningMedKonto(
   });
 
   const loginUrl = `${input.basUrl.replace(/\/$/, "")}/styrelse-login`;
+  const arPlattformKonto = befintligtKonto?.typ === "PLATTFORM";
   const mejl = await skickaMejl(
     nyttKonto
       ? byggLosenordMejl({
@@ -176,13 +172,18 @@ export async function skapaForeningMedKonto(
           brodtext: [
             `Hej ${skapareNamn},`,
             "",
-            `Föreningen «${namn}» är kopplad till ditt befintliga konto.`,
+            arPlattformKonto
+              ? `Föreningen «${namn}» är kopplad till ditt befintliga konto (samma e-post som plattformsadmin).`
+              : `Föreningen «${namn}» är kopplad till ditt befintliga konto.`,
             `Logga in med samma e-post och lösenord: ${loginUrl}`,
             "",
             "Styrelse-Navet",
           ].join("\n"),
         },
-  );
+  ).catch((error) => {
+    console.error("[auth] Mejl vid skapa förening misslyckades:", error);
+    return { via: "ingen" as const, id: "" };
+  });
 
   await markeraStyrelsemassaLeadSomSkapadeTest({
     epost,
@@ -247,7 +248,7 @@ export async function loggaInStyrelse(opts: {
 
   const medlemskap = await prisma.foreningMedlem.findMany({
     where: { kontoId: konto.id },
-    orderBy: { skapadTidpunkt: "asc" },
+    orderBy: { skapadTidpunkt: "desc" },
   });
   if (medlemskap.length === 0) {
     throw new Error("Kontot saknar koppling till en förening.");
@@ -552,7 +553,11 @@ export async function skickaTillfalligtLosenord(opts: {
   basUrl: string;
   /** Om satt: endast detta konto (inloggad användare). */
   kontoId?: string;
-}): Promise<{ skickat: boolean; mejlVia?: "resend" | "outbox" }> {
+}): Promise<{
+  skickat: boolean;
+  mejlVia?: "resend" | "outbox" | "ingen";
+  tillfalligtLosenord?: string;
+}> {
   const epost = normaliseraEpost(opts.epost);
   if (!arGiltigEpost(epost)) {
     throw new Error("Ogiltig e-postadress.");
@@ -604,15 +609,26 @@ export async function skickaTillfalligtLosenord(opts: {
       loginUrl,
       arSkickaIgen: true,
     }),
-  );
+  ).catch((error) => {
+    console.error("[auth] Mejl vid skicka lösenord misslyckades:", error);
+    return { via: "ingen" as const, id: "" };
+  });
 
-  return { skickat: true, mejlVia: mejl.via };
+  return {
+    skickat: true,
+    mejlVia: mejl.via,
+    tillfalligtLosenord: mejl.via !== "resend" ? tillfalligt : undefined,
+  };
 }
 
 export async function begärAterstallning(opts: {
   epost: string;
   basUrl: string;
-}): Promise<{ skickat: boolean }> {
+}): Promise<{
+  skickat: boolean;
+  aterstallningsLank?: string;
+  mejlVia?: "resend" | "outbox" | "ingen";
+}> {
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
   // Samma svar oavsett om kontot finns (undvik e-postläckage)
@@ -632,27 +648,36 @@ export async function begärAterstallning(opts: {
   });
 
   const länk = `${opts.basUrl.replace(/\/$/, "")}/konto/aterstall?token=${encodeURIComponent(token)}`;
-  await skickaMejl(
+  const mejl = await skickaMejl(
     byggAterstallningsMejl({
       epost: konto.epost,
       namn: konto.namn,
       länk,
     }),
-  );
+  ).catch((error) => {
+    console.error("[auth] Mejl vid återställning misslyckades:", error);
+    return { via: "ingen" as const, id: "" };
+  });
 
-  return { skickat: true };
+  return {
+    skickat: true,
+    mejlVia: mejl.via,
+    // Utan Resend: visa länken direkt så användaren kan återställa
+    aterstallningsLank: mejl.via !== "resend" ? länk : undefined,
+  };
 }
 
 export async function aterstallLosenordMedToken(opts: {
   token: string;
   nytt: string;
-}): Promise<void> {
+}): Promise<{ epost: string }> {
   const fel = valideraLosenordStyrka(opts.nytt);
   if (fel) throw new Error(fel);
 
   const tokenHash = hashToken(opts.token);
   const rad = await prisma.losnordAterstallning.findUnique({
     where: { tokenHash },
+    include: { konto: true },
   });
   if (!rad || rad.anvand || rad.utgar.getTime() < Date.now()) {
     throw new Error("Länken är ogiltig eller har gått ut.");
@@ -671,6 +696,8 @@ export async function aterstallLosenordMedToken(opts: {
       data: { anvand: true },
     }),
   ]);
+
+  return { epost: rad.konto.epost };
 }
 
 export async function signeraAvtalMedBankId(opts: {

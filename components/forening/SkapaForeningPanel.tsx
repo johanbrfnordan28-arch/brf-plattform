@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { navigeraTillNyForening } from "@/lib/skapa-forening-navigering";
 import { skapaForeningMedKontoKlient } from "@/lib/auth/skapa-forening-klient";
+import { sparaBackupTillServerBestEffort } from "@/lib/forening-backup";
 import { STYRELSE_ROLLER } from "@/lib/styrelse-ledamot";
-import { rensaEgnaTestForeningHistorik } from "@/lib/forening-inloggning";
 import {
+  arGrundmallForening,
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
@@ -42,8 +43,6 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
   const checkboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    rensaEgnaTestForeningHistorik();
-
     const skaFokuseraSkapa =
       window.location.hash === "#skapa-forening" ||
       new URLSearchParams(window.location.search).get("skapa") === "1";
@@ -65,6 +64,11 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
     setLosenInfo(null);
     setSkapar(true);
     try {
+      const aktivId = lasAktivForeningId();
+      if (!arGrundmallForening(aktivId)) {
+        await sparaBackupTillServerBestEffort(aktivId);
+      }
+
       const resultat = await skapaForeningMedKontoKlient({
         foreningsNamn: trimmatNamn,
         skapareNamn,
@@ -161,24 +165,55 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
                   const res = await fetch("/api/auth/skicka-losenord", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ epost: losenInfo.epost }),
+                    body: JSON.stringify({
+                      epost: losenInfo.epost,
+                      losenord: losenInfo.losenord,
+                      foreningsNamn: skapatNamn || "er förening",
+                      genereraNytt: true,
+                      arSkickaIgen: true,
+                    }),
                   });
                   const data = (await res.json()) as {
                     fel?: string;
                     meddelande?: string;
+                    tillfalligtLosenord?: string;
                   };
+
                   if (!res.ok) {
                     setSkickaIgenFel(
                       data.fel || "Kunde inte skicka lösenordet igen.",
                     );
                     return;
                   }
+
+                  if (data.tillfalligtLosenord) {
+                    const { hamtaLokalKonto, sparaLokalKonto } = await import(
+                      "@/lib/auth/lokal-konto"
+                    );
+                    const konto = hamtaLokalKonto(losenInfo.epost);
+                    if (konto) {
+                      sparaLokalKonto({
+                        ...konto,
+                        losenord: data.tillfalligtLosenord,
+                      });
+                    }
+                    setLosenInfo((prev) =>
+                      prev
+                        ? { ...prev, losenord: data.tillfalligtLosenord! }
+                        : prev,
+                    );
+                  }
+
                   setSkickaIgenMeddelande(
                     data.meddelande ||
                       "Ett nytt tillfälligt lösenord har skickats till din e-post.",
                   );
-                } catch {
-                  setSkickaIgenFel("Kunde inte nå servern.");
+                } catch (e) {
+                  setSkickaIgenFel(
+                    e instanceof Error
+                      ? e.message
+                      : "Kunde inte nå servern.",
+                  );
                 } finally {
                   setSkickarIgen(false);
                 }
