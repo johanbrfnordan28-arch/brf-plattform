@@ -6,6 +6,7 @@ import {
 } from "@/components/arshjul/arshjul";
 import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import type { Besiktning } from "@/components/underhallsplan/besiktningar";
+import { OVK_INTERVALL_VERKSAMHET_AR } from "@/components/underhallsplan/besiktningar";
 import {
   normaliseraProjekt,
   projektStorageKey,
@@ -24,23 +25,77 @@ function kategoriFranBesiktning(id: string): ArshjulHandelse["kategori"] {
 
 function besiktningTillHandelse(b: Besiktning): ArshjulHandelse {
   const intervall = b.intervallAr >= 1 ? b.intervallAr : 1;
+  const arsPlanering = b.id === "energideklaration" || b.id === "radon";
   return normaliseraHandelse({
     id: skapaHandelseId(),
     titel: b.namn,
-    beskrivning: `Importerat från underhållsplanen. Nästa planerat år: ${b.nastaBesiktningAr}, intervall ${intervall} år.`,
+    beskrivning: arsPlanering
+      ? `Importerat från underhållsplanen. Planerat år ${b.nastaBesiktningAr} — exakt datum bestäms under året. Intervall ${intervall} år.`
+      : `Importerat från underhållsplanen. Nästa planerat år: ${b.nastaBesiktningAr}, intervall ${intervall} år.`,
     kategori: kategoriFranBesiktning(b.id),
     typ: "intervall",
     startAr: b.nastaBesiktningAr,
     intervallAr: intervall,
     senastKlarAr: b.senastUtförtAr,
-    manad: 6,
-    dag: 1,
+    utanFastDatum: arsPlanering,
+    manad: arsPlanering ? undefined : 6,
+    dag: arsPlanering ? undefined : 1,
     paminnelseDagar: [...STANDARD_PAMINNELSE_DAGAR],
     klar: false,
     skapad: new Date().toLocaleDateString("sv-SE"),
     externKalla: "underhallsplan",
     externId: b.id,
   });
+}
+
+/** OVK kan ha två parallella intervall — bostäder (3/6 år) och verksamhet (3 år). */
+function ovkTillHandelser(b: Besiktning): ArshjulHandelse[] {
+  const bostadIntervall = b.intervallAr === 3 || b.intervallAr === 6 ? b.intervallAr : 6;
+  const poster: ArshjulHandelse[] = [
+    normaliseraHandelse({
+      id: skapaHandelseId(),
+      titel: "OVK — bostäder",
+      beskrivning: `Importerat från underhållsplanen. Planerat år ${b.nastaBesiktningAr}, intervall ${bostadIntervall} år (bostäder). Exakt datum bestäms under året.`,
+      kategori: "ovk",
+      typ: "intervall",
+      startAr: b.nastaBesiktningAr,
+      intervallAr: bostadIntervall,
+      senastKlarAr: b.senastUtförtAr,
+      utanFastDatum: true,
+      paminnelseDagar: [...STANDARD_PAMINNELSE_DAGAR],
+      klar: false,
+      skapad: new Date().toLocaleDateString("sv-SE"),
+      externKalla: "underhallsplan",
+      externId: `${b.id}-bostad`,
+    }),
+  ];
+
+  if (b.ovkInkluderaVerksamhet) {
+    const verksamIntervall =
+      b.ovkIntervallVerksamhetAr === 3 || b.ovkIntervallVerksamhetAr === 6
+        ? b.ovkIntervallVerksamhetAr
+        : OVK_INTERVALL_VERKSAMHET_AR;
+    poster.push(
+      normaliseraHandelse({
+        id: skapaHandelseId(),
+        titel: "OVK — verksamhet",
+        beskrivning: `Importerat från underhållsplanen. Planerat år ${b.ovkNastaVerksamhetAr ?? b.nastaBesiktningAr}, intervall ${verksamIntervall} år (verksamhetslokaler). Exakt datum bestäms under året.`,
+        kategori: "ovk",
+        typ: "intervall",
+        startAr: b.ovkNastaVerksamhetAr ?? b.nastaBesiktningAr,
+        intervallAr: verksamIntervall,
+        senastKlarAr: b.ovkSenastVerksamhetAr,
+        utanFastDatum: true,
+        paminnelseDagar: [...STANDARD_PAMINNELSE_DAGAR],
+        klar: false,
+        skapad: new Date().toLocaleDateString("sv-SE"),
+        externKalla: "underhallsplan",
+        externId: `${b.id}-verksamhet`,
+      }),
+    );
+  }
+
+  return poster;
 }
 
 function garantiTillHandelse(p: Projekt): ArshjulHandelse | null {
@@ -82,9 +137,17 @@ export function importeraFranUnderhallsplan(
       .map((h) => h.externId),
   );
 
-  const nya = state.besiktningar
-    .filter((b) => b.aktiv && !harId.has(b.id))
-    .map(besiktningTillHandelse);
+  const nya: ArshjulHandelse[] = [];
+  for (const b of state.besiktningar) {
+    if (!b.aktiv) continue;
+    if (b.id === "ovk") {
+      const ovkPoster = ovkTillHandelser(b).filter((h) => !harId.has(h.externId));
+      nya.push(...ovkPoster);
+      continue;
+    }
+    if (harId.has(b.id)) continue;
+    nya.push(besiktningTillHandelse(b));
+  }
 
   return nya;
 }

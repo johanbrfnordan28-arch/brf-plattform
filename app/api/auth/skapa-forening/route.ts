@@ -62,7 +62,9 @@ export async function POST(req: Request) {
       meddelande:
         resultat.mejlVia === "resend"
           ? "Lösenordet har skickats till din e-post."
-          : "Lösenordet sparades i mejl-outbox (SMTP ej konfigurerat) och visas en gång här.",
+          : resultat.tillfalligtLosenord
+            ? "Mejltjänsten är inte konfigurerad — spara lösenordet som visas nedan."
+            : "Lösenordet sparades i mejl-outbox (SMTP ej konfigurerat) och visas en gång här.",
     });
   } catch (e) {
     return NextResponse.json(

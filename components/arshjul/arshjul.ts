@@ -55,6 +55,11 @@ export type ArshjulHandelse = {
   paminnelseDagar: number[];
   /** Engångshändelse helt avklarad (serier använder klarDatum i stället). */
   klar: boolean;
+  /**
+   * Intervall utan bestämt datum — planeras under året (visas i januari som påminnelse).
+   * Exakt tidpunkt (ev. upphandling) bestäms senare under året.
+   */
+  utanFastDatum?: boolean;
   skapad: string;
   externKalla?: "underhallsplan" | "projekt" | "manuell";
   externId?: string;
@@ -72,6 +77,8 @@ export type ArshjulTillfalle = {
   arManatlig: boolean;
   /** Detta enskilda tillfälle är avbockat. */
   arKlar: boolean;
+  /** Planerat år utan fast kalenderdatum — tidpunkt bestäms under året. */
+  planerasUnderAr?: boolean;
 };
 
 export type ArshjulPaminnelse = {
@@ -95,6 +102,10 @@ export const STANDARD_PAMINNELSE_DAGAR = [365, 180, 90, 30, 14, 7];
 
 /** Föreslaget intervall för sotning i BRF med eldstäder (kan vara 1–4 år beroende på eldstad). */
 export const SOTNING_FORESLAGET_INTERVALL_AR = 3;
+
+/** OVK-intervall enligt lag — bostäder 3 eller 6 år, verksamhet 3 år. */
+export const OVK_INTERVALL_BOSTAD_AR = 6;
+export const OVK_INTERVALL_VERKSAMHET_AR = 3;
 
 export const kategoriEtiketter: Record<ArshjulKategori, string> = {
   styrelsemote: "Styrelsemöte",
@@ -233,6 +244,7 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
       exkluderaManader && exkluderaManader.length > 0
         ? exkluderaManader
         : undefined,
+    utanFastDatum: Boolean(raw.utanFastDatum),
   };
 }
 
@@ -318,19 +330,23 @@ function pushTillfalle(
   arManatlig: boolean,
 ): void {
   if (manadArExkluderad(h, manad)) return;
-  const dagInfo = dagIManadForHandelse(h, ar, manad);
+  const planerasUnderAr = Boolean(h.utanFastDatum && h.typ === "intervall");
+  const dagInfo = planerasUnderAr
+    ? { dag: 1, datumIso: datumIso(ar, 1, 1) }
+    : dagIManadForHandelse(h, ar, manad);
   if (!dagInfo) return;
   lista.push({
     handelseId: h.id,
     titel: h.titel,
     kategori: h.kategori,
     ar,
-    manad,
+    manad: planerasUnderAr ? 1 : manad,
     dag: dagInfo.dag,
     datumIso: dagInfo.datumIso,
     beskrivning: h.beskrivning,
     arManatlig,
     arKlar: tillfalleArKlar(h, dagInfo.datumIso),
+    planerasUnderAr,
   });
 }
 
@@ -397,7 +413,7 @@ export function expanderaTillfallen(
       }
       while (ar <= tillAr) {
         if (ar >= franAr) {
-          const manad = h.manad ?? 6;
+          const manad = h.utanFastDatum ? 1 : (h.manad ?? 6);
           pushTillfalle(lista, h, ar, manad, false);
         }
         ar += h.intervallAr;
@@ -437,7 +453,10 @@ export function hamtaPaminnelser(
         kategori: h.kategori,
         dagarKvar,
         rubrik: `${h.titel} — försenad`,
-        text: h.beskrivning || `Planerat ${formatDatumKort(t.datumIso)}.`,
+        text: t.planerasUnderAr
+          ? h.beskrivning ||
+            `Planerades under ${t.ar} — bocka av när utfört eller sätt nytt år.`
+          : h.beskrivning || `Planerat ${formatDatumKort(t.datumIso)}.`,
         nivå: "kritisk",
       });
       continue;
@@ -453,13 +472,15 @@ export function hamtaPaminnelser(
           titel: h.titel,
           kategori: h.kategori,
           dagarKvar,
-          rubrik:
-            dagarKvar === 0
-              ? `${h.titel} — idag`
-              : `${h.titel} — om ${dagarKvar} dagar`,
-          text:
-            h.beskrivning ||
-            `Planerat ${formatDatumKort(t.datumIso)}. Börja förbereda i god tid.`,
+        rubrik:
+          dagarKvar === 0
+            ? `${h.titel} — idag`
+            : `${h.titel} — om ${dagarKvar} dagar`,
+          text: t.planerasUnderAr
+            ? h.beskrivning ||
+              `Planerat under ${t.ar} — bestäm exakt tidpunkt (ev. upphandling) under året.`
+            : h.beskrivning ||
+              `Planerat ${formatDatumKort(t.datumIso)}. Börja förbereda i god tid.`,
           nivå,
         });
         break;
@@ -547,13 +568,12 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-ovk-bostad",
       titel: "OVK — bostäder",
       beskrivning:
-        "Obligatorisk ventilationskontroll för bostäder. Intervall 3 eller 6 år beroende på ventilationssystem (S/F/FX ofta 6 år, FT/FTX 3 år).",
+        "Obligatorisk ventilationskontroll för bostäder. Intervall 3 eller 6 år beroende på ventilationssystem (S/F/FX ofta 6 år, FT/FTX 3 år). Ange planerat år — exakt datum bestäms under året.",
       kategori: "ovk",
       typ: "intervall",
       startAr: basAr,
-      intervallAr: 6,
-      manad: 9,
-      dag: 1,
+      intervallAr: OVK_INTERVALL_BOSTAD_AR,
+      utanFastDatum: true,
       paminnelseDagar: [365, 180, 90, 30],
       klar: false,
       skapad: "standard",
@@ -561,15 +581,14 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
     }),
     normaliseraHandelse({
       id: "std-ovk-butik",
-      titel: "OVK — butiker / verksamhet",
+      titel: "OVK — verksamhet",
       beskrivning:
-        "OVK för verksamhetslokaler och butiker — normalt vart 3:e år.",
+        "OVK för verksamhetslokaler och butiker — vart 3:e år. Ange planerat år — exakt datum bestäms under året.",
       kategori: "ovk",
       typ: "intervall",
       startAr: basAr,
-      intervallAr: 3,
-      manad: 9,
-      dag: 15,
+      intervallAr: OVK_INTERVALL_VERKSAMHET_AR,
+      utanFastDatum: true,
       paminnelseDagar: [180, 90, 30],
       klar: false,
       skapad: "standard",
@@ -593,13 +612,13 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
     normaliseraHandelse({
       id: "std-energi",
       titel: "Energideklaration",
-      beskrivning: "Lagkrav — energideklaration ska göras vart 10:e år.",
+      beskrivning:
+        "Lagkrav — energideklaration vart 10:e år. Planera under aktuellt år; exakt datum och ev. upphandling bestäms senare.",
       kategori: "energideklaration",
       typ: "intervall",
       startAr: basAr,
       intervallAr: 10,
-      manad: 5,
-      dag: 1,
+      utanFastDatum: true,
       paminnelseDagar: [365, 180, 90],
       klar: false,
       skapad: "standard",

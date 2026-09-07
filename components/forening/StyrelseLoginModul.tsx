@@ -260,7 +260,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       }
 
       // Fallback: lokalt sparat konto (när servern saknar databas)
-      if (res.status === 503 || !res.ok) {
+      if (res.status === 503) {
         const { verifieraLokalKonto } = await import("@/lib/auth/lokal-konto");
         const lokal = verifieraLokalKonto(epost, losenord);
         if (lokal) {

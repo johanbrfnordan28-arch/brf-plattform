@@ -84,7 +84,7 @@ export function begärLokalAterstallning(epost: string): {
     ok: true,
     lank,
     meddelande:
-      "Databasen är inte konfigurerad på servern — återställning sker i den här webbläsaren. Öppna länken nedan inom en timme.",
+      "Demoläge — öppna länken nedan inom en timme (samma webbläsare som när föreningen skapades).",
   };
 }
 

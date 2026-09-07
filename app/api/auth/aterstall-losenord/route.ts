@@ -18,11 +18,11 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    await aterstallLosenordMedToken({
+    const resultat = await aterstallLosenordMedToken({
       token: body.token.trim(),
       nytt: body.nytt,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, epost: resultat.epost });
   } catch (e) {
     return NextResponse.json(
       {

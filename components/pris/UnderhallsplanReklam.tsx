@@ -4,6 +4,8 @@ import {
   UNDERHALLSPLAN_FRAN_PRIS_KR,
   UNDERHALLSPLAN_KAMPANJ_GALLER_TOM,
   UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT,
+  underhallsplanExempelAbonnemangArKr,
+  underhallsplanExempelTotalForstaArKr,
   underhallsplanKampanjArAktiv,
   underhallsplanKampanjPrisFran,
 } from "@/lib/underhallsplan-kampanj";
@@ -23,6 +25,8 @@ type Props = {
 export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
   const kampanjAktiv = underhallsplanKampanjArAktiv();
   const kampanjPris = underhallsplanKampanjPrisFran();
+  const exempelAbonnemang = underhallsplanExempelAbonnemangArKr();
+  const exempelTotal = underhallsplanExempelTotalForstaArKr();
   const gallerTom = formatKampanjDatum(UNDERHALLSPLAN_KAMPANJ_GALLER_TOM);
   const ctaHref =
     lage === "forening" ? "/forening/underhallsplan" : "/prova-gratis";
@@ -60,13 +64,19 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
       </div>
 
       {kampanjAktiv && (
-        <div className="mt-6 inline-flex flex-col gap-1 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
+        <div className="mt-6 inline-flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
           <p className="text-lg font-bold text-amber-950">
             {UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT}&nbsp;% rabatt
           </p>
           <p className="text-sm text-amber-900">
             Kampanjpris från <strong>{formatKr(kampanjPris)}</strong> exkl. moms
             — gäller t.o.m. <strong>{gallerTom}</strong>
+          </p>
+          <p className="text-sm text-amber-900">
+            Exempel med årsavtal (upp till 15 lägenheter):{" "}
+            <strong>{formatKr(exempelAbonnemang)}</strong> abonnemang +{" "}
+            <strong>{formatKr(kampanjPris)}</strong> underhållsplan ={" "}
+            <strong>{formatKr(exempelTotal)}</strong> exkl. moms första året.
           </p>
         </div>
       )}
@@ -108,15 +118,31 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
           <p className="mt-3 text-sm leading-relaxed text-muted">
             Priset räknas utifrån fastighetens omfattning: antal lägenheter,
             boarea och övriga ytor, antal byggnader och hur mycket dokumentation
-            som finns. Ni får en tydlig offert när underlaget är komplett.
+            som finns. Ni får en tydlig offert när underlaget är komplett —
+            begär den via{" "}
+            <Link
+              href="/offert"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              offertformuläret
+            </Link>
+            .
           </p>
           {!kompakt && (
-            <Link
-              href={ctaHref}
-              className="brf-knapp-gron mt-6 inline-flex px-5 py-2.5 text-sm"
-            >
-              {ctaText}
-            </Link>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href={ctaHref}
+                className="brf-knapp-gron inline-flex px-5 py-2.5 text-sm"
+              >
+                {ctaText}
+              </Link>
+              <Link
+                href="/offert"
+                className="brf-knapp-neutral inline-flex px-5 py-2.5 text-sm"
+              >
+                Begär offert på underhållsplan
+              </Link>
+            </div>
           )}
         </div>
       </div>

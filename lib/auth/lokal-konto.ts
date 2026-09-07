@@ -29,7 +29,14 @@ function lasAlla(): LokalKonto[] {
 }
 
 function sparaAlla(konton: LokalKonto[]): void {
-  safeSetLocalStorage(LOKAL_KONTON_KEY, JSON.stringify(konton));
+  const result = safeSetLocalStorage(LOKAL_KONTON_KEY, JSON.stringify(konton));
+  if (!result.ok) {
+    throw new Error(
+      result.error === "quota"
+        ? "Webbläsarens lagring är full — lösenordet kunde inte sparas lokalt."
+        : "Kunde inte spara lösenordet lokalt. Tillåt lagring i webbläsaren och försök igen.",
+    );
+  }
 }
 
 export function genereraLokalLosenord(langd = 12): string {

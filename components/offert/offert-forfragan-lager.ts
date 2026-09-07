@@ -4,6 +4,7 @@ const STORAGE_KEY = "brf-offert-forfragan-v1";
 export const OFFERT_FORFRAGAN_EVENT = "offert-forfragan-uppdaterad";
 
 export const OFFERT_TJANSTER = [
+  "Underhållsplan",
   "Teknisk förvaltning",
   "Projektledning",
   "Skadeutredning",

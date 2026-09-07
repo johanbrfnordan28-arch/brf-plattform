@@ -161,24 +161,55 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
                   const res = await fetch("/api/auth/skicka-losenord", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ epost: losenInfo.epost }),
+                    body: JSON.stringify({
+                      epost: losenInfo.epost,
+                      losenord: losenInfo.losenord,
+                      foreningsNamn: skapatNamn || "er förening",
+                      genereraNytt: true,
+                      arSkickaIgen: true,
+                    }),
                   });
                   const data = (await res.json()) as {
                     fel?: string;
                     meddelande?: string;
+                    tillfalligtLosenord?: string;
                   };
+
                   if (!res.ok) {
                     setSkickaIgenFel(
                       data.fel || "Kunde inte skicka lösenordet igen.",
                     );
                     return;
                   }
+
+                  if (data.tillfalligtLosenord) {
+                    const { hamtaLokalKonto, sparaLokalKonto } = await import(
+                      "@/lib/auth/lokal-konto"
+                    );
+                    const konto = hamtaLokalKonto(losenInfo.epost);
+                    if (konto) {
+                      sparaLokalKonto({
+                        ...konto,
+                        losenord: data.tillfalligtLosenord,
+                      });
+                    }
+                    setLosenInfo((prev) =>
+                      prev
+                        ? { ...prev, losenord: data.tillfalligtLosenord! }
+                        : prev,
+                    );
+                  }
+
                   setSkickaIgenMeddelande(
                     data.meddelande ||
                       "Ett nytt tillfälligt lösenord har skickats till din e-post.",
                   );
-                } catch {
-                  setSkickaIgenFel("Kunde inte nå servern.");
+                } catch (e) {
+                  setSkickaIgenFel(
+                    e instanceof Error
+                      ? e.message
+                      : "Kunde inte nå servern.",
+                  );
                 } finally {
                   setSkickarIgen(false);
                 }
