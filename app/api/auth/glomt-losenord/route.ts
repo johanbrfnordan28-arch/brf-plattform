@@ -24,14 +24,17 @@ export async function POST(req: Request) {
     if (!body.epost?.trim()) {
       return NextResponse.json({ fel: "Ange e-post." }, { status: 400 });
     }
-    await begärAterstallning({
+    const resultat = await begärAterstallning({
       epost: body.epost,
       basUrl: basUrlFranRequest(req),
     });
     return NextResponse.json({
       ok: true,
       meddelande:
-        "Om kontot finns skickas en återställningslänk till e-postadressen.",
+        resultat.aterstallningsLank
+          ? "Mejltjänsten är inte konfigurerad — använd återställningslänken nedan inom en timme."
+          : "Om kontot finns skickas en återställningslänk till e-postadressen.",
+      aterstallningsLank: resultat.aterstallningsLank,
     });
   } catch (e) {
     return NextResponse.json(

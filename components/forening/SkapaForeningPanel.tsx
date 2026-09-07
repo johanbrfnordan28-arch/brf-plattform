@@ -166,19 +166,65 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
                   const data = (await res.json()) as {
                     fel?: string;
                     meddelande?: string;
+                    tillfalligtLosenord?: string;
                   };
+
+                  if (res.status === 503) {
+                    const { genereraLokalLosenord, hamtaLokalKonto, sparaLokalKonto } =
+                      await import("@/lib/auth/lokal-konto");
+                    const konto = hamtaLokalKonto(losenInfo.epost);
+                    if (!konto) {
+                      setSkickaIgenFel(
+                        "Kontot finns bara lokalt i webbläsaren där föreningen skapades.",
+                      );
+                      return;
+                    }
+                    const nytt = genereraLokalLosenord(12);
+                    sparaLokalKonto({ ...konto, losenord: nytt });
+                    setLosenInfo((prev) =>
+                      prev ? { ...prev, losenord: nytt } : prev,
+                    );
+                    setSkickaIgenMeddelande(
+                      "Nytt tillfälligt lösenord (lokal demo utan databas):",
+                    );
+                    return;
+                  }
+
                   if (!res.ok) {
                     setSkickaIgenFel(
                       data.fel || "Kunde inte skicka lösenordet igen.",
                     );
                     return;
                   }
+
+                  if (data.tillfalligtLosenord) {
+                    const { hamtaLokalKonto, sparaLokalKonto } = await import(
+                      "@/lib/auth/lokal-konto"
+                    );
+                    const konto = hamtaLokalKonto(losenInfo.epost);
+                    if (konto) {
+                      sparaLokalKonto({
+                        ...konto,
+                        losenord: data.tillfalligtLosenord,
+                      });
+                    }
+                    setLosenInfo((prev) =>
+                      prev
+                        ? { ...prev, losenord: data.tillfalligtLosenord! }
+                        : prev,
+                    );
+                  }
+
                   setSkickaIgenMeddelande(
                     data.meddelande ||
                       "Ett nytt tillfälligt lösenord har skickats till din e-post.",
                   );
-                } catch {
-                  setSkickaIgenFel("Kunde inte nå servern.");
+                } catch (e) {
+                  setSkickaIgenFel(
+                    e instanceof Error
+                      ? e.message
+                      : "Kunde inte nå servern.",
+                  );
                 } finally {
                   setSkickarIgen(false);
                 }

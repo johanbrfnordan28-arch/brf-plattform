@@ -23,18 +23,21 @@ export function GlomtLosenordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ epost }),
       });
-      const data = (await res.json()) as { fel?: string; meddelande?: string };
+      const data = (await res.json()) as { fel?: string; meddelande?: string; aterstallningsLank?: string };
 
       if (res.ok) {
         setMeddelande(
           data.meddelande ||
             "Om kontot finns skickas en återställningslänk till e-postadressen.",
         );
+        if (data.aterstallningsLank) {
+          setLokalLank(data.aterstallningsLank);
+        }
         return;
       }
 
       // Databas saknas — lokal återställning i webbläsaren
-      if (res.status === 503) {
+      if (res.status === 503 || /databas/i.test(data.fel || "")) {
         const lokal = begärLokalAterstallning(epost);
         if (!lokal.ok) {
           setFel(lokal.fel);

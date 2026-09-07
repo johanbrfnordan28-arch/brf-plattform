@@ -55,8 +55,18 @@ export function AterstallLosenordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, nytt }),
       });
-      const data = (await res.json()) as { fel?: string };
+      const data = (await res.json()) as { fel?: string; epost?: string };
       if (res.ok) {
+        const sparadEpost = data.epost?.trim().toLowerCase();
+        if (sparadEpost) {
+          const { hamtaLokalKonto, sparaLokalKonto } = await import(
+            "@/lib/auth/lokal-konto"
+          );
+          const konto = hamtaLokalKonto(sparadEpost);
+          if (konto) {
+            sparaLokalKonto({ ...konto, losenord: nytt });
+          }
+        }
         setOk(true);
         return;
       }

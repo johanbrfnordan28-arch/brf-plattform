@@ -13,7 +13,7 @@ export type MejlMeddelande = {
  */
 export async function skickaMejl(
   meddelande: MejlMeddelande,
-): Promise<{ via: "resend" | "outbox"; id: string }> {
+): Promise<{ via: "resend" | "outbox" | "ingen"; id: string }> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const fran =
     process.env.MEJL_FRAN?.trim() || "Styrelse-Navet <onboarding@resend.dev>";
@@ -36,15 +36,19 @@ export async function skickaMejl(
       if (res.ok) {
         const data = (await res.json()) as { id?: string };
         const id = data.id || skapaId("mejl");
-        await prisma.mejlOutbox.create({
-          data: {
-            id: skapaId("outbox"),
-            till: meddelande.till,
-            amne: meddelande.amne,
-            brodtext: meddelande.brodtext,
-            skickadVia: "resend",
-          },
-        });
+        try {
+          await prisma.mejlOutbox.create({
+            data: {
+              id: skapaId("outbox"),
+              till: meddelande.till,
+              amne: meddelande.amne,
+              brodtext: meddelande.brodtext,
+              skickadVia: "resend",
+            },
+          });
+        } catch {
+          /* loggning i outbox är valfri */
+        }
         return { via: "resend", id };
       }
     } catch {
@@ -53,15 +57,25 @@ export async function skickaMejl(
   }
 
   const id = skapaId("outbox");
-  await prisma.mejlOutbox.create({
-    data: {
-      id,
-      till: meddelande.till,
-      amne: meddelande.amne,
-      brodtext: meddelande.brodtext,
-      skickadVia: "outbox",
-    },
-  });
+  try {
+    await prisma.mejlOutbox.create({
+      data: {
+        id,
+        till: meddelande.till,
+        amne: meddelande.amne,
+        brodtext: meddelande.brodtext,
+        skickadVia: "outbox",
+      },
+    });
+  } catch (error) {
+    console.error("[mejl] Kunde inte spara i outbox:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.info(
+        `[mejl/fallback] till=${meddelande.till} amne=${meddelande.amne}\n${meddelande.brodtext}`,
+      );
+    }
+    return { via: "ingen", id };
+  }
 
   if (process.env.NODE_ENV !== "production") {
     console.info(

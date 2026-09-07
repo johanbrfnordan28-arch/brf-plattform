@@ -43,8 +43,10 @@ export async function POST(req: Request) {
       ok: true,
       skickat: resultat.skickat,
       mejlVia: resultat.mejlVia,
-      meddelande:
-        resultat.mejlVia === "resend"
+      tillfalligtLosenord: resultat.tillfalligtLosenord,
+      meddelande: resultat.tillfalligtLosenord
+        ? "Mejltjänsten är inte konfigurerad — ditt nya tillfälliga lösenord visas nedan."
+        : resultat.mejlVia === "resend"
           ? "Ett nytt tillfälligt lösenord har skickats till din e-post."
           : "Lösenordet är sparat för utskick (mejltjänst ej konfigurerad — syns i mejl-outbox).",
     });
