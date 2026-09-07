@@ -17,7 +17,6 @@ import {
   SOMMAR_EXKLUDERADE_MANADER,
   SOTNING_FORESLAGET_INTERVALL_AR,
   STANDARD_PAMINNELSE_DAGAR,
-  OVK_INTERVALL_BOSTAD_AR,
   OVK_INTERVALL_VERKSAMHET_AR,
   veckodagsnamn,
   type ArshjulHandelse,
@@ -30,6 +29,13 @@ import {
   importeraFranProjekt,
   importeraFranUnderhallsplan,
 } from "@/components/arshjul/arshjul-import";
+import {
+  arOvkIntervallHandelse,
+  byggOvkHandelser,
+  ovkDualFranHandelser,
+  skapaDefaultOvkDual,
+  type OvkDualConfig,
+} from "@/components/arshjul/arshjul-ovk";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 type Vy = "arshjul" | "tidslinje" | "paminnelser";
@@ -95,6 +101,9 @@ export function ArshjulModul() {
   const [skapaOppen, setSkapaOppen] = useState(false);
   const [redigeraId, setRedigeraId] = useState<string | null>(null);
   const [form, setForm] = useState(skapaTomHandelse());
+  const [ovkDual, setOvkDual] = useState<OvkDualConfig>(() =>
+    skapaDefaultOvkDual(innevarandeAr),
+  );
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
   const skipFirstSave = useRef(true);
 
@@ -161,6 +170,19 @@ export function ArshjulModul() {
     () => tillfallenAr.filter((t) => t.arKlar),
     [tillfallenAr],
   );
+
+  const arOvkDualForm = form.kategori === "ovk" && form.typ === "intervall";
+
+  function stangForm() {
+    setRedigeraId(null);
+    setForm(skapaTomHandelse());
+    setOvkDual(skapaDefaultOvkDual(innevarandeAr));
+    setSkapaOppen(false);
+  }
+
+  function initOvkDualOmBehov(startAr?: number) {
+    setOvkDual(skapaDefaultOvkDual(startAr ?? form.startAr ?? innevarandeAr));
+  }
 
   function uppdateraHandelse(id: string, patch: Partial<ArshjulHandelse>) {
     setHandelser((current) =>
@@ -231,6 +253,43 @@ export function ArshjulModul() {
 
   function sparaForm(event: React.FormEvent) {
     event.preventDefault();
+
+    if (arOvkDualForm) {
+      if (!ovkDual.bostadAktiv && !ovkDual.verksamhetAktiv) return;
+
+      const { spara, taBortIds } = byggOvkHandelser({
+        config: ovkDual,
+        handelser,
+        mall: {
+          utanFastDatum: form.utanFastDatum ?? true,
+          paminnelseDagar: form.paminnelseDagar,
+          skapad: form.skapad || new Date().toLocaleDateString("sv-SE"),
+          externKalla: form.externKalla,
+          externId: form.externId,
+        },
+      });
+
+      const sparaIds = new Set(spara.map((h) => h.id));
+      let updated = handelser.filter(
+        (h) => !taBortIds.includes(h.id) && !sparaIds.has(h.id),
+      );
+
+      if (redigeraId && !sparaIds.has(redigeraId)) {
+        const redigera = handelser.find((h) => h.id === redigeraId);
+        if (
+          redigera &&
+          arOvkIntervallHandelse(redigera) &&
+          !taBortIds.includes(redigeraId)
+        ) {
+          updated = updated.filter((h) => h.id !== redigeraId);
+        }
+      }
+
+      setHandelser([...updated, ...spara]);
+      stangForm();
+      return;
+    }
+
     if (!form.titel.trim()) return;
     const sparad = normaliseraHandelse({
       ...form,
@@ -245,13 +304,22 @@ export function ArshjulModul() {
     } else {
       setHandelser((current) => [...current, sparad]);
     }
-    setForm(skapaTomHandelse());
-    setSkapaOppen(false);
+    stangForm();
   }
 
   function startaRedigera(h: ArshjulHandelse) {
     setRedigeraId(h.id);
-    setForm({ ...h });
+    if (h.kategori === "ovk" && h.typ === "intervall") {
+      setOvkDual(ovkDualFranHandelser(handelser, h, innevarandeAr));
+      setForm({
+        ...h,
+        titel: "OVK",
+        kategori: "ovk",
+        typ: "intervall",
+      });
+    } else {
+      setForm({ ...h });
+    }
     setSkapaOppen(true);
   }
 
@@ -349,9 +417,9 @@ export function ArshjulModul() {
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
           Styrelsemöten, byggmöten, OVK, sotning, energideklaration och
-          radonmätning — med månads- eller årsintervall. OVK bostäder vart 3
-          eller 6 år, verksamhet vart 3 år — kan planeras som år utan fast datum
-          och bockas av när de är gjorda. Energideklaration och liknande kan ligga
+          radonmätning — med månads- eller årsintervall. OVK kan ha två parallella
+          intervall: bostäder vart 3 eller 6 år och verksamhet/butiker vart 3:e år
+          — med egna startår i tidslinjen. Energideklaration och liknande kan ligga
           som påminnelse i början av året tills tidpunkt bestäms.
         </p>
         <DemoFilSparningNotis />
@@ -442,31 +510,49 @@ export function ArshjulModul() {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block sm:col-span-2">
               <span className="text-sm font-medium">Titel</span>
-              <input
-                required
-                value={form.titel}
-                onChange={(e) => setForm({ ...form, titel: e.target.value })}
-                placeholder="t.ex. OVK, Årsstämma, Radonmätning"
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
+              {arOvkDualForm ? (
+                <p className="mt-1 rounded-lg border border-teal-200 bg-teal-50/60 px-3 py-2 text-sm text-teal-950">
+                  Skapar/uppdaterar{" "}
+                  <strong>OVK — bostäder</strong> och/eller{" "}
+                  <strong>OVK — verksamhet</strong> som separata rader i
+                  tidslinjen.
+                </p>
+              ) : (
+                <input
+                  required
+                  value={form.titel}
+                  onChange={(e) => setForm({ ...form, titel: e.target.value })}
+                  placeholder="t.ex. OVK, Årsstämma, Radonmätning"
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+              )}
             </label>
-            <label className="block sm:col-span-2">
-              <span className="text-sm font-medium">Beskrivning</span>
-              <textarea
-                value={form.beskrivning}
-                onChange={(e) => setForm({ ...form, beskrivning: e.target.value })}
-                rows={2}
-                placeholder="Vad ska göras, vem ansvarar, länkar…"
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-            </label>
+            {!arOvkDualForm && (
+              <label className="block sm:col-span-2">
+                <span className="text-sm font-medium">Beskrivning</span>
+                <textarea
+                  value={form.beskrivning}
+                  onChange={(e) => setForm({ ...form, beskrivning: e.target.value })}
+                  rows={2}
+                  placeholder="Vad ska göras, vem ansvarar, länkar…"
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+              </label>
+            )}
             <label className="block">
               <span className="text-sm font-medium">Kategori</span>
               <select
                 value={form.kategori}
-                onChange={(e) =>
-                  setForm({ ...form, kategori: e.target.value as ArshjulKategori })
-                }
+                onChange={(e) => {
+                  const kategori = e.target.value as ArshjulKategori;
+                  const next = { ...form, kategori };
+                  if (kategori === "ovk" && next.typ === "intervall") {
+                    initOvkDualOmBehov();
+                    next.titel = "OVK";
+                    next.utanFastDatum = true;
+                  }
+                  setForm(next);
+                }}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 {(Object.keys(kategoriEtiketter) as ArshjulKategori[]).map((k) => (
@@ -480,9 +566,16 @@ export function ArshjulModul() {
               <span className="text-sm font-medium">Typ</span>
               <select
                 value={form.typ}
-                onChange={(e) =>
-                  setForm({ ...form, typ: e.target.value as ArshjulHandelseTyp })
-                }
+                onChange={(e) => {
+                  const typ = e.target.value as ArshjulHandelseTyp;
+                  const next = { ...form, typ };
+                  if (next.kategori === "ovk" && typ === "intervall") {
+                    initOvkDualOmBehov();
+                    next.titel = "OVK";
+                    next.utanFastDatum = true;
+                  }
+                  setForm(next);
+                }}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 <option value="engang">Engång (datum)</option>
@@ -617,7 +710,7 @@ export function ArshjulModul() {
               </>
             )}
 
-            {form.typ === "intervall" && (
+            {form.typ === "intervall" && !arOvkDualForm && (
               <>
                 <label className="block sm:col-span-2">
                   <span className="flex items-center gap-2 text-sm">
@@ -638,8 +731,7 @@ export function ArshjulModul() {
                     </span>
                   </span>
                   <span className="mt-1 block text-xs text-muted">
-                    Visas i januari som påminnelse (t.ex. energideklaration, OVK
-                    innan upphandling är klar).
+                    Visas i januari som påminnelse (t.ex. energideklaration).
                   </span>
                 </label>
                 <label className="block">
@@ -670,60 +762,159 @@ export function ArshjulModul() {
                     }
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
-                  {form.kategori === "ovk" && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            intervallAr: 6,
-                            titel: form.titel.includes("OVK")
-                              ? form.titel
-                              : "OVK — bostäder",
-                          })
-                        }
-                        className="rounded-full border border-border px-2.5 py-1 text-xs hover:border-primary/50"
-                      >
-                        Bostäder 6 år
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            intervallAr: 3,
-                            titel: form.titel.includes("OVK")
-                              ? form.titel
-                              : "OVK — bostäder (FT/FTX)",
-                          })
-                        }
-                        className="rounded-full border border-border px-2.5 py-1 text-xs hover:border-primary/50"
-                      >
-                        Bostäder 3 år
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setForm({
-                            ...form,
-                            intervallAr: OVK_INTERVALL_VERKSAMHET_AR,
-                            titel: "OVK — verksamhet",
-                          })
-                        }
-                        className="rounded-full border border-border px-2.5 py-1 text-xs hover:border-primary/50"
-                      >
-                        Verksamhet 3 år
-                      </button>
-                    </div>
-                  )}
                   <span className="mt-1 block text-xs text-muted">
-                    OVK bostäder {OVK_INTERVALL_BOSTAD_AR}/3 år · verksamhet{" "}
-                    {OVK_INTERVALL_VERKSAMHET_AR} år · sotning{" "}
-                    {SOTNING_FORESLAGET_INTERVALL_AR} år · energi 10 år
+                    Sotning {SOTNING_FORESLAGET_INTERVALL_AR} år · energi 10 år ·
+                    radon 10 år
                   </span>
                 </label>
               </>
+            )}
+
+            {arOvkDualForm && (
+              <div className="space-y-4 sm:col-span-2">
+                <label className="block">
+                  <span className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.utanFastDatum ?? true)}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          utanFastDatum: e.target.checked,
+                        })
+                      }
+                      className="rounded border-border"
+                    />
+                    <span className="font-medium">
+                      Planeras under året — datum bestäms senare
+                    </span>
+                  </span>
+                </label>
+                <p className="rounded-lg border border-teal-200 bg-teal-50/60 px-3 py-2 text-sm text-teal-950">
+                  En förening kan ha både bostäder och butiker/verksamhet. Bocka i
+                  det som gäller — varje typ får eget intervall och startår i
+                  tidslinjen. Börjar båda samma år syns båda då; därefter kommer
+                  butiker oftare (vart 3:e år) medan bostäder följer 3- eller
+                  6-årsintervallet.
+                </p>
+
+                <fieldset className="rounded-xl border border-border bg-white p-4">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ovkDual.bostadAktiv}
+                      onChange={(e) =>
+                        setOvkDual((prev) => ({
+                          ...prev,
+                          bostadAktiv: e.target.checked,
+                        }))
+                      }
+                      className="mt-1 rounded border-border"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        OVK bostäder
+                      </span>
+                      <span className="text-xs text-muted">
+                        Flerbostadshus — 3 år (FT/FTX) eller 6 år (S/F/FX)
+                      </span>
+                    </span>
+                  </label>
+                  {ovkDual.bostadAktiv && (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 pl-6">
+                      <div>
+                        <span className="text-xs font-medium text-muted">
+                          Intervall
+                        </span>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {([6, 3] as const).map((ar) => (
+                            <button
+                              key={ar}
+                              type="button"
+                              onClick={() =>
+                                setOvkDual((prev) => ({
+                                  ...prev,
+                                  bostadIntervallAr: ar,
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                                ovkDual.bostadIntervallAr === ar
+                                  ? "border-primary bg-primary text-white"
+                                  : "border-border bg-white text-muted hover:border-primary/50"
+                              }`}
+                            >
+                              {ar} år
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <label className="block">
+                        <span className="text-xs font-medium text-muted">
+                          Planerat / nästa år
+                        </span>
+                        <input
+                          type="number"
+                          min={innevarandeAr - 5}
+                          max={innevarandeAr + 50}
+                          value={ovkDual.bostadStartAr}
+                          onChange={(e) =>
+                            setOvkDual((prev) => ({
+                              ...prev,
+                              bostadStartAr: Number(e.target.value) || innevarandeAr,
+                            }))
+                          }
+                          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </fieldset>
+
+                <fieldset className="rounded-xl border border-border bg-white p-4">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ovkDual.verksamhetAktiv}
+                      onChange={(e) =>
+                        setOvkDual((prev) => ({
+                          ...prev,
+                          verksamhetAktiv: e.target.checked,
+                        }))
+                      }
+                      className="mt-1 rounded border-border"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        OVK verksamhet (butiker m.m.)
+                      </span>
+                      <span className="text-xs text-muted">
+                        Alltid vart {OVK_INTERVALL_VERKSAMHET_AR}:e år
+                      </span>
+                    </span>
+                  </label>
+                  {ovkDual.verksamhetAktiv && (
+                    <label className="mt-3 block pl-6">
+                      <span className="text-xs font-medium text-muted">
+                        Planerat / nästa år
+                      </span>
+                      <input
+                        type="number"
+                        min={innevarandeAr - 5}
+                        max={innevarandeAr + 50}
+                        value={ovkDual.verksamhetStartAr}
+                        onChange={(e) =>
+                          setOvkDual((prev) => ({
+                            ...prev,
+                            verksamhetStartAr:
+                              Number(e.target.value) || innevarandeAr,
+                          }))
+                        }
+                        className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                  )}
+                </fieldset>
+              </div>
             )}
 
             {(form.typ === "manatlig" || form.typ === "arlig") && (
@@ -804,11 +995,7 @@ export function ArshjulModul() {
             {redigeraId && (
               <button
                 type="button"
-                onClick={() => {
-                  setRedigeraId(null);
-                  setForm(skapaTomHandelse());
-                  setSkapaOppen(false);
-                }}
+                onClick={stangForm}
                 className="rounded-lg border border-border px-4 py-2 text-sm text-muted"
               >
                 Avbryt
