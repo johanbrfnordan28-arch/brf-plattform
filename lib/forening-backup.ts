@@ -4,10 +4,19 @@ import {
   hamtaAktivForeningId,
   lasForeningProfil,
   rensaForeningLocalStorage,
+  repareraForeningRegistry,
   sattAktivForeningId,
+  sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
-import { safeSetLocalStorage } from "@/lib/localStorage";
+import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
+import {
+  localStorageFelMeddelande,
+  safeSetLocalStorage,
+} from "@/lib/localStorage";
+
+/** Remountar moduler efter återställning (samma förening, ny data). */
+export const FORENING_DATA_AATERSTALL_EVENT = "brf-forening-data-aterstall";
 
 export const FORENING_BACKUP_FORMAT = "brf-forening-backup" as const;
 export const FORENING_BACKUP_VERSION = 1;
@@ -124,6 +133,13 @@ export function valideraForeningBackup(raw: unknown): ForeningBackup | string {
   };
 }
 
+export type AterstallResultat = {
+  ok: boolean;
+  fel?: string;
+  antalSkrivna?: number;
+  antalMisslyckade?: number;
+};
+
 /**
  * Återställer föreningens localStorage från en säkerhetskopia.
  * Skriver över befintlig data för samma förenings-id.
@@ -131,7 +147,7 @@ export function valideraForeningBackup(raw: unknown): ForeningBackup | string {
 export function aterstallForeningFranBackup(
   backup: ForeningBackup,
   opts?: { kravForeningId?: string },
-): { ok: boolean; fel?: string } {
+): AterstallResultat {
   if (typeof window === "undefined") {
     return { ok: false, fel: "Återställning fungerar bara i webbläsaren." };
   }
@@ -150,24 +166,83 @@ export function aterstallForeningFranBackup(
   rensaForeningLocalStorage(id);
 
   let skrivna = 0;
+  let misslyckade = 0;
+  let forstaFel: string | null = null;
   for (const [key, varde] of Object.entries(backup.keys)) {
     if (!key.startsWith(prefix)) continue;
     if (typeof varde !== "string") continue;
-    safeSetLocalStorage(key, varde);
-    skrivna += 1;
+    const resultat = safeSetLocalStorage(key, varde);
+    if (resultat.ok) {
+      skrivna += 1;
+    } else {
+      misslyckade += 1;
+      if (!forstaFel) forstaFel = localStorageFelMeddelande(resultat.error);
+    }
   }
 
   if (skrivna === 0 && Object.keys(backup.keys).length > 0) {
     return {
       ok: false,
-      fel: "Säkerhetskopian innehöll inga giltiga nycklar för föreningen.",
+      fel: forstaFel || "Säkerhetskopian innehöll inga giltiga nycklar för föreningen.",
+      antalSkrivna: 0,
+      antalMisslyckade: misslyckade,
     };
   }
 
+  if (backup.profil?.id === id) {
+    try {
+      sparaForeningProfil(backup.profil, { tyst: true, synkaServer: false });
+    } catch {
+      /* profilnyckeln kan redan finnas i backup.keys */
+    }
+  }
+
+  repareraForeningRegistry();
   sattAktivForeningId(id, { tyst: true });
   window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  window.dispatchEvent(new Event(FORENING_DATA_AATERSTALL_EVENT));
 
-  return { ok: true };
+  if (misslyckade > 0) {
+    return {
+      ok: false,
+      fel: `${misslyckade} dataposter kunde inte sparas. ${forstaFel || ""}`.trim(),
+      antalSkrivna: skrivna,
+      antalMisslyckade: misslyckade,
+    };
+  }
+
+  return { ok: true, antalSkrivna: skrivna, antalMisslyckade: 0 };
+}
+
+/** Sparar nuvarande läge till servern innan destruktiv åtgärd (tyst vid fel). */
+export async function sparaBackupTillServerBestEffort(
+  foreningId: string,
+): Promise<boolean> {
+  if (typeof window === "undefined" || !foreningId || arGrundmallForening(foreningId)) {
+    return false;
+  }
+  const backup = byggForeningBackup(foreningId);
+  if (!backup) return false;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const access = hamtaServerAccessNyckel(foreningId);
+  if (access) headers["x-access-nyckel"] = access;
+
+  try {
+    const res = await fetch(
+      `/api/foreningar/${encodeURIComponent(foreningId)}/sakerhetskopior`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ backup }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /** Laddar ner föreningens data som JSON. */

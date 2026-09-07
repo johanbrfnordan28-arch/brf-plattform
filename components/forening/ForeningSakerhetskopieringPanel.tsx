@@ -6,6 +6,7 @@ import {
   byggForeningBackup,
   formatBackupDatum,
   laddaNerForeningSakerhetskopia,
+  sparaBackupTillServerBestEffort,
   valideraForeningBackup,
 } from "@/lib/forening-backup";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
@@ -149,7 +150,7 @@ export function ForeningSakerhetskopieringPanel() {
 
   async function aterstallFranServer(kopiaId: string, etikett: string) {
     const bekrafta = window.confirm(
-      `Återställ säkerhetskopian «${etikett}»?\n\nNuvarande data i webbläsaren för föreningen skrivs över.`,
+      `Återställ säkerhetskopian «${etikett}»?\n\nNuvarande data skrivs över. En automatisk kopia sparas först på servern om det går.`,
     );
     if (!bekrafta) return;
 
@@ -157,6 +158,8 @@ export function ForeningSakerhetskopieringPanel() {
     setFel(null);
     setAterstallerId(kopiaId);
     try {
+      await sparaBackupTillServerBestEffort(foreningId);
+
       const res = await fetch(
         `/api/foreningar/${encodeURIComponent(foreningId)}/sakerhetskopior/${encodeURIComponent(kopiaId)}`,
         { headers: authHeaders(foreningId) },
@@ -178,10 +181,7 @@ export function ForeningSakerhetskopieringPanel() {
         setFel(resultat.fel || "Återställning misslyckades.");
         return;
       }
-      setMeddelande(
-        `Återställt: ${backup.profil?.namn || foreningsNamn} · ${formatBackupDatum(backup.exportedAt)}. Ladda om sidan om något syns fel.`,
-      );
-      laddaProfil();
+      window.location.reload();
     } catch {
       setFel("Kunde inte återställa från servern.");
     } finally {
@@ -225,35 +225,21 @@ export function ForeningSakerhetskopieringPanel() {
         }
         const etikett = `${backup.profil?.namn || backup.foreningId} · ${formatBackupDatum(backup.exportedAt)}`;
         const bekrafta = window.confirm(
-          `Ladda upp och återställ «${etikett}»?\n\nNuvarande data skrivs över.`,
+          `Ladda upp och återställ «${etikett}»?\n\nNuvarande data skrivs över. En automatisk kopia sparas först på servern om det går.`,
         );
         if (!bekrafta) return;
 
-        const resultat = aterstallForeningFranBackup(backup, {
-          kravForeningId: foreningId,
-        });
-        if (!resultat.ok) {
-          setFel(resultat.fel || "Återställning misslyckades.");
-          return;
-        }
-        setMeddelande(`Återställt från fil: ${etikett}.`);
-        // Spara även till servern så versionen finns där
-        void (async () => {
-          try {
-            await fetch(
-              `/api/foreningar/${encodeURIComponent(foreningId)}/sakerhetskopior`,
-              {
-                method: "POST",
-                headers: authHeaders(foreningId),
-                body: JSON.stringify({ backup }),
-              },
-            );
-            await laddaKopior(foreningId);
-          } catch {
-            /* lokal återställning lyckades ändå */
+        void sparaBackupTillServerBestEffort(foreningId).then(() => {
+          const resultat = aterstallForeningFranBackup(backup, {
+            kravForeningId: foreningId,
+          });
+          if (!resultat.ok) {
+            setFel(resultat.fel || "Återställning misslyckades.");
+            return;
           }
-        })();
-        laddaProfil();
+          window.location.reload();
+        });
+        return;
       } catch {
         setFel("Kunde inte läsa JSON-filen.");
       }
@@ -281,9 +267,9 @@ export function ForeningSakerhetskopieringPanel() {
         <strong className="font-medium text-foreground">
           {foreningsNamn || "er förening"}
         </strong>{" "}
-        sparas på våra servrar. Ni kan återställa en tidigare version — listan
-        visar föreningsnamn och datum. Ni kan också ladda upp en tidigare
-        nedladdad fil.
+        sparas på våra servrar. Tryck <strong className="font-medium text-foreground">Återställ</strong>{" "}
+        på en tidigare version om något försvinner — sidan laddas om med det
+        sparade läget. Ni kan också ladda upp en tidigare nedladdad fil.
       </p>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
