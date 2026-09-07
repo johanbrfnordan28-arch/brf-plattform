@@ -18,7 +18,42 @@ import {
   hamtaLokalKonto,
   sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
+import { sparaLokalSession } from "@/lib/auth/lokal-session";
 import { markeraStyrelsemassaLeadLokalSomSkapadeTest } from "@/lib/styrelsemassa-lager";
+
+async function etableraKontoEfterSkapa(opts: {
+  epost: string;
+  losenord: string;
+  foreningId: string;
+  namn: string;
+  roll: string;
+}): Promise<void> {
+  const epost = opts.epost.trim().toLowerCase();
+  sparaLokalSession({
+    epost,
+    foreningId: opts.foreningId,
+    namn: opts.namn,
+    inloggadTidpunkt: new Date().toISOString(),
+  });
+  if (opts.losenord) {
+    sparaLokalKonto({
+      epost,
+      losenord: opts.losenord,
+      foreningId: opts.foreningId,
+      namn: opts.namn,
+      roll: opts.roll,
+    });
+    try {
+      await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ epost, losenord: opts.losenord }),
+      });
+    } catch {
+      /* lokalt konto räcker för Konto-sidan */
+    }
+  }
+}
 
 export type SkapaForeningMedKontoResultat = {
   profil: ForeningProfil;
@@ -103,13 +138,6 @@ export async function skapaForeningMedKontoKlient(opts: {
       skapareEpost,
       skapareRoll,
     });
-    sparaLokalKonto({
-      epost: skapareEpost,
-      losenord: tillfalligtLosenord,
-      foreningId: profil.id,
-      namn: skapareNamn,
-      roll: String(skapareRoll),
-    });
     markeraStyrelsemassaLeadLokalSomSkapadeTest({
       epost: skapareEpost,
       foreningId: profil.id,
@@ -161,7 +189,15 @@ export async function skapaForeningMedKontoKlient(opts: {
     }
 
     const slutligtLosenord =
-      hamtaLokalKonto(skapareEpost)?.losenord ?? tillfalligtLosenord;
+      hamtaLokalKonto(skapareEpost, profil.id)?.losenord ?? tillfalligtLosenord;
+
+    await etableraKontoEfterSkapa({
+      epost: skapareEpost,
+      losenord: slutligtLosenord,
+      foreningId: profil.id,
+      namn: skapareNamn,
+      roll: String(skapareRoll),
+    });
 
     return {
       profil,
@@ -189,9 +225,17 @@ export async function skapaForeningMedKontoKlient(opts: {
   }
 
   if (data.tillfalligtLosenord) {
-    sparaLokalKonto({
+    await etableraKontoEfterSkapa({
       epost: skapareEpost,
       losenord: data.tillfalligtLosenord,
+      foreningId: profil.id,
+      namn: skapareNamn,
+      roll: String(skapareRoll),
+    });
+  } else {
+    await etableraKontoEfterSkapa({
+      epost: skapareEpost,
+      losenord: hamtaLokalKonto(skapareEpost, profil.id)?.losenord || "",
       foreningId: profil.id,
       namn: skapareNamn,
       roll: String(skapareRoll),

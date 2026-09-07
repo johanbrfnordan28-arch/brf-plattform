@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
 import { begärLokalAterstallning } from "@/lib/auth/lokal-aterstallning";
 
 export function GlomtLosenordForm() {
@@ -10,6 +11,14 @@ export function GlomtLosenordForm() {
   const [meddelande, setMeddelande] = useState<string | null>(null);
   const [lokalLank, setLokalLank] = useState<string | null>(null);
   const [laddar, setLaddar] = useState(false);
+
+  useEffect(() => {
+    void hamtaKontoKontext().then((kontext) => {
+      if (kontext?.epost) {
+        setEpost((nu) => nu || kontext.epost);
+      }
+    });
+  }, []);
 
   async function skicka(e: React.FormEvent) {
     e.preventDefault();
@@ -97,8 +106,12 @@ export function GlomtLosenordForm() {
       <h1 className="text-xl font-bold text-foreground">Glömt lösenord</h1>
       <p className="text-sm text-muted">
         Ange e-postadressen som användes när föreningen skapades. Du får en länk
-        för att välja nytt lösenord. Om databasen saknas på servern sker
-        återställning i den här webbläsaren.
+        för att välja nytt lösenord — använd detta om du inte kan logga in. Redan
+        inne i föreningen? Gå till{" "}
+        <Link href="/forening/konto" className="font-medium underline">
+          Konto → Byt lösenord
+        </Link>
+        .
       </p>
       <label className="block text-sm">
         <span className="font-medium">E-post</span>

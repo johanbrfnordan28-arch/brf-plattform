@@ -3,6 +3,10 @@ import { prisma, databasArKonfigurerad } from "@/lib/db";
 import { lasSession } from "@/lib/auth/session";
 import { dekrypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
 import { hamtaPlattformDemoLosenord } from "@/lib/auth/plattform-demo-login";
+import {
+  arPlattformAdminEpost,
+  hamtaPlattformStartkod,
+} from "@/lib/auth/projekt-admin";
 
 /**
  * Returnerar endast den inloggades eget lösenord — aldrig andras.
@@ -36,7 +40,14 @@ export async function GET() {
     return NextResponse.json({ fel: "Kontot hittades inte." }, { status: 404 });
   }
 
-  const losenord = dekrypteraLosenordForVisning(konto.losenordKuvert || "");
+  let losenord = dekrypteraLosenordForVisning(konto.losenordKuvert || "");
+  if (
+    !losenord &&
+    (konto.typ === "PLATTFORM" || arPlattformAdminEpost(konto.epost))
+  ) {
+    losenord =
+      hamtaPlattformDemoLosenord(konto.epost) || hamtaPlattformStartkod();
+  }
   return NextResponse.json({
     epost: konto.epost,
     namn: konto.namn,

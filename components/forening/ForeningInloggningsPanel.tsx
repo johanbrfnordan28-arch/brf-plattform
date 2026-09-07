@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
 import {
   FORENING_AKTIV_EVENT,
   lasAktivForeningId,
@@ -75,8 +76,20 @@ export function ForeningInloggningsPanel() {
       typ?: string;
     };
 
+    const kontext = await hamtaKontoKontext();
+
     const { lasLokalSession } = await import("@/lib/auth/lokal-session");
     const lokalSession = lasLokalSession();
+
+    if (!session.inloggad && kontext?.epost) {
+      setMinEpost(kontext.epost);
+      setMittLosenord(kontext.losenord);
+      setLosenMeddelande(
+        kontext.losenord
+          ? "Ditt lösenord (sparat i den här webbläsaren)."
+          : "Inget sparat lösenord — se Konto för att byta eller återställa.",
+      );
+    }
 
     if (session.inloggad && session.epost) {
       setMinEpost(session.epost);
@@ -89,7 +102,7 @@ export function ForeningInloggningsPanel() {
         };
         let sparat = losData.losenord ?? null;
         if (!sparat) {
-          sparat = hamtaLokalKonto(session.epost)?.losenord ?? null;
+          sparat = hamtaLokalKonto(session.epost, id)?.losenord ?? null;
         }
         setMittLosenord(sparat);
         setLosenMeddelande(
@@ -99,7 +112,7 @@ export function ForeningInloggningsPanel() {
                 "Inget sparat lösenord — logga in igen så sparas det här.",
         );
       } else {
-        const lokal = hamtaLokalKonto(session.epost);
+        const lokal = hamtaLokalKonto(session.epost, id);
         setMittLosenord(lokal?.losenord ?? null);
         setLosenMeddelande(
           lokal
@@ -109,7 +122,7 @@ export function ForeningInloggningsPanel() {
       }
     } else if (lokalSession?.epost) {
       setMinEpost(lokalSession.epost);
-      const lokal = hamtaLokalKonto(lokalSession.epost);
+      const lokal = hamtaLokalKonto(lokalSession.epost, id);
       setMittLosenord(lokal?.losenord ?? null);
       setLosenMeddelande(
         lokal
@@ -171,7 +184,7 @@ export function ForeningInloggningsPanel() {
         })),
       );
       if (session.epost) {
-        const lokal = hamtaLokalKonto(session.epost);
+        const lokal = hamtaLokalKonto(session.epost, id);
         if (lokal) {
           setMittLosenord(lokal.losenord);
           setLosenMeddelande("Ditt lösenord (sparat i den här webbläsaren).");

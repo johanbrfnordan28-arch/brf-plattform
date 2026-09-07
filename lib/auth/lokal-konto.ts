@@ -63,8 +63,9 @@ export function uppdateraLokalLosenord(
   epost: string,
   nuvarande: string,
   nytt: string,
+  foreningId?: string,
 ): { ok: true } | { ok: false; fel: string } {
-  const konto = hamtaLokalKonto(epost);
+  const konto = hamtaLokalKonto(epost, foreningId);
   if (!konto) {
     return { ok: false, fel: "Inget lokalt konto hittades i den här webbläsaren." };
   }

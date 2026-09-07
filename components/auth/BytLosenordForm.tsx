@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
 import {
   hamtaLokalKonto,
   uppdateraLokalLosenord,
   sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
-import { lasLokalSession, sparaLokalSession } from "@/lib/auth/lokal-session";
+import { sparaLokalSession } from "@/lib/auth/lokal-session";
 
 type BytLosenordFormProps = {
   /** Om true: ingen egen sidtitel, mer kompakt. */
@@ -41,53 +42,14 @@ export function BytLosenordForm({
     async function laddaSparat() {
       setLaddarKonto(true);
       try {
-        const sessionRes = await fetch("/api/auth/session");
-        const session = (await sessionRes.json()) as {
-          inloggad?: boolean;
-          epost?: string;
-          foreningId?: string | null;
-        };
-        if (!aktiv) return;
+        const kontext = await hamtaKontoKontext();
+        if (!aktiv || !kontext) return;
 
-        let aktivEpost: string | null = null;
-        let aktivForening: string | null = null;
-
-        if (session.inloggad && session.epost) {
-          aktivEpost = session.epost.trim().toLowerCase();
-          aktivForening = session.foreningId ?? null;
-          setEpost(aktivEpost);
-          setForeningId(aktivForening);
-
-          const losRes = await fetch("/api/auth/mitt-losenord");
-          if (!aktiv) return;
-          let sparat: string | null = null;
-          if (losRes.ok) {
-            const data = (await losRes.json()) as {
-              losenord?: string | null;
-            };
-            sparat = data.losenord ?? null;
-          }
-          if (!sparat) {
-            sparat = hamtaLokalKonto(aktivEpost)?.losenord ?? null;
-          }
-          if (sparat) {
-            setNuvarande(sparat);
-            setHarSparatNuvarande(true);
-          }
-          return;
-        }
-
-        const lokalSession = lasLokalSession();
-        if (lokalSession?.epost) {
-          aktivEpost = lokalSession.epost;
-          aktivForening = lokalSession.foreningId;
-          setEpost(aktivEpost);
-          setForeningId(aktivForening);
-          const lokal = hamtaLokalKonto(aktivEpost);
-          if (lokal?.losenord) {
-            setNuvarande(lokal.losenord);
-            setHarSparatNuvarande(true);
-          }
+        setEpost(kontext.epost);
+        setForeningId(kontext.foreningId);
+        if (kontext.losenord) {
+          setNuvarande(kontext.losenord);
+          setHarSparatNuvarande(true);
         }
       } catch {
         /* låt fältet vara tomt */
@@ -103,7 +65,7 @@ export function BytLosenordForm({
 
   function sparaLokaltEfterByte(nyttLosenord: string) {
     if (!epost) return;
-    const befintligt = hamtaLokalKonto(epost);
+    const befintligt = hamtaLokalKonto(epost, foreningId || undefined);
     sparaLokalKonto({
       epost,
       losenord: nyttLosenord,
@@ -154,7 +116,12 @@ export function BytLosenordForm({
       // Lokal fallback när databas saknas
       if (res.status === 503 || res.status === 401) {
         if (epost) {
-          const lokal = uppdateraLokalLosenord(epost, nuvarande, nytt);
+          const lokal = uppdateraLokalLosenord(
+            epost,
+            nuvarande,
+            nytt,
+            foreningId || undefined,
+          );
           if (lokal.ok) {
             sparaLokaltEfterByte(nytt);
             setOk(true);
@@ -173,7 +140,12 @@ export function BytLosenordForm({
       setFel(data.fel || "Kunde inte byta lösenord.");
     } catch {
       if (epost) {
-        const lokal = uppdateraLokalLosenord(epost, nuvarande, nytt);
+        const lokal = uppdateraLokalLosenord(
+          epost,
+          nuvarande,
+          nytt,
+          foreningId || undefined,
+        );
         if (lokal.ok) {
           sparaLokaltEfterByte(nytt);
           setOk(true);
@@ -218,13 +190,28 @@ export function BytLosenordForm({
           </>
         ) : (
           <>
-            Du måste vara inloggad.{" "}
+            Öppna föreningen du skapade, eller{" "}
             <Link href="/styrelse-login" className="text-primary-dark underline">
-              Logga in
+              logga in
             </Link>
+            .
           </>
         )}
       </p>
+
+      {!harSparatNuvarande && epost ? (
+        <p className="text-sm text-muted">
+          Lösenordet kunde inte fyllas i automatiskt. Ange det du fick vid
+          skapande, eller{" "}
+          <Link
+            href="/konto/glomt-losenord"
+            className="font-medium text-primary-dark underline"
+          >
+            begär en återställningslänk
+          </Link>
+          .
+        </p>
+      ) : null}
 
       <label className="block text-sm">
         <span className="font-medium">Nuvarande lösenord</span>
