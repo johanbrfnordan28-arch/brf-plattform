@@ -35,6 +35,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       foreningId: resultat.foreningId,
+      forening: resultat.forening,
+      accessNyckel: resultat.accessNyckel,
       epost: body.epost.trim().toLowerCase(),
       typ: "STYRELSE",
     });

@@ -36,6 +36,11 @@ import {
 } from "@/lib/testforeningar";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { EfterInloggningLosenordPanel } from "@/components/auth/EfterInloggningLosenordPanel";
+import type { ForeningServerDto } from "@/lib/forening-server";
+import {
+  dtoTillForeningProfil,
+  importeraForeningFranServer,
+} from "@/lib/forening-server-sync";
 
 export type LoginLage = "test" | "kund";
 
@@ -151,6 +156,46 @@ type StyrelseLoginModulProps = {
   lage?: LoginLage;
 };
 
+function slaIhopForeningar(
+  lokala: ForeningProfil[],
+  server: ForeningProfil[],
+): ForeningProfil[] {
+  const map = new Map<string, ForeningProfil>();
+  for (const f of lokala) map.set(f.id, f);
+  for (const f of server) {
+    const befintlig = map.get(f.id);
+    map.set(
+      f.id,
+      befintlig
+        ? dtoTillForeningProfil(
+            {
+              id: f.id,
+              namn: f.namn || befintlig.namn,
+              organisationsnummer:
+                befintlig.organisationsnummer || f.organisationsnummer,
+              epost: befintlig.epost || f.epost,
+              postadress: befintlig.postadress || f.postadress,
+              postnummer: befintlig.postnummer || f.postnummer,
+              ort: befintlig.ort || f.ort,
+              kontaktperson: befintlig.kontaktperson || f.kontaktperson,
+              grundinfoPaborjad:
+                befintlig.grundinfoPaborjad || f.grundinfoPaborjad,
+              avtalGodkant: befintlig.avtalGodkant || f.avtalGodkant,
+              avtalGodkantTidpunkt:
+                befintlig.avtalGodkantTidpunkt || f.avtalGodkantTidpunkt,
+              avtalBankidTidpunkt:
+                befintlig.avtalBankidTidpunkt || f.avtalBankidTidpunkt,
+              avtalBankidNamn: befintlig.avtalBankidNamn || f.avtalBankidNamn,
+              skapadTidpunkt: befintlig.skapadTidpunkt || f.skapadTidpunkt,
+            },
+            befintlig,
+          )
+        : f,
+    );
+  }
+  return [...map.values()].sort((a, b) => a.namn.localeCompare(b.namn, "sv"));
+}
+
 export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [sok, setSok] = useState(INLOGGNING_BRF_PREFIX);
@@ -169,18 +214,49 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
 
-  function ladda() {
+  function ladda(): ForeningProfil[] {
     rensaUtgangnaProvoperioder();
-    setForeningar(
-      lage === "kund" ? listaKundForeningar() : listaInloggningsForeningar(),
-    );
+    const lokala =
+      lage === "kund" ? listaKundForeningar() : listaInloggningsForeningar();
+    setForeningar(lokala);
+    return lokala;
+  }
+
+  async function synkaFranServer(bas: ForeningProfil[]) {
+    try {
+      const res = await fetch("/api/auth/mina-foreningar");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        inloggad?: boolean;
+        foreningar?: ForeningServerDto[];
+      };
+      if (!data.inloggad || !data.foreningar?.length) return;
+
+      const importerade = data.foreningar.map((dto) =>
+        importeraForeningFranServer(dto),
+      );
+      const filtrerade =
+        lage === "kund"
+          ? importerade.filter((f) => arKundForening(f))
+          : importerade.filter((f) => !arKundForening(f));
+
+      if (filtrerade.length === 0) return;
+
+      setForeningar(slaIhopForeningar(bas, filtrerade));
+    } catch {
+      /* valfri synk */
+    }
   }
 
   useEffect(() => {
-    ladda();
+    const lokala = ladda();
+    void synkaFranServer(lokala);
     setHydrated(true);
-    window.addEventListener(FORENING_AKTIV_EVENT, ladda);
-    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+    const onUppdatera = () => {
+      void synkaFranServer(ladda());
+    };
+    window.addEventListener(FORENING_AKTIV_EVENT, onUppdatera);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, onUppdatera);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ladda beror av lage
   }, [lage]);
 
@@ -226,6 +302,8 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       const data = (await res.json()) as {
         fel?: string;
         foreningId?: string;
+        forening?: ForeningServerDto;
+        accessNyckel?: string;
         epost?: string;
       };
 
@@ -233,6 +311,9 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       const { sparaLokalSession } = await import("@/lib/auth/lokal-session");
 
       if (res.ok && data.foreningId) {
+        if (data.forening) {
+          importeraForeningFranServer(data.forening, data.accessNyckel);
+        }
         // Spara lösenordet lokalt så det syns under Konto även om kuvert saknas
         const sparadEpost = (data.epost || epost).trim().toLowerCase();
         sparaLokalKonto({
@@ -255,6 +336,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           losenord,
           foreningId: data.foreningId,
         });
+        void synkaFranServer(ladda());
         setKontoLaddar(false);
         return;
       }
@@ -357,7 +439,9 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           Logga in med e-post och lösenord
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Lösenordet skickades när föreningen skapades.{" "}
+          Lösenordet skickades när föreningen skapades. På ny enhet eller
+          webbläsare: logga in här med e-post och lösenord — då hämtas er
+          förening från servern.{" "}
           <Link
             href="/konto/glomt-losenord"
             className="font-medium text-primary-dark underline hover:no-underline"

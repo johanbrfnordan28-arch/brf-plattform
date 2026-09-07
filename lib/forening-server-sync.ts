@@ -4,7 +4,13 @@
  * full styrelseinloggning finns — servern speglar profil + avtal.
  */
 
-import type { ForeningProfil } from "@/lib/forening-registry";
+import type { ForeningServerDto } from "@/lib/forening-server";
+import {
+  lasForeningProfil,
+  normaliseraForeningProfil,
+  sparaForeningProfil,
+  type ForeningProfil,
+} from "@/lib/forening-registry";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
@@ -14,6 +20,44 @@ const SYNC_FLAG_BASE = "brf-server-synkad";
 export type ServerSyncResultat =
   | { ok: true; accessNyckel: string }
   | { ok: false; fel: string; tillfallig?: boolean };
+
+/** Server-DTO → lokal föreningsprofil (styrelseledamöter behålls om de redan finns). */
+export function dtoTillForeningProfil(
+  dto: ForeningServerDto,
+  befintlig?: ForeningProfil | null,
+): ForeningProfil {
+  return normaliseraForeningProfil({
+    id: dto.id,
+    namn: dto.namn,
+    skapadTidpunkt: dto.skapadTidpunkt,
+    organisationsnummer: dto.organisationsnummer,
+    epost: dto.epost,
+    postadress: dto.postadress,
+    postnummer: dto.postnummer,
+    ort: dto.ort,
+    kontaktperson: dto.kontaktperson,
+    grundinfoPaborjad: dto.grundinfoPaborjad,
+    avtalGodkant: dto.avtalGodkant,
+    avtalGodkantTidpunkt: dto.avtalGodkantTidpunkt,
+    avtalBankidTidpunkt: dto.avtalBankidTidpunkt,
+    avtalBankidNamn: dto.avtalBankidNamn,
+    styrelseledamoter: befintlig?.styrelseledamoter,
+  });
+}
+
+/** Hämtar förening från servern till webbläsaren efter inloggning. */
+export function importeraForeningFranServer(
+  dto: ForeningServerDto,
+  accessNyckel?: string,
+): ForeningProfil {
+  const befintlig = lasForeningProfil(dto.id);
+  const profil = dtoTillForeningProfil(dto, befintlig);
+  sparaForeningProfil(profil, { tyst: true });
+  if (accessNyckel) {
+    sparaServerAccessNyckel(dto.id, accessNyckel);
+  }
+  return profil;
+}
 
 function accessStorageKey(foreningId: string): string {
   return foreningStorageKey(ACCESS_BASE, foreningId);
