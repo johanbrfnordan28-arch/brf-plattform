@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { skickaStyrelsemassaLank } from "@/lib/styrelsemassa-lead-server";
 import { byggStyrelsemassaLankMejl } from "@/lib/styrelsemassa-mejl";
+import { skickaMejlDirekt } from "@/lib/auth/mejl";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -44,15 +45,15 @@ export async function POST(req: Request) {
         kontaktperson: input.kontaktperson,
         basUrl: input.basUrl,
       });
-      if (process.env.NODE_ENV !== "production") {
-        console.info(
-          `[styrelsemassa/demo] till=${mejl.till} amne=${mejl.amne}\n${mejl.brodtext}`,
-        );
-      }
+      const skickat = await skickaMejlDirekt(mejl);
       return NextResponse.json({
         ok: true,
         demoLage: true,
-        meddelande: "Länken är registrerad (demoläge — mejl loggas lokalt).",
+        mejlVia: skickat.via,
+        meddelande:
+          skickat.via === "resend"
+            ? "Tack! Vi har mejlat en länk till er."
+            : "Länken är registrerad (demoläge — sätt RESEND_API_KEY för mejl).",
       });
     }
 

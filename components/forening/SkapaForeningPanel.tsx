@@ -161,34 +161,19 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
                   const res = await fetch("/api/auth/skicka-losenord", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ epost: losenInfo.epost }),
+                    body: JSON.stringify({
+                      epost: losenInfo.epost,
+                      losenord: losenInfo.losenord,
+                      foreningsNamn: skapatNamn || "er förening",
+                      genereraNytt: true,
+                      arSkickaIgen: true,
+                    }),
                   });
                   const data = (await res.json()) as {
                     fel?: string;
                     meddelande?: string;
                     tillfalligtLosenord?: string;
                   };
-
-                  if (res.status === 503) {
-                    const { genereraLokalLosenord, hamtaLokalKonto, sparaLokalKonto } =
-                      await import("@/lib/auth/lokal-konto");
-                    const konto = hamtaLokalKonto(losenInfo.epost);
-                    if (!konto) {
-                      setSkickaIgenFel(
-                        "Kontot finns bara lokalt i webbläsaren där föreningen skapades.",
-                      );
-                      return;
-                    }
-                    const nytt = genereraLokalLosenord(12);
-                    sparaLokalKonto({ ...konto, losenord: nytt });
-                    setLosenInfo((prev) =>
-                      prev ? { ...prev, losenord: nytt } : prev,
-                    );
-                    setSkickaIgenMeddelande(
-                      "Nytt tillfälligt lösenord (lokal demo utan databas):",
-                    );
-                    return;
-                  }
 
                   if (!res.ok) {
                     setSkickaIgenFel(

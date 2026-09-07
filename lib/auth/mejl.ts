@@ -7,53 +7,79 @@ export type MejlMeddelande = {
   brodtext: string;
 };
 
+export type MejlSkickatResultat = {
+  via: "resend" | "outbox" | "ingen";
+  id: string;
+};
+
+/**
+ * Skickar mejl via Resend utan databas — för demoläge/mässa.
+ */
+export async function skickaMejlDirekt(
+  meddelande: MejlMeddelande,
+): Promise<{ via: "resend" | "ingen"; id: string }> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const fran =
+    process.env.MEJL_FRAN?.trim() || "Styrelse-Navet <onboarding@resend.dev>";
+
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info(
+        `[mejl/demo] RESEND_API_KEY saknas — till=${meddelande.till} amne=${meddelande.amne}\n${meddelande.brodtext}`,
+      );
+    }
+    return { via: "ingen", id: skapaId("mejl") };
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fran,
+        to: [meddelande.till],
+        subject: meddelande.amne,
+        text: meddelande.brodtext,
+      }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { id?: string };
+      return { via: "resend", id: data.id || skapaId("mejl") };
+    }
+    console.error("[mejl] Resend svarade inte OK:", await res.text());
+  } catch (error) {
+    console.error("[mejl] Resend-anrop misslyckades:", error);
+  }
+
+  return { via: "ingen", id: skapaId("mejl") };
+}
+
 /**
  * Skickar mejl om RESEND_API_KEY finns, annars sparas i outbox (synlig för plattformsadmin).
  * Returnerar hur mejlet hanterades.
  */
 export async function skickaMejl(
   meddelande: MejlMeddelande,
-): Promise<{ via: "resend" | "outbox" | "ingen"; id: string }> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const fran =
-    process.env.MEJL_FRAN?.trim() || "Styrelse-Navet <onboarding@resend.dev>";
-
-  if (apiKey) {
+): Promise<MejlSkickatResultat> {
+  const direkt = await skickaMejlDirekt(meddelande);
+  if (direkt.via === "resend") {
     try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+      await prisma.mejlOutbox.create({
+        data: {
+          id: skapaId("outbox"),
+          till: meddelande.till,
+          amne: meddelande.amne,
+          brodtext: meddelande.brodtext,
+          skickadVia: "resend",
         },
-        body: JSON.stringify({
-          from: fran,
-          to: [meddelande.till],
-          subject: meddelande.amne,
-          text: meddelande.brodtext,
-        }),
       });
-      if (res.ok) {
-        const data = (await res.json()) as { id?: string };
-        const id = data.id || skapaId("mejl");
-        try {
-          await prisma.mejlOutbox.create({
-            data: {
-              id: skapaId("outbox"),
-              till: meddelande.till,
-              amne: meddelande.amne,
-              brodtext: meddelande.brodtext,
-              skickadVia: "resend",
-            },
-          });
-        } catch {
-          /* loggning i outbox är valfri */
-        }
-        return { via: "resend", id };
-      }
     } catch {
-      /* falla tillbaka till outbox */
+      /* loggning i outbox är valfri */
     }
+    return direkt;
   }
 
   const id = skapaId("outbox");

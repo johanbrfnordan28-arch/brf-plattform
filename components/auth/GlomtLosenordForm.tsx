@@ -36,15 +36,42 @@ export function GlomtLosenordForm() {
         return;
       }
 
-      // Databas saknas — lokal återställning i webbläsaren
+      // Demoläge utan databas — lokal återställning + mejl om Resend finns
       if (res.status === 503 || /databas/i.test(data.fel || "")) {
         const lokal = begärLokalAterstallning(epost);
         if (!lokal.ok) {
           setFel(lokal.fel);
           return;
         }
-        setMeddelande(lokal.meddelande);
-        if (lokal.lank) setLokalLank(lokal.lank);
+        if (lokal.lank) {
+          setLokalLank(lokal.lank);
+          try {
+            const mejlRes = await fetch("/api/auth/glomt-losenord", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                epost,
+                aterstallningsLank: lokal.lank,
+              }),
+            });
+            const mejlData = (await mejlRes.json()) as {
+              meddelande?: string;
+              mejlVia?: string;
+            };
+            if (mejlRes.ok && mejlData.mejlVia === "resend") {
+              setMeddelande(
+                mejlData.meddelande ||
+                  "Återställningslänken har skickats till din e-post.",
+              );
+            } else {
+              setMeddelande(lokal.meddelande);
+            }
+          } catch {
+            setMeddelande(lokal.meddelande);
+          }
+        } else {
+          setMeddelande(lokal.meddelande);
+        }
         return;
       }
 

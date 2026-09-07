@@ -15,6 +15,7 @@ import {
 } from "@/lib/styrelse-ledamot";
 import {
   genereraLokalLosenord,
+  hamtaLokalKonto,
   sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
 import { markeraStyrelsemassaLeadLokalSomSkapadeTest } from "@/lib/styrelsemassa-lager";
@@ -113,12 +114,60 @@ export async function skapaForeningMedKontoKlient(opts: {
       epost: skapareEpost,
       foreningId: profil.id,
     });
+
+    let mejlVia: "resend" | "outbox" | "lokal" = "lokal";
+    let meddelande =
+      "Föreningen sparades i den här webbläsaren. Spara lösenordet nedan — det behövs för inloggning.";
+
+    try {
+      const mejlRes = await fetch("/api/auth/skicka-losenord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          epost: skapareEpost,
+          losenord: tillfalligtLosenord,
+          foreningsNamn: namn,
+          mottagarNamn: skapareNamn,
+        }),
+      });
+      const mejlData = (await mejlRes.json()) as {
+        mejlVia?: "resend" | "ingen";
+        tillfalligtLosenord?: string;
+        meddelande?: string;
+      };
+      if (mejlRes.ok) {
+        if (mejlData.mejlVia === "resend") {
+          mejlVia = "resend";
+          meddelande =
+            "Föreningen sparades i webbläsaren och lösenordet har mejlats. Spara det också här som backup.";
+        } else if (mejlData.meddelande) {
+          meddelande = mejlData.meddelande;
+        }
+        if (
+          mejlData.tillfalligtLosenord &&
+          mejlData.tillfalligtLosenord !== tillfalligtLosenord
+        ) {
+          sparaLokalKonto({
+            epost: skapareEpost,
+            losenord: mejlData.tillfalligtLosenord,
+            foreningId: profil.id,
+            namn: skapareNamn,
+            roll: String(skapareRoll),
+          });
+        }
+      }
+    } catch {
+      /* mejl är valfritt i demoläge */
+    }
+
+    const slutligtLosenord =
+      hamtaLokalKonto(skapareEpost)?.losenord ?? tillfalligtLosenord;
+
     return {
       profil,
-      tillfalligtLosenord,
-      mejlVia: "lokal",
-      meddelande:
-        "Föreningen sparades i den här webbläsaren. Serverns databas är inte konfigurerad ännu — spara lösenordet. När DATABASE_URL (t.ex. Postgres på Vercel) är satt synkas konton till servern.",
+      tillfalligtLosenord: slutligtLosenord,
+      mejlVia,
+      meddelande,
       epost: skapareEpost.toLowerCase(),
     };
   }
