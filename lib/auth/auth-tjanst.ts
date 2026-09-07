@@ -85,11 +85,6 @@ export async function skapaForeningMedKonto(
   const befintligtKonto = await prisma.konto.findUnique({
     where: { epostNyckel: epost },
   });
-  if (befintligtKonto?.typ === "PLATTFORM") {
-    throw new Error(
-      "Den e-postadressen är reserverad och kan inte användas för en förening.",
-    );
-  }
 
   const nyttKonto = !befintligtKonto;
   const tillfalligtLosenord = nyttKonto
@@ -161,6 +156,7 @@ export async function skapaForeningMedKonto(
   });
 
   const loginUrl = `${input.basUrl.replace(/\/$/, "")}/styrelse-login`;
+  const arPlattformKonto = befintligtKonto?.typ === "PLATTFORM";
   const mejl = await skickaMejl(
     nyttKonto
       ? byggLosenordMejl({
@@ -176,7 +172,9 @@ export async function skapaForeningMedKonto(
           brodtext: [
             `Hej ${skapareNamn},`,
             "",
-            `Föreningen «${namn}» är kopplad till ditt befintliga konto.`,
+            arPlattformKonto
+              ? `Föreningen «${namn}» är kopplad till ditt befintliga konto (samma e-post som plattformsadmin).`
+              : `Föreningen «${namn}» är kopplad till ditt befintliga konto.`,
             `Logga in med samma e-post och lösenord: ${loginUrl}`,
             "",
             "Styrelse-Navet",
@@ -250,7 +248,7 @@ export async function loggaInStyrelse(opts: {
 
   const medlemskap = await prisma.foreningMedlem.findMany({
     where: { kontoId: konto.id },
-    orderBy: { skapadTidpunkt: "asc" },
+    orderBy: { skapadTidpunkt: "desc" },
   });
   if (medlemskap.length === 0) {
     throw new Error("Kontot saknar koppling till en förening.");

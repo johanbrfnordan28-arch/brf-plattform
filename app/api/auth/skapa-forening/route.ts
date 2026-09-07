@@ -61,10 +61,12 @@ export async function POST(req: Request) {
       mejlVia: resultat.mejlVia,
       meddelande:
         resultat.mejlVia === "resend"
-          ? "Lösenordet har skickats till din e-post."
+          ? resultat.tillfalligtLosenord
+            ? "Lösenordet har skickats till din e-post."
+            : "Föreningen är kopplad till ditt befintliga konto — logga in med samma e-post och lösenord."
           : resultat.tillfalligtLosenord
             ? "Mejltjänsten är inte konfigurerad — spara lösenordet som visas nedan."
-            : "Lösenordet sparades i mejl-outbox (SMTP ej konfigurerat) och visas en gång här.",
+            : "Föreningen är kopplad till ditt befintliga konto — logga in med samma e-post och lösenord.",
     });
   } catch (e) {
     return NextResponse.json(
