@@ -59,8 +59,10 @@ export async function POST(req: Request) {
       epost: resultat.epost,
       tillfalligtLosenord: resultat.tillfalligtLosenord,
       mejlVia: resultat.mejlVia,
-      meddelande:
-        resultat.mejlVia === "resend"
+      aterkopplad: resultat.aterkopplad === true,
+      meddelande: resultat.aterkopplad
+        ? `Föreningen «${resultat.forening.namn}» fanns redan — den är nu hämtad till den här webbläsaren. Logga in via testperiod med samma e-post.`
+        : resultat.mejlVia === "resend"
           ? resultat.tillfalligtLosenord
             ? "Lösenordet har skickats till din e-post."
             : "Föreningen är kopplad till ditt befintliga konto — logga in med samma e-post och lösenord."

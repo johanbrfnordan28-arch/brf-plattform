@@ -4,6 +4,7 @@
  */
 
 import {
+  finnForeningMedNamn,
   skapaForeningIdFranNamn,
   skapaNyForening,
   type ForeningProfil,
@@ -84,6 +85,18 @@ function skapaLokalProfil(opts: {
   });
 }
 
+function hamtaEllerSkapaLokalProfil(opts: {
+  namn: string;
+  foreningId: string;
+  skapareNamn: string;
+  skapareEpost: string;
+  skapareRoll: string;
+}): ForeningProfil {
+  const befintlig = finnForeningMedNamn(opts.namn);
+  if (befintlig) return befintlig;
+  return skapaLokalProfil(opts);
+}
+
 export async function skapaForeningMedKontoKlient(opts: {
   foreningsNamn: string;
   skapareNamn: string;
@@ -104,6 +117,8 @@ export async function skapaForeningMedKontoKlient(opts: {
     mejlVia?: "resend" | "outbox";
     meddelande?: string;
     epost?: string;
+    aterkopplad?: boolean;
+    forening?: { id: string; namn: string };
   } = {};
 
   try {
@@ -212,9 +227,10 @@ export async function skapaForeningMedKontoKlient(opts: {
     throw new Error(data.fel || "Kunde inte skapa föreningen på servern.");
   }
 
-  const profil = skapaLokalProfil({
+  const serverForeningId = data.forening?.id || foreningId;
+  const profil = hamtaEllerSkapaLokalProfil({
     namn,
-    foreningId,
+    foreningId: serverForeningId,
     skapareNamn,
     skapareEpost,
     skapareRoll,
@@ -223,6 +239,12 @@ export async function skapaForeningMedKontoKlient(opts: {
   if (data.accessNyckel) {
     sparaServerAccessNyckel(profil.id, data.accessNyckel);
   }
+
+  const klientMeddelande =
+    data.meddelande ||
+    (data.aterkopplad
+      ? `Föreningen «${namn}» är hämtad till den här webbläsaren.`
+      : "");
 
   if (data.tillfalligtLosenord) {
     await etableraKontoEfterSkapa({
@@ -251,7 +273,7 @@ export async function skapaForeningMedKontoKlient(opts: {
     profil,
     tillfalligtLosenord: data.tillfalligtLosenord || "",
     mejlVia: data.mejlVia || "outbox",
-    meddelande: data.meddelande || "",
+    meddelande: klientMeddelande,
     epost: data.epost || skapareEpost.toLowerCase(),
   };
 }

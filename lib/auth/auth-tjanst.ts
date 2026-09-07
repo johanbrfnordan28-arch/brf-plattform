@@ -52,7 +52,81 @@ export type SkapaForeningAuthResultat = {
   tillfalligtLosenord: string;
   mejlVia: "resend" | "outbox" | "ingen";
   kontoId: string;
+  /** Föreningen fanns redan på servern — hämtad till webbläsaren. */
+  aterkopplad?: boolean;
 };
+
+/** Hämtar befintlig förening till samma e-post (t.ex. efter rensad webbläsare). */
+async function aterkopplaBefintligForening(opts: {
+  forening: { id: string; namn: string; epost: string };
+  epost: string;
+  skapareNamn: string;
+  roll: string;
+  konto: { id: string; namn: string } | null;
+}): Promise<SkapaForeningAuthResultat | null> {
+  if (!opts.konto) return null;
+
+  const foreningEpost = normaliseraEpost(opts.forening.epost || "");
+  const medlem = await prisma.foreningMedlem.findUnique({
+    where: {
+      foreningId_kontoId: {
+        foreningId: opts.forening.id,
+        kontoId: opts.konto.id,
+      },
+    },
+  });
+
+  const farAterkoppla =
+    Boolean(medlem) || (foreningEpost.length > 0 && foreningEpost === opts.epost);
+
+  if (!farAterkoppla) return null;
+
+  const accessNyckel = skapaAccessNyckel();
+  const uppdaterad = await prisma.$transaction(async (tx) => {
+    const forening = await tx.forening.update({
+      where: { id: opts.forening.id },
+      data: { accessNyckelHash: hashAccessNyckel(accessNyckel) },
+    });
+
+    if (!medlem) {
+      const antal = await tx.foreningMedlem.count({
+        where: { foreningId: opts.forening.id },
+      });
+      if (antal >= MAX_STYRELSE_LEDAMOTER) {
+        throw new Error(
+          `Styrelsen får ha högst ${MAX_STYRELSE_LEDAMOTER} personer.`,
+        );
+      }
+      await tx.foreningMedlem.create({
+        data: {
+          id: skapaId("medlem"),
+          foreningId: opts.forening.id,
+          kontoId: opts.konto!.id,
+          roll: opts.roll,
+        },
+      });
+    }
+
+    if (opts.skapareNamn && opts.skapareNamn !== opts.konto!.namn) {
+      await tx.konto.update({
+        where: { id: opts.konto!.id },
+        data: { namn: opts.skapareNamn },
+      });
+    }
+
+    return forening;
+  });
+
+  return {
+    forening: tillDto(uppdaterad),
+    accessNyckel,
+    epost: opts.epost,
+    tillfalligtLosenord: "",
+    mejlVia: "ingen",
+    kontoId: opts.konto.id,
+    aterkopplad: true,
+  };
+}
 
 export async function skapaForeningMedKonto(
   input: SkapaForeningAuthInput,
@@ -75,16 +149,33 @@ export async function skapaForeningMedKonto(
 
   const namnNyckel = normaliseraNamnNyckel(namn);
   const befintlig = await prisma.forening.findUnique({ where: { namnNyckel } });
-  if (befintlig) {
-    throw new Error(`Föreningen «${befintlig.namn}» finns redan på servern.`);
-  }
-
-  const accessNyckel = skapaAccessNyckel();
-  const medlemId = skapaId("medlem");
 
   const befintligtKonto = await prisma.konto.findUnique({
     where: { epostNyckel: epost },
   });
+
+  if (befintlig) {
+    const aterkopplad = await aterkopplaBefintligForening({
+      forening: befintlig,
+      epost,
+      skapareNamn,
+      roll,
+      konto: befintligtKonto,
+    });
+    if (aterkopplad) {
+      await markeraStyrelsemassaLeadSomSkapadeTest({
+        epost,
+        foreningId: aterkopplad.forening.id,
+      }).catch(() => {});
+      return aterkopplad;
+    }
+    throw new Error(
+      `Föreningen «${befintlig.namn}» finns redan på servern med en annan ägare. Logga in med samma e-post som du skapade den med, eller välj ett annat namn.`,
+    );
+  }
+
+  const accessNyckel = skapaAccessNyckel();
+  const medlemId = skapaId("medlem");
 
   const nyttKonto = !befintligtKonto;
   const tillfalligtLosenord = nyttKonto
