@@ -2012,6 +2012,7 @@ export function UnderhallsplanWizard() {
           antalLagenheter={antalLagenheter}
           planStartAr={planStartAr}
           planLangdAr={planLangdAr}
+          planKostnader={planKostnader}
           ventilationssystem={grund.ventilationssystem}
           lista={besiktningar}
           onChange={updateBesiktningar}
