@@ -84,7 +84,7 @@ export default function OffertPage() {
           Hör av er — vi svarar och guidar er vid frågor om plattformen,
           support eller offert.
         </p>
-        <KontaktEpostLista className="mt-3" />
+        <KontaktEpostLista nycklar={["johan", "seif", "support", "info", "offert"]} className="mt-3" />
       </ContentSection>
     </ModulePage>
   );

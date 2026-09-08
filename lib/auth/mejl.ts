@@ -5,6 +5,8 @@ export type MejlMeddelande = {
   till: string;
   amne: string;
   brodtext: string;
+  /** Svar går till denna adress (t.ex. kundens e-post vid offertförfrågan). */
+  replyTo?: string;
 };
 
 export type MejlSkickatResultat = {
@@ -41,6 +43,9 @@ export async function skickaMejlDirekt(
       body: JSON.stringify({
         from: fran,
         to: [meddelande.till],
+        ...(meddelande.replyTo?.trim()
+          ? { reply_to: meddelande.replyTo.trim() }
+          : {}),
         subject: meddelande.amne,
         text: meddelande.brodtext,
       }),

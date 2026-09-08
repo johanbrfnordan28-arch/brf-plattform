@@ -19,14 +19,18 @@ export function byggOffertForfraganMejl(input: {
   antalLagenheter: string;
   tjanster: string[];
   meddelande: string;
+  oonskadKontakt?: string;
 }): { amne: string; brodtext: string } {
   return {
     amne: `Ny offertförfrågan — ${input.foreningsNamn}`,
     brodtext: [
       "Ny offertförfrågan via styrelse-navet.se/offert",
       "",
+      input.oonskadKontakt
+        ? `Önskad kontaktperson: ${input.oonskadKontakt}`
+        : "",
       `Förening: ${input.foreningsNamn}`,
-      `Kontaktperson: ${input.kontaktperson}`,
+      `Kontaktperson (kund): ${input.kontaktperson}`,
       `E-post: ${input.epost}`,
       input.telefon ? `Telefon: ${input.telefon}` : "",
       input.antalLagenheter ? `Antal lägenheter: ${input.antalLagenheter}` : "",
