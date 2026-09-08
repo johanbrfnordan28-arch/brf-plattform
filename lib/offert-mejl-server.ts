@@ -20,7 +20,7 @@ function hamtaReservMottagare(): string[] {
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
   }
-  return ["johancarlsen@icloud.com"];
+  return ["johan@styrelse-navet.se"];
 }
 
 export function hamtaAllaOffertMottagare(): string[] {

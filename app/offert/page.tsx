@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
+import { KontaktEpostLista } from "@/components/KontaktEpostLista";
 import { ModulePage } from "@/components/ModulePage";
 import { OffertForfraganForm } from "@/components/offert/OffertForfraganForm";
 import { ABK_09_KORT, ABK_09_LANG } from "@/lib/abk-09";
@@ -76,6 +77,14 @@ export default function OffertPage() {
             Prova plattformen gratis →
           </Link>
         </div>
+      </ContentSection>
+
+      <ContentSection title="Kontakt">
+        <p className="text-sm text-muted">
+          Hör av er — vi svarar och guidar er vid frågor om plattformen,
+          support eller offert.
+        </p>
+        <KontaktEpostLista className="mt-3" />
       </ContentSection>
     </ModulePage>
   );

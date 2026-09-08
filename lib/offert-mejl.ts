@@ -1,14 +1,14 @@
+import { KONTAKT_EPOST, kontaktMailto } from "@/lib/kontakt-epost";
+
 /** Publik offertadress — visas i UI och mailto-länkar. */
-export const OFFERT_EPOST = "offert@styrelse-navet.se";
+export const OFFERT_EPOST = KONTAKT_EPOST.offert;
 
 export function offertMailto(amne?: string, brodtext?: string): string {
-  const subject = encodeURIComponent(
+  return kontaktMailto(
+    KONTAKT_EPOST.offert,
     amne?.trim() || "Styrelse-Navet — offertförfrågan",
+    brodtext,
   );
-  const body = brodtext?.trim()
-    ? `&body=${encodeURIComponent(brodtext.trim())}`
-    : "";
-  return `mailto:${OFFERT_EPOST}?subject=${subject}${body}`;
 }
 
 export function byggOffertForfraganMejl(input: {

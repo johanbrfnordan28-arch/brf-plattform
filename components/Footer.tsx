@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { KontaktEpostLista } from "@/components/KontaktEpostLista";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { useStyrelseKontakt } from "@/components/forening/useStyrelseKontakt";
 import {
@@ -50,6 +51,17 @@ export function Footer() {
                 {PLATTFORM_STOD_EPOST}
               </a>
             </p>
+            {!isForening ? (
+              <KontaktEpostLista
+                nycklar={["support", "info", "offert"]}
+                className="mt-1"
+              />
+            ) : (
+              <KontaktEpostLista
+                nycklar={["support", "offert"]}
+                className="mt-1"
+              />
+            )}
             {isForening && (
               <Link
                 href="/"
