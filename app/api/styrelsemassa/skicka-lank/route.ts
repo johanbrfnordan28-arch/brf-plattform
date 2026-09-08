@@ -51,9 +51,9 @@ export async function POST(req: Request) {
         demoLage: true,
         mejlVia: skickat.via,
         meddelande:
-          skickat.via === "resend"
+          skickat.via === "resend" || skickat.via === "smtp"
             ? "Tack! Vi har mejlat en länk till er."
-            : "Länken är registrerad (demoläge — sätt RESEND_API_KEY för mejl).",
+            : "Länken är registrerad (demoläge — sätt RESEND_API_KEY eller SMTP_* för mejl).",
       });
     }
 

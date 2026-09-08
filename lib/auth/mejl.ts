@@ -1,5 +1,10 @@
+import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { skapaId } from "@/lib/auth/session";
+import {
+  hamtaMejlFranAdress,
+  hamtaMejlTransportStatus,
+} from "@/lib/auth/mejl-konfiguration";
 
 export type MejlMeddelande = {
   till: string;
@@ -9,30 +14,19 @@ export type MejlMeddelande = {
   replyTo?: string;
 };
 
+export type MejlLeveransVia = "resend" | "smtp" | "outbox" | "ingen";
+
 export type MejlSkickatResultat = {
-  via: "resend" | "outbox" | "ingen";
+  via: MejlLeveransVia;
   id: string;
+  fel?: string;
 };
 
-/**
- * Skickar mejl via Resend utan databas — för demoläge/mässa.
- */
-export async function skickaMejlDirekt(
+async function skickaViaResend(
   meddelande: MejlMeddelande,
-): Promise<{ via: "resend" | "ingen"; id: string }> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const fran =
-    process.env.MEJL_FRAN?.trim() || "Styrelse-Navet <onboarding@resend.dev>";
-
-  if (!apiKey) {
-    if (process.env.NODE_ENV !== "production") {
-      console.info(
-        `[mejl/demo] RESEND_API_KEY saknas — till=${meddelande.till} amne=${meddelande.amne}\n${meddelande.brodtext}`,
-      );
-    }
-    return { via: "ingen", id: skapaId("mejl") };
-  }
-
+  apiKey: string,
+  fran: string,
+): Promise<{ ok: boolean; id?: string; fel?: string }> {
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -50,27 +44,135 @@ export async function skickaMejlDirekt(
         text: meddelande.brodtext,
       }),
     });
+
     if (res.ok) {
       const data = (await res.json()) as { id?: string };
-      return { via: "resend", id: data.id || skapaId("mejl") };
+      return { ok: true, id: data.id };
     }
-    console.error("[mejl] Resend svarade inte OK:", await res.text());
+
+    const feltext = await res.text();
+    console.error("[mejl/resend] API-fel:", res.status, feltext);
+    return {
+      ok: false,
+      fel: `Resend ${res.status}: ${feltext.slice(0, 200)}`,
+    };
   } catch (error) {
-    console.error("[mejl] Resend-anrop misslyckades:", error);
+    console.error("[mejl/resend] Anrop misslyckades:", error);
+    return {
+      ok: false,
+      fel: error instanceof Error ? error.message : "Resend-anrop misslyckades",
+    };
+  }
+}
+
+async function skickaViaSmtp(
+  meddelande: MejlMeddelande,
+): Promise<{ ok: boolean; fel?: string }> {
+  const host = process.env.SMTP_HOST?.trim();
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  if (!host || !user || !pass) {
+    return { ok: false, fel: "SMTP saknas" };
   }
 
-  return { via: "ingen", id: skapaId("mejl") };
+  const port = Number.parseInt(process.env.SMTP_PORT || "587", 10);
+  const secure =
+    process.env.SMTP_SECURE === "true" ||
+    process.env.SMTP_SECURE === "1" ||
+    port === 465;
+  const fran = hamtaMejlFranAdress();
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from: fran,
+      to: meddelande.till,
+      ...(meddelande.replyTo?.trim()
+        ? { replyTo: meddelande.replyTo.trim() }
+        : {}),
+      subject: meddelande.amne,
+      text: meddelande.brodtext,
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error("[mejl/smtp] Utskick misslyckades:", error);
+    return {
+      ok: false,
+      fel: error instanceof Error ? error.message : "SMTP misslyckades",
+    };
+  }
 }
 
 /**
- * Skickar mejl om RESEND_API_KEY finns, annars sparas i outbox (synlig för plattformsadmin).
- * Returnerar hur mejlet hanterades.
+ * Skickar mejl via Resend eller SMTP — utan databaskrav.
+ */
+export async function skickaMejlDirekt(
+  meddelande: MejlMeddelande,
+): Promise<MejlSkickatResultat> {
+  const status = hamtaMejlTransportStatus();
+  const fran = hamtaMejlFranAdress();
+  let senasteFel: string | undefined;
+
+  if (status.resend) {
+    const resultat = await skickaViaResend(
+      meddelande,
+      process.env.RESEND_API_KEY!.trim(),
+      fran,
+    );
+    if (resultat.ok) {
+      return {
+        via: "resend",
+        id: resultat.id || skapaId("mejl"),
+      };
+    }
+    senasteFel = resultat.fel;
+  }
+
+  if (status.smtp) {
+    const resultat = await skickaViaSmtp(meddelande);
+    if (resultat.ok) {
+      return { via: "smtp", id: skapaId("mejl") };
+    }
+    senasteFel = resultat.fel || senasteFel;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info(
+      `[mejl/ingen transport] till=${meddelande.till} amne=${meddelande.amne}\n${meddelande.brodtext}`,
+    );
+  }
+
+  if (!status.resend && !status.smtp) {
+    senasteFel =
+      "Ingen mejltjänst konfigurerad — sätt RESEND_API_KEY eller SMTP_* i Vercel.";
+  }
+
+  return {
+    via: "ingen",
+    id: skapaId("mejl"),
+    fel: senasteFel,
+  };
+}
+
+function arLevererat(via: MejlLeveransVia): boolean {
+  return via === "resend" || via === "smtp";
+}
+
+/**
+ * Skickar mejl via Resend/SMTP om möjligt, annars sparas i outbox.
  */
 export async function skickaMejl(
   meddelande: MejlMeddelande,
 ): Promise<MejlSkickatResultat> {
   const direkt = await skickaMejlDirekt(meddelande);
-  if (direkt.via === "resend") {
+  if (arLevererat(direkt.via)) {
     try {
       await prisma.mejlOutbox.create({
         data: {
@@ -78,7 +180,7 @@ export async function skickaMejl(
           till: meddelande.till,
           amne: meddelande.amne,
           brodtext: meddelande.brodtext,
-          skickadVia: "resend",
+          skickadVia: direkt.via,
         },
       });
     } catch {
@@ -105,7 +207,7 @@ export async function skickaMejl(
         `[mejl/fallback] till=${meddelande.till} amne=${meddelande.amne}\n${meddelande.brodtext}`,
       );
     }
-    return { via: "ingen", id };
+    return { via: "ingen", id, fel: direkt.fel };
   }
 
   if (process.env.NODE_ENV !== "production") {
@@ -114,7 +216,7 @@ export async function skickaMejl(
     );
   }
 
-  return { via: "outbox", id };
+  return { via: "outbox", id, fel: direkt.fel };
 }
 
 export function byggLosenordMejl(opts: {

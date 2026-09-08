@@ -87,6 +87,7 @@ export function PlattformDashboard() {
   const [visaMittLosenord, setVisaMittLosenord] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
   const [demoLage, setDemoLage] = useState(false);
+  const [mejlStatus, setMejlStatus] = useState<string | null>(null);
 
   const ladda = useCallback(async () => {
     setFel(null);
@@ -105,11 +106,12 @@ export function PlattformDashboard() {
     setEpost(session.epost || null);
     setForbjuden(false);
 
-    const [statRes, mejlRes, losRes, foreningRes] = await Promise.all([
+    const [statRes, mejlRes, losRes, foreningRes, mejlStatusRes] = await Promise.all([
       fetch("/api/plattform/statistik"),
       fetch("/api/plattform/mejl-outbox"),
       fetch("/api/auth/mitt-losenord"),
       fetch("/api/plattform/foreningar"),
+      fetch("/api/plattform/mejl-status"),
     ]);
 
     let arDemo = false;
@@ -146,6 +148,18 @@ export function PlattformDashboard() {
     } else if (foreningRes.status === 503) {
       arDemo = true;
       setForeningar([]);
+    }
+
+    if (mejlStatusRes.ok) {
+      const statusData = (await mejlStatusRes.json()) as {
+        aktivTransport?: string;
+        meddelande?: string;
+      };
+      if (statusData.aktivTransport === "ingen") {
+        setMejlStatus(statusData.meddelande || null);
+      } else {
+        setMejlStatus(null);
+      }
     }
 
     setDemoLage(arDemo);
@@ -230,6 +244,15 @@ export function PlattformDashboard() {
           </button>
         </div>
       </header>
+
+      {mejlStatus ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          {mejlStatus} Lägg till{" "}
+          <code className="text-xs">RESEND_API_KEY</code> i Vercel Production
+          (enklast via Resend-integrationen i Marketplace) eller SMTP-uppgifter
+          för er mailserver.
+        </p>
+      ) : null}
 
       {demoLage ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -425,7 +448,8 @@ export function PlattformDashboard() {
       <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
         <h2 className="text-lg font-bold text-foreground">Mejl-outbox</h2>
         <p className="mt-1 text-sm text-muted">
-          När SMTP/Resend saknas sparas mejl här (t.ex. tillfälliga lösenord).
+          Mejl som inte kunde skickas via Resend/SMTP sparas här tills mejltjänsten
+          är konfigurerad (t.ex. tillfälliga lösenord och offertförfrågningar).
         </p>
         <ul className="mt-3 space-y-3">
           {mejl.slice(0, 20).map((m) => (

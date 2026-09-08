@@ -82,6 +82,8 @@ Tillfälliga adminlösenord skapas vid första inloggning och syns i mejl-outbox
 
 **Viktigt på Vercel:** sätt `DATABASE_URL` till en Postgres-databas (Neon/Supabase/Vercel Postgres) och kör `npx prisma migrate deploy`. Utan databas skapas föreningen ändå lokalt i webbläsaren, men serverinloggning och mejl kräver `DATABASE_URL`.
 
+**Mejl (Resend eller SMTP):** utan `RESEND_API_KEY` sparas mejl i outbox under `/plattform` — de skickas inte till inkorgen. Enklast: installera [Resend i Vercel Marketplace](https://vercel.com/marketplace/resend) (lägger till `RESEND_API_KEY` automatiskt). Alternativ: sätt `SMTP_HOST`, `SMTP_USER` och `SMTP_PASS` för er mailserver. Se `.env.example`.
+
 ### Viktigt vid test på Vercel
 
 - **Data sparas per webbläsare** — och synkas till servern när databasen är konfigurerad.

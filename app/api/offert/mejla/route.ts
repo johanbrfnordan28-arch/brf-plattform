@@ -65,11 +65,12 @@ export async function POST(request: Request) {
         valdKontakt.epost,
       );
 
-      if (resultat.levererade === 0) {
+      if (resultat.levererade === 0 && resultat.via !== "outbox") {
         return NextResponse.json(
           {
             ok: false,
             fel:
+              resultat.varning ||
               "Mejlet kunde inte skickas just nu. Mejla oss direkt på offert@styrelse-navet.se.",
             ...resultat,
           },
@@ -77,7 +78,11 @@ export async function POST(request: Request) {
         );
       }
 
-      return NextResponse.json({ ok: true, ...resultat });
+      return NextResponse.json({
+        ok: true,
+        ...resultat,
+        sparadIOutbox: resultat.levererade === 0 && resultat.via === "outbox",
+      });
     }
 
     const foreningsNamn = body.foreningsNamn?.trim() ?? "";
@@ -109,18 +114,22 @@ export async function POST(request: Request) {
       { ...mejl, replyTo: kundEpost },
     );
 
-    if (resultat.levererade === 0) {
+    if (resultat.levererade === 0 && resultat.via !== "outbox") {
       return NextResponse.json(
         {
           ok: false,
-          fel: "Mejlet kunde inte skickas till teamet.",
+          fel: resultat.varning || "Mejlet kunde inte skickas till teamet.",
           ...resultat,
         },
         { status: 503 },
       );
     }
 
-    return NextResponse.json({ ok: true, ...resultat });
+    return NextResponse.json({
+      ok: true,
+      ...resultat,
+      sparadIOutbox: resultat.levererade === 0 && resultat.via === "outbox",
+    });
   } catch (error) {
     console.error("[offert/mejla]", error);
     return NextResponse.json({ fel: "Kunde inte skicka mejl." }, { status: 500 });

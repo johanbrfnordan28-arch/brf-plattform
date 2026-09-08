@@ -7,7 +7,7 @@ import {
   verifieraLosenord,
 } from "@/lib/auth/losenord";
 import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
-import { byggAterstallningsMejl, byggLosenordMejl, skickaMejl } from "@/lib/auth/mejl";
+import { byggAterstallningsMejl, byggLosenordMejl, skickaMejl, type MejlLeveransVia } from "@/lib/auth/mejl";
 import {
   skapaSessionToken,
   skapaId,
@@ -50,7 +50,7 @@ export type SkapaForeningAuthResultat = {
   accessNyckel: string;
   epost: string;
   tillfalligtLosenord: string;
-  mejlVia: "resend" | "outbox" | "ingen";
+  mejlVia: MejlLeveransVia;
   kontoId: string;
   /** Föreningen fanns redan på servern — hämtad till webbläsaren. */
   aterkopplad?: boolean;
@@ -700,7 +700,7 @@ export async function skickaTillfalligtLosenord(opts: {
   kontoId?: string;
 }): Promise<{
   skickat: boolean;
-  mejlVia?: "resend" | "outbox" | "ingen";
+  mejlVia?: MejlLeveransVia;
   tillfalligtLosenord?: string;
 }> {
   const epost = normaliseraEpost(opts.epost);
@@ -772,7 +772,7 @@ export async function begärAterstallning(opts: {
 }): Promise<{
   skickat: boolean;
   aterstallningsLank?: string;
-  mejlVia?: "resend" | "outbox" | "ingen";
+  mejlVia?: MejlLeveransVia;
 }> {
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
