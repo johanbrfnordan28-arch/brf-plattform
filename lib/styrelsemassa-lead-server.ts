@@ -17,6 +17,8 @@ export type StyrelsemassaLeadDto = {
   kalla: StyrelsemassaLeadKalla;
   inbjudenAvNamn: string;
   inbjudenAvEpost: string;
+  inbjudanMallId: string | null;
+  inbjudanMallTitel: string;
   foreningId: string | null;
   skapadTidpunkt: string;
   testSkapadTidpunkt: string | null;
@@ -35,6 +37,8 @@ function tillDto(rad: {
   kalla: string;
   inbjudenAvNamn: string;
   inbjudenAvEpost: string;
+  inbjudanMallId: string | null;
+  inbjudanMallTitel: string;
   foreningId: string | null;
   skapadTidpunkt: Date;
   testSkapadTidpunkt: Date | null;
@@ -54,6 +58,8 @@ function tillDto(rad: {
     kalla,
     inbjudenAvNamn: rad.inbjudenAvNamn,
     inbjudenAvEpost: rad.inbjudenAvEpost,
+    inbjudanMallId: rad.inbjudanMallId,
+    inbjudanMallTitel: rad.inbjudanMallTitel,
     foreningId: rad.foreningId,
     skapadTidpunkt: rad.skapadTidpunkt.toISOString(),
     testSkapadTidpunkt: rad.testSkapadTidpunkt?.toISOString() ?? null,

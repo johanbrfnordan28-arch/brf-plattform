@@ -17,6 +17,7 @@ type LeadRad = {
   status: "lank_skickad" | "skapade_test";
   kalla?: "massa_sjalv" | "personal" | "massa_lank";
   inbjudenAvNamn?: string;
+  inbjudanMallTitel?: string;
   skapadTidpunkt: string;
   testSkapadTidpunkt: string | null;
   foreningStatus?: string | null;
@@ -202,6 +203,9 @@ export function PlattformStyrelsemassaPanel() {
                   {rad.kalla ? KALLA_ETIKETT[rad.kalla] : "—"}
                   {rad.inbjudenAvNamn ? (
                     <div className="text-muted">{rad.inbjudenAvNamn}</div>
+                  ) : null}
+                  {rad.inbjudanMallTitel ? (
+                    <div className="text-muted">{rad.inbjudanMallTitel}</div>
                   ) : null}
                 </td>
                 <td className="py-2 pr-3 whitespace-nowrap">

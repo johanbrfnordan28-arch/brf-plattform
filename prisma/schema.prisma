@@ -184,6 +184,23 @@ model ForeningSakerhetskopia {
   @@index([foreningsNamn])
 }
 
+/// Sparad personlig inbjudningsmall per personal (kan användas av hela teamet).
+model PersonligInbjudanMall {
+  id                 String   @id
+  agareEpost         String
+  titel              String
+  avsandareNamn      String   @default("")
+  mejlAmne           String
+  mejlMall           String
+  /// Förvald mall när denna person skickar inbjudan.
+  arStandard         Boolean  @default(false)
+  skapadTidpunkt     DateTime @default(now())
+  uppdateradTidpunkt DateTime @updatedAt
+
+  @@index([agareEpost])
+  @@index([agareEpost, arStandard])
+}
+
 /// Intresse från styrelsemässa / «mejla mig en länk» — uppföljning i personalytan.
 model StyrelsemassaLead {
   id                 String    @id
@@ -198,6 +215,8 @@ model StyrelsemassaLead {
   kalla              String    @default("massa_sjalv")
   inbjudenAvNamn     String    @default("")
   inbjudenAvEpost    String    @default("")
+  inbjudanMallId     String?
+  inbjudanMallTitel  String    @default("")
   foreningId         String?
   skapadTidpunkt     DateTime  @default(now())
   testSkapadTidpunkt DateTime?

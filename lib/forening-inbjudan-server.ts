@@ -4,6 +4,8 @@ import { skickaMejl } from "@/lib/auth/mejl";
 import { skapaId } from "@/lib/auth/session";
 import { byggPersonligInbjudanMejl } from "@/lib/forening-inbjudan-mejl";
 import { hamtaInbjudanTexter } from "@/lib/inbjudan-texter";
+import { hamtaPersonligInbjudanMall } from "@/lib/inbjudan-mall-server";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import type { StyrelsemassaLeadDto } from "@/lib/styrelsemassa-lead-server";
 
 function tillDto(rad: {
@@ -16,6 +18,8 @@ function tillDto(rad: {
   kalla: string;
   inbjudenAvNamn: string;
   inbjudenAvEpost: string;
+  inbjudanMallId: string | null;
+  inbjudanMallTitel: string;
   foreningId: string | null;
   skapadTidpunkt: Date;
   testSkapadTidpunkt: Date | null;
@@ -34,6 +38,8 @@ function tillDto(rad: {
         : "massa_sjalv",
     inbjudenAvNamn: rad.inbjudenAvNamn,
     inbjudenAvEpost: rad.inbjudenAvEpost,
+    inbjudanMallId: rad.inbjudanMallId,
+    inbjudanMallTitel: rad.inbjudanMallTitel,
     foreningId: rad.foreningId,
     skapadTidpunkt: rad.skapadTidpunkt.toISOString(),
     testSkapadTidpunkt: rad.testSkapadTidpunkt?.toISOString() ?? null,
@@ -48,7 +54,8 @@ export async function skickaPersonligForeningsinbjudan(input: {
   avsandareNamn: string;
   inbjudenAvEpost: string;
   basUrl: string;
-}): Promise<StyrelsemassaLeadDto> {
+  mallId?: string;
+}): Promise<{ lead: StyrelsemassaLeadDto; mejlVia: string; mejlSkickades: boolean }> {
   const foreningsNamn = input.foreningsNamn.trim();
   const epost = normaliseraEpost(input.epost);
   const kontaktperson = (input.kontaktperson ?? "").trim();
@@ -57,19 +64,44 @@ export async function skickaPersonligForeningsinbjudan(input: {
 
   if (!foreningsNamn) throw new Error("Ange föreningens namn.");
   if (!arGiltigEpost(epost)) throw new Error("Ange en giltig e-postadress.");
-  if (!avsandareNamn) throw new Error("Ange vem inbjudan kommer från.");
-
   const texter = await hamtaInbjudanTexter();
+  let mejlAmne: string | undefined;
+  let mejlMall: string | undefined;
+  let mallTitel = "";
+  let mallId: string | null = null;
+  let mallAvsandare = "";
+
+  if (input.mallId?.trim()) {
+    const mall = await hamtaPersonligInbjudanMall(
+      input.mallId.trim(),
+      inbjudenAvEpost,
+    );
+    if (!mall) throw new Error("Inbjudningsmallen hittades inte.");
+    mejlAmne = mall.mejlAmne;
+    mejlMall = mall.mejlMall;
+    mallTitel = mall.titel;
+    mallId = mall.id;
+    mallAvsandare = mall.avsandareNamn;
+  }
+
+  const effektivAvsandare = avsandareNamn || mallAvsandare;
+  if (!effektivAvsandare) {
+    throw new Error("Ange vem inbjudan kommer från, eller välj en mall med avsändarnamn.");
+  }
+
   const mejl = byggPersonligInbjudanMejl({
     till: epost,
     foreningsNamn,
     kontaktperson,
-    avsandareNamn,
+    avsandareNamn: effektivAvsandare,
     basUrl: input.basUrl,
     texter,
+    mejlAmne,
+    mejlMall,
   });
 
-  await skickaMejl(mejl);
+  const mejlResultat = await skickaMejl(mejl);
+  const levererat = mejlSkickades(mejlResultat.via);
 
   const skapad = await prisma.styrelsemassaLead.create({
     data: {
@@ -79,11 +111,17 @@ export async function skickaPersonligForeningsinbjudan(input: {
       epostNyckel: epost,
       kontaktperson,
       kalla: "personal",
-      inbjudenAvNamn: avsandareNamn,
+      inbjudenAvNamn: effektivAvsandare,
       inbjudenAvEpost,
-      mejlSkickad: true,
+      inbjudanMallId: mallId,
+      inbjudanMallTitel: mallTitel,
+      mejlSkickad: levererat,
     },
   });
 
-  return tillDto(skapad);
+  return {
+    lead: tillDto(skapad),
+    mejlVia: mejlResultat.via,
+    mejlSkickades: levererat,
+  };
 }

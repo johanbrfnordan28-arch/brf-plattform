@@ -41,6 +41,9 @@ export function byggPersonligInbjudanMejl(opts: {
   avsandareNamn: string;
   basUrl: string;
   texter?: InbjudanTexter;
+  /** Sparad personlig mall — ersätter global standardtext. */
+  mejlAmne?: string;
+  mejlMall?: string;
 }): { till: string; amne: string; brodtext: string } {
   const texter = opts.texter ?? hamtaInbjudanTexterStandard();
   const lank = huvudsidaInbjudanLank(opts.basUrl);
@@ -53,9 +56,12 @@ export function byggPersonligInbjudanMejl(opts: {
     massaNamn: texter.massaNamn,
   };
 
+  const amneMall = opts.mejlAmne?.trim() || texter.personligMejlAmne;
+  const brodMall = opts.mejlMall?.trim() || texter.personligMejlMall;
+
   return {
     till: opts.till,
-    amne: fyllInbjudanMall(texter.personligMejlAmne, variabler),
-    brodtext: fyllInbjudanMall(texter.personligMejlMall, variabler),
+    amne: fyllInbjudanMall(amneMall, variabler),
+    brodtext: fyllInbjudanMall(brodMall, variabler),
   };
 }

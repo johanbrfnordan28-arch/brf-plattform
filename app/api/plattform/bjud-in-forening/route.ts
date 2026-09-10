@@ -5,8 +5,9 @@ import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import { skickaMejlDirekt } from "@/lib/auth/mejl";
 import { byggPersonligInbjudanMejl } from "@/lib/forening-inbjudan-mejl";
 import { skickaPersonligForeningsinbjudan } from "@/lib/forening-inbjudan-server";
-import { hamtaInbjudanTexterStandard } from "@/lib/inbjudan-texter";
-
+import {
+  hamtaInbjudanTexterStandard,
+} from "@/lib/inbjudan-texter";
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (env) return env.replace(/\/$/, "");
@@ -29,15 +30,17 @@ export async function POST(req: Request) {
       epost?: string;
       kontaktperson?: string;
       avsandareNamn?: string;
+      mallId?: string;
     };
 
     const input = {
       foreningsNamn: body.foreningsNamn?.trim() ?? "",
       epost: body.epost?.trim() ?? "",
       kontaktperson: body.kontaktperson?.trim(),
-      avsandareNamn: body.avsandareNamn?.trim() || session.namn?.trim() || session.epost,
+      avsandareNamn: body.avsandareNamn?.trim() || session.namn?.trim() || "",
       inbjudenAvEpost: session.epost,
       basUrl: basUrlFranRequest(req),
+      mallId: body.mallId?.trim(),
     };
 
     if (!input.foreningsNamn || !input.epost) {
@@ -48,13 +51,14 @@ export async function POST(req: Request) {
     }
 
     if (!databasArKonfigurerad()) {
+      const texter = hamtaInbjudanTexterStandard();
       const mejl = byggPersonligInbjudanMejl({
         till: input.epost,
         foreningsNamn: input.foreningsNamn,
         kontaktperson: input.kontaktperson,
-        avsandareNamn: input.avsandareNamn,
+        avsandareNamn: input.avsandareNamn || session.epost,
         basUrl: input.basUrl,
-        texter: hamtaInbjudanTexterStandard(),
+        texter,
       });
       const skickat = await skickaMejlDirekt(mejl);
       return NextResponse.json({
@@ -67,11 +71,14 @@ export async function POST(req: Request) {
       });
     }
 
-    const lead = await skickaPersonligForeningsinbjudan(input);
+    const resultat = await skickaPersonligForeningsinbjudan(input);
     return NextResponse.json({
-      ok: true,
-      lead,
-      meddelande: "Inbjudan skickad — mottagaren kommer till huvudsidan via länken i mejlet.",
+      ok: resultat.mejlSkickades,
+      lead: resultat.lead,
+      mejlVia: resultat.mejlVia,
+      meddelande: resultat.mejlSkickades
+        ? "Inbjudan skickad — mottagaren kommer till huvudsidan via länken i mejlet."
+        : "Inbjudan registrerad men mejlet kunde inte skickas — kontrollera mejl-outbox.",
     });
   } catch (error) {
     return NextResponse.json(
