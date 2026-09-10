@@ -128,6 +128,16 @@ model PlattformInstallning {
   id                 String   @id @default("default")
   /// Varning när antalet aktuella testföreningar når eller överstiger detta.
   varningTestAntal  Int      @default(25)
+  /// Namn på aktuell mässa, t.ex. «STOFF Stockholm 2026».
+  inbjudanMassaNamn  String   @default("")
+  inbjudanMassaHuvudsidaRubrik String @default("")
+  inbjudanMassaHuvudsidaIntro  String @default("")
+  inbjudanMassaMejlAmne          String @default("")
+  inbjudanMassaMejlMall          String @default("")
+  inbjudanPersonligMejlAmne      String @default("")
+  inbjudanPersonligMejlMall      String @default("")
+  inbjudanMejlaLankRubrik        String @default("")
+  inbjudanMejlaLankIntro         String @default("")
   uppdateradTidpunkt DateTime @updatedAt
   uppdateradAvEpost  String   @default("")
 }
@@ -184,12 +194,17 @@ model StyrelsemassaLead {
   telefon            String    @default("")
   /// lank_skickad | skapade_test
   status             String    @default("lank_skickad")
+  /// massa_sjalv | personal | massa_lank
+  kalla              String    @default("massa_sjalv")
+  inbjudenAvNamn     String    @default("")
+  inbjudenAvEpost    String    @default("")
   foreningId         String?
   skapadTidpunkt     DateTime  @default(now())
   testSkapadTidpunkt DateTime?
   mejlSkickad        Boolean   @default(false)
 
   @@index([epostNyckel])
+  @@index([kalla])
   @@index([status])
   @@index([skapadTidpunkt])
 }

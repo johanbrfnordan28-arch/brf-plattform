@@ -14,6 +14,8 @@ import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
 import { FORENING_MODULER } from "@/lib/forening-moduler";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { MejlaLankStartRuta } from "@/components/styrelsemassa/MejlaLankStartRuta";
+import { InbjudanHuvudsidaInnehall } from "@/components/inbjudan/InbjudanHuvudsidaInnehall";
+import { HUVUDSIDA_MASSA_QUERY } from "@/lib/massa-lank";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
@@ -105,6 +107,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
   return (
     <main>
+      {!isForening ? <InbjudanHuvudsidaInnehall /> : null}
       <section className="relative overflow-hidden border-b border-border">
         <div
           className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
@@ -534,6 +537,29 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
       {!isForening ? (
         <>
+          <section className="border-t border-border bg-[#fafcfa]">
+            <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="max-w-xl">
+                <p className="text-sm font-semibold text-primary-dark">
+                  Var ni på styrelsemässan?
+                </p>
+                <h2 className="mt-1 text-lg font-bold text-foreground">
+                  Titta på plattformen i lugn och ro
+                </h2>
+                <p className="mt-2 text-sm text-muted">
+                  Ni landar på huvudsidan och kan bedöma om Styrelse-Navet passar
+                  er — prova gärna gratis i 30 dagar när ni vill.
+                </p>
+              </div>
+              <Link
+                href={HUVUDSIDA_MASSA_QUERY}
+                className="brf-knapp-neutral shrink-0 px-6 py-3 text-sm font-semibold"
+              >
+                Till huvudsidan (mässa)
+              </Link>
+            </div>
+          </section>
+
           <section
             id="skapa-forening"
             className="scroll-mt-24 border-t border-border bg-surface/80"

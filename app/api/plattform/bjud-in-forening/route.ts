@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
-import { skickaStyrelsemassaLank } from "@/lib/styrelsemassa-lead-server";
-import { byggStyrelsemassaLankMejl } from "@/lib/styrelsemassa-mejl";
+import { lasSession } from "@/lib/auth/session";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import { skickaMejlDirekt } from "@/lib/auth/mejl";
-import {
-  hamtaInbjudanTexter,
-  hamtaInbjudanTexterStandard,
-} from "@/lib/inbjudan-texter";
+import { byggPersonligInbjudanMejl } from "@/lib/forening-inbjudan-mejl";
+import { skickaPersonligForeningsinbjudan } from "@/lib/forening-inbjudan-server";
+import { hamtaInbjudanTexterStandard } from "@/lib/inbjudan-texter";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -17,62 +16,62 @@ function basUrlFranRequest(req: Request): string {
   return "http://127.0.0.1:3010";
 }
 
-/** Registrerar intresse och mejlar länk till prova-gratis. */
+/** Personal skickar inbjudan till namngiven kontakt i en förening. */
 export async function POST(req: Request) {
+  const session = await lasSession();
+  if (!session || session.typ !== "PLATTFORM") {
+    return NextResponse.json({ fel: "Endast plattformsadmin." }, { status: 403 });
+  }
+
   try {
     const body = (await req.json()) as {
       foreningsNamn?: string;
       epost?: string;
       kontaktperson?: string;
-      telefon?: string;
+      avsandareNamn?: string;
     };
 
     const input = {
       foreningsNamn: body.foreningsNamn?.trim() ?? "",
       epost: body.epost?.trim() ?? "",
       kontaktperson: body.kontaktperson?.trim(),
-      telefon: body.telefon?.trim(),
+      avsandareNamn: body.avsandareNamn?.trim() || session.namn?.trim() || session.epost,
+      inbjudenAvEpost: session.epost,
       basUrl: basUrlFranRequest(req),
     };
 
     if (!input.foreningsNamn || !input.epost) {
       return NextResponse.json(
-        { fel: "Fyll i föreningens namn och e-post." },
+        { fel: "Fyll i föreningens namn och mottagarens e-post." },
         { status: 400 },
       );
     }
 
     if (!databasArKonfigurerad()) {
-      let texter;
-      try {
-        texter = await hamtaInbjudanTexter();
-      } catch {
-        texter = hamtaInbjudanTexterStandard();
-      }
-      const mejl = byggStyrelsemassaLankMejl({
+      const mejl = byggPersonligInbjudanMejl({
         till: input.epost,
         foreningsNamn: input.foreningsNamn,
         kontaktperson: input.kontaktperson,
+        avsandareNamn: input.avsandareNamn,
         basUrl: input.basUrl,
-        texter,
+        texter: hamtaInbjudanTexterStandard(),
       });
       const skickat = await skickaMejlDirekt(mejl);
       return NextResponse.json({
-        ok: true,
+        ok: mejlSkickades(skickat.via),
         demoLage: true,
         mejlVia: skickat.via,
-        meddelande:
-          skickat.via === "resend" || skickat.via === "smtp"
-            ? "Tack! Vi har mejlat en länk till er."
-            : "Länken är registrerad (demoläge — sätt RESEND_API_KEY eller SMTP_* för mejl).",
+        meddelande: mejlSkickades(skickat.via)
+          ? "Inbjudan skickad till mottagaren."
+          : "Mejltjänsten saknas — kontrollera RESEND_API_KEY.",
       });
     }
 
-    const lead = await skickaStyrelsemassaLank(input);
+    const lead = await skickaPersonligForeningsinbjudan(input);
     return NextResponse.json({
       ok: true,
       lead,
-      meddelande: "Tack! Vi har mejlat en länk till er.",
+      meddelande: "Inbjudan skickad — mottagaren kommer till huvudsidan via länken i mejlet.",
     });
   } catch (error) {
     return NextResponse.json(
@@ -80,7 +79,7 @@ export async function POST(req: Request) {
         fel:
           error instanceof Error
             ? error.message
-            : "Kunde inte skicka länken.",
+            : "Kunde inte skicka inbjudan.",
       },
       { status: 400 },
     );

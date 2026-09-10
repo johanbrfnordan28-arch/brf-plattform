@@ -15,6 +15,8 @@ type LeadRad = {
   kontaktperson: string;
   telefon: string;
   status: "lank_skickad" | "skapade_test";
+  kalla?: "massa_sjalv" | "personal" | "massa_lank";
+  inbjudenAvNamn?: string;
   skapadTidpunkt: string;
   testSkapadTidpunkt: string | null;
   foreningStatus?: string | null;
@@ -30,6 +32,15 @@ type Sammanfattning = {
 const STATUS_ETIKETT: Record<LeadRad["status"], string> = {
   lank_skickad: "Länk skickad",
   skapade_test: "Skapade testförening",
+};
+
+const KALLA_ETIKETT: Record<
+  NonNullable<LeadRad["kalla"]>,
+  string
+> = {
+  massa_sjalv: "Mejla länk",
+  personal: "Personalinbjudan",
+  massa_lank: "Mäss-länk",
 };
 
 function formatTid(iso: string | null): string {
@@ -131,11 +142,11 @@ export function PlattformStyrelsemassaPanel() {
   return (
     <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
       <h2 className="text-lg font-bold text-foreground">
-        Styrelsemässa — mejlad länk
+        Inbjudningar och mässa
       </h2>
       <p className="mt-1 text-sm text-muted">
-        Intresse som fått länk mejlad (istället för att skapa testförening
-        direkt). Följ vem som skapar test senare.
+        Mejlad länk, personlig inbjudan och uppföljning — vem som skapade test
+        senare.
       </p>
 
       {demoLage ? (
@@ -170,7 +181,8 @@ export function PlattformStyrelsemassaPanel() {
             <tr>
               <th className="py-2 pr-3">Förening</th>
               <th className="py-2 pr-3">Kontakt</th>
-              <th className="py-2 pr-3">Länk skickad</th>
+              <th className="py-2 pr-3">Källa</th>
+              <th className="py-2 pr-3">Skickad</th>
               <th className="py-2 pr-3">Status</th>
               <th className="py-2">Test skapad</th>
             </tr>
@@ -184,6 +196,12 @@ export function PlattformStyrelsemassaPanel() {
                   <div className="text-xs text-muted">{rad.epost}</div>
                   {rad.telefon ? (
                     <div className="text-xs text-muted">{rad.telefon}</div>
+                  ) : null}
+                </td>
+                <td className="py-2 pr-3 text-xs">
+                  {rad.kalla ? KALLA_ETIKETT[rad.kalla] : "—"}
+                  {rad.inbjudenAvNamn ? (
+                    <div className="text-muted">{rad.inbjudenAvNamn}</div>
                   ) : null}
                 </td>
                 <td className="py-2 pr-3 whitespace-nowrap">
@@ -208,9 +226,9 @@ export function PlattformStyrelsemassaPanel() {
             ))}
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-4 text-muted">
-                  Inga registreringar ännu. Formuläret finns på /prova-gratis
-                  bredvid «Skapa förening».
+                <td colSpan={6} className="py-4 text-muted">
+                  Inga registreringar ännu. Skicka inbjudan ovan eller använd
+                  «Mejla mig en länk» på huvudsidan.
                 </td>
               </tr>
             ) : null}
