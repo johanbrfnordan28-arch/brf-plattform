@@ -100,9 +100,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
     title: mod.title,
     description: mod.description,
     icon: mod.icon,
-    href: isForening
-      ? `${base}${mod.path}`
-      : PROVA_GRATIS_PATH,
+    href: isForening ? `${base}${mod.path}` : mod.path,
   }));
 
   return (
@@ -415,7 +413,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           <p className="mt-2 text-muted">
             {isForening
               ? "Välj en modul för att arbeta i er förenings miljö. Snabbvägarna visar de fyra översta — ni kan flytta om och byta."
-              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Klicka på en modul för att prova gratis — eller logga in till er förening."}
+              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Klicka på en modul för att läsa om funktionerna — skapa er förening när ni är redo."}
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -560,6 +558,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </div>
           </section>
 
+          <div id="foreningsformation" className="scroll-mt-24" aria-hidden />
           <section
             id="skapa-forening"
             className="scroll-mt-24 border-t border-border bg-surface/80"
