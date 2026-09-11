@@ -76,6 +76,9 @@ export function PlattformDashboard() {
   const [inloggningar, setInloggningar] = useState<Inloggning[]>([]);
   const [mejl, setMejl] = useState<MejlRad[]>([]);
   const [foreningar, setForeningar] = useState<PlattformForeningRad[]>([]);
+  const [borttagnaForeningar, setBorttagnaForeningar] = useState<
+    PlattformForeningRad[]
+  >([]);
   const [foreningSammanfattning, setForeningSammanfattning] =
     useState<PlattformForeningSammanfattning>({
       totalt: 0,
@@ -142,13 +145,16 @@ export function PlattformDashboard() {
     if (foreningRes.ok) {
       const foreningData = (await foreningRes.json()) as {
         foreningar: PlattformForeningRad[];
+        borttagna?: PlattformForeningRad[];
         demoLage?: boolean;
       };
       setForeningar(foreningData.foreningar || []);
+      setBorttagnaForeningar(foreningData.borttagna || []);
       if (foreningData.demoLage) arDemo = true;
     } else if (foreningRes.status === 503) {
       arDemo = true;
       setForeningar([]);
+      setBorttagnaForeningar([]);
     }
 
     if (mejlStatusRes.ok) {
@@ -307,8 +313,10 @@ export function PlattformDashboard() {
 
       <PlattformForeningarOversikt
         foreningar={foreningar}
+        borttagna={borttagnaForeningar}
         laddar={laddarForeningar}
         onSammanfattning={setForeningSammanfattning}
+        onReload={ladda}
       />
 
       <PlattformAnvandarePanel />

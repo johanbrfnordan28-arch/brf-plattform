@@ -392,6 +392,11 @@ export async function loggaInStyrelse(opts: {
   if (!foreningRad) {
     throw new Error("Föreningen hittades inte.");
   }
+  if (foreningRad.borttagenTidpunkt) {
+    throw new Error(
+      "Föreningen är borttagen och kan inte logga in. Kontakta plattformsadmin om detta är fel.",
+    );
+  }
 
   const accessNyckel = await utfardaAccessNyckelForMedlem(
     foreningId,

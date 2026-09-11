@@ -35,6 +35,9 @@ model Forening {
   avtalBankidNamn      String    @default("")
   /// Hemlig nyckel — behålls för bakåtkompatibilitet tills alla flöden använder konto.
   accessNyckelHash     String
+  /// Soft-delete — föreningen syns under «Borttagna» i plattformen.
+  borttagenTidpunkt    DateTime?
+  borttagenAvEpost     String    @default("")
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
 
