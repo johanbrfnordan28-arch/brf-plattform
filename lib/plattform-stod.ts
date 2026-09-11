@@ -1,15 +1,14 @@
-/** Kontakt till Styrelse-Navet — hjälp för styrelser som är nya i plattformen. */
+import { KONTAKT_EPOST, kontaktMailto } from "@/lib/kontakt-epost";
 
-export const PLATTFORM_STOD_EPOST = "johancarlsen@icloud.com";
+/** Hjälp och vägledning i plattformen — «Behöver ni hjälp? Mejla …». */
+export const PLATTFORM_STOD_EPOST = KONTAKT_EPOST.johan;
 
 export const PLATTFORM_STOD_AMNE_PREFIX = "Styrelse-Navet — hjälp";
 
 export function plattformStodMailto(amne?: string, brodtext?: string): string {
-  const subject = encodeURIComponent(
-    amne?.trim() || `${PLATTFORM_STOD_AMNE_PREFIX}`,
+  return kontaktMailto(
+    KONTAKT_EPOST.johan,
+    amne?.trim() || PLATTFORM_STOD_AMNE_PREFIX,
+    brodtext,
   );
-  const body = brodtext?.trim()
-    ? `&body=${encodeURIComponent(brodtext.trim())}`
-    : "";
-  return `mailto:${PLATTFORM_STOD_EPOST}?subject=${subject}${body}`;
 }

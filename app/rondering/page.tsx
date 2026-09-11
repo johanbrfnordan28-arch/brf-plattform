@@ -63,7 +63,7 @@ export default function RonderingPage() {
           Kombinerat med spårbar historik slipper styrelsen gissa om städningen eller
           ronderingen verkligen gjorts. Verktyget finns i er föreningssida efter{" "}
           <Link
-            href="/#foreningsformation"
+            href="/#skapa-forening"
             className="font-medium text-primary-dark underline hover:no-underline"
           >
             föreningsformation
@@ -123,7 +123,7 @@ export default function RonderingPage() {
           checklistor och signering — se hur det känns i praktiken.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/#foreningsformation" className="brf-knapp-gron px-5 py-2.5 text-sm">
+          <Link href="/#skapa-forening" className="brf-knapp-gron px-5 py-2.5 text-sm">
             Skapa er förening
           </Link>
           <Link

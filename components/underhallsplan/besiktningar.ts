@@ -4,6 +4,11 @@ import {
   SBA_DEFAULT_KOSTNAD_KR,
 } from "@/components/underhallsplan/brandskydd";
 import { ovkIntervallArForVentilation } from "@/components/underhallsplan/grunduppgifter-val";
+import {
+  beraknaArligIndexFaktor,
+  STANDARD_BYGGINDEX_ARLIG,
+  type PlanKostnaderNormaliserade,
+} from "@/components/underhallsplan/plan-kostnader";
 import { standardPlanLangdAr } from "@/components/underhallsplan/planinstallningar";
 
 export type BesiktningId =
@@ -507,32 +512,112 @@ export function besiktningKostnadFormel(
   return delar.join(" + ");
 }
 
+/** Referensår för index — senast utfört eller planstart (schablon i steg 4). */
+function hamtaBesiktningBasAr(b: Besiktning, planStartAr: number): number {
+  if (b.senastUtförtAr != null && b.senastUtförtAr > 0) return b.senastUtförtAr;
+  return planStartAr;
+}
+
+function hamtaOvkVerksamhetBasAr(b: Besiktning, planStartAr: number): number {
+  if (b.ovkSenastVerksamhetAr != null && b.ovkSenastVerksamhetAr > 0) {
+    return b.ovkSenastVerksamhetAr;
+  }
+  return hamtaBesiktningBasAr(b, planStartAr);
+}
+
+function hamtaSbaBrandkonsultBasAr(b: Besiktning, planStartAr: number): number {
+  if (b.sbaSenastBrandkonsultAr != null && b.sbaSenastBrandkonsultAr > 0) {
+    return b.sbaSenastBrandkonsultAr;
+  }
+  return hamtaBesiktningBasAr(b, planStartAr);
+}
+
+function beraknaBesiktningIndexFaktor(
+  basAr: number,
+  planAr: number,
+  kostnader?: PlanKostnaderNormaliserade,
+): number {
+  if (planAr <= basAr) return 1;
+  if (kostnader) return beraknaArligIndexFaktor(basAr, planAr, kostnader);
+  return Math.pow(1 + STANDARD_BYGGINDEX_ARLIG, planAr - basAr);
+}
+
+function indexeraBesiktningBelopp(
+  basBelopp: number,
+  basAr: number,
+  planAr: number,
+  kostnader?: PlanKostnaderNormaliserade,
+): { belopp: number; indexFaktor: number } {
+  if (basBelopp <= 0) return { belopp: 0, indexFaktor: 1 };
+  const indexFaktor = beraknaBesiktningIndexFaktor(basAr, planAr, kostnader);
+  return {
+    belopp: Math.round(basBelopp * indexFaktor),
+    indexFaktor,
+  };
+}
+
+function formelMedIndex(basFormel: string, indexFaktor: number): string {
+  if (indexFaktor <= 1.001) return basFormel;
+  return `${basFormel} × index ${indexFaktor.toFixed(2)}`;
+}
+
+/** Basbelopp — senast faktisk kostnad om känd, annars schablon. */
+function hamtaBasKostnadForBesiktning(
+  b: Besiktning,
+  antalLagenheter: number,
+): number {
+  if (
+    b.senastKostnadKr != null &&
+    b.senastKostnadKr > 0 &&
+    b.senastUtförtAr != null &&
+    b.senastUtförtAr > 0
+  ) {
+    return b.senastKostnadKr;
+  }
+  return beraknaBesiktningKostnad(b, antalLagenheter);
+}
+
 function ovkKostnadPerAr(
   b: Besiktning,
   antalLagenheter: number,
   planStartAr: number,
   planSlutAr: number,
+  planKostnader?: PlanKostnaderNormaliserade,
 ): Record<number, number> {
   const perAr: Record<number, number> = {};
-  const bostadKost = beraknaOvkBostadKostnad(b, antalLagenheter);
-  if (bostadKost > 0 && b.intervallAr >= 1) {
+  const bostadKostBas = beraknaOvkBostadKostnad(b, antalLagenheter);
+  const bostadBasAr = hamtaBesiktningBasAr(b, planStartAr);
+  if (bostadKostBas > 0 && b.intervallAr >= 1) {
     let ar = b.nastaBesiktningAr;
     while (ar <= planSlutAr) {
       if (ar >= planStartAr) {
-        perAr[ar] = (perAr[ar] ?? 0) + bostadKost;
+        const { belopp } = indexeraBesiktningBelopp(
+          bostadKostBas,
+          bostadBasAr,
+          ar,
+          planKostnader,
+        );
+        perAr[ar] = (perAr[ar] ?? 0) + belopp;
       }
       ar += b.intervallAr;
     }
   }
 
-  const verksamhetKost = beraknaOvkVerksamhetKostnad(b);
-  if (verksamhetKost > 0) {
+  const verksamhetKostBas = beraknaOvkVerksamhetKostnad(b);
+  const verkBasAr = hamtaOvkVerksamhetBasAr(b, planStartAr);
+  if (verksamhetKostBas > 0) {
     const verkIntervall = b.ovkIntervallVerksamhetAr ?? OVK_INTERVALL_VERKSAMHET_AR;
     const nastaVerk = b.ovkNastaVerksamhetAr ?? b.nastaBesiktningAr;
     let ar = nastaVerk;
     while (ar <= planSlutAr) {
       if (ar >= planStartAr) {
-        perAr[ar] = (perAr[ar] ?? 0) + verksamhetKost;
+        const { belopp } = indexeraBesiktningBelopp(
+          verksamhetKostBas,
+          verkBasAr,
+          ar,
+          planKostnader,
+        );
+        perAr[ar] = (perAr[ar] ?? 0) + belopp;
       }
       ar += verkIntervall;
     }
@@ -545,27 +630,42 @@ function sbaKostnadPerAr(
   b: Besiktning,
   planStartAr: number,
   planSlutAr: number,
+  planKostnader?: PlanKostnaderNormaliserade,
 ): Record<number, number> {
   const perAr: Record<number, number> = {};
-  const egenKost = beraknaSbaEgenkontrollKostnad(b);
-  if (egenKost > 0 && b.intervallAr >= 1) {
+  const egenKostBas = beraknaSbaEgenkontrollKostnad(b);
+  const egenBasAr = hamtaBesiktningBasAr(b, planStartAr);
+  if (egenKostBas > 0 && b.intervallAr >= 1) {
     let ar = b.nastaBesiktningAr;
     while (ar <= planSlutAr) {
       if (ar >= planStartAr) {
-        perAr[ar] = (perAr[ar] ?? 0) + egenKost;
+        const { belopp } = indexeraBesiktningBelopp(
+          egenKostBas,
+          egenBasAr,
+          ar,
+          planKostnader,
+        );
+        perAr[ar] = (perAr[ar] ?? 0) + belopp;
       }
       ar += b.intervallAr;
     }
   }
 
-  const konsultKost = beraknaSbaBrandkonsultKostnad(b);
-  if (konsultKost > 0) {
+  const konsultKostBas = beraknaSbaBrandkonsultKostnad(b);
+  const konsultBasAr = hamtaSbaBrandkonsultBasAr(b, planStartAr);
+  if (konsultKostBas > 0) {
     const intervall = b.sbaBrandkonsultIntervallAr ?? SBA_BRANDKONSULT_INTERVALL_AR;
     const nasta = b.sbaNastaBrandkonsultAr ?? b.nastaBesiktningAr;
     let ar = nasta;
     while (ar <= planSlutAr) {
       if (ar >= planStartAr) {
-        perAr[ar] = (perAr[ar] ?? 0) + konsultKost;
+        const { belopp } = indexeraBesiktningBelopp(
+          konsultKostBas,
+          konsultBasAr,
+          ar,
+          planKostnader,
+        );
+        perAr[ar] = (perAr[ar] ?? 0) + belopp;
       }
       ar += intervall;
     }
@@ -605,30 +705,52 @@ export function besiktningPosterForAr(
   b: Besiktning,
   antalLagenheter: number,
   ar: number,
+  planStartAr: number,
+  planKostnader?: PlanKostnaderNormaliserade,
 ): BesiktningUtgiftspost[] {
   if (!b.aktiv || ingarEjIForeningensBudget(b)) return [];
   const komponent = besiktningKomponentNamn(b.id);
 
   if (b.id === "ovk") {
     const poster: BesiktningUtgiftspost[] = [];
-    const bostadKost = beraknaOvkBostadKostnad(b, antalLagenheter);
-    if (bostadKost > 0 && arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) {
+    const bostadKostBas = beraknaOvkBostadKostnad(b, antalLagenheter);
+    const bostadBasAr = hamtaBesiktningBasAr(b, planStartAr);
+    if (bostadKostBas > 0 && arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) {
+      const { belopp, indexFaktor } = indexeraBesiktningBelopp(
+        bostadKostBas,
+        bostadBasAr,
+        ar,
+        planKostnader,
+      );
       poster.push({
         namn: "OVK bostäder",
-        belopp: bostadKost,
-        formel: `${b.kostnadPerLagenhetKr} kr × ${antalLagenheter} lgh`,
+        belopp,
+        formel: formelMedIndex(
+          `${b.kostnadPerLagenhetKr} kr × ${antalLagenheter} lgh`,
+          indexFaktor,
+        ),
         komponent,
       });
     }
-    const verksamhetKost = beraknaOvkVerksamhetKostnad(b);
-    if (verksamhetKost > 0) {
+    const verksamhetKostBas = beraknaOvkVerksamhetKostnad(b);
+    if (verksamhetKostBas > 0) {
       const verkIntervall = b.ovkIntervallVerksamhetAr ?? OVK_INTERVALL_VERKSAMHET_AR;
       const nastaVerk = b.ovkNastaVerksamhetAr ?? b.nastaBesiktningAr;
+      const verkBasAr = hamtaOvkVerksamhetBasAr(b, planStartAr);
       if (arArIFSchema(nastaVerk, verkIntervall, ar)) {
+        const { belopp, indexFaktor } = indexeraBesiktningBelopp(
+          verksamhetKostBas,
+          verkBasAr,
+          ar,
+          planKostnader,
+        );
         poster.push({
           namn: "OVK verksamhetslokaler",
-          belopp: verksamhetKost,
-          formel: `${b.kostnadPerVerksamhetKr ?? OVK_DEFAULT_VERKSAMHET_KR} kr × ${b.antalVerksamheter} lokaler`,
+          belopp,
+          formel: formelMedIndex(
+            `${b.kostnadPerVerksamhetKr ?? OVK_DEFAULT_VERKSAMHET_KR} kr × ${b.antalVerksamheter} lokaler`,
+            indexFaktor,
+          ),
           komponent,
         });
       }
@@ -638,24 +760,41 @@ export function besiktningPosterForAr(
 
   if (b.id === "sba") {
     const poster: BesiktningUtgiftspost[] = [];
-    const egenKost = beraknaSbaEgenkontrollKostnad(b);
-    if (egenKost > 0 && arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) {
+    const egenKostBas = beraknaSbaEgenkontrollKostnad(b);
+    const egenBasAr = hamtaBesiktningBasAr(b, planStartAr);
+    if (egenKostBas > 0 && arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) {
+      const { belopp, indexFaktor } = indexeraBesiktningBelopp(
+        egenKostBas,
+        egenBasAr,
+        ar,
+        planKostnader,
+      );
       poster.push({
         namn: "SBA egenkontroll",
-        belopp: egenKost,
-        formel: `${b.kostnadFastKr} kr (årlig)`,
+        belopp,
+        formel: formelMedIndex(`${b.kostnadFastKr} kr (årlig)`, indexFaktor),
         komponent,
       });
     }
-    const konsultKost = beraknaSbaBrandkonsultKostnad(b);
-    if (konsultKost > 0) {
+    const konsultKostBas = beraknaSbaBrandkonsultKostnad(b);
+    if (konsultKostBas > 0) {
       const intervall = b.sbaBrandkonsultIntervallAr ?? SBA_BRANDKONSULT_INTERVALL_AR;
       const nasta = b.sbaNastaBrandkonsultAr ?? b.nastaBesiktningAr;
+      const konsultBasAr = hamtaSbaBrandkonsultBasAr(b, planStartAr);
       if (arArIFSchema(nasta, intervall, ar)) {
+        const { belopp, indexFaktor } = indexeraBesiktningBelopp(
+          konsultKostBas,
+          konsultBasAr,
+          ar,
+          planKostnader,
+        );
         poster.push({
           namn: "SBA brandkonsult",
-          belopp: konsultKost,
-          formel: `${b.sbaBrandkonsultKostnadKr ?? SBA_DEFAULT_BRANDKONSULT_KR} kr`,
+          belopp,
+          formel: formelMedIndex(
+            `${b.sbaBrandkonsultKostnadKr ?? SBA_DEFAULT_BRANDKONSULT_KR} kr`,
+            indexFaktor,
+          ),
           komponent,
         });
       }
@@ -666,14 +805,25 @@ export function besiktningPosterForAr(
   if (b.intervallAr < 1) return [];
   if (!arArIFSchema(b.nastaBesiktningAr, b.intervallAr, ar)) return [];
 
-  const belopp = beraknaBesiktningKostnad(b, antalLagenheter);
-  if (belopp <= 0) return [];
+  const basKost = hamtaBasKostnadForBesiktning(b, antalLagenheter);
+  if (basKost <= 0) return [];
+
+  const basAr = hamtaBesiktningBasAr(b, planStartAr);
+  const { belopp, indexFaktor } = indexeraBesiktningBelopp(
+    basKost,
+    basAr,
+    ar,
+    planKostnader,
+  );
 
   return [
     {
       namn: b.namn,
       belopp,
-      formel: besiktningKostnadFormel(b, antalLagenheter),
+      formel: formelMedIndex(
+        besiktningKostnadFormel(b, antalLagenheter),
+        indexFaktor,
+      ),
       komponent,
     },
   ];
@@ -685,24 +835,38 @@ export function besiktningKostnadPerAr(
   antalLagenheter: number,
   planStartAr: number,
   planSlutAr: number,
+  planKostnader?: PlanKostnaderNormaliserade,
 ): Record<number, number> {
   if (!b.aktiv) return {};
 
   if (b.id === "ovk") {
-    return ovkKostnadPerAr(b, antalLagenheter, planStartAr, planSlutAr);
+    return ovkKostnadPerAr(
+      b,
+      antalLagenheter,
+      planStartAr,
+      planSlutAr,
+      planKostnader,
+    );
   }
 
   if (b.id === "sba") {
-    return sbaKostnadPerAr(b, planStartAr, planSlutAr);
+    return sbaKostnadPerAr(b, planStartAr, planSlutAr, planKostnader);
   }
 
   const perAr: Record<number, number> = {};
-  const belopp = beraknaBesiktningKostnad(b, antalLagenheter);
-  if (belopp <= 0 || b.intervallAr < 1) return perAr;
+  const basKost = hamtaBasKostnadForBesiktning(b, antalLagenheter);
+  if (basKost <= 0 || b.intervallAr < 1) return perAr;
 
+  const basAr = hamtaBesiktningBasAr(b, planStartAr);
   let ar = b.nastaBesiktningAr;
   while (ar <= planSlutAr) {
     if (ar >= planStartAr) {
+      const { belopp } = indexeraBesiktningBelopp(
+        basKost,
+        basAr,
+        ar,
+        planKostnader,
+      );
       perAr[ar] = (perAr[ar] ?? 0) + belopp;
     }
     ar += b.intervallAr;
@@ -721,6 +885,7 @@ export function sammanstallBesiktningBudget(
   antalLagenheter: number,
   planStartAr: number,
   planLangdAr: number = standardPlanLangdAr,
+  planKostnader?: PlanKostnaderNormaliserade,
 ): BesiktningBudgetAr[] {
   const arLista = Array.from({ length: planLangdAr }, (_, i) => planStartAr + i);
 
@@ -728,7 +893,13 @@ export function sammanstallBesiktningBudget(
     const poster: BesiktningUtgiftspost[] = [];
 
     for (const b of besiktningar) {
-      for (const post of besiktningPosterForAr(b, antalLagenheter, ar)) {
+      for (const post of besiktningPosterForAr(
+        b,
+        antalLagenheter,
+        ar,
+        planStartAr,
+        planKostnader,
+      )) {
         poster.push(post);
       }
     }

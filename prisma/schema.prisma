@@ -35,6 +35,9 @@ model Forening {
   avtalBankidNamn      String    @default("")
   /// Hemlig nyckel — behålls för bakåtkompatibilitet tills alla flöden använder konto.
   accessNyckelHash     String
+  /// Soft-delete — föreningen syns under «Borttagna» i plattformen.
+  borttagenTidpunkt    DateTime?
+  borttagenAvEpost     String    @default("")
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
 
@@ -128,6 +131,16 @@ model PlattformInstallning {
   id                 String   @id @default("default")
   /// Varning när antalet aktuella testföreningar når eller överstiger detta.
   varningTestAntal  Int      @default(25)
+  /// Namn på aktuell mässa, t.ex. «STOFF Stockholm 2026».
+  inbjudanMassaNamn  String   @default("")
+  inbjudanMassaHuvudsidaRubrik String @default("")
+  inbjudanMassaHuvudsidaIntro  String @default("")
+  inbjudanMassaMejlAmne          String @default("")
+  inbjudanMassaMejlMall          String @default("")
+  inbjudanPersonligMejlAmne      String @default("")
+  inbjudanPersonligMejlMall      String @default("")
+  inbjudanMejlaLankRubrik        String @default("")
+  inbjudanMejlaLankIntro         String @default("")
   uppdateradTidpunkt DateTime @updatedAt
   uppdateradAvEpost  String   @default("")
 }
@@ -174,6 +187,23 @@ model ForeningSakerhetskopia {
   @@index([foreningsNamn])
 }
 
+/// Sparad personlig inbjudningsmall per personal (kan användas av hela teamet).
+model PersonligInbjudanMall {
+  id                 String   @id
+  agareEpost         String
+  titel              String
+  avsandareNamn      String   @default("")
+  mejlAmne           String
+  mejlMall           String
+  /// Förvald mall när denna person skickar inbjudan.
+  arStandard         Boolean  @default(false)
+  skapadTidpunkt     DateTime @default(now())
+  uppdateradTidpunkt DateTime @updatedAt
+
+  @@index([agareEpost])
+  @@index([agareEpost, arStandard])
+}
+
 /// Intresse från styrelsemässa / «mejla mig en länk» — uppföljning i personalytan.
 model StyrelsemassaLead {
   id                 String    @id
@@ -184,12 +214,19 @@ model StyrelsemassaLead {
   telefon            String    @default("")
   /// lank_skickad | skapade_test
   status             String    @default("lank_skickad")
+  /// massa_sjalv | personal | massa_lank
+  kalla              String    @default("massa_sjalv")
+  inbjudenAvNamn     String    @default("")
+  inbjudenAvEpost    String    @default("")
+  inbjudanMallId     String?
+  inbjudanMallTitel  String    @default("")
   foreningId         String?
   skapadTidpunkt     DateTime  @default(now())
   testSkapadTidpunkt DateTime?
   mejlSkickad        Boolean   @default(false)
 
   @@index([epostNyckel])
+  @@index([kalla])
   @@index([status])
   @@index([skapadTidpunkt])
 }

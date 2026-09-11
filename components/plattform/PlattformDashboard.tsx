@@ -12,6 +12,7 @@ import { PlattformGrundmallPanel } from "@/components/plattform/PlattformGrundma
 import { PlattformMalPanel } from "@/components/plattform/PlattformMalPanel";
 import { PlattformOffertPanel } from "@/components/plattform/PlattformOffertPanel";
 import { PlattformStyrelsemassaPanel } from "@/components/plattform/PlattformStyrelsemassaPanel";
+import { PlattformBjudInForeningPanel } from "@/components/plattform/PlattformBjudInForeningPanel";
 import { InternNavetUpphandlingPanel } from "@/components/upphandling/InternNavetUpphandlingPanel";
 import { PLATTFORM_LOGIN_PATH } from "@/lib/auth/projekt-admin";
 import { ABK_09_KORT } from "@/lib/abk-09";
@@ -75,6 +76,9 @@ export function PlattformDashboard() {
   const [inloggningar, setInloggningar] = useState<Inloggning[]>([]);
   const [mejl, setMejl] = useState<MejlRad[]>([]);
   const [foreningar, setForeningar] = useState<PlattformForeningRad[]>([]);
+  const [borttagnaForeningar, setBorttagnaForeningar] = useState<
+    PlattformForeningRad[]
+  >([]);
   const [foreningSammanfattning, setForeningSammanfattning] =
     useState<PlattformForeningSammanfattning>({
       totalt: 0,
@@ -87,6 +91,7 @@ export function PlattformDashboard() {
   const [visaMittLosenord, setVisaMittLosenord] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
   const [demoLage, setDemoLage] = useState(false);
+  const [mejlStatus, setMejlStatus] = useState<string | null>(null);
 
   const ladda = useCallback(async () => {
     setFel(null);
@@ -105,11 +110,12 @@ export function PlattformDashboard() {
     setEpost(session.epost || null);
     setForbjuden(false);
 
-    const [statRes, mejlRes, losRes, foreningRes] = await Promise.all([
+    const [statRes, mejlRes, losRes, foreningRes, mejlStatusRes] = await Promise.all([
       fetch("/api/plattform/statistik"),
       fetch("/api/plattform/mejl-outbox"),
       fetch("/api/auth/mitt-losenord"),
       fetch("/api/plattform/foreningar"),
+      fetch("/api/plattform/mejl-status"),
     ]);
 
     let arDemo = false;
@@ -139,13 +145,28 @@ export function PlattformDashboard() {
     if (foreningRes.ok) {
       const foreningData = (await foreningRes.json()) as {
         foreningar: PlattformForeningRad[];
+        borttagna?: PlattformForeningRad[];
         demoLage?: boolean;
       };
       setForeningar(foreningData.foreningar || []);
+      setBorttagnaForeningar(foreningData.borttagna || []);
       if (foreningData.demoLage) arDemo = true;
     } else if (foreningRes.status === 503) {
       arDemo = true;
       setForeningar([]);
+      setBorttagnaForeningar([]);
+    }
+
+    if (mejlStatusRes.ok) {
+      const statusData = (await mejlStatusRes.json()) as {
+        aktivTransport?: string;
+        meddelande?: string;
+      };
+      if (statusData.aktivTransport === "ingen") {
+        setMejlStatus(statusData.meddelande || null);
+      } else {
+        setMejlStatus(null);
+      }
     }
 
     setDemoLage(arDemo);
@@ -231,6 +252,15 @@ export function PlattformDashboard() {
         </div>
       </header>
 
+      {mejlStatus ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          {mejlStatus} Lägg till{" "}
+          <code className="text-xs">RESEND_API_KEY</code> i Vercel Production
+          (enklast via Resend-integrationen i Marketplace) eller SMTP-uppgifter
+          för er mailserver.
+        </p>
+      ) : null}
+
       {demoLage ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           Demoläge utan serverdatabas — upphandling, offert och personalinloggning
@@ -283,8 +313,10 @@ export function PlattformDashboard() {
 
       <PlattformForeningarOversikt
         foreningar={foreningar}
+        borttagna={borttagnaForeningar}
         laddar={laddarForeningar}
         onSammanfattning={setForeningSammanfattning}
+        onReload={ladda}
       />
 
       <PlattformAnvandarePanel />
@@ -304,6 +336,8 @@ export function PlattformDashboard() {
       </section>
 
       <PlattformOffertPanel />
+
+      <PlattformBjudInForeningPanel />
 
       <PlattformStyrelsemassaPanel />
 
@@ -425,7 +459,8 @@ export function PlattformDashboard() {
       <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
         <h2 className="text-lg font-bold text-foreground">Mejl-outbox</h2>
         <p className="mt-1 text-sm text-muted">
-          När SMTP/Resend saknas sparas mejl här (t.ex. tillfälliga lösenord).
+          Mejl som inte kunde skickas via Resend/SMTP sparas här tills mejltjänsten
+          är konfigurerad (t.ex. tillfälliga lösenord och offertförfrågningar).
         </p>
         <ul className="mt-3 space-y-3">
           {mejl.slice(0, 20).map((m) => (

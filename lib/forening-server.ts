@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 import type { Forening } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { kastaOmForeningBorttagen } from "@/lib/forening-borttag-server";
 
 export type ForeningServerDto = {
   id: string;
@@ -141,6 +142,7 @@ export async function uppdateraForeningPaServer(
   if (!verifieraAccessNyckel(accessNyckel, rad.accessNyckelHash)) {
     throw new Error("Ogiltig åtkomstnyckel.");
   }
+  kastaOmForeningBorttagen(rad);
 
   let namn = rad.namn;
   let namnNyckel = rad.namnNyckel;
@@ -203,6 +205,7 @@ export async function godkannAvtalPaServer(
   if (!verifieraAccessNyckel(accessNyckel, rad.accessNyckelHash)) {
     throw new Error("Ogiltig åtkomstnyckel.");
   }
+  kastaOmForeningBorttagen(rad);
   if (!rad.grundinfoPaborjad) {
     throw new Error("Spara föreningsuppgifter innan avtalet godkänns.");
   }
@@ -235,6 +238,7 @@ export async function sokForeningarPaServer(
 
   const rader = await prisma.forening.findMany({
     where: {
+      borttagenTidpunkt: null,
       OR: [
         { namnNyckel: { contains: q } },
         { namnNyckel: { contains: `brf ${q}` } },
@@ -257,5 +261,6 @@ export async function hamtaForeningPaServer(
   if (!verifieraAccessNyckel(accessNyckel, rad.accessNyckelHash)) {
     throw new Error("Ogiltig åtkomstnyckel.");
   }
+  kastaOmForeningBorttagen(rad);
   return tillDto(rad);
 }

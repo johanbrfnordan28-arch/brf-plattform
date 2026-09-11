@@ -3,6 +3,10 @@ import { databasArKonfigurerad } from "@/lib/db";
 import { skickaStyrelsemassaLank } from "@/lib/styrelsemassa-lead-server";
 import { byggStyrelsemassaLankMejl } from "@/lib/styrelsemassa-mejl";
 import { skickaMejlDirekt } from "@/lib/auth/mejl";
+import {
+  hamtaInbjudanTexter,
+  hamtaInbjudanTexterStandard,
+} from "@/lib/inbjudan-texter";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -39,11 +43,18 @@ export async function POST(req: Request) {
     }
 
     if (!databasArKonfigurerad()) {
+      let texter;
+      try {
+        texter = await hamtaInbjudanTexter();
+      } catch {
+        texter = hamtaInbjudanTexterStandard();
+      }
       const mejl = byggStyrelsemassaLankMejl({
         till: input.epost,
         foreningsNamn: input.foreningsNamn,
         kontaktperson: input.kontaktperson,
         basUrl: input.basUrl,
+        texter,
       });
       const skickat = await skickaMejlDirekt(mejl);
       return NextResponse.json({
@@ -51,9 +62,9 @@ export async function POST(req: Request) {
         demoLage: true,
         mejlVia: skickat.via,
         meddelande:
-          skickat.via === "resend"
+          skickat.via === "resend" || skickat.via === "smtp"
             ? "Tack! Vi har mejlat en länk till er."
-            : "Länken är registrerad (demoläge — sätt RESEND_API_KEY för mejl).",
+            : "Länken är registrerad (demoläge — sätt RESEND_API_KEY eller SMTP_* för mejl).",
       });
     }
 
