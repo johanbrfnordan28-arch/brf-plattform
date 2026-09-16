@@ -9,6 +9,12 @@ import { foreningStorageKey } from "@/lib/foreningStorage";
 
 const LAGENHETSARKIV_BASE = "brf-lagenhetsarkiv-v3";
 
+/** Äldre nycklar — migreras till v3 utan att radera originalet. */
+const LEGACY_LAGENHETSARKIV_BASES = [
+  "brf-lagenhetsarkiv-v2",
+  "brf-lagenhetsarkiv",
+] as const;
+
 export const LAGENHETSARKIV_EVENT = "lagenhetsarkiv-uppdaterad";
 
 export function lagenhetsarkivStorageKey(): string {
@@ -154,6 +160,29 @@ export function lasLagenhetsarkiv(): LagenhetsarkivState | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Om v3 saknas men äldre nyckel finns — kopiera till v3 (behåller legacy oförändrad).
+ */
+export function forsokMigreraLegacyLagenhetsarkiv(): LagenhetsarkivState | null {
+  if (typeof window === "undefined") return null;
+  if (localStorage.getItem(lagenhetsarkivStorageKey())) return null;
+
+  for (const base of LEGACY_LAGENHETSARKIV_BASES) {
+    const legacyKey = foreningStorageKey(base);
+    const raw = localStorage.getItem(legacyKey);
+    if (!raw) continue;
+    try {
+      const state = normaliseraState(JSON.parse(raw));
+      if (!state) continue;
+      sparaLagenhetsarkiv(state);
+      return state;
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 export function sparaLagenhetsarkiv(
