@@ -28,6 +28,7 @@ export const GRUNDUPPGIFT_FALT: GrundFalt[] = [
   { key: "biyta", etikett: "Biyta (BIA)", kort: "BIA", enhet: "m²", summerbar: true },
   { key: "vaning", etikett: "Våning", kort: "Våning" },
   { key: "antalRum", etikett: "Antal rum", kort: "Rum" },
+  { key: "antalKok", etikett: "Antal kök", kort: "Kök" },
   { key: "antalBadrum", etikett: "Antal badrum", kort: "Badrum" },
   { key: "antalWC", etikett: "Antal WC", kort: "WC" },
   { key: "balkong", etikett: "Balkong", kort: "Balkong" },

@@ -61,6 +61,7 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
       boyta: "78",
       andelstal: "0,7842",
       antalRum: "3 rok",
+      antalKok: "1",
       antalBadrum: "1",
       antalWC: "1",
       lagenhetsRum: {
