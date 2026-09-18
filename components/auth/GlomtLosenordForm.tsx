@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
 import { begärLokalAterstallning } from "@/lib/auth/lokal-aterstallning";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 
 export function GlomtLosenordForm() {
   const [epost, setEpost] = useState("");
@@ -67,7 +68,7 @@ export function GlomtLosenordForm() {
               meddelande?: string;
               mejlVia?: string;
             };
-            if (mejlRes.ok && mejlData.mejlVia === "resend") {
+            if (mejlRes.ok && mejlSkickades(mejlData.mejlVia || "")) {
               setMeddelande(
                 mejlData.meddelande ||
                   "Återställningslänken har skickats till din e-post.",

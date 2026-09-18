@@ -144,7 +144,7 @@ export default function MedlemmarPage() {
           renoveringsmappar och signering i praktiken.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/#foreningsformation" className="brf-knapp-gron px-5 py-2.5 text-sm">
+          <Link href="/#skapa-forening" className="brf-knapp-gron px-5 py-2.5 text-sm">
             Skapa er förening
           </Link>
           <Link

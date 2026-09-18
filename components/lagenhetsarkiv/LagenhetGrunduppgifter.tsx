@@ -7,6 +7,8 @@ import {
   type ApartmentFolder,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv";
 
+type SummerTyp = "procent" | "kvm" | "styck";
+
 type GrundFalt = {
   key: keyof ApartmentFolder;
   etikett: string;
@@ -15,21 +17,72 @@ type GrundFalt = {
   enhet?: string;
   /** Andelstal och yta lyfts fram tydligare. */
   viktig?: boolean;
-  /** Numeriska fält som summeras i totalraden. */
-  summerbar?: boolean;
+  /** Hur totalraden summerar och formaterar värdet. */
+  summerTyp?: SummerTyp;
 };
 
 /** Grunduppgifter per lägenhet — andelstal och yta är viktigast. */
 export const GRUNDUPPGIFT_FALT: GrundFalt[] = [
-  { key: "andelstal", etikett: "Andelstal", kort: "Andelstal", viktig: true, summerbar: true },
-  { key: "boyta", etikett: "Boyta (BOA)", kort: "BOA", enhet: "m²", viktig: true, summerbar: true },
-  { key: "uppmattYta", etikett: "Uppmätt yta", kort: "Uppmätt", enhet: "m²", summerbar: true },
-  { key: "golvyta", etikett: "Golvyta (vind)", kort: "Golvyta", enhet: "m²", summerbar: true },
-  { key: "biyta", etikett: "Biyta (BIA)", kort: "BIA", enhet: "m²", summerbar: true },
+  {
+    key: "andelstal",
+    etikett: "Andelstal (%)",
+    kort: "Andelstal",
+    enhet: "%",
+    viktig: true,
+    summerTyp: "procent",
+  },
+  {
+    key: "boyta",
+    etikett: "Boyta (BOA)",
+    kort: "BOA",
+    enhet: "kvm",
+    viktig: true,
+    summerTyp: "kvm",
+  },
+  {
+    key: "uppmattYta",
+    etikett: "Uppmätt yta",
+    kort: "Uppmätt",
+    enhet: "kvm",
+    summerTyp: "kvm",
+  },
+  {
+    key: "golvyta",
+    etikett: "Golvyta (vind)",
+    kort: "Golvyta",
+    enhet: "kvm",
+    summerTyp: "kvm",
+  },
+  {
+    key: "biyta",
+    etikett: "Biyta (BIA)",
+    kort: "BIA",
+    enhet: "kvm",
+    summerTyp: "kvm",
+  },
   { key: "vaning", etikett: "Våning", kort: "Våning" },
   { key: "antalRum", etikett: "Antal rum", kort: "Rum" },
-  { key: "antalBadrum", etikett: "Antal badrum", kort: "Badrum" },
-  { key: "antalWC", etikett: "Antal WC", kort: "WC" },
+  {
+    key: "antalKok",
+    etikett: "Antal kök",
+    kort: "Kök",
+    enhet: "st",
+    summerTyp: "styck",
+  },
+  {
+    key: "antalBadrum",
+    etikett: "Antal badrum",
+    kort: "Badrum",
+    enhet: "st",
+    summerTyp: "styck",
+  },
+  {
+    key: "antalWC",
+    etikett: "Antal WC",
+    kort: "WC",
+    enhet: "st",
+    summerTyp: "styck",
+  },
   { key: "balkong", etikett: "Balkong", kort: "Balkong" },
   { key: "kallareForrad", etikett: "Förråd", kort: "Förråd" },
   { key: "pPlats", etikett: "P-plats", kort: "P-plats" },
@@ -45,12 +98,62 @@ function ravarde(apartment: ApartmentFolder, key: keyof ApartmentFolder): string
 
 function parseTal(varde: string): number | null {
   if (!varde) return null;
-  const n = parseFloat(varde.replace(/\s/g, "").replace(",", "."));
+  const n = parseFloat(
+    varde
+      .replace(/\s/g, "")
+      .replace(",", ".")
+      .replace(/%/g, "")
+      .replace(/kvm/gi, "")
+      .replace(/m²/gi, "")
+      .replace(/st/gi, ""),
+  );
   return Number.isFinite(n) ? n : null;
 }
 
 function formateraTal(n: number): string {
   return n.toLocaleString("sv-SE", { maximumFractionDigits: 2 });
+}
+
+export type GrunduppgiftSummor = {
+  summor: Map<string, number>;
+  andelstalSumma: number | null;
+  andelstalAvvikerFran100: boolean;
+};
+
+export function beraknaGrunduppgiftSummor(
+  apartments: ApartmentFolder[],
+): GrunduppgiftSummor {
+  const summor = new Map<string, number>();
+  for (const f of GRUNDUPPGIFT_FALT) {
+    if (!f.summerTyp) continue;
+    let sum = 0;
+    let harVarde = false;
+    for (const a of apartments) {
+      const n = parseTal(ravarde(a, f.key));
+      if (n !== null) {
+        sum += n;
+        harVarde = true;
+      }
+    }
+    if (harVarde) summor.set(String(f.key), sum);
+  }
+  const andelstalSumma = summor.get("andelstal") ?? null;
+  const andelstalAvvikerFran100 =
+    andelstalSumma != null && Math.abs(andelstalSumma - 100) > 0.05;
+  return { summor, andelstalSumma, andelstalAvvikerFran100 };
+}
+
+function formateraSummering(f: GrundFalt, summa: number): string {
+  if (f.summerTyp === "procent") {
+    return `${formateraTal(summa)} %`;
+  }
+  if (f.summerTyp === "kvm") {
+    return `${formateraTal(summa)} kvm`;
+  }
+  if (f.summerTyp === "styck") {
+    return `${Math.round(summa)} st`;
+  }
+  return formateraTal(summa);
 }
 
 const inputKlass =
@@ -121,7 +224,8 @@ export function LagenhetGrunduppgifterKort({
             Grunduppgifter
           </p>
           <p className="mt-0.5 text-xs text-muted">
-            Fyll i uppgifter här — de syns direkt i sammanställningen högst upp.
+            Fyll i uppgifter här — de syns i sammanställningen ovan och totalerna
+            längst ner i registret.
           </p>
         </button>
         <OppnaStangKnapp
@@ -182,20 +286,8 @@ export function LagenhetsarkivSammanstallning({
 
   if (apartments.length === 0) return null;
 
-  const summor = new Map<string, number>();
-  for (const f of GRUNDUPPGIFT_FALT) {
-    if (!f.summerbar) continue;
-    let sum = 0;
-    let harVarde = false;
-    for (const a of apartments) {
-      const n = parseTal(ravarde(a, f.key));
-      if (n !== null) {
-        sum += n;
-        harVarde = true;
-      }
-    }
-    if (harVarde) summor.set(String(f.key), sum);
-  }
+  const { summor, andelstalAvvikerFran100 } =
+    beraknaGrunduppgiftSummor(apartments);
 
   const ifyllda = apartments.filter((a) =>
     GRUNDUPPGIFT_FALT.some((f) => ravarde(a, f.key)),
@@ -288,7 +380,7 @@ export function LagenhetsarkivSammanstallning({
                             : "font-medium text-muted"
                         }`}
                       >
-                        {s !== undefined ? formateraTal(s) : ""}
+                        {s !== undefined ? formateraSummering(f, s) : ""}
                       </td>
                     );
                   })}
@@ -296,8 +388,77 @@ export function LagenhetsarkivSammanstallning({
               </tfoot>
             )}
           </table>
+          {andelstalAvvikerFran100 ? (
+            <p className="mt-2 text-xs text-amber-900">
+              Summan andelstal är{" "}
+              {formateraTal(summor.get("andelstal") ?? 0)} % — kontrollera att
+              alla lägenheter tillsammans blir 100 %.
+            </p>
+          ) : null}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Totaler längst ner i lägenhetsregistret — samma summering som i tabellen. */
+export function LagenhetsarkivSammanstallningNederst({
+  apartments,
+}: {
+  apartments: ApartmentFolder[];
+}) {
+  if (apartments.length === 0) return null;
+
+  const { summor, andelstalSumma, andelstalAvvikerFran100 } =
+    beraknaGrunduppgiftSummor(apartments);
+  const summeringsFalt = GRUNDUPPGIFT_FALT.filter((f) => f.summerTyp);
+  if (summor.size === 0) return null;
+
+  return (
+    <div className="border-t border-border p-5 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
+        Sammanställning — totaler
+      </p>
+      <p className="mt-1 text-sm text-muted">
+        {apartments.length} lägenheter · andelstal ska summera till 100 %, ytor
+        i kvm, kök/badrum/WC i antal st.
+      </p>
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {summeringsFalt.map((f) => {
+          const s = summor.get(String(f.key));
+          if (s === undefined) return null;
+          return (
+            <div
+              key={String(f.key)}
+              className={`rounded-xl border px-3 py-2.5 ${
+                f.viktig
+                  ? "border-primary/30 bg-[#eef6f0]"
+                  : "border-border bg-surface"
+              }`}
+            >
+              <dt className="text-xs font-medium text-muted">{f.etikett}</dt>
+              <dd
+                className={`mt-0.5 text-lg font-semibold ${
+                  f.viktig ? "text-primary-dark" : "text-foreground"
+                }`}
+              >
+                {formateraSummering(f, s)}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      {andelstalSumma != null && !andelstalAvvikerFran100 ? (
+        <p className="mt-3 text-xs text-primary-dark">
+          Andelstal summerar till {formateraTal(andelstalSumma)} %.
+        </p>
+      ) : null}
+      {andelstalAvvikerFran100 ? (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          Andelstal summerar till {formateraTal(andelstalSumma ?? 0)} % — ska
+          vara 100 % när alla lägenheter är ifyllda.
+        </p>
+      ) : null}
     </div>
   );
 }

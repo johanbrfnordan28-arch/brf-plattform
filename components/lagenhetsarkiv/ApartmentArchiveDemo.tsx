@@ -21,14 +21,17 @@ import {
 import {
   LagenhetGrunduppgifterKort,
   LagenhetsarkivSammanstallning,
+  LagenhetsarkivSammanstallningNederst,
 } from "@/components/lagenhetsarkiv/LagenhetGrunduppgifter";
 import {
+  forsokMigreraLegacyLagenhetsarkiv,
   lasLagenhetsarkiv,
   skapaGrundmallDemoArkiv,
   skapaTomtLagenhetsarkiv,
   sparaLagenhetsarkiv,
   type LagenhetsarkivState,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
+import { ForeningSakerhetskopiaKompakt } from "@/components/forening/ForeningSakerhetskopiaKompakt";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import {
   lasRenoveringsAnmalan,
@@ -88,7 +91,8 @@ export function ApartmentArchiveDemo() {
     useState<number | null>(null);
 
   useEffect(() => {
-    const sparad = lasLagenhetsarkiv();
+    const sparad =
+      lasLagenhetsarkiv() ?? forsokMigreraLegacyLagenhetsarkiv();
     let state: LagenhetsarkivState;
     if (sparad) {
       state = sparad;
@@ -558,6 +562,10 @@ export function ApartmentArchiveDemo() {
 
       <LagenhetsarkivSammanstallning apartments={apartments} />
 
+      <div className="border-b border-border px-5 pb-5 sm:px-6">
+        <ForeningSakerhetskopiaKompakt rubrik="Säkerhetskopiera lägenhetsregistret" />
+      </div>
+
       <div className="space-y-4 p-5 sm:p-6">
         {apartments.map((apartment) => {
           const oppen = apartment.id === oppenLagenhetsId;
@@ -1015,6 +1023,8 @@ export function ApartmentArchiveDemo() {
           );
         })}
       </div>
+
+      <LagenhetsarkivSammanstallningNederst apartments={apartments} />
     </div>
   );
 }

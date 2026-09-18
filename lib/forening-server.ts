@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from "crypto";
 import type { Forening } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { kastaOmForeningBorttagen } from "@/lib/forening-borttag-server";
+import { matcharForeningsNamn } from "@/lib/forening-namn-match";
 
 export type ForeningServerDto = {
   id: string;
@@ -141,6 +143,7 @@ export async function uppdateraForeningPaServer(
   if (!verifieraAccessNyckel(accessNyckel, rad.accessNyckelHash)) {
     throw new Error("Ogiltig åtkomstnyckel.");
   }
+  kastaOmForeningBorttagen(rad);
 
   let namn = rad.namn;
   let namnNyckel = rad.namnNyckel;
@@ -203,6 +206,7 @@ export async function godkannAvtalPaServer(
   if (!verifieraAccessNyckel(accessNyckel, rad.accessNyckelHash)) {
     throw new Error("Ogiltig åtkomstnyckel.");
   }
+  kastaOmForeningBorttagen(rad);
   if (!rad.grundinfoPaborjad) {
     throw new Error("Spara föreningsuppgifter innan avtalet godkänns.");
   }
@@ -233,19 +237,27 @@ export async function sokForeningarPaServer(
   const q = normaliseraNamnNyckel(soktext).replace(/^brf\s+/, "").trim();
   if (q.length < 3) return [];
 
+  const ord = q.split(/\s+/).filter(Boolean);
+  const primar = ord[0] ?? q;
+  if (primar.length < 3) return [];
+
   const rader = await prisma.forening.findMany({
     where: {
+      borttagenTidpunkt: null,
       OR: [
-        { namnNyckel: { contains: q } },
-        { namnNyckel: { contains: `brf ${q}` } },
+        { namnNyckel: { contains: primar } },
+        { namnNyckel: { contains: `brf ${primar}` } },
+        { namn: { contains: soktext.trim(), mode: "insensitive" } },
       ],
     },
-    take: 5,
+    take: 25,
     orderBy: { namn: "asc" },
     select: { id: true, namn: true, avtalGodkant: true },
   });
 
-  return rader;
+  return rader
+    .filter((r) => matcharForeningsNamn(r.namn, soktext))
+    .slice(0, 5);
 }
 
 export async function hamtaForeningPaServer(
@@ -257,5 +269,6 @@ export async function hamtaForeningPaServer(
   if (!verifieraAccessNyckel(accessNyckel, rad.accessNyckelHash)) {
     throw new Error("Ogiltig åtkomstnyckel.");
   }
+  kastaOmForeningBorttagen(rad);
   return tillDto(rad);
 }

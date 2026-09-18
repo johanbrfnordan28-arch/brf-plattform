@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { skapaForeningMedKonto } from "@/lib/auth/auth-tjanst";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
       aterkopplad: resultat.aterkopplad === true,
       meddelande: resultat.aterkopplad
         ? `Föreningen «${resultat.forening.namn}» fanns redan — den är nu hämtad till den här webbläsaren. Logga in via testperiod med samma e-post.`
-        : resultat.mejlVia === "resend"
+        : mejlSkickades(resultat.mejlVia)
           ? resultat.tillfalligtLosenord
             ? "Lösenordet har skickats till din e-post."
             : "Föreningen är kopplad till ditt befintliga konto — logga in med samma e-post och lösenord."

@@ -62,12 +62,12 @@ export default function ArshjulPage() {
           OVK, årsstämma, bokslut och besiktningar har fasta tider — men i en
           förening med frivilliga styrelser glöms saker lätt bort. Med årshjulet
           planerar ni i förväg och får påminnelse innan deadline, inte efteråt.
-          Verktyget finns i er föreningssida efter{" "}
+          Verktyget finns i er föreningssida efter att ni{" "}
           <Link
-            href="/#foreningsformation"
+            href="/#skapa-forening"
             className="font-medium text-primary-dark underline hover:no-underline"
           >
-            föreningsformation
+            skapat er förening
           </Link>
           , eller prova i en{" "}
           <Link
@@ -131,7 +131,7 @@ export default function ArshjulPage() {
           .
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/#foreningsformation" className="brf-knapp-gron px-5 py-2.5 text-sm">
+          <Link href="/#skapa-forening" className="brf-knapp-gron px-5 py-2.5 text-sm">
             Skapa er förening
           </Link>
           <Link

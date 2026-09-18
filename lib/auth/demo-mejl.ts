@@ -3,6 +3,7 @@ import {
   byggAterstallningsMejl,
   byggLosenordMejl,
   skickaMejlDirekt,
+  type MejlLeveransVia,
 } from "@/lib/auth/mejl";
 import { genereraTillfalligtLosenord } from "@/lib/auth/losenord";
 
@@ -16,7 +17,7 @@ export async function skickaLosenordDemoMejl(opts: {
   arSkickaIgen?: boolean;
   genereraNytt?: boolean;
 }): Promise<{
-  mejlVia: "resend" | "ingen";
+  mejlVia: MejlLeveransVia;
   tillfalligtLosenord: string;
 }> {
   const epost = normaliseraEpost(opts.epost);
@@ -54,7 +55,7 @@ export async function skickaAterstallningDemoMejl(opts: {
   epost: string;
   aterstallningsLank: string;
   namn?: string;
-}): Promise<{ mejlVia: "resend" | "ingen" }> {
+}): Promise<{ mejlVia: MejlLeveransVia }> {
   const epost = normaliseraEpost(opts.epost);
   if (!arGiltigEpost(epost)) {
     throw new Error("Ange en giltig e-postadress.");

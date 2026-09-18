@@ -13,6 +13,7 @@ import {
   type OffertTjanst,
 } from "@/components/offert/offert-forfragan-lager";
 import { mejlaOffertTillTeam } from "@/lib/offert-mejl-klient";
+import { hamtaOffertKontaktperson } from "@/lib/kontakt-epost";
 
 const STATUS_ETIKETT: Record<OffertForfraganStatus, string> = {
   ny: "Ny",
@@ -148,6 +149,13 @@ export function PlattformOffertPanel() {
                   {vald.kontaktperson} · {vald.epost}
                   {vald.telefon ? ` · ${vald.telefon}` : ""}
                 </p>
+                {vald.oonskadKontaktId ? (
+                  <p className="mt-1">
+                    <span className="text-muted">Önskad hos oss: </span>
+                    {hamtaOffertKontaktperson(vald.oonskadKontaktId)?.namn ??
+                      vald.oonskadKontaktId}
+                  </p>
+                ) : null}
                 {vald.antalLagenheter ? (
                   <p className="mt-1">
                     <span className="text-muted">Lägenheter: </span>

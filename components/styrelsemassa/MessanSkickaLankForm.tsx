@@ -80,8 +80,8 @@ export function MessanSkickaLankForm({
         <div>
           <h3 className="font-semibold text-foreground">Mejla mig en länk</h3>
           <p className="mt-1 text-sm text-muted">
-            Vill ni fundera först? Vi skickar en länk så ni kan skapa er
-            förening när det passar — samma provperiod som ovan.
+            Vill ni fundera först? Vi mejlar en länk till huvudsidan så ni kan
+            titta i lugn och ro — samma provperiod som ovan.
           </p>
         </div>
       ) : null}

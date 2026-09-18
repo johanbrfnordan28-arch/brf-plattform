@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { begärAterstallning } from "@/lib/auth/auth-tjanst";
 import { skickaAterstallningDemoMejl } from "@/lib/auth/demo-mejl";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
           aterstallningsLank: lank,
           mejlVia: mejl.mejlVia,
           meddelande:
-            mejl.mejlVia === "resend"
+            mejlSkickades(mejl.mejlVia)
               ? "Återställningslänken har skickats till din e-post."
               : "Mejltjänsten saknas — använd länken nedan inom en timme.",
         });

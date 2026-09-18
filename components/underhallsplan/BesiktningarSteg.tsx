@@ -29,12 +29,14 @@ import {
 import { SBA_BRANDKONSULT_INTERVALL_AR, SBA_DEFAULT_BRANDKONSULT_KR } from "@/components/underhallsplan/brandskydd";
 import { MomsAvdragKnapp } from "@/components/underhallsplan/MomsAvdragKnapp";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
+import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 
 type BesiktningarProps = {
   unlocked: boolean;
   antalLagenheter: number;
   planStartAr: number;
   planLangdAr: number;
+  planKostnader?: PlanKostnaderNormaliserade;
   ventilationssystem?: string;
   lista: Besiktning[];
   onChange: (lista: Besiktning[]) => void;
@@ -47,6 +49,7 @@ export function Besiktningar({
   antalLagenheter,
   planStartAr,
   planLangdAr,
+  planKostnader,
   ventilationssystem = "",
   lista,
   onChange,
@@ -101,8 +104,9 @@ export function Besiktningar({
         antalLagenheter,
         planStartAr,
         planLangdAr,
+        planKostnader,
       ),
-    [lista, antalLagenheter, planStartAr, planLangdAr],
+    [lista, antalLagenheter, planStartAr, planLangdAr, planKostnader],
   );
 
   const lockedClass = !unlocked ? "pointer-events-none opacity-50" : "";
@@ -116,7 +120,8 @@ export function Besiktningar({
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Senast utfört år och kostnad fylls i steg 2 (utförda arbeten). Här ställer du
         in intervall, nästa planerade år och schablonpris — beloppet hamnar i årsbudgeten
-        det år besiktningen ska utföras. Stäng av det som inte gäller er förening.
+        det år besiktningen ska utföras, uppräknat med index enligt steg 1 (utan
+        upphandling och projektledning). Stäng av det som inte gäller er förening.
       </p>
 
       {antalLagenheter === 0 && unlocked && (
