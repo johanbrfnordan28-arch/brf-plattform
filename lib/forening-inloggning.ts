@@ -21,6 +21,7 @@ import {
   listaInloggningsTestForeningar,
   arStandardTestForening,
 } from "@/lib/testforeningar";
+import { matcharForeningsNamn } from "@/lib/forening-namn-match";
 
 /** Prefill i sökfältet på inloggningssidan. */
 export const INLOGGNING_BRF_PREFIX = "Brf ";
@@ -37,36 +38,8 @@ export function arEgenTestForening(foreningId: string): boolean {
   );
 }
 
-/** Jämförelsetext utan «brf» och utan mellanslag (Stora huset ≈ Storahuset). */
-function kollapsaNamn(text: string): string {
-  return normaliseraForeningsNamn(text)
-    .replace(/^brf\s+/, "")
-    .replace(/\s+/g, "");
-}
-
 function matcharNamn(foreningsNamn: string, soktext: string): boolean {
-  const namn = normaliseraForeningsNamn(foreningsNamn);
-  const namnUtanBrf = namn.replace(/^brf\s+/, "");
-  const namnKollaps = kollapsaNamn(foreningsNamn);
-
-  const q = normaliseraForeningsNamn(soktext);
-  const qUtanBrf = q.replace(/^brf\s+/, "").trim();
-  if (!qUtanBrf) return true;
-  const qKollaps = kollapsaNamn(soktext);
-
-  if (
-    namn.includes(q) ||
-    namnUtanBrf.includes(qUtanBrf) ||
-    namnUtanBrf.startsWith(qUtanBrf) ||
-    namnKollaps.includes(qKollaps) ||
-    namnKollaps.startsWith(qKollaps)
-  ) {
-    return true;
-  }
-
-  // Matcha mot början av ord (inte lösa delträffar som avslöjar andra namn)
-  const ord = namnUtanBrf.split(/\s+/).filter(Boolean);
-  return ord.some((o) => o.startsWith(qUtanBrf) || namnKollaps.startsWith(qKollaps));
+  return matcharForeningsNamn(foreningsNamn, soktext);
 }
 
 function lasSenastSkapadProfilerFranLagring(): ForeningProfil[] {

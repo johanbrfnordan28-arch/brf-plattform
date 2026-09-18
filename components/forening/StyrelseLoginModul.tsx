@@ -41,6 +41,7 @@ import {
   dtoTillForeningProfil,
   importeraForeningFranServer,
 } from "@/lib/forening-server-sync";
+import { sokForeningarPaServerKlient } from "@/lib/forening-sok-klient";
 
 export type LoginLage = "test" | "kund";
 
@@ -134,7 +135,7 @@ function ForeningKort({
           {lage === "kund"
             ? "Endast er förening öppnas — andras uppgifter syns inte"
             : egen
-              ? "Er testförening i den här webbläsaren"
+              ? "Er testförening — sparad här eller hämtad från servern"
               : "Fast demoförening för test"}
         </p>
         {onBekraftaRensa && (
@@ -210,8 +211,13 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     losenord: string;
     foreningId: string;
   } | null>(null);
+  const [serverSokTraffar, setServerSokTraffar] = useState<ForeningProfil[]>(
+    [],
+  );
+  const [serverSokLaddar, setServerSokLaddar] = useState(false);
   const listaRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sokReqId = useRef(0);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
 
   function ladda(): ForeningProfil[] {
@@ -270,13 +276,43 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     }
   }, [hydrated]);
 
-  const filtrerade = useMemo(
-    () => filtreraForeningarPaSok(foreningar, sok),
-    [foreningar, sok],
+  const sammanslagnaForeningar = useMemo(
+    () => slaIhopForeningar(foreningar, serverSokTraffar),
+    [foreningar, serverSokTraffar],
   );
 
-  const endastEgna = arEndastEgnaForeningar(foreningar);
-  const vantarPaSok = sokKräverFlerBokstaver(sok, foreningar);
+  const endastEgna = arEndastEgnaForeningar(sammanslagnaForeningar);
+  const vantarPaSok = sokKräverFlerBokstaver(sok, sammanslagnaForeningar);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (vantarPaSok) {
+      setServerSokTraffar([]);
+      setServerSokLaddar(false);
+      return;
+    }
+
+    const reqId = ++sokReqId.current;
+    setServerSokLaddar(true);
+    const timer = window.setTimeout(() => {
+      void sokForeningarPaServerKlient({ soktext: sok, lage }).then(
+        (traffar) => {
+          if (reqId !== sokReqId.current) return;
+          setServerSokTraffar(traffar);
+          setServerSokLaddar(false);
+        },
+      );
+    }, 280);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [hydrated, sok, lage, vantarPaSok]);
+
+  const filtrerade = useMemo(
+    () => filtreraForeningarPaSok(sammanslagnaForeningar, sok),
+    [sammanslagnaForeningar, sok],
+  );
   const arKundLage = lage === "kund";
   const kvarAttSkriva = Math.max(
     0,
@@ -550,13 +586,15 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         <p className="mt-2 text-center text-xs text-muted">
           {vantarPaSok
             ? `Skriv ${kvarAttSkriva} bokstav${kvarAttSkriva === 1 ? "" : "er"} till efter Brf`
-            : filtrerade.length === 0
-              ? endastEgna || arKundLage
-                ? "Ingen träff — kontrollera stavningen"
-                : "Ingen demoförening matchar"
-              : filtrerade.length === 1
-                ? "Träff — logga in på er förening"
-                : "Flera träffar — skriv fler bokstäver för att begränsa"}
+            : serverSokLaddar
+              ? "Söker på servern …"
+              : filtrerade.length === 0
+                ? endastEgna || arKundLage
+                  ? "Ingen träff — kontrollera stavningen eller logga in med e-post ovan"
+                  : "Ingen demoförening matchar — skapade föreningar hämtas från servern vid träff"
+                : filtrerade.length === 1
+                  ? "Träff — logga in på er förening"
+                  : "Flera träffar — skriv fler bokstäver för att begränsa"}
         </p>
 
         <ul
