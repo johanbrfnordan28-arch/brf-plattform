@@ -30,6 +30,31 @@ export async function POST(req: Request) {
       losenord: body.losenord,
       ...meta,
     });
+    const { lasOchRensaIduraPending } = await import(
+      "@/lib/auth/idura-oauth-cookies"
+    );
+    const { kopplaPersonnummerTillKonto } = await import(
+      "@/lib/auth/auth-tjanst"
+    );
+    const pending = await lasOchRensaIduraPending();
+    if (pending?.personnummerNyckel) {
+      try {
+        await kopplaPersonnummerTillKonto({
+          kontoId: resultat.session.kontoId,
+          personnummerNyckel: pending.personnummerNyckel,
+        });
+      } catch (e) {
+        return NextResponse.json(
+          {
+            fel:
+              e instanceof Error
+                ? e.message
+                : "Kunde inte koppla BankID till kontot.",
+          },
+          { status: 409 },
+        );
+      }
+    }
     await skrivSessionCookie(resultat.token);
 
     return NextResponse.json({

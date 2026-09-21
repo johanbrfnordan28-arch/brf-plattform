@@ -57,6 +57,8 @@ model Konto {
   losenordKuvert String @default("")
   /// STYRELSE | PLATTFORM — PLATTFORM syns aldrig för styrelsen.
   typ          String
+  /// SHA-256 av normaliserat personnummer (BankID) — unikt per person.
+  personnummerNyckel String? @unique
   aktiv        Boolean  @default(true)
   senasteInloggning DateTime?
   skapadTidpunkt DateTime @default(now())

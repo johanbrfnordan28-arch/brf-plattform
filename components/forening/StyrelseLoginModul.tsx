@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FORENING_AKTIV_EVENT,
@@ -197,7 +198,10 @@ function slaIhopForeningar(
   return [...map.values()].sort((a, b) => a.namn.localeCompare(b.namn, "sv"));
 }
 
+const IDURA_KLAR_PATH = "/auth/idura/klar";
+
 export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
+  const searchParams = useSearchParams();
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [sok, setSok] = useState(INLOGGNING_BRF_PREFIX);
   const [rensaId, setRensaId] = useState<string | null>(null);
@@ -219,6 +223,17 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sokReqId = useRef(0);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
+  const bankidStartUrl = `/api/auth/idura/start?returnTo=${encodeURIComponent(IDURA_KLAR_PATH)}`;
+  const bankidKopplaMeddelande =
+    searchParams.get("bankid") === "koppla"
+      ? searchParams.get("namn")
+        ? `BankID verifierat (${searchParams.get("namn")}). Logga in med e-post och lösenord en gång — då kopplas BankID till ert konto.`
+        : "BankID verifierat. Logga in med e-post och lösenord en gång — då kopplas BankID till ert konto."
+      : null;
+  const bankidFel =
+    searchParams.get("bankid") === "fel"
+      ? searchParams.get("meddelande") || "BankID-inloggning misslyckades."
+      : null;
 
   function ladda(): ForeningProfil[] {
     rensaUtgangnaProvoperioder();
@@ -523,6 +538,28 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
             {kontoLaddar ? "Loggar in …" : "Logga in"}
           </button>
         </form>
+        {bankidKopplaMeddelande ? (
+          <p className="mt-3 rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
+            {bankidKopplaMeddelande}
+          </p>
+        ) : null}
+        {bankidFel ? (
+          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+            {bankidFel}
+          </p>
+        ) : null}
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="text-sm font-medium text-foreground">Logga in med BankID</p>
+          <p className="mt-1 text-xs text-muted">
+            Testmiljö via Idura — kräver databas och att BankID kopplats till ert konto (första gången: e-post + lösenord direkt efter).
+          </p>
+          <a
+            href={bankidStartUrl}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border-2 border-primary/40 bg-white px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
+          >
+            Identifiera med BankID
+          </a>
+        </div>
       </section>
 
       <section>

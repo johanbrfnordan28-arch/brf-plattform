@@ -129,7 +129,7 @@ async function aterkopplaBefintligForening(opts: {
 }
 
 /** Ny åtkomstnyckel för webbläsare efter inloggning (samma mönster som återkoppling). */
-async function utfardaAccessNyckelForMedlem(
+export async function utfardaAccessNyckelForMedlem(
   foreningId: string,
   kontoId: string,
 ): Promise<string> {
@@ -436,6 +436,111 @@ export async function loggaInStyrelse(opts: {
     forening: tillDto(foreningRad),
     accessNyckel,
   };
+}
+
+/** Inloggning efter verifierad Idura/BankID (personnummer redan hashat). */
+export async function loggaInStyrelseMedPersonnummerNyckel(opts: {
+  personnummerNyckel: string;
+  ip?: string;
+  userAgent?: string;
+}): Promise<{
+  token: string;
+  foreningId: string;
+  forening: ForeningServerDto;
+  accessNyckel: string;
+  epost: string;
+}> {
+  const konto = await prisma.konto.findFirst({
+    where: {
+      personnummerNyckel: opts.personnummerNyckel,
+      aktiv: true,
+    },
+  });
+  if (!konto) {
+    throw new Error("BANKID_KOPPLA");
+  }
+  if (konto.typ !== "STYRELSE" && konto.typ !== "PLATTFORM") {
+    throw new Error("Kontot kan inte logga in som styrelse.");
+  }
+
+  const epost = konto.epost;
+  const medlemskap = await prisma.foreningMedlem.findMany({
+    where: { kontoId: konto.id },
+    orderBy: { skapadTidpunkt: "desc" },
+  });
+  if (medlemskap.length === 0) {
+    throw new Error("Kontot saknar koppling till en förening.");
+  }
+
+  const foreningId = medlemskap[0]!.foreningId;
+  const foreningRad = await prisma.forening.findUnique({
+    where: { id: foreningId },
+  });
+  if (!foreningRad) {
+    throw new Error("Föreningen hittades inte.");
+  }
+  if (foreningRad.borttagenTidpunkt) {
+    throw new Error(
+      "Föreningen är borttagen och kan inte logga in. Kontakta plattformsadmin om detta är fel.",
+    );
+  }
+
+  const accessNyckel = await utfardaAccessNyckelForMedlem(
+    foreningId,
+    konto.id,
+  );
+
+  await prisma.konto.update({
+    where: { id: konto.id },
+    data: { senasteInloggning: new Date() },
+  });
+  await loggaInloggning({
+    kontoId: konto.id,
+    epost,
+    typ: "STYRELSE",
+    foreningId,
+    lyckad: true,
+    ip: opts.ip,
+    userAgent: opts.userAgent,
+  });
+
+  const session: Omit<SessionPayload, "exp"> = {
+    kontoId: konto.id,
+    epost: konto.epost,
+    namn: konto.namn,
+    typ: "STYRELSE",
+    foreningId,
+  };
+  const token = skapaSessionToken(session);
+  return {
+    token,
+    foreningId,
+    forening: tillDto(foreningRad),
+    accessNyckel,
+    epost,
+  };
+}
+
+/** Kopplar BankID till konto efter lyckad e-postinloggning (engångs pending-cookie). */
+export async function kopplaPersonnummerTillKonto(opts: {
+  kontoId: string;
+  personnummerNyckel: string;
+}): Promise<void> {
+  const befintlig = await prisma.konto.findFirst({
+    where: {
+      personnummerNyckel: opts.personnummerNyckel,
+      NOT: { id: opts.kontoId },
+    },
+  });
+  if (befintlig) {
+    throw new Error(
+      "Detta BankID är redan kopplat till ett annat konto.",
+    );
+  }
+  await prisma.konto.update({
+    where: { id: opts.kontoId },
+    data: { personnummerNyckel: opts.personnummerNyckel },
+  });
 }
 
 export async function loggaInPlattform(opts: {
