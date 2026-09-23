@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HeaderKundLogin } from "@/components/HeaderKundLogin";
 import { HeaderTestperiodLank } from "@/components/HeaderTestperiodLank";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
+import { MEDLEM_FELANMALAN_PATH } from "@/lib/forening-medlem";
 import { TEST_LOGIN_PATH } from "@/lib/forening-kund";
 
 const nav = [
@@ -10,6 +11,7 @@ const nav = [
   { href: "#intro-film", label: "Film & pris" },
   { href: "#priser", label: "Priser" },
   { href: TEST_LOGIN_PATH, label: "Testperiod" },
+  { href: MEDLEM_FELANMALAN_PATH, label: "Medlem" },
 ];
 
 export function Header() {
@@ -45,6 +47,12 @@ export function Header() {
             className="brf-knapp-neutral hidden px-3 py-2 text-sm sm:inline-flex"
           >
             Pröva gratis 30 dagar
+          </Link>
+          <Link
+            href={MEDLEM_FELANMALAN_PATH}
+            className="hidden rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:border-primary/50 sm:inline-flex"
+          >
+            Felanmälan
           </Link>
           <HeaderTestperiodLank />
           <HeaderKundLogin />

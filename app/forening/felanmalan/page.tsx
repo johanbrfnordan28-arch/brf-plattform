@@ -18,7 +18,7 @@ export default function ForeningFelanmalanPage() {
     <ModulePage
       title="Felanmälan"
       icon="📨"
-      intro="Medlemmar skickar in fel via formuläret. Förvaltaren (styrelsen) får mejl, prioriterar ärendet och kan vidarebefordra till entreprenör eller fastighetsskötare — med sparad historik och ärendenummer."
+      intro="Styrelse och förvaltare hanterar inkomna felanmälan här. Medlemmar använder medlemsportalen på startsidan — de ser inte historik eller andra ärenden."
     >
       <TipsPanel tips={tips.felanmalan} />
       <FelanmalanModul />

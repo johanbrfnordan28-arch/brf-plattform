@@ -61,3 +61,26 @@ export async function sokForeningarPaServerKlient(opts: {
     return [];
   }
 }
+
+/** Alla träffar på servern — medlemmar kan tillhöra både test- och kundföreningar. */
+export async function sokForeningarForMedlem(
+  soktext: string,
+): Promise<ForeningProfil[]> {
+  if (hamtaSokSuffix(soktext).length < MIN_SOK_BOKSTAVER_EFTER_BRF) {
+    return [];
+  }
+  try {
+    const res = await fetch(
+      `/api/foreningar/sok?q=${encodeURIComponent(soktext.trim())}`,
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      foreningar?: Array<
+        Pick<ForeningServerDto, "id" | "namn" | "avtalGodkant">
+      >;
+    };
+    return (data.foreningar ?? []).map((dto) => registreraSokTraff(dto));
+  } catch {
+    return [];
+  }
+}

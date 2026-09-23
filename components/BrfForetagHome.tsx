@@ -203,6 +203,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 >
                   Teknisk förvaltning
                 </Link>
+                <Link
+                  href="/medlem"
+                  className="rounded-lg border border-primary/40 bg-white px-5 py-3.5 text-sm font-medium text-primary-dark transition-colors hover:bg-[#eef6f0]"
+                >
+                  Felanmälan (medlem)
+                </Link>
               </>
             )}
           </div>
@@ -621,6 +627,25 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   <PublikPrisInfo />
                 </div>
 
+                <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Boende / medlem
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-foreground">
+                    Felanmälan till styrelsen
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
+                    Anmäl fel i er förening utan styrelseinloggning. Ni får
+                    ärendenummer — status och historik hanteras av styrelsen och
+                    förvaltaren.
+                  </p>
+                  <Link
+                    href="/medlem"
+                    className="mt-6 self-start rounded-lg border border-primary px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                  >
+                    Medlemsportal
+                  </Link>
+                </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Etablerad kund

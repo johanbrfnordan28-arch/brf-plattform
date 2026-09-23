@@ -17,7 +17,8 @@ import {
   FELANMALAN_STATUS_ETIKETT,
   type FelanmalanArendeDto,
 } from "@/lib/felanmalan/felanmalan-typer";
-import { MedlemFelanmalanForm } from "@/components/felanmalan/MedlemFelanmalanForm";
+import Link from "next/link";
+import { byggMedlemFelanmalanLank } from "@/lib/forening-medlem";
 
 function formatDatum(iso: string): string {
   try {
@@ -115,27 +116,39 @@ export function FelanmalanModul() {
     }
   }
 
+  const medlemLank = foreningId ? byggMedlemFelanmalanLank(foreningId) : "/medlem";
+
   return (
-    <div className="space-y-10">
-      <section id="medlem-felanmalan" className="scroll-mt-24">
-        <article className="rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-lg font-bold text-foreground">
-            Felanmälan för medlemmar
-          </h2>
-          <p className="mt-2 text-sm text-muted">
-            Medlemmar fyller i formuläret — ärende skapas med nummer, mejl går
-            till {profil?.epost?.trim() ? (
-              <strong className="text-foreground">{profil.epost}</strong>
-            ) : (
-              "föreningens e-post (sätt under Föreningsuppgifter)"
-            )}
-            . Dela gärna länken till denna sida med boende.
-          </p>
-          <div className="mt-5">
-            <MedlemFelanmalanForm foreningId={foreningId} />
-          </div>
-        </article>
-      </section>
+    <div className="space-y-8">
+      <div className="rounded-xl border border-primary/25 bg-[#eef6f0]/80 px-4 py-3 text-sm">
+        <p className="font-medium text-primary-dark">Medlemmar använder medlemsportalen</p>
+        <p className="mt-1 text-muted">
+          Boende ska inte logga in här. Dela länken till medlemsportalen — där
+          kan de anmäla fel utan att se ärendehistorik. Mejl går till{" "}
+          {profil?.epost?.trim() ? (
+            <strong className="text-foreground">{profil.epost}</strong>
+          ) : (
+            "föreningens e-post (Föreningsuppgifter)"
+          )}
+          .
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href={medlemLank}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
+          >
+            Öppna medlemslänk
+          </Link>
+          <Link
+            href="/medlem"
+            className="rounded-lg border border-primary/40 px-3 py-2 text-xs font-medium text-primary-dark hover:bg-white"
+          >
+            Allmän medlemsportal
+          </Link>
+        </div>
+      </div>
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2">
