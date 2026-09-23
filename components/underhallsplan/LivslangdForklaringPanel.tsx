@@ -68,12 +68,12 @@ export function LivslangdForklaringPanel({ kompakt = false }: Props) {
       </div>
 
       <p className="mt-3 text-sm text-muted">
-        Fler energiförslag finns i{" "}
+        Fel från medlemmar hanteras i{" "}
         <Link
-          href="/forening/energi"
+          href="/forening/felanmalan"
           className="font-medium text-primary-dark underline hover:no-underline"
         >
-          Energi &amp; drift
+          Felanmälan
         </Link>
         .
       </p>

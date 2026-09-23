@@ -177,16 +177,21 @@ export const tips: Record<string, TipsPunkt[]> = {
     },
   ],
 
-  energi: [
+  felanmalan: [
     {
-      ikon: "⚡",
-      titel: "Koppla till underhållsplanen",
-      text: "Energiåtgärder kan länkas till underhållsplanen — en samlad budget för alla investeringar, inte separata kalkylark.",
+      ikon: "📨",
+      titel: "Ärendenummer till medlemmen",
+      text: "Varje felanmälan får ett nummer (FM-år-sekvens) — be medlemmen spara det vid uppföljning.",
     },
     {
-      ikon: "🌱",
-      titel: "Identifiera bästa åtgärden",
-      text: "Se vilket byte — fönster, isolering eller värmepump — som ger störst energibesparing relativt investering för er fastighet.",
+      ikon: "🔧",
+      titel: "Vidare till rätt roll",
+      text: "Sätt status och mejla vidare till entreprenör eller fastighetsskötare — historiken visar vem som gjorde vad.",
+    },
+    {
+      ikon: "🔑",
+      titel: "Tillträde och debitering",
+      text: "Medlemmen kan ange nyckel/plats och om debitering kan bli aktuell — sparas på ärendet för förvaltaren.",
     },
   ],
 

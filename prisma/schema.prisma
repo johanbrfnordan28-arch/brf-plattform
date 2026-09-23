@@ -44,6 +44,39 @@ model Forening {
   medlemmar            ForeningMedlem[]
   inloggningar         InloggningsHistorik[]
   sakerhetskopior      ForeningSakerhetskopia[]
+  felanmalan           FelanmalanArende[]
+}
+
+/// Felanmälan från medlemmar — hanteras av förvaltare/styrelse.
+model FelanmalanArende {
+  id                   String   @id
+  foreningId           String
+  arendeNummer         String
+  status               String   @default("inkommen")
+  prioritet            String   @default("normal")
+  orsak                String   @default("annat")
+  rubrik               String
+  beskrivning          String
+  medlemNamn           String
+  medlemEpost          String
+  medlemTelefon        String   @default("")
+  lagenhetsnummer      String   @default("")
+  debiteringKan        Boolean  @default(false)
+  debiteringAnteckning String   @default("")
+  nyckelPlats          String   @default("")
+  boendeEjHemma        Boolean  @default(false)
+  /// forvaltare | entreprenor | fastighetsskotare
+  tilldeladRoll        String   @default("forvaltare")
+  vidareEpost          String   @default("")
+  /// [{ tidpunkt, av, text }]
+  historik             Json     @default("[]")
+  skapadTidpunkt       DateTime @default(now())
+  uppdateradTidpunkt   DateTime @updatedAt
+
+  forening Forening @relation(fields: [foreningId], references: [id], onDelete: Cascade)
+
+  @@unique([foreningId, arendeNummer])
+  @@index([foreningId, status])
 }
 
 /// Inloggningskonto — styrelseledamot eller dold plattformsadmin.

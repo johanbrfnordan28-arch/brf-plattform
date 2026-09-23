@@ -11,7 +11,7 @@ export const FORENING_MODUL_TITLAR: Record<string, string> = {
   "/forening/projekt": "Projekt",
   "/forening/medlemmar": "Medlemmar",
   "/forening/konto": "Konto",
-  "/forening/energi": "Energi & drift",
+  "/forening/felanmalan": "Felanmälan",
   "/forening/upphandling": "Upphandling",
   "/forening/entreprenorer": "Entreprenörer",
   "/forening/rondering": "Rondering & avvikelser",

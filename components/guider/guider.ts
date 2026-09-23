@@ -273,32 +273,28 @@ export const guideFilmer: GuideFilm[] = [
     ],
   },
   {
-    id: "energi",
-    modul: "Energi & drift",
-    titel: "Energi, drift och payback time",
-    längd: "ca 50 sek",
+    id: "felanmalan",
+    modul: "Felanmälan",
+    titel: "Felanmälan från medlemmar",
+    längd: "ca 45 sek",
     beskrivning:
-      "Värme, belysning och payback — jämför kostnader före och efter investering.",
+      "Medlemmar anmäler fel — förvaltaren prioriterar och skickar vidare med ärendenummer och historik.",
     scener: [
       {
-        titel: "Ett ständigt arbete",
-        text: "Tips och råd om energi och drift utvecklas löpande — modulen växer med er förenings behov.",
+        titel: "Medlemmen skickar in",
+        text: "Formulär med rubrik, orsak och kontakt — ärende skapas och mejl går till förvaltaren.",
       },
       {
-        titel: "Teknisk livslängd vs energi",
-        text: "Stora byten planeras i underhållsplanen — injustering, LED och styrning ger effekt tidigare.",
+        titel: "Prioritet och orsak",
+        text: "Förvaltaren klassar akut/normal och typ av fel — ärendet syns i listan med nummer.",
       },
       {
-        titel: "Kostnader före och efter",
-        text: "Samla driftkostnad innan åtgärden — det är grunden för att se om investeringen lönar sig.",
+        titel: "Vidare till entreprenör",
+        text: "Mejla ärendet till entreprenör eller fastighetsskötare — historiken sparas.",
       },
       {
-        titel: "Payback time",
-        text: "Räkna hur många år det tar innan lägre värme- och elkostnad täckt investeringen — centralt för styrelsens beslut.",
-      },
-      {
-        titel: "Kassa-plus efter payback",
-        text: "När payback är nådd kan återstående avskrivningstid bli ett plus — pengar till nästa åtgärd.",
+        titel: "Tillträde och debitering",
+        text: "Medlemmen kan ange nyckel/plats och om debitering kan bli aktuell om ingen är hemma.",
       },
     ],
   },
