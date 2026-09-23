@@ -36,9 +36,11 @@ export function dtoTillForeningProfil(
     postnummer: dto.postnummer,
     ort: dto.ort,
     kontaktperson: dto.kontaktperson,
-    grundinfoPaborjad: dto.grundinfoPaborjad,
-    avtalGodkant: dto.avtalGodkant,
-    avtalGodkantTidpunkt: dto.avtalGodkantTidpunkt,
+    grundinfoPaborjad:
+      Boolean(dto.grundinfoPaborjad) || Boolean(befintlig?.grundinfoPaborjad),
+    avtalGodkant: dto.avtalGodkant || Boolean(befintlig?.avtalGodkant),
+    avtalGodkantTidpunkt:
+      dto.avtalGodkantTidpunkt || befintlig?.avtalGodkantTidpunkt || "",
     avtalBankidTidpunkt: dto.avtalBankidTidpunkt,
     avtalBankidNamn: dto.avtalBankidNamn,
     styrelseledamoter: befintlig?.styrelseledamoter,

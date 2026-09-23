@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
-import { behoverFyllaForeningsuppgifter } from "@/lib/styrelse-kontakt";
+import { skaTvingaTillForeningsuppgifter } from "@/lib/styrelse-kontakt";
 
 const UNDANTAG = [
   "/forening/uppgifter",
@@ -26,7 +26,7 @@ export function ForeningUppgifterGate() {
       return;
     }
     if (arGrundmallForening(lasAktivForeningId())) return;
-    if (!behoverFyllaForeningsuppgifter()) return;
+    if (!skaTvingaTillForeningsuppgifter()) return;
     if (skickad.current) return;
     skickad.current = true;
     window.location.replace("/forening/uppgifter");

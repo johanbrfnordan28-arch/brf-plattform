@@ -60,7 +60,13 @@ export function FelanmalanModul() {
         arenden?: FelanmalanArendeDto[];
       };
       if (!res.ok) {
-        setFel(data.fel || "Kunde inte hämta ärenden.");
+        if (res.status === 403 || res.status === 401) {
+          setFel(
+            "För att se och hantera inkomna ärenden: logga in med e-post och lösenord (styrelse-login). Medlemsformuläret ovan fungerar utan inloggning.",
+          );
+        } else {
+          setFel(data.fel || "Kunde inte hämta ärenden.");
+        }
         setArenden([]);
         return;
       }
