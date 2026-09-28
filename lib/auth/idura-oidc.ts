@@ -6,7 +6,6 @@ import {
 import {
   hamtaIduraClientId,
   hamtaIduraClientSecret,
-  hamtaIduraRedirectUri,
   iduraIssuerUrl,
   IDURA_ACR_BANKID,
 } from "@/lib/auth/idura-konfig";
@@ -37,14 +36,13 @@ async function hamtaDiscovery(): Promise<OidcDiscovery> {
 export async function byggIduraAuthorizeUrl(opts: {
   state: string;
   nonce: string;
-  redirectUri?: string;
+  redirectUri: string;
   loginHint?: string;
 }): Promise<string> {
   const discovery = await hamtaDiscovery();
-  const redirectUri = opts.redirectUri ?? hamtaIduraRedirectUri();
   const params = new URLSearchParams({
     client_id: hamtaIduraClientId(),
-    redirect_uri: redirectUri,
+    redirect_uri: opts.redirectUri,
     response_type: "code",
     scope: "openid",
     state: opts.state,
@@ -59,14 +57,13 @@ export async function byggIduraAuthorizeUrl(opts: {
 
 export async function bytIduraCodeMotIdToken(opts: {
   code: string;
-  redirectUri?: string;
+  redirectUri: string;
 }): Promise<{ idToken: string; claims: JWTPayload }> {
   const discovery = await hamtaDiscovery();
-  const redirectUri = opts.redirectUri ?? hamtaIduraRedirectUri();
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code: opts.code,
-    redirect_uri: redirectUri,
+    redirect_uri: opts.redirectUri,
     client_id: hamtaIduraClientId(),
     client_secret: hamtaIduraClientSecret(),
   });

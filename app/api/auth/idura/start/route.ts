@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
   await sparaIduraOAuthCookies({ state, nonce, returnTo });
 
-  const redirectUri = hamtaIduraRedirectUri();
+  const redirectUri = hamtaIduraRedirectUri(req);
   const authorizeUrl = await byggIduraAuthorizeUrl({
     state,
     nonce,
