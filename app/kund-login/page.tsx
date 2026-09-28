@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { StyrelseLoginModul } from "@/components/forening/StyrelseLoginModul";
 import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import {
@@ -30,7 +31,9 @@ export default function KundLoginPage() {
         </p>
       </div>
 
-      <StyrelseLoginModul lage="kund" />
+      <Suspense fallback={<p className="text-center text-sm text-muted">Laddar inloggning …</p>}>
+        <StyrelseLoginModul lage="kund" />
+      </Suspense>
 
       <p className="mt-10 text-center text-xs text-muted">
         Fortfarande i testperiod?{" "}

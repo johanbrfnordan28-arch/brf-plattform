@@ -2,34 +2,49 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ModulePage } from "@/components/ModulePage";
 import { MessanSkickaLankForm } from "@/components/styrelsemassa/MessanSkickaLankForm";
+import { HUVUDSIDA_MASSA_QUERY } from "@/lib/massa-lank";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 export const metadata: Metadata = {
-  title: "Mejla länk — Styrelse-Navet",
+  title: "Styrelsemässa — Styrelse-Navet",
   description:
-    "Få en länk mejlad så ni kan prova Styrelse-Navet i lugn och ro efter mässan.",
+    "Träffade oss på mässan? Titta på huvudsidan eller få en länk mejlad.",
   robots: { index: false, follow: false },
 };
 
-/** Styrelsemässa — kort URL att visa som QR eller dela muntligt. */
+/** Styrelsemässa — kort URL (QR) som leder vidare till huvudsidan. */
 export default function MassaPage() {
   return (
     <ModulePage
-      title="Prova Styrelse-Navet"
+      title="Tack för att ni tittade förbi"
       icon="📬"
-      intro="Vill ni fundera hemma? Lämna föreningens namn och e-post — vi mejlar en länk så ni kan skapa er testförening när det passar."
+      intro="Träffade ni oss på styrelsemässan? Gå till huvudsidan och se hur Styrelse-Navet fungerar — eller be om en länk mejlad till er."
     >
-      <MessanSkickaLankForm />
-
-      <p className="mt-8 text-center text-sm text-muted">
-        Redo att börja direkt?{" "}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link
+          href={HUVUDSIDA_MASSA_QUERY}
+          className="brf-knapp-gron inline-flex justify-center px-6 py-3 text-sm font-semibold"
+        >
+          Till huvudsidan
+        </Link>
         <Link
           href={PROVA_GRATIS_PATH}
-          className="font-medium text-primary-dark underline hover:no-underline"
+          className="brf-knapp-neutral inline-flex justify-center px-6 py-3 text-sm font-semibold"
         >
-          Skapa testförening nu
+          Skapa testförening direkt
         </Link>
-      </p>
+      </div>
+
+      <div className="mt-10 border-t border-border pt-8">
+        <h2 className="text-lg font-semibold text-foreground">
+          Mejla länk till huvudsidan
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Vill ni fundera hemma? Vi skickar en länk så ni kan titta i lugn och
+          ro.
+        </p>
+        <MessanSkickaLankForm />
+      </div>
     </ModulePage>
   );
 }

@@ -6,6 +6,7 @@ import {
   sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { normaliseraGrund } from "@/components/underhallsplan/grund-synk";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
@@ -112,7 +113,29 @@ export function behoverFyllaForeningsuppgifter(foreningId?: string): boolean {
   return !profil.grundinfoPaborjad;
 }
 
+function arTestforeningIProvperiod(profil: ForeningProfil | null): boolean {
+  if (!profil || arGrundmallForening(profil.id)) return false;
+  return arEgenTestForening(profil.id) && !profil.avtalGodkant;
+}
+
+/**
+ * Hård omdirigering till Föreningsuppgifter — inte för testföreningar i provperiod
+ * (de ska kunna prova moduler utan att tvingas till avtal).
+ */
+export function skaTvingaTillForeningsuppgifter(foreningId?: string): boolean {
+  if (!behoverFyllaForeningsuppgifter(foreningId)) return false;
+  const id = foreningId ?? lasAktivForeningId();
+  const profil = lasForeningProfil(id);
+  if (arTestforeningIProvperiod(profil)) return false;
+  return true;
+}
+
 export function hamtaForeningStartPath(foreningId?: string): string {
+  const id = foreningId ?? lasAktivForeningId();
+  const profil = lasForeningProfil(id);
+  if (arTestforeningIProvperiod(profil)) {
+    return "/forening";
+  }
   return behoverFyllaForeningsuppgifter(foreningId)
     ? "/forening/uppgifter"
     : "/forening";

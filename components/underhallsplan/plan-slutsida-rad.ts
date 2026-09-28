@@ -52,7 +52,7 @@ export const PLAN_SLUTSIDA_RAD: PlanSlutsidaRadAvsnitt[] = [
     rubrik: "Energi skiljer sig från stort byte",
     punkter: [
       "Injustering av värme, LED och styrning av belysning sänker ofta driftkostnaden direkt — det ersätter inte planerat fönster- eller takbyte.",
-      "Dokumentera energiåtgärder i modulen Energi & drift; stora komponentbyten ligger kvar här i planen med längre intervall.",
+      "Akuta fel från medlemmar hanteras i modulen Felanmälan; stora planerade komponentbyten ligger kvar här i underhållsplanen.",
     ],
   },
   {

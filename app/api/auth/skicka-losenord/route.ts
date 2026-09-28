@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { skickaTillfalligtLosenord } from "@/lib/auth/auth-tjanst";
 import { skickaLosenordDemoMejl } from "@/lib/auth/demo-mejl";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import { lasSession } from "@/lib/auth/session";
 
 function basUrlFran(req: Request): string {
@@ -56,9 +57,9 @@ export async function POST(req: Request) {
         mejlVia: resultat.mejlVia,
         tillfalligtLosenord: resultat.tillfalligtLosenord,
         meddelande:
-          resultat.mejlVia === "resend"
+          mejlSkickades(resultat.mejlVia)
             ? "Lösenordet har skickats till din e-post."
-            : "Mejltjänsten är inte konfigurerad (sätt RESEND_API_KEY) — spara lösenordet som visas.",
+            : "Mejltjänsten är inte konfigurerad (sätt RESEND_API_KEY eller SMTP_*) — spara lösenordet som visas.",
       });
     }
 
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
       tillfalligtLosenord: resultat.tillfalligtLosenord,
       meddelande: resultat.tillfalligtLosenord
         ? "Mejltjänsten är inte konfigurerad — ditt nya tillfälliga lösenord visas nedan."
-        : resultat.mejlVia === "resend"
+        : mejlSkickades(resultat.mejlVia || "")
           ? "Ett nytt tillfälligt lösenord har skickats till din e-post."
           : "Lösenordet är sparat för utskick (mejltjänst ej konfigurerad — syns i mejl-outbox).",
     });

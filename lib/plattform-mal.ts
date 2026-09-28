@@ -37,6 +37,7 @@ export type ForeningSiffror = {
 
 export async function hamtaForeningSiffror(): Promise<ForeningSiffror> {
   const rader = await prisma.forening.findMany({
+    where: { borttagenTidpunkt: null },
     select: { avtalGodkant: true, skapadTidpunkt: true },
   });
   const siffror: ForeningSiffror = {

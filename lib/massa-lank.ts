@@ -1,5 +1,8 @@
-/** Kort länk för styrelsemässa — mejla provlänk till besökare. */
+/** Kort länk för styrelsemässa — QR och muntlig delning. */
 export const MASSA_PATH = "/massa";
+
+/** Sökväg + query på huvudsidan när besökare kommer från mässan. */
+export const HUVUDSIDA_MASSA_QUERY = "/?kalla=massa";
 
 export function massaUrl(host = "http://127.0.0.1:3010"): string {
   const bas = host.replace(/\/$/, "");

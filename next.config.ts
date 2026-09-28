@@ -11,6 +11,16 @@ const nextConfig: NextConfig = {
         destination: "/forening/arshjul",
         permanent: true,
       },
+      {
+        source: "/forening/energi",
+        destination: "/forening/felanmalan",
+        permanent: true,
+      },
+      {
+        source: "/energi",
+        destination: "/felanmalan",
+        permanent: true,
+      },
     ];
   },
 };

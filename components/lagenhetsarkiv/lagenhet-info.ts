@@ -678,6 +678,7 @@ export function lagenhetHarIfylldInfo(apartment: ApartmentFolder): boolean {
     ) ||
     eldstader.length > 0 ||
     flaktHarVarde(flakt) ||
+    apartment.antalKok?.trim() ||
     apartment.antalBadrum?.trim() ||
     apartment.antalWC?.trim()
   );

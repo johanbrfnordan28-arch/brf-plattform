@@ -43,12 +43,12 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     icon: "🔧",
   },
   {
-    id: "energi",
-    title: "Energi & drift",
+    id: "felanmalan",
+    title: "Felanmälan",
     description:
-      "Värme och belysning — energiåtgärder kopplade till teknisk livslängd i underhållsplanen.",
-    path: "/energi",
-    icon: "⚡",
+      "Medlemmar mejlar in fel — förvaltaren prioriterar, tilldelar och skickar vidare till entreprenör eller fastighetsskötare.",
+    path: "/felanmalan",
+    icon: "📨",
   },
   {
     id: "rondering",

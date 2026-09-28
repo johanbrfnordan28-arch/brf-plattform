@@ -8,6 +8,8 @@ import {
   type OffertTjanst,
 } from "@/components/offert/offert-forfragan-lager";
 import { OFFERT_EPOST } from "@/lib/offert-mejl";
+import { OFFERT_KONTAKTPERSONER } from "@/lib/kontakt-epost";
+import type { OffertKontaktpersonId } from "@/lib/kontakt-epost";
 import { mejlaOffertForfraganTillTeam } from "@/lib/offert-mejl-klient";
 
 /**
@@ -16,6 +18,8 @@ import { mejlaOffertForfraganTillTeam } from "@/lib/offert-mejl-klient";
 export function OffertForfraganForm() {
   const [foreningsNamn, setForeningsNamn] = useState("");
   const [kontaktperson, setKontaktperson] = useState("");
+  const [oonskadKontaktId, setOonskadKontaktId] =
+    useState<OffertKontaktpersonId>("offert");
   const [epost, setEpost] = useState("");
   const [telefon, setTelefon] = useState("");
   const [antalLagenheter, setAntalLagenheter] = useState("");
@@ -38,6 +42,7 @@ export function OffertForfraganForm() {
       const rad = skapaOffertForfragan({
         foreningsNamn,
         kontaktperson,
+        oonskadKontaktId,
         epost,
         telefon,
         antalLagenheter,
@@ -48,6 +53,7 @@ export function OffertForfraganForm() {
       setOk(true);
       setForeningsNamn("");
       setKontaktperson("");
+      setOonskadKontaktId("offert");
       setEpost("");
       setTelefon("");
       setAntalLagenheter("");
@@ -79,6 +85,32 @@ export function OffertForfraganForm() {
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
         />
       </label>
+
+      <fieldset>
+        <legend className="text-sm font-medium">Vem vill ni kontakta?</legend>
+        <div className="mt-2 flex flex-col gap-2">
+          {OFFERT_KONTAKTPERSONER.map((person) => (
+            <label
+              key={person.id}
+              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-white px-3 py-2.5 text-sm has-[:checked]:border-primary has-[:checked]:bg-[#eef6f0]"
+            >
+              <input
+                type="radio"
+                name="oonskadKontakt"
+                required
+                checked={oonskadKontaktId === person.id}
+                onChange={() => setOonskadKontaktId(person.id)}
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium text-foreground">{person.namn}</span>
+                <span className="mt-0.5 block text-muted">{person.beskrivning}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm">
           <span className="font-medium">Kontaktperson</span>

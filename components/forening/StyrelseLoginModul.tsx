@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FORENING_AKTIV_EVENT,
@@ -36,6 +37,12 @@ import {
 } from "@/lib/testforeningar";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { EfterInloggningLosenordPanel } from "@/components/auth/EfterInloggningLosenordPanel";
+import type { ForeningServerDto } from "@/lib/forening-server";
+import {
+  dtoTillForeningProfil,
+  importeraForeningFranServer,
+} from "@/lib/forening-server-sync";
+import { sokForeningarPaServerKlient } from "@/lib/forening-sok-klient";
 
 export type LoginLage = "test" | "kund";
 
@@ -129,7 +136,7 @@ function ForeningKort({
           {lage === "kund"
             ? "Endast er förening öppnas — andras uppgifter syns inte"
             : egen
-              ? "Er testförening i den här webbläsaren"
+              ? "Er testförening — sparad här eller hämtad från servern"
               : "Fast demoförening för test"}
         </p>
         {onBekraftaRensa && (
@@ -151,7 +158,50 @@ type StyrelseLoginModulProps = {
   lage?: LoginLage;
 };
 
+function slaIhopForeningar(
+  lokala: ForeningProfil[],
+  server: ForeningProfil[],
+): ForeningProfil[] {
+  const map = new Map<string, ForeningProfil>();
+  for (const f of lokala) map.set(f.id, f);
+  for (const f of server) {
+    const befintlig = map.get(f.id);
+    map.set(
+      f.id,
+      befintlig
+        ? dtoTillForeningProfil(
+            {
+              id: f.id,
+              namn: f.namn || befintlig.namn,
+              organisationsnummer:
+                befintlig.organisationsnummer || f.organisationsnummer,
+              epost: befintlig.epost || f.epost,
+              postadress: befintlig.postadress || f.postadress,
+              postnummer: befintlig.postnummer || f.postnummer,
+              ort: befintlig.ort || f.ort,
+              kontaktperson: befintlig.kontaktperson || f.kontaktperson,
+              grundinfoPaborjad:
+                befintlig.grundinfoPaborjad || f.grundinfoPaborjad,
+              avtalGodkant: befintlig.avtalGodkant || f.avtalGodkant,
+              avtalGodkantTidpunkt:
+                befintlig.avtalGodkantTidpunkt || f.avtalGodkantTidpunkt,
+              avtalBankidTidpunkt:
+                befintlig.avtalBankidTidpunkt || f.avtalBankidTidpunkt,
+              avtalBankidNamn: befintlig.avtalBankidNamn || f.avtalBankidNamn,
+              skapadTidpunkt: befintlig.skapadTidpunkt || f.skapadTidpunkt,
+            },
+            befintlig,
+          )
+        : f,
+    );
+  }
+  return [...map.values()].sort((a, b) => a.namn.localeCompare(b.namn, "sv"));
+}
+
+const IDURA_KLAR_PATH = "/auth/idura/klar";
+
 export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
+  const searchParams = useSearchParams();
   const [foreningar, setForeningar] = useState<ForeningProfil[]>([]);
   const [sok, setSok] = useState(INLOGGNING_BRF_PREFIX);
   const [rensaId, setRensaId] = useState<string | null>(null);
@@ -165,22 +215,69 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     losenord: string;
     foreningId: string;
   } | null>(null);
+  const [serverSokTraffar, setServerSokTraffar] = useState<ForeningProfil[]>(
+    [],
+  );
+  const [serverSokLaddar, setServerSokLaddar] = useState(false);
   const listaRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sokReqId = useRef(0);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
+  const bankidStartUrl = `/api/auth/idura/start?returnTo=${encodeURIComponent(IDURA_KLAR_PATH)}`;
+  const bankidKopplaMeddelande =
+    searchParams.get("bankid") === "koppla"
+      ? searchParams.get("namn")
+        ? `BankID verifierat (${searchParams.get("namn")}). Logga in med e-post och lösenord en gång — då kopplas BankID till ert konto.`
+        : "BankID verifierat. Logga in med e-post och lösenord en gång — då kopplas BankID till ert konto."
+      : null;
+  const bankidFel =
+    searchParams.get("bankid") === "fel"
+      ? searchParams.get("meddelande") || "BankID-inloggning misslyckades."
+      : null;
 
-  function ladda() {
+  function ladda(): ForeningProfil[] {
     rensaUtgangnaProvoperioder();
-    setForeningar(
-      lage === "kund" ? listaKundForeningar() : listaInloggningsForeningar(),
-    );
+    const lokala =
+      lage === "kund" ? listaKundForeningar() : listaInloggningsForeningar();
+    setForeningar(lokala);
+    return lokala;
+  }
+
+  async function synkaFranServer(bas: ForeningProfil[]) {
+    try {
+      const res = await fetch("/api/auth/mina-foreningar");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        inloggad?: boolean;
+        foreningar?: ForeningServerDto[];
+      };
+      if (!data.inloggad || !data.foreningar?.length) return;
+
+      const importerade = data.foreningar.map((dto) =>
+        importeraForeningFranServer(dto),
+      );
+      const filtrerade =
+        lage === "kund"
+          ? importerade.filter((f) => arKundForening(f))
+          : importerade.filter((f) => !arKundForening(f));
+
+      if (filtrerade.length === 0) return;
+
+      setForeningar(slaIhopForeningar(bas, filtrerade));
+    } catch {
+      /* valfri synk */
+    }
   }
 
   useEffect(() => {
-    ladda();
+    const lokala = ladda();
+    void synkaFranServer(lokala);
     setHydrated(true);
-    window.addEventListener(FORENING_AKTIV_EVENT, ladda);
-    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+    const onUppdatera = () => {
+      void synkaFranServer(ladda());
+    };
+    window.addEventListener(FORENING_AKTIV_EVENT, onUppdatera);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, onUppdatera);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ladda beror av lage
   }, [lage]);
 
@@ -194,13 +291,43 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     }
   }, [hydrated]);
 
-  const filtrerade = useMemo(
-    () => filtreraForeningarPaSok(foreningar, sok),
-    [foreningar, sok],
+  const sammanslagnaForeningar = useMemo(
+    () => slaIhopForeningar(foreningar, serverSokTraffar),
+    [foreningar, serverSokTraffar],
   );
 
-  const endastEgna = arEndastEgnaForeningar(foreningar);
-  const vantarPaSok = sokKräverFlerBokstaver(sok, foreningar);
+  const endastEgna = arEndastEgnaForeningar(sammanslagnaForeningar);
+  const vantarPaSok = sokKräverFlerBokstaver(sok, sammanslagnaForeningar);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (vantarPaSok) {
+      setServerSokTraffar([]);
+      setServerSokLaddar(false);
+      return;
+    }
+
+    const reqId = ++sokReqId.current;
+    setServerSokLaddar(true);
+    const timer = window.setTimeout(() => {
+      void sokForeningarPaServerKlient({ soktext: sok, lage }).then(
+        (traffar) => {
+          if (reqId !== sokReqId.current) return;
+          setServerSokTraffar(traffar);
+          setServerSokLaddar(false);
+        },
+      );
+    }, 280);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [hydrated, sok, lage, vantarPaSok]);
+
+  const filtrerade = useMemo(
+    () => filtreraForeningarPaSok(sammanslagnaForeningar, sok),
+    [sammanslagnaForeningar, sok],
+  );
   const arKundLage = lage === "kund";
   const kvarAttSkriva = Math.max(
     0,
@@ -226,6 +353,8 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       const data = (await res.json()) as {
         fel?: string;
         foreningId?: string;
+        forening?: ForeningServerDto;
+        accessNyckel?: string;
         epost?: string;
       };
 
@@ -233,6 +362,9 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
       const { sparaLokalSession } = await import("@/lib/auth/lokal-session");
 
       if (res.ok && data.foreningId) {
+        if (data.forening) {
+          importeraForeningFranServer(data.forening, data.accessNyckel);
+        }
         // Spara lösenordet lokalt så det syns under Konto även om kuvert saknas
         const sparadEpost = (data.epost || epost).trim().toLowerCase();
         sparaLokalKonto({
@@ -255,6 +387,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           losenord,
           foreningId: data.foreningId,
         });
+        void synkaFranServer(ladda());
         setKontoLaddar(false);
         return;
       }
@@ -357,7 +490,9 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           Logga in med e-post och lösenord
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Lösenordet skickades när föreningen skapades.{" "}
+          Lösenordet skickades när föreningen skapades. På ny enhet eller
+          webbläsare: logga in här med e-post och lösenord — då hämtas er
+          förening från servern.{" "}
           <Link
             href="/konto/glomt-losenord"
             className="font-medium text-primary-dark underline hover:no-underline"
@@ -403,6 +538,28 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
             {kontoLaddar ? "Loggar in …" : "Logga in"}
           </button>
         </form>
+        {bankidKopplaMeddelande ? (
+          <p className="mt-3 rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
+            {bankidKopplaMeddelande}
+          </p>
+        ) : null}
+        {bankidFel ? (
+          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+            {bankidFel}
+          </p>
+        ) : null}
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="text-sm font-medium text-foreground">Logga in med BankID</p>
+          <p className="mt-1 text-xs text-muted">
+            Testmiljö via Idura — kräver databas och att BankID kopplats till ert konto (första gången: e-post + lösenord direkt efter).
+          </p>
+          <a
+            href={bankidStartUrl}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border-2 border-primary/40 bg-white px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
+          >
+            Identifiera med BankID
+          </a>
+        </div>
       </section>
 
       <section>
@@ -466,13 +623,15 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         <p className="mt-2 text-center text-xs text-muted">
           {vantarPaSok
             ? `Skriv ${kvarAttSkriva} bokstav${kvarAttSkriva === 1 ? "" : "er"} till efter Brf`
-            : filtrerade.length === 0
-              ? endastEgna || arKundLage
-                ? "Ingen träff — kontrollera stavningen"
-                : "Ingen demoförening matchar"
-              : filtrerade.length === 1
-                ? "Träff — logga in på er förening"
-                : "Flera träffar — skriv fler bokstäver för att begränsa"}
+            : serverSokLaddar
+              ? "Söker på servern …"
+              : filtrerade.length === 0
+                ? endastEgna || arKundLage
+                  ? "Ingen träff — kontrollera stavningen eller logga in med e-post ovan"
+                  : "Ingen demoförening matchar — skapade föreningar hämtas från servern vid träff"
+                : filtrerade.length === 1
+                  ? "Träff — logga in på er förening"
+                  : "Flera träffar — skriv fler bokstäver för att begränsa"}
         </p>
 
         <ul

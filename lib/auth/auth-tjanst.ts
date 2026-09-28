@@ -7,7 +7,7 @@ import {
   verifieraLosenord,
 } from "@/lib/auth/losenord";
 import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
-import { byggAterstallningsMejl, byggLosenordMejl, skickaMejl } from "@/lib/auth/mejl";
+import { byggAterstallningsMejl, byggLosenordMejl, skickaMejl, type MejlLeveransVia } from "@/lib/auth/mejl";
 import {
   skapaSessionToken,
   skapaId,
@@ -50,7 +50,7 @@ export type SkapaForeningAuthResultat = {
   accessNyckel: string;
   epost: string;
   tillfalligtLosenord: string;
-  mejlVia: "resend" | "outbox" | "ingen";
+  mejlVia: MejlLeveransVia;
   kontoId: string;
   /** Föreningen fanns redan på servern — hämtad till webbläsaren. */
   aterkopplad?: boolean;
@@ -126,6 +126,40 @@ async function aterkopplaBefintligForening(opts: {
     kontoId: opts.konto.id,
     aterkopplad: true,
   };
+}
+
+/** Ny åtkomstnyckel för webbläsare efter inloggning (samma mönster som återkoppling). */
+export async function utfardaAccessNyckelForMedlem(
+  foreningId: string,
+  kontoId: string,
+): Promise<string> {
+  const medlem = await prisma.foreningMedlem.findUnique({
+    where: {
+      foreningId_kontoId: { foreningId, kontoId },
+    },
+  });
+  if (!medlem) {
+    throw new Error("Ingen åtkomst till föreningen.");
+  }
+
+  const accessNyckel = skapaAccessNyckel();
+  await prisma.forening.update({
+    where: { id: foreningId },
+    data: { accessNyckelHash: hashAccessNyckel(accessNyckel) },
+  });
+  return accessNyckel;
+}
+
+/** Föreningar kopplade till kontot — för inloggningssidan efter session. */
+export async function hamtaMinaForeningar(
+  kontoId: string,
+): Promise<ForeningServerDto[]> {
+  const medlemskap = await prisma.foreningMedlem.findMany({
+    where: { kontoId },
+    include: { forening: true },
+    orderBy: { skapadTidpunkt: "desc" },
+  });
+  return medlemskap.map((m) => tillDto(m.forening));
 }
 
 export async function skapaForeningMedKonto(
@@ -298,7 +332,13 @@ export async function loggaInStyrelse(opts: {
   losenord: string;
   ip?: string;
   userAgent?: string;
-}): Promise<{ session: SessionPayload; token: string; foreningId: string }> {
+}): Promise<{
+  session: SessionPayload;
+  token: string;
+  foreningId: string;
+  forening: ForeningServerDto;
+  accessNyckel: string;
+}> {
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
 
@@ -346,6 +386,23 @@ export async function loggaInStyrelse(opts: {
   }
 
   const foreningId = medlemskap[0]!.foreningId;
+  const foreningRad = await prisma.forening.findUnique({
+    where: { id: foreningId },
+  });
+  if (!foreningRad) {
+    throw new Error("Föreningen hittades inte.");
+  }
+  if (foreningRad.borttagenTidpunkt) {
+    throw new Error(
+      "Föreningen är borttagen och kan inte logga in. Kontakta plattformsadmin om detta är fel.",
+    );
+  }
+
+  const accessNyckel = await utfardaAccessNyckelForMedlem(
+    foreningId,
+    konto.id,
+  );
+
   await prisma.konto.update({
     where: { id: konto.id },
     data: {
@@ -376,7 +433,114 @@ export async function loggaInStyrelse(opts: {
     session: { ...session, exp: 0 },
     token,
     foreningId,
+    forening: tillDto(foreningRad),
+    accessNyckel,
   };
+}
+
+/** Inloggning efter verifierad Idura/BankID (personnummer redan hashat). */
+export async function loggaInStyrelseMedPersonnummerNyckel(opts: {
+  personnummerNyckel: string;
+  ip?: string;
+  userAgent?: string;
+}): Promise<{
+  token: string;
+  foreningId: string;
+  forening: ForeningServerDto;
+  accessNyckel: string;
+  epost: string;
+}> {
+  const konto = await prisma.konto.findFirst({
+    where: {
+      personnummerNyckel: opts.personnummerNyckel,
+      aktiv: true,
+    },
+  });
+  if (!konto) {
+    throw new Error("BANKID_KOPPLA");
+  }
+  if (konto.typ !== "STYRELSE" && konto.typ !== "PLATTFORM") {
+    throw new Error("Kontot kan inte logga in som styrelse.");
+  }
+
+  const epost = konto.epost;
+  const medlemskap = await prisma.foreningMedlem.findMany({
+    where: { kontoId: konto.id },
+    orderBy: { skapadTidpunkt: "desc" },
+  });
+  if (medlemskap.length === 0) {
+    throw new Error("Kontot saknar koppling till en förening.");
+  }
+
+  const foreningId = medlemskap[0]!.foreningId;
+  const foreningRad = await prisma.forening.findUnique({
+    where: { id: foreningId },
+  });
+  if (!foreningRad) {
+    throw new Error("Föreningen hittades inte.");
+  }
+  if (foreningRad.borttagenTidpunkt) {
+    throw new Error(
+      "Föreningen är borttagen och kan inte logga in. Kontakta plattformsadmin om detta är fel.",
+    );
+  }
+
+  const accessNyckel = await utfardaAccessNyckelForMedlem(
+    foreningId,
+    konto.id,
+  );
+
+  await prisma.konto.update({
+    where: { id: konto.id },
+    data: { senasteInloggning: new Date() },
+  });
+  await loggaInloggning({
+    kontoId: konto.id,
+    epost,
+    typ: "STYRELSE",
+    foreningId,
+    lyckad: true,
+    ip: opts.ip,
+    userAgent: opts.userAgent,
+  });
+
+  const session: Omit<SessionPayload, "exp"> = {
+    kontoId: konto.id,
+    epost: konto.epost,
+    namn: konto.namn,
+    typ: "STYRELSE",
+    foreningId,
+  };
+  const token = skapaSessionToken(session);
+  return {
+    token,
+    foreningId,
+    forening: tillDto(foreningRad),
+    accessNyckel,
+    epost,
+  };
+}
+
+/** Kopplar BankID till konto efter lyckad e-postinloggning (engångs pending-cookie). */
+export async function kopplaPersonnummerTillKonto(opts: {
+  kontoId: string;
+  personnummerNyckel: string;
+}): Promise<void> {
+  const befintlig = await prisma.konto.findFirst({
+    where: {
+      personnummerNyckel: opts.personnummerNyckel,
+      NOT: { id: opts.kontoId },
+    },
+  });
+  if (befintlig) {
+    throw new Error(
+      "Detta BankID är redan kopplat till ett annat konto.",
+    );
+  }
+  await prisma.konto.update({
+    where: { id: opts.kontoId },
+    data: { personnummerNyckel: opts.personnummerNyckel },
+  });
 }
 
 export async function loggaInPlattform(opts: {
@@ -646,7 +810,7 @@ export async function skickaTillfalligtLosenord(opts: {
   kontoId?: string;
 }): Promise<{
   skickat: boolean;
-  mejlVia?: "resend" | "outbox" | "ingen";
+  mejlVia?: MejlLeveransVia;
   tillfalligtLosenord?: string;
 }> {
   const epost = normaliseraEpost(opts.epost);
@@ -718,7 +882,7 @@ export async function begärAterstallning(opts: {
 }): Promise<{
   skickat: boolean;
   aterstallningsLank?: string;
-  mejlVia?: "resend" | "outbox" | "ingen";
+  mejlVia?: MejlLeveransVia;
 }> {
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });

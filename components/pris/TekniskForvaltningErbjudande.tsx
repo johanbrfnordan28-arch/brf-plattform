@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ABK_09_KORT } from "@/lib/abk-09";
-import { offertMailto } from "@/lib/offert-mejl";
+import { OFFERT_EPOST, offertMailto } from "@/lib/offert-mejl";
 
 const TJANSTER = [
   {
@@ -94,7 +94,7 @@ export function TekniskForvaltningErbjudande() {
               )}
               className="rounded-lg border border-primary bg-white px-6 py-3 text-sm font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0] sm:text-base"
             >
-              Mejla oss
+              Mejla {OFFERT_EPOST}
             </a>
             <Link
               href="#skapa-forening"

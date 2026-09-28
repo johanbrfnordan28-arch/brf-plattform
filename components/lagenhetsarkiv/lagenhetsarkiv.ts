@@ -96,6 +96,8 @@ export type ApartmentFolder = {
   vaning?: string;
   /** Antal rum, t.ex. "3 rum och kök". */
   antalRum?: string;
+  /** Antal kök. */
+  antalKok?: string;
   /** Antal badrum. */
   antalBadrum?: string;
   /** Antal WC (toaletter). */

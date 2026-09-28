@@ -22,6 +22,10 @@ export const PLATTFORM_PERSONAL_STARTLOSENORD: Record<
     namn: "Seif Alameri",
     losenord: "Seif2026",
   },
+  "seif@styrelse-navet.se": {
+    namn: "Seif Alameri",
+    losenord: "Seif-BRF-2026",
+  },
 };
 
 /** Startkod tills BankID finns — byt via env i produktion. */
@@ -35,8 +39,13 @@ export function listaPlattformAdminEposter(): string[] {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
     // Seif ska alltid finnas även när env override används.
-    if (!lista.includes("s.alamerison@sveabygg.se")) {
-      lista.push("s.alamerison@sveabygg.se");
+    for (const epost of [
+      "s.alamerison@sveabygg.se",
+      "seif@styrelse-navet.se",
+    ]) {
+      if (!lista.includes(epost)) {
+        lista.push(epost);
+      }
     }
     return lista;
   }

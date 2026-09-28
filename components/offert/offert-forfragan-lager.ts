@@ -1,4 +1,5 @@
 import { safeSetLocalStorage } from "@/lib/localStorage";
+import type { OffertKontaktpersonId } from "@/lib/kontakt-epost";
 
 const STORAGE_KEY = "brf-offert-forfragan-v1";
 export const OFFERT_FORFRAGAN_EVENT = "offert-forfragan-uppdaterad";
@@ -25,6 +26,8 @@ export type OffertForfragan = {
   id: string;
   foreningsNamn: string;
   kontaktperson: string;
+  /** Vem kunden vill ha kontakt med hos Styrelse-Navet. */
+  oonskadKontaktId?: OffertKontaktpersonId;
   epost: string;
   telefon: string;
   antalLagenheter: string;
@@ -65,6 +68,7 @@ export function listaOffertForfragningar(): OffertForfragan[] {
 export function skapaOffertForfragan(input: {
   foreningsNamn: string;
   kontaktperson: string;
+  oonskadKontaktId: OffertKontaktpersonId;
   epost: string;
   telefon?: string;
   antalLagenheter?: string;
@@ -77,6 +81,9 @@ export function skapaOffertForfragan(input: {
   if (!epost || !foreningsNamn || !kontaktperson) {
     throw new Error("Fyll i föreningsnamn, kontaktperson och e-post.");
   }
+  if (!input.oonskadKontaktId) {
+    throw new Error("Välj vem ni vill kontakta.");
+  }
   if (!input.tjanster.length) {
     throw new Error("Välj minst en tjänst.");
   }
@@ -85,6 +92,7 @@ export function skapaOffertForfragan(input: {
     id: skapaId(),
     foreningsNamn,
     kontaktperson,
+    oonskadKontaktId: input.oonskadKontaktId,
     epost,
     telefon: (input.telefon ?? "").trim(),
     antalLagenheter: (input.antalLagenheter ?? "").trim(),

@@ -225,6 +225,7 @@ export function beraknaPlanUtgiftsRader(input: {
     antalLagenheter,
     planStartAr,
     planLangdAr,
+    planKostnader,
   );
   const samfallighetPerAr = beraknaSamfallighetsavgiftPerAr(samfallighetsavgift);
 

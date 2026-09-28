@@ -10,6 +10,7 @@ import {
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { sparaServerAccessNyckel } from "@/lib/forening-server-sync";
+import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import {
   skapaTomStyrelseLedamot,
   type StyrelseRoll,
@@ -59,7 +60,7 @@ async function etableraKontoEfterSkapa(opts: {
 export type SkapaForeningMedKontoResultat = {
   profil: ForeningProfil;
   tillfalligtLosenord: string;
-  mejlVia: "resend" | "outbox" | "lokal";
+  mejlVia: "resend" | "smtp" | "outbox" | "lokal";
   meddelande: string;
   epost: string;
 };
@@ -158,7 +159,7 @@ export async function skapaForeningMedKontoKlient(opts: {
       foreningId: profil.id,
     });
 
-    let mejlVia: "resend" | "outbox" | "lokal" = "lokal";
+    let mejlVia: SkapaForeningMedKontoResultat["mejlVia"] = "lokal";
     let meddelande =
       "Föreningen sparades i den här webbläsaren. Spara lösenordet nedan — det behövs för inloggning.";
 
@@ -174,13 +175,13 @@ export async function skapaForeningMedKontoKlient(opts: {
         }),
       });
       const mejlData = (await mejlRes.json()) as {
-        mejlVia?: "resend" | "ingen";
+        mejlVia?: "resend" | "smtp" | "outbox" | "ingen";
         tillfalligtLosenord?: string;
         meddelande?: string;
       };
       if (mejlRes.ok) {
-        if (mejlData.mejlVia === "resend") {
-          mejlVia = "resend";
+        if (mejlSkickades(mejlData.mejlVia || "")) {
+          mejlVia = mejlData.mejlVia === "smtp" ? "smtp" : "resend";
           meddelande =
             "Föreningen sparades i webbläsaren och lösenordet har mejlats. Spara det också här som backup.";
         } else if (mejlData.meddelande) {
