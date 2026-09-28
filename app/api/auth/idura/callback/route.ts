@@ -57,7 +57,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const redirectUri = hamtaIduraRedirectUri();
+    const redirectUri = hamtaIduraRedirectUri(req);
     const { claims } = await bytIduraCodeMotIdToken({ code, redirectUri });
 
     const nonceClaim = claims.nonce;

@@ -22,16 +22,18 @@ export function hamtaIduraClientSecret(): string {
   return process.env.IDURA_CLIENT_SECRET?.trim() ?? "";
 }
 
-/** Måste matcha exakt en rad i Idura → Allowed redirects. */
-export function hamtaIduraRedirectUri(basUrl?: string): string {
-  const override = process.env.IDURA_REDIRECT_URI?.trim();
-  if (override) return override;
-  const app =
-    basUrl?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    "http://127.0.0.1:3010";
-  const utanSlash = app.replace(/\/$/, "");
-  return `${utanSlash}/api/auth/idura/callback`;
+/**
+ * Byggs från domänen anropet kom in på: OAuth-state-kakan sätts där, så
+ * callback måste landa på samma domän. Måste matcha en rad i Idura → Allowed redirects.
+ */
+export function hamtaIduraRedirectUri(req: Request): string {
+  const url = new URL(req.url);
+  const host =
+    req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || url.host;
+  const proto =
+    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+    url.protocol.replace(/:$/, "");
+  return `${proto}://${host}/api/auth/idura/callback`;
 }
 
 /** Svensk BankID i Idura Verify (test eller prod). */
