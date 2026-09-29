@@ -8,6 +8,7 @@ import {
   skapaIduraNonce,
   skapaIduraState,
   sparaIduraOAuthCookies,
+  valideraLoginSida,
   valideraReturnTo,
 } from "@/lib/auth/idura-oauth-cookies";
 
@@ -21,10 +22,11 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const returnTo = valideraReturnTo(url.searchParams.get("returnTo"));
+  const loginSida = valideraLoginSida(url.searchParams.get("loginSida"));
   const state = skapaIduraState();
   const nonce = skapaIduraNonce();
 
-  await sparaIduraOAuthCookies({ state, nonce, returnTo });
+  await sparaIduraOAuthCookies({ state, nonce, returnTo, loginSida });
 
   const redirectUri = hamtaIduraRedirectUri(req);
   const authorizeUrl = await byggIduraAuthorizeUrl({

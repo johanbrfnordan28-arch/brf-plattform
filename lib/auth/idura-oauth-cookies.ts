@@ -49,10 +49,21 @@ export function skapaIduraNonce(): string {
   return randomBytes(24).toString("base64url");
 }
 
+const LOGIN_SIDOR = ["/styrelse-login", "/kund-login"] as const;
+export type IduraLoginSida = (typeof LOGIN_SIDOR)[number];
+
+/** Inloggningssidan BankID startades från — dit skickas fel och kopplingssteg tillbaka. */
+export function valideraLoginSida(
+  varde: string | null | undefined,
+): IduraLoginSida {
+  return LOGIN_SIDOR.find((sida) => sida === varde?.trim()) ?? "/styrelse-login";
+}
+
 export async function sparaIduraOAuthCookies(opts: {
   state: string;
   nonce: string;
   returnTo: string;
+  loginSida: IduraLoginSida;
 }): Promise<void> {
   const jar = await cookies();
   const base = {
@@ -67,7 +78,12 @@ export async function sparaIduraOAuthCookies(opts: {
     path: "/",
     maxAge: TTL_SEK,
   });
-  jar.set(RETURN_COOKIE, pack({ exp: base.exp, returnTo: opts.returnTo }), {
+  const retur = {
+    exp: base.exp,
+    returnTo: opts.returnTo,
+    loginSida: opts.loginSida,
+  };
+  jar.set(RETURN_COOKIE, pack(retur), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -98,6 +114,13 @@ export async function lasIduraReturnTo(): Promise<string> {
     return "/auth/idura/klar";
   }
   return data.returnTo;
+}
+
+export async function lasIduraLoginSida(): Promise<IduraLoginSida> {
+  const jar = await cookies();
+  const raw = jar.get(RETURN_COOKIE)?.value;
+  const data = unpack<{ loginSida?: string }>(raw ?? "");
+  return valideraLoginSida(data?.loginSida);
 }
 
 export async function rensaIduraOAuthCookies(): Promise<void> {
