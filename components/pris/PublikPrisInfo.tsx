@@ -21,7 +21,7 @@ export function PublikPrisInfo({ visaRubrik = true }: Props) {
             Spara {ARSAVTAL_RABATT_PROCENT}&nbsp;%
           </h3>
           <p className="mt-1 text-sm text-primary-dark">
-            mot månadsdebitering
+            jämfört med månadsbetalning
           </p>
         </>
       )}
@@ -31,8 +31,8 @@ export function PublikPrisInfo({ visaRubrik = true }: Props) {
         ))}
       </ul>
       <p className="mt-4 text-sm text-muted">
-        Priset beror på antal lägenheter. Er exakta kostnad visas först när
-        styrelsen fyllt i antalet i underhållsplanen.
+        Priset beror på antalet lägenheter. Ni ser er exakta kostnad när
+        styrelsen har fyllt i antalet i underhållsplanen.
       </p>
     </div>
   );

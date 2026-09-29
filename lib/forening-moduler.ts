@@ -14,7 +14,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "arshjul",
     title: "Årshjul",
     description:
-      "Översikt över året med påminnelser — så planeringen av styrelsearbetet blir mer överskådlig.",
+      "Årets uppgifter och påminnelser i en tydlig översikt.",
     path: "/arshjul",
     icon: "📅",
   },
@@ -22,7 +22,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "foreningsinformation",
     title: "Styrning och Dokument",
     description:
-      "Styrelsearkiv, stadgar, protokoll och övriga dokument — samlade och sökbara.",
+      "Styrelsearkiv, stadgar, protokoll och andra dokument, samlade och sökbara.",
     path: "/foreningsinformation",
     icon: "📁",
   },
@@ -30,7 +30,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "medlemmar",
     title: "Medlemmar & lägenhetsarkiv",
     description:
-      "Lägenhetsarkiv, renoveringsanmälan och utskick — aktuell information och historik per lägenhet.",
+      "Lägenhetsarkiv, renoveringsanmälningar och utskick, med information och historik för varje lägenhet.",
     path: "/medlemmar",
     icon: "👥",
   },
@@ -38,7 +38,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "underhallsplan",
     title: "Underhållsplan",
     description:
-      "Komponentregister, renoveringshistorik och framtida underhåll — beslutsunderlag som håller över tid.",
+      "Komponentregister, renoveringshistorik och planerat underhåll som underlag för styrelsens beslut.",
     path: "/underhallsplan",
     icon: "🔧",
   },
@@ -46,7 +46,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "felanmalan",
     title: "Felanmälan",
     description:
-      "Medlemmar mejlar in fel — förvaltaren prioriterar, tilldelar och skickar vidare till entreprenör eller fastighetsskötare.",
+      "Medlemmar anmäler fel, och förvaltaren prioriterar och skickar vidare till entreprenör eller fastighetsskötare.",
     path: "/felanmalan",
     icon: "📨",
   },
@@ -54,7 +54,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "rondering",
     title: "Rondering & avvikelser",
     description:
-      "Checklistor, signering och avvikelser — så städning och skötsel blir enklare att följa upp.",
+      "Checklistor, signering och avvikelser som gör städning och skötsel lättare att följa upp.",
     path: "/rondering",
     icon: "✅",
   },
@@ -62,7 +62,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "upphandling",
     title: "Upphandling",
     description:
-      "Aktuella uppdrag via Styrelse-Navet — underlag till inbjudna entreprenörer, anbud till oss.",
+      "Aktuella uppdrag via Styrelse-Navet. Inbjudna entreprenörer får underlaget och skickar sina anbud till oss.",
     path: "/upphandling",
     icon: "📋",
   },
@@ -70,7 +70,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "projekt",
     title: "Projekt",
     description:
-      "Projektmappar per år — spara handlingar från pågående och avslutade projekt på ett ställe.",
+      "En mapp per år för handlingar från pågående och avslutade projekt.",
     path: "/projekt",
     icon: "📐",
   },
@@ -78,7 +78,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "entreprenorer",
     title: "Entreprenörer",
     description:
-      "Egna kontakter och rekommenderade entreprenörer — sök, lägg till och ta bort.",
+      "Egna kontakter och rekommenderade entreprenörer som ni kan söka bland, lägga till och ta bort.",
     path: "/entreprenorer",
     icon: "🏗️",
   },
@@ -86,7 +86,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "uppgifter",
     title: "Föreningsuppgifter",
     description:
-      "Adress, styrelse och övriga fakta om föreningen — samlade på ett ställe.",
+      "Adress, styrelse och andra grundfakta om föreningen.",
     path: "/uppgifter",
     icon: "🏢",
   },

@@ -5,23 +5,23 @@ import { OFFERT_EPOST, offertMailto } from "@/lib/offert-mejl";
 const TJANSTER = [
   {
     titel: "Teknisk förvaltning",
-    text: "Löpande driftstöd, uppföljning och tekniska beslut — till fördelaktigt pris anpassat efter er fastighet.",
+    text: "Löpande driftstöd, uppföljning och hjälp med tekniska beslut, anpassat efter er fastighet.",
   },
   {
     titel: "Projektledning",
-    text: "Styrning från planering till genomförande, så styrelsen behåller kontroll utan att drunkna i detaljer.",
+    text: "Vi styr projektet från planering till genomförande, så att styrelsen har kontroll utan att behöva sköta detaljerna.",
   },
   {
     titel: "Skadeutredning",
-    text: "Analys, dokumentation och rätt åtgärder när skadan är framme — underlag som håller inför försäkring och beslut.",
+    text: "Analys, dokumentation och förslag på åtgärder när en skada har uppstått, med underlag för försäkringsbolaget och styrelsens beslut.",
   },
   {
     titel: "Besiktning",
-    text: "Status och underlag inför underhåll, entreprenad eller överlåtelse — tydligt och spårbart.",
+    text: "Genomgång av fastighetens skick inför underhåll, entreprenad eller överlåtelse, med tydlig dokumentation.",
   },
   {
     titel: "Upphandling",
-    text: "Förfrågningsunderlag, anbudshantering och avtal — från mindre jobb till större entreprenader.",
+    text: "Förfrågningsunderlag, anbudshantering och avtal för allt från mindre jobb till stora entreprenader.",
   },
 ] as const;
 
@@ -37,16 +37,15 @@ export function TekniskForvaltningErbjudande() {
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold text-primary-dark">
-            Tjänster · fördelaktiga villkor
+            Konsulttjänster
           </p>
           <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-            Teknisk förvaltning — och allt annat föreningen kan behöva
+            Teknisk förvaltning och annan hjälp för föreningen
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
-            Vi erbjuder teknisk förvaltning till fördelaktigt pris. Kostnaden
-            beror på fastigheten och omfattningen. Ni kan också ta hjälp med
-            projektledning, skadeutredning, besiktning och upphandling — fasta
-            priser på offert eller löpande debitering.
+            Utöver plattformen erbjuder vi teknisk förvaltning till ett bra
+            pris. Vi hjälper också till med projektledning, skadeutredning,
+            besiktning och upphandling.
           </p>
         </div>
 
@@ -62,9 +61,9 @@ export function TekniskForvaltningErbjudande() {
           <li className="border-l-2 border-primary/50 pl-4 sm:col-span-2 lg:col-span-1">
             <h3 className="font-semibold text-foreground">Pris &amp; upplägg</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Anpassat efter er fastighet och hur mycket stöd ni behöver.
-              Välj fast pris via offert eller löpande debitering — alltid
-              transparent innan ni går vidare.
+              Priset anpassas efter fastigheten och hur mycket stöd ni behöver.
+              Ni väljer fast pris enligt offert eller löpande räkning, och vet
+              alltid vad det kostar innan ni bestämmer er.
             </p>
           </li>
         </ul>
@@ -75,8 +74,8 @@ export function TekniskForvaltningErbjudande() {
               Behöver ni hjälp utöver plattformen?
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Begär en offert med fast pris, eller fråga om löpande teknisk
-              förvaltning. Vi anpassar omfattningen efter er förening.{" "}
+              Begär en offert med fast pris eller fråga om löpande teknisk
+              förvaltning. Vi anpassar uppdraget efter er förening.{" "}
               {ABK_09_KORT}
             </p>
           </div>

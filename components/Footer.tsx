@@ -25,8 +25,8 @@ export function Footer() {
             <p className="font-semibold text-foreground">{brand}</p>
             <p className="mt-1 max-w-md text-sm text-muted">
               {isForening
-                ? "Er förenings sida — kopierad grundmall som anpassas med dokument, moduler och historik."
-                : "Grundmall för styrelser — upphandling, underhåll, offert och mer på ett ställe."}
+                ? "Er förenings sida, som ni fyller med egna dokument, moduler och historik."
+                : "Digitalt stöd för styrelser i bostadsrättsföreningar: årshjul, underhållsplan, upphandling och mer."}
             </p>
           </div>
           <div className="flex flex-col items-start gap-2">

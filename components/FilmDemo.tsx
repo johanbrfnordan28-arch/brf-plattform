@@ -10,19 +10,19 @@ import { useHubbNamn } from "@/components/forening/useHubbNamn";
 const scenesPublic: InformationsFilmScen[] = [
   {
     titel: "Styrelsen behöver överblick",
-    text: "Underhåll, upphandlingar och dokument hamnar ofta utspritt. Det blir svårt att veta vad som är planerat, utfört och vad som saknas.",
+    text: "Underhåll, upphandlingar och dokument ligger ofta utspridda. Då är det svårt att veta vad som är planerat, vad som är gjort och vad som saknas.",
   },
   {
-    titel: "Underhållsplan som håller",
-    text: "Bygg komponentregister, renoveringshistorik och besiktningar i samma plan. Budget och investeringar blir tydliga — inte gömda i kalkylark.",
+    titel: "En samlad underhållsplan",
+    text: "Komponentregister, renoveringshistorik och besiktningar i samma plan. Budget och investeringar syns tydligt i stället för att gömmas i kalkylark.",
   },
   {
-    titel: "Upphandling — stort som smått",
-    text: "Från fastighetsskötsel till stambyte: mallar, dokument och Upphandla-knappen. Anbud samlas och jämförs strukturerat.",
+    titel: "Upphandling, stor som liten",
+    text: "Från fastighetsskötsel till stambyte, med mallar, dokument och knappen Upphandla. Anbuden samlas och jämförs på ett strukturerat sätt.",
   },
   {
-    titel: "Se och förstå funktionerna",
-    text: "Korta scener visar hur modulerna fungerar — så ni snabbt får en tydlig bild av plattformen.",
+    titel: "Prova själva",
+    text: "Skapa en testförening och prova alla moduler gratis i 30 dagar.",
   },
 ];
 
@@ -30,23 +30,23 @@ function byggForeningScener(hubbNamn: string): InformationsFilmScen[] {
   return [
     {
       titel: `Välkommen till ${hubbNamn}`,
-      text: "Här arbetar styrelsen i samma portal som medlemmarna ser — upphandling, underhållsplan, dokument och rondering på ett ställe.",
+      text: "Här arbetar styrelsen med upphandling, underhållsplan, dokument och rondering, i samma portal som medlemmarna använder.",
     },
     {
       titel: "Modul för modul",
-      text: "Välj det ni behöver: underhållsplan med komponenter, guider med korta filmer, upphandling med tydliga steg.",
+      text: "Välj det ni behöver: underhållsplan med komponenter, guider med korta filmer och upphandling i tydliga steg.",
     },
     {
       titel: "Underhållsplan i fokus",
-      text: "Bygg register, renoveringshistorik och budget. Besiktningar hamnar i rätt år — inte utspritt i kalkylark.",
+      text: "Bygg upp register, renoveringshistorik och budget. Besiktningarna hamnar i rätt år i stället för i utspridda kalkylark.",
     },
     {
       titel: "Guider när ni behöver stöd",
-      text: "Korta filmer per funktion plus tips om upphandling och entreprenörer — tryck Spela och följ scenerna.",
+      text: "Korta filmer om varje funktion och tips om upphandling och entreprenörer. Tryck på Spela och följ scenerna.",
     },
     {
       titel: "Redo att börja",
-      text: "Öppna modulerna ovan eller gå till Guider & tips för fler filmer. Detta är en demo tills riktig video finns inlagd.",
+      text: "Öppna modulerna ovan eller gå till Guider & tips för fler filmer. Det här är en demo tills den riktiga filmen är på plats.",
     },
   ];
 }
@@ -93,8 +93,8 @@ export function FilmDemo({
               Se portalen på cirka 30 sekunder
             </h2>
             <p className="mt-2 text-muted">
-              Korta scener visar hur modulerna hänger ihop. Tryck Spela i
-              filmrutan — eller öppna Guider & tips för fler filmer.
+              Korta scener visar hur modulerna hänger ihop. Tryck på Spela i
+              filmrutan eller öppna Guider & tips för fler filmer.
             </p>
           </div>
 
@@ -108,8 +108,7 @@ export function FilmDemo({
               </h3>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-white/85 sm:text-base">
                 Upphandling, underhållsplan, rondering och dokument i samma
-                miljö. Filmen till höger går igenom huvuddelarna — utan ljud i
-                demo.
+                portal. Filmen bredvid går igenom de viktigaste delarna.
               </p>
               <Link
                 href="/forening/guider"
@@ -127,7 +126,7 @@ export function FilmDemo({
                 className="min-h-0 flex-1 rounded-xl"
               />
               <p className="mt-3 text-center text-xs text-muted">
-                Demo utan ljud — tryck Spela för att gå igenom scenerna.
+                Demo utan ljud. Tryck på Spela för att gå igenom scenerna.
               </p>
             </article>
           </div>
@@ -145,18 +144,18 @@ export function FilmDemo({
               Film & funktioner
             </p>
             <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
-              Se och förstå funktionerna
+              Se hur det fungerar
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-white/85">
-              Korta scener visar hur underhållsplan, upphandling och övriga
-              moduler fungerar i praktiken.
+              Korta scener visar hur underhållsplanen, upphandlingen och de
+              andra modulerna fungerar.
             </p>
           </div>
 
           <div className="p-4 sm:p-6">
             <InformationsFilmSpelare scener={scener} scenMs={scenMs} />
             <p className="mt-3 text-center text-xs text-muted">
-              Demo utan ljud — tryck Spela för att gå igenom scenerna.
+              Demo utan ljud. Tryck på Spela för att gå igenom scenerna.
             </p>
           </div>
         </div>

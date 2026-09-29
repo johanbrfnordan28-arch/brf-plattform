@@ -48,17 +48,18 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
               : "mt-2 text-2xl font-bold text-foreground sm:text-3xl"
           }
         >
-          Vi tar fram underhållsplanen — styrelsen lämnar underlaget
+          Vi tar fram underhållsplanen, styrelsen lämnar underlaget
         </h2>
         <p className="mt-3 text-muted">
-          Professionell framtagning utifrån underlag från styrelsen. Därefter blir
-          planen ett levande dokument där styrelse eller förvaltare lägger till
-          och tar bort komponenter — överskådligt för nästa styrelse. För
-          föreningar med tecknat avtal. Ordinarie pris från{" "}
+          Vi gör planen utifrån det underlag styrelsen skickar in. Sedan kan
+          styrelsen eller förvaltaren själva lägga till och ta bort komponenter,
+          så att planen hålls aktuell och är lätt att ta över för nästa
+          styrelse. Tjänsten gäller föreningar med tecknat avtal. Ordinarie pris
+          från{" "}
           <strong className="text-foreground">
             {formatKr(UNDERHALLSPLAN_FRAN_PRIS_KR)}
           </strong>{" "}
-          exkl. moms. Kostnaden beror på fastighetens storlek — antal
+          exkl. moms. Kostnaden beror på fastighetens storlek: antal
           lägenheter, ytor och omfattning.
         </p>
       </div>
@@ -69,8 +70,8 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
             {UNDERHALLSPLAN_KAMPANJ_RABATT_PROCENT}&nbsp;% rabatt
           </p>
           <p className="text-sm text-amber-900">
-            Kampanjpris från <strong>{formatKr(kampanjPris)}</strong> exkl. moms
-            — gäller t.o.m. <strong>{gallerTom}</strong>
+            Kampanjpris från <strong>{formatKr(kampanjPris)}</strong> exkl.
+            moms, gäller till och med <strong>{gallerTom}</strong>
           </p>
           <p className="text-sm text-amber-900">
             Exempel med årsavtal (upp till 15 lägenheter):{" "}
@@ -84,7 +85,7 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div>
           <h3 className="text-base font-semibold text-foreground">
-            Vad styrelsen behöver lämna
+            Det här behöver styrelsen lämna
           </h3>
           <ul className="mt-3 space-y-2 text-sm text-muted">
             <li className="flex gap-2">
@@ -93,7 +94,7 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
               </span>
               <span>
                 <strong className="text-foreground">Grunduppgifter</strong> om
-                fastigheten — bland annat lägenheter, ytor, adresser och tekniska
+                fastigheten, bland annat lägenheter, ytor, adresser och tekniska
                 system.
               </span>
             </li>
@@ -105,21 +106,20 @@ export function UnderhallsplanReklam({ lage, kompakt = false }: Props) {
                 <strong className="text-foreground">
                   Senaste utförda renoveringar
                 </strong>{" "}
-                och underhållsåtgärder — så planen utgår från verkligt skick och
-                historik.
+                och underhållsåtgärder, så att planen utgår från fastighetens
+                verkliga skick.
               </span>
             </li>
           </ul>
         </div>
         <div>
           <h3 className="text-base font-semibold text-foreground">
-            Vad som påverkar kostnaden
+            Det här påverkar kostnaden
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Priset räknas utifrån fastighetens omfattning: antal lägenheter,
-            boarea och övriga ytor, antal byggnader och hur mycket dokumentation
-            som finns. Ni får en tydlig offert när underlaget är komplett —
-            begär den via{" "}
+            Priset räknas utifrån antal lägenheter, boarea och övriga ytor,
+            antal byggnader och hur mycket dokumentation som finns. När
+            underlaget är komplett får ni en offert. Den begär ni via{" "}
             <Link
               href="/offert"
               className="font-medium text-primary-dark underline hover:no-underline"

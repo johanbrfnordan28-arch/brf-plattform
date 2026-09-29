@@ -91,7 +91,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
         if (window.location.pathname.includes("prova-gratis")) {
           setSkapar(false);
           setFel(
-            "Sidan bytte inte automatiskt. Prova att ladda om sidan eller öppna /forening i en ny flik.",
+            "Sidan byttes inte automatiskt. Ladda om sidan eller öppna /forening i en ny flik.",
           );
         }
       }, 4000);
@@ -105,11 +105,11 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
     event?.preventDefault();
     const trimmatNamn = namn.trim();
     if (!arStyrelseBekraftat()) {
-      setFel("Bocka i rutan: du tillhör styrelsen (eller har mandat).");
+      setFel("Bekräfta att du sitter i styrelsen eller har styrelsens mandat.");
       return;
     }
     if (!trimmatNamn || trimmatNamn.toLowerCase() === "brf") {
-      setFel("Döp föreningen — t.ex. Brf Solsidan 1.");
+      setFel("Skriv föreningens namn, till exempel Brf Solsidan 1.");
       return;
     }
     if (!skapareNamn.trim()) {
@@ -117,7 +117,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
       return;
     }
     if (!skapareEpost.trim() || !skapareEpost.includes("@")) {
-      setFel("Ange en giltig e-postadress — dit skickas lösenordet.");
+      setFel("Ange en giltig e-postadress. Dit skickar vi lösenordet.");
       return;
     }
     void korSkapa(trimmatNamn);
@@ -147,8 +147,8 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
             </p>
           )}
           <p className="mt-2 text-xs text-muted">
-            Lösenordet skickas också till e-posten. När du loggar in kan du spara
-            det eller byta till ett eget under Konto.
+            Lösenordet har också skickats till din e-post. När du har loggat in
+            kan du byta till ett eget under Konto.
           </p>
         </div>
 
@@ -252,7 +252,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
           href="/styrelse-login"
           className="mt-3 block text-sm font-medium text-primary-dark hover:underline"
         >
-          Eller öppna inloggning
+          Eller gå till inloggningen
         </Link>
       </div>
     );
@@ -261,19 +261,18 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
   return (
     <div className={`brf-panel-gron ${kompakt ? "p-5" : "p-6 sm:p-8"}`}>
       <h2 className="text-lg font-bold text-foreground sm:text-xl">
-        Skapa vår förening
+        Skapa föreningen
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Ni får en egen sida med{" "}
-        <strong className="text-foreground">ert föreningsnamn</strong>. Ett
-        tillfälligt lösenord skickas till din e-post. Nästa gång: logga in via{" "}
+        Föreningen får en egen sida med sitt namn, och du får ett tillfälligt
+        lösenord till din e-post. Nästa gång loggar du in under{" "}
         <strong className="text-foreground">Testperiod</strong> med e-post och
         lösenord.
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
-        <strong>Endast styrelsen</strong> ska skapa föreningens sida.
-        Entreprenörer och medlemmar loggar in via länkar som styrelsen delar —
-        inte genom att skapa en ny förening här.
+        <strong>Bara styrelsen</strong> ska skapa föreningens sida.
+        Entreprenörer och medlemmar loggar in via länkar som styrelsen delar och
+        ska inte skapa en egen förening här.
       </p>
 
       <form onSubmit={hanteraSkapa} className="mt-4 space-y-4">

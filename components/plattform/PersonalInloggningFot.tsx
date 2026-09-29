@@ -18,8 +18,8 @@ export function PersonalInloggningFot() {
             Personal · Styrelse-Navet
           </p>
           <p className="mt-1 max-w-xl text-sm text-muted">
-            Inloggning för oss som arbetar med sidan. Översikten över föreningar
-            är inte publik — endast behöriga personer kan logga in.
+            För oss som arbetar med Styrelse-Navet. Översikten över
+            föreningarna är inte publik och kräver behörighet.
           </p>
         </div>
         <Link

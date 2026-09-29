@@ -7,7 +7,7 @@ import { MessanSkickaLankForm } from "@/components/styrelsemassa/MessanSkickaLan
 export function MejlaLankStartRuta() {
   const [rubrik, setRubrik] = useState("Mejla mig en länk");
   const [intro, setIntro] = useState(
-    "Inte redo att skapa föreningen nu? Lämna namn och e-post — vi mejlar en länk till huvudsidan så ni kan börja när det passar.",
+    "Inte redo att skapa föreningen än? Lämna föreningens namn och er e-post, så mejlar vi en länk som ni kan använda när det passar.",
   );
 
   useEffect(() => {

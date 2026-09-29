@@ -1,7 +1,7 @@
 /** Standardavtal för konsulttjänster — ABK 09, utan avvikelser. */
 
 export const ABK_09_KORT =
-  "Konsulttjänster avtalas enligt ABK 09. Inga avvikelser från någon part.";
+  "Konsulttjänster avtalas enligt ABK 09, utan avvikelser från någon part.";
 
 export const ABK_09_LANG =
   "Våra konsulttjänster (bland annat teknisk förvaltning, projektledning, skadeutredning, besiktning och upphandlingsstöd) utförs enligt ABK 09 — Allmänna bestämmelser för konsultuppdrag inom arkitekt- och ingenjörsverksamhet. Inga avvikelser från ABK 09 accepteras från någon part.";

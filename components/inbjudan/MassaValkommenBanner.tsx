@@ -28,14 +28,14 @@ export function MassaValkommenBanner() {
 
   const rubrik =
     kalla === "inbjudan"
-      ? "Välkommen — titta gärna runt"
+      ? "Välkommen! Titta gärna runt"
       : texter?.massaHuvudsidaRubrik ?? "Välkommen från styrelsemässan";
 
   const intro =
     kalla === "inbjudan"
-      ? "Här kan ni se hur Styrelse-Navet fungerar och prova gratis i 30 dagar när ni vill."
+      ? "Här ser ni hur Styrelse-Navet fungerar, och ni kan prova gratis i 30 dagar när ni vill."
       : texter?.massaHuvudsidaIntro ??
-        "Tack för att ni tittade förbi. Här kan ni bedöma om plattformen passar er förening.";
+        "Tack för att ni tittade förbi. Här kan ni se om plattformen passar er förening.";
 
   return (
     <section

@@ -46,7 +46,7 @@ export function Header() {
             href={PROVA_GRATIS_PATH}
             className="brf-knapp-neutral hidden px-3 py-2 text-sm sm:inline-flex"
           >
-            Pröva gratis 30 dagar
+            Prova gratis i 30 dagar
           </Link>
           <Link
             href={MEDLEM_FELANMALAN_PATH}

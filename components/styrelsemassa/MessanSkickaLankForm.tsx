@@ -80,8 +80,8 @@ export function MessanSkickaLankForm({
         <div>
           <h3 className="font-semibold text-foreground">Mejla mig en länk</h3>
           <p className="mt-1 text-sm text-muted">
-            Vill ni fundera först? Vi mejlar en länk till huvudsidan så ni kan
-            titta i lugn och ro — samma provperiod som ovan.
+            Vill ni fundera först? Då mejlar vi en länk till huvudsidan som ni
+            kan öppna när det passar.
           </p>
         </div>
       ) : null}
@@ -145,8 +145,8 @@ export function MessanSkickaLankForm({
       ) : null}
       {ok ? (
         <p className="text-sm text-primary-dark" role="status">
-          Tack! Kolla er inkorg — länken är på väg. Kolla skräppost om ni inte
-          ser mejlet inom några minuter.
+          Tack! Länken är på väg. Titta i skräpposten om mejlet inte har kommit
+          inom några minuter.
         </p>
       ) : null}
 
@@ -159,7 +159,7 @@ export function MessanSkickaLankForm({
             : "rounded-lg border border-primary bg-white px-5 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#e2f0e6] disabled:opacity-60"
         }
       >
-        {skickar ? "Skickar…" : "Mejla länk till mig"}
+        {skickar ? "Skickar…" : "Mejla länken till mig"}
       </button>
     </form>
   );

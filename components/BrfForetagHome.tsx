@@ -26,49 +26,49 @@ const featuredPublic = [
   {
     title: "Årshjul",
     description:
-      "Årshjulet ger en tydlig översikt över året. Planeringen av styrelsearbetet blir mer överskådlig — med påminnelser, återkommande uppgifter och långsiktiga datum samlade på ett ställe.",
+      "Årshjulet visar vad styrelsen ska göra under året och när det ska göras. Påminnelser, återkommande uppgifter och viktiga datum finns samlade, så att inget faller mellan stolarna.",
     anchor: "#moduler",
     icon: "📅",
     bullets: [
-      "Se vad som ska göras — och när",
-      "Påminnelser för stämma, OVK och återkommande uppgifter",
-      "Mindre risk att något glöms bort mellan mandatperioder",
+      "Se vad som ska göras och när",
+      "Påminnelser om stämma, OVK och andra återkommande uppgifter",
+      "Mindre risk att något glöms bort när styrelsen byts ut",
     ],
   },
   {
     title: "Medlemmar & lägenhetsarkiv",
     description:
-      "Här sparas aktuell information och historik för respektive lägenhet. Handlingar från äldre projekt samlas på ett ställe — så styrelsen slipper leta i mejl och mappar när något behöver följas upp.",
+      "Varje lägenhet har en egen sida med aktuell information och historik. Där sparas också handlingar från tidigare projekt, så att styrelsen slipper leta i gamla mejl och mappar.",
     anchor: "#moduler",
     icon: "🏠",
     bullets: [
       "Aktuell status och historik per lägenhet",
-      "Gamla projekt och handlingar på samma ställe",
-      "Enklare uppföljning vid överlåtelse och renovering",
+      "Handlingar från tidigare projekt",
+      "Enklare uppföljning vid överlåtelser och renoveringar",
     ],
   },
   {
     title: "Underhållsplan",
     description:
-      "En levande 50-årsplan med komponenter, historik och avsättning — så styrelsen alltid har aktuellt beslutsunderlag inför stämma, bank och långsiktiga investeringar.",
+      "En 50-årsplan med komponenter, historik och avsättningar som hålls uppdaterad. Styrelsen har alltid ett aktuellt underlag inför stämman, banken och större investeringar.",
     anchor: "#moduler",
     icon: "🔧",
     bullets: [
-      "Avsättning och åtgärder i rätt år — inte gissningar i Excel",
+      "Åtgärder och avsättningar i rätt år, i stället för gissningar i Excel",
       "Komponentregister med teknisk livslängd och kostnad",
-      "Underlag som håller över mandatperioder",
+      "Ett underlag som nästa styrelse kan ta över",
     ],
   },
   {
     title: "Upphandling",
     description:
-      "Strukturerad upphandling utan mejlkaos. Vi publicerar underlag, bjuder in entreprenörer och tar emot anbud — säkert och spårbart, utan att anbud syns på föreningssidan.",
+      "Vi publicerar underlaget, bjuder in entreprenörer och tar emot anbuden. Ni slipper långa mejltrådar, och anbuden visas aldrig på föreningssidan.",
     anchor: "#upphandlingar",
     icon: "📋",
     bullets: [
-      "Från mindre servicejobb till större entreprenader",
-      "Inbjudan till underlag via oss",
-      "Anbud hanteras konfidentiellt av Styrelse-Navet",
+      "Allt från mindre servicejobb till stora entreprenader",
+      "Vi bjuder in entreprenörer till underlaget",
+      "Anbuden hanteras konfidentiellt av Styrelse-Navet",
     ],
   },
 ] as const;
@@ -76,19 +76,19 @@ const featuredPublic = [
 const erfarenhetOmraden = [
   {
     titel: "Teknisk förvaltning",
-    text: "Drift, underhåll och tekniska beslut som håller över tid.",
+    text: "Drift, underhåll och tekniska beslut på lång sikt.",
   },
   {
     titel: "Upphandling",
-    text: "Förfrågningsunderlag, anbud och avtal utan onödiga risker.",
+    text: "Förfrågningsunderlag, anbud och avtal som skyddar föreningen.",
   },
   {
     titel: "Projektledning",
-    text: "Från planering till genomförande — tydlig styrning i varje steg.",
+    text: "Från planering till färdigt resultat, med tydlig styrning längs vägen.",
   },
   {
     titel: "Skadeutredning",
-    text: "Analys, dokumentation och rätt åtgärder när skadan är framme.",
+    text: "Analys, dokumentation och rätt åtgärder när en skada har uppstått.",
   },
 ] as const;
 
@@ -127,13 +127,13 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             {isForening ? (
               <ForeningHubbRubrik />
             ) : (
-              "Förenkla styrelsearbetet — från årshjul till lägenhetsarkiv"
+              "Allt styrelsearbete på ett ställe"
             )}
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
             {isForening
-              ? "Upphandling, underhållsplan, guider och dokumentation samlat för er förening. Enkelt, strukturerat och spårbart."
-              : "Styrelse-Navet ger er översikt, struktur och spårbarhet. Mindre tid i mejl och mappar — mer tid på beslut som håller för föreningen."}
+              ? "Här finns föreningens upphandlingar, underhållsplan, guider och dokument."
+              : "Årshjul, underhållsplan, lägenhetsarkiv och upphandling i samma verktyg. Styrelsen lägger mindre tid på att leta i mejl och mappar och mer tid på själva besluten."}
           </p>
 
           {isForening && <ForeningValkommenRand />}
@@ -144,19 +144,19 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                30 dagar gratis — ingen bindning
+                30 dagar gratis, ingen bindning
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Årshjul, underhåll, upphandling och lägenhetsarkiv
+                Tolv moduler för styrelsens vardag
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary" aria-hidden>
                   ✓
                 </span>
-                Framtaget ur verkliga behov i Brf-styrelser
+                Utformat efter hur brf-styrelser arbetar
               </li>
             </ul>
           )}
@@ -189,7 +189,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   href={PROVA_GRATIS_PATH}
                   className="brf-knapp-gron px-7 py-3.5 text-base"
                 >
-                  Börja gratis i 30 dagar
+                  Prova gratis i 30 dagar
                 </Link>
                 <Link
                   href="/upphandling"
@@ -207,7 +207,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   href="/medlem"
                   className="rounded-lg border border-primary/40 bg-white px-5 py-3.5 text-sm font-medium text-primary-dark transition-colors hover:bg-[#eef6f0]"
                 >
-                  Felanmälan (medlem)
+                  Felanmälan för boende
                 </Link>
               </>
             )}
@@ -226,38 +226,38 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 För styrelser i bostadsrättsföreningar
               </p>
               <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Hjälpmedel som följer styrelsearbetet — och fastigheten
+                Stöd för styrelsen, år efter år
               </h2>
               <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
-                På plattformen finns alla hjälpmedel som behövs för att förenkla
-                styrelsearbetet. Modulerna är framtagna utifrån kända behov hos
-                styrelser i bostadsrättsföreningar — inte som generiska
-                IT-funktioner.
+                Plattformen samlar de verktyg en styrelse behöver i det löpande
+                arbetet. Modulerna är byggda kring styrelsens vanliga uppgifter:
+                att planera året, hålla ordning på lägenheterna, sköta
+                underhållet och handla upp arbeten.
               </p>
               <p className="mt-3 text-base leading-relaxed text-muted sm:text-lg">
-                Styrelsearbetet har förändrats de senaste åren, och fastighetens
-                behov förändras över tid. Styrelse-Navet ger stöd, hjälpmedel,
-                spårbarhet och råd — så ni har struktur när förutsättningarna
-                skiftar.
+                Kraven på styrelser har ökat de senaste åren, och fastighetens
+                behov ändras över tid. Med Styrelse-Navet är det lättare att
+                hålla ordning när förutsättningarna förändras, och lättare för
+                nästa styrelse att ta över.
               </p>
             </div>
             <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
                   titel: "Stöd",
-                  text: "Vägledning i vardagen — från årshjul till beslut inför stämma.",
+                  text: "Vägledning i vardagen, från årshjulet till förberedelserna inför stämman.",
                 },
                 {
-                  titel: "Hjälpmedel",
-                  text: "Årshjul, lägenhetsarkiv, underhåll och upphandling — i samma miljö.",
+                  titel: "Verktyg",
+                  text: "Årshjul, lägenhetsarkiv, underhållsplan och upphandling i samma system.",
                 },
                 {
-                  titel: "Spårbarhet",
-                  text: "Historik per lägenhet och projekt — underlag som följer med över tid.",
+                  titel: "Historik",
+                  text: "Handlingar per lägenhet och projekt finns kvar när styrelsen byts ut.",
                 },
                 {
                   titel: "Råd",
-                  text: "Guider och tips grundade i hur styrelser faktiskt arbetar.",
+                  text: "Guider och tips baserade på hur styrelser arbetar i praktiken.",
                 },
               ].map((punkt) => (
                 <li
@@ -286,12 +286,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Bakom plattformen
               </p>
               <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Över 25 års erfarenhet — inbyggd i varje modul
+                Byggt på mer än 25 års erfarenhet
               </h2>
               <p className="mt-3 text-muted leading-relaxed">
-                Styrelse-Navet är inte en generisk IT-lösning. Funktionen och
-                upplägget är framtaget av personer som arbetat nära styrelser,
-                förvaltare och entreprenörer i mer än ett kvartsekel.
+                Styrelse-Navet är utvecklat av personer som i över 25 år har
+                arbetat nära styrelser, förvaltare och entreprenörer. Den
+                erfarenheten ligger bakom hur varje modul är uppbyggd.
               </p>
             </div>
             <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -330,7 +330,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               <span className="font-semibold text-primary-dark">
                 30 dagar gratis
               </span>
-              <span className="text-muted"> — testa hela plattformen</span>
+              <span className="text-muted"> med tillgång till allt</span>
             </p>
             <p>
               <span className="font-semibold text-primary-dark">
@@ -338,7 +338,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </span>
               <span className="text-muted">
                 {" "}
-                på ettårsavtal vs månadsdebitering
+                med ettårsavtal jämfört med månadsbetalning
               </span>
             </p>
           </div>
@@ -355,11 +355,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Där styrelsen sparar mest tid
               </p>
               <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                Fyra verktyg som gör skillnad i vardagen
+                Fyra verktyg för vardagen
               </h2>
               <p className="mt-2 text-muted">
-                Översikt med årshjulet, historik i lägenhetsarkivet, långsiktig
-                underhållsplan och trygg upphandling — i samma portal.
+                Årshjulet ger överblick, lägenhetsarkivet sparar historiken,
+                underhållsplanen håller koll på lång sikt och upphandlingen
+                sköter vi åt er.
               </p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2">
@@ -399,7 +400,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   >
                     {mod.title === "Upphandling"
                       ? "Läs mer om upphandling →"
-                      : "Se modulerna →"}
+                      : "Se alla moduler →"}
                   </Link>
                 </div>
               ))}
@@ -414,12 +415,12 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
       >
         <div className="mb-10 max-w-2xl">
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-            {isForening ? "Moduler" : "Tolv moduler — ett nav för styrelsen"}
+            {isForening ? "Moduler" : "Tolv moduler för styrelsen"}
           </h2>
           <p className="mt-2 text-muted">
             {isForening
-              ? "Välj en modul för att arbeta i er förenings miljö. Snabbvägarna visar de fyra översta — ni kan flytta om och byta."
-              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Klicka på en modul för att läsa om funktionerna — skapa er förening när ni är redo."}
+              ? "Välj en modul för att börja arbeta. Snabbvägarna visar de fyra första, och ni kan byta ut dem eller ändra ordningen."
+              : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Klicka på en modul för att läsa mer. Föreningen kan ni skapa när ni är redo."}
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -442,10 +443,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Upphandling via Styrelse-Navet
               </h2>
               <p className="mt-2 text-muted">
-                En egen yta för aktuella projekt — skiljd från övriga
-                styrelsemoduler. Entreprenörer ser projektinformation och kan
-                anmäla intresse. Underlag och anbud hanteras av oss,
-                konfidentiellt.
+                Upphandlingarna har en egen sida, skild från styrelsens moduler.
+                Där ser entreprenörer information om aktuella projekt och kan
+                anmäla intresse. Underlag och anbud hanterar vi konfidentiellt.
               </p>
             </div>
 
@@ -453,18 +453,18 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               {[
                 {
                   steg: "1",
-                  titel: "Projektet syns publikt",
-                  text: "Kort information om vad som upphandlas — utan kontaktuppgifter eller underlag.",
+                  titel: "Projektet publiceras",
+                  text: "En kort beskrivning av vad som ska upphandlas, utan kontaktuppgifter eller underlag.",
                 },
                 {
                   steg: "2",
                   titel: "Intresse och inbjudan",
-                  text: "Entreprenörer anmäler intresse. Vi bjuder in utvalda till förfrågningsunderlaget.",
+                  text: "Entreprenörer anmäler intresse, och vi bjuder in de som passar att ta del av förfrågningsunderlaget.",
                 },
                 {
                   steg: "3",
-                  titel: "Anbud till oss",
-                  text: "Anbud kommer till Styrelse-Navet. Anbudsgivare ser inte varandra — föreningen ser inte råa anbud.",
+                  titel: "Anbuden kommer till oss",
+                  text: "Anbudsgivarna ser inte varandras anbud, och föreningen ser inte de obearbetade anbuden.",
                 },
               ].map((item) => (
                 <li
@@ -490,8 +490,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Se aktuella projekt
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted sm:text-base">
-                  Öppna upphandlingssidan — enbart projektöversikt, sök och
-                  intresseanmälan. Utan övriga styrelsemoduler.
+                  Upphandlingssidan visar bara projektöversikt, sökning och
+                  intresseanmälan.
                 </p>
               </div>
               <Link
@@ -514,9 +514,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Upphandlingar
               </h2>
               <p className="mt-2 text-muted">
-                Förbered underlag i modulen. Publicering och anbudshantering
-                sker via Styrelse-Navet — inkomna anbud syns inte här och
-                anbudsgivare ser inte varandra.
+                Förbered underlaget i modulen. Publiceringen och
+                anbudshanteringen sköter Styrelse-Navet. Inkomna anbud visas
+                inte här, och anbudsgivarna ser inte varandras anbud.
               </p>
             </div>
             <div className="rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
@@ -524,9 +524,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                 Öppna upphandlingsmodulen
               </h3>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Skapa beskrivning och underlag. När ni är redo publicerar ni via
-                oss — entreprenörer bjuds in och anbud hanteras manuellt utanför
-                föreningsvyn.
+                Skriv en beskrivning och ta fram underlaget. När ni är klara
+                publicerar vi upphandlingen, bjuder in entreprenörer och tar
+                hand om anbuden utanför föreningssidan.
               </p>
               <Link
                 href={`${base}/upphandling`}
@@ -551,15 +551,16 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Titta på plattformen i lugn och ro
                 </h2>
                 <p className="mt-2 text-sm text-muted">
-                  Ni landar på huvudsidan och kan bedöma om Styrelse-Navet passar
-                  er — prova gärna gratis i 30 dagar när ni vill.
+                  Välkommen tillbaka! Ta den tid ni behöver för att se om
+                  Styrelse-Navet passar er förening, och prova gratis i 30 dagar
+                  när ni är redo.
                 </p>
               </div>
               <Link
                 href={HUVUDSIDA_MASSA_QUERY}
                 className="brf-knapp-neutral shrink-0 px-6 py-3 text-sm font-semibold"
               >
-                Till huvudsidan (mässa)
+                Till mässans välkomstsida
               </Link>
             </div>
           </section>
@@ -575,11 +576,11 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Kom igång
                 </p>
                 <h2 className="mt-2 text-xl font-bold text-foreground sm:text-2xl">
-                  Skapa er förening — och börja använda plattformen
+                  Skapa er förening på några minuter
                 </h2>
                 <p className="mt-2 text-sm text-muted">
-                  Kom igång på några minuter. Gemensamma plattformsuppdateringar
-                  slås ihop överallt — era ifyllda uppgifter behålls.
+                  När vi uppdaterar plattformen får ni de nya funktionerna
+                  automatiskt, och det ni redan har fyllt i ligger kvar.
                 </p>
               </div>
               <SkapaForeningPanel kompakt />
@@ -593,13 +594,13 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Pris & avtal
                 </p>
                 <h2 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
-                  Börja gratis — väx när ni är redo
+                  Börja gratis och teckna avtal när ni är redo
                 </h2>
                 <p className="mt-2 text-muted">
-                  Testa plattformen utan kostnad. När ni ser värdet väljer ni
-                  ettårsavtal — med {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot
-                  månadsdebitering. Er kostnad beror på antal lägenheter och
-                  visas inne på föreningssidan när antalet är ifyllt.
+                  Prova plattformen utan kostnad. Vill ni fortsätta får ni{" "}
+                  {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt med ettårsavtal jämfört
+                  med månadsbetalning. Priset beror på antalet lägenheter och
+                  visas på föreningssidan när ni har fyllt i det.
                 </p>
               </div>
 
@@ -609,18 +610,18 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     Provperiod
                   </p>
                   <h3 className="mt-2 text-xl font-bold text-foreground">
-                    Prova gratis 30 dagar
+                    Prova gratis i 30 dagar
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-                    Testa underhållsplan, upphandling och övriga moduler utan
-                    kostnad. Ingen kortuppgift krävs i demo — ni ser hur
+                    Testa underhållsplanen, upphandlingen och de andra modulerna
+                    utan kostnad. Inga kortuppgifter behövs, och ni hinner se om
                     plattformen passar er förening.
                   </p>
                   <Link
                     href={PROVA_GRATIS_PATH}
                     className="brf-knapp-gron mt-6 self-start px-5 py-2.5 text-sm"
                   >
-                    Vi vill pröva gratis i 30 dagar
+                    Starta provperioden
                   </Link>
                 </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
@@ -629,34 +630,34 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
 
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Boende / medlem
+                    För boende
                   </p>
                   <h3 className="mt-2 text-xl font-bold text-foreground">
                     Felanmälan till styrelsen
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-                    Anmäl fel i er förening utan styrelseinloggning. Ni får
-                    ärendenummer — status och historik hanteras av styrelsen och
-                    förvaltaren.
+                    Anmäl fel i föreningen utan att logga in. Ni får ett
+                    ärendenummer, och sedan tar styrelsen och förvaltaren hand om
+                    ärendet.
                   </p>
                   <Link
                     href="/medlem"
                     className="mt-6 self-start rounded-lg border border-primary px-5 py-2.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
                   >
-                    Medlemsportal
+                    Till medlemsportalen
                   </Link>
                 </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Etablerad kund
+                    Befintlig kund
                   </p>
                   <h3 className="mt-2 text-xl font-bold text-foreground">
                     Logga in till er förening
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
                     Har styrelsen redan skapat er förening? Logga in för att
-                    fortsätta arbeta med underhållsplan, årshjul och övriga
-                    moduler.
+                    fortsätta med underhållsplanen, årshjulet och de andra
+                    modulerna.
                   </p>
                   <Link
                     href="/kund-login"
@@ -672,15 +673,14 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     Film & funktioner
                   </p>
                   <h3 className="mt-2 text-xl font-bold text-foreground">
-                    Se och förstå funktionerna
+                    Se hur det fungerar
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-                    Korta scener visar hur underhållsplan, upphandling och
-                    övriga moduler fungerar i praktiken. Tryck spela i rutan
-                    bredvid.
+                    Korta scener visar hur underhållsplanen, upphandlingen och
+                    de andra modulerna fungerar. Tryck på Spela i rutan bredvid.
                   </p>
                   <p className="mt-6 text-sm text-primary-dark">
-                    Demo utan ljud — ca 20 sekunder
+                    Demo utan ljud, cirka 20 sekunder
                   </p>
                 </div>
                 <div
@@ -705,8 +705,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Rondering som styrelsen kan följa upp
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Schema, checklistor och signering samlat så att utebliven
-                  rondering eller städning blir svårare att missa.
+                  Schema, checklistor och signering på samma ställe, så att en
+                  missad rondering eller städning inte går obemärkt förbi.
                 </p>
               </div>
               <div className="rounded-2xl border border-border bg-[#e8f3ec] p-6 sm:p-8">
@@ -717,9 +717,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Er kostnad
                 </h2>
                 <p className="mt-2 text-sm text-muted">
-                  Årsavtal med {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt mot
-                  månadsdebitering. Beloppet visas när antal lägenheter är
-                  ifyllt.
+                  Årsavtal med {ARSAVTAL_RABATT_PROCENT}&nbsp;% rabatt jämfört
+                  med månadsbetalning. Beloppet visas när ni har fyllt i antalet
+                  lägenheter.
                 </p>
                 <div className="mt-4">
                   <ForeningPrisPanel variant="hubb" />
@@ -731,8 +731,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Godkänn avtal och bli kund
                 </Link>
                 <p className="mt-3 text-xs text-muted">
-                  När avtalet är godkänt loggar ni in via «Logga in till er BRF»
-                  — endast er förenings uppgifter visas.
+                  När avtalet är godkänt loggar ni in via «Logga in till er BRF».
+                  Där visas bara er förenings uppgifter.
                 </p>
               </div>
             </div>

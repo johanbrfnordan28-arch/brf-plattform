@@ -22,7 +22,7 @@ export const STANDARD_INBJUDAN_TEXTER: InbjudanTexter = {
   massaNamn: "styrelsemässan",
   massaHuvudsidaRubrik: "Välkommen från styrelsemässan",
   massaHuvudsidaIntro:
-    "Tack för att ni tittade förbi vår monter. Här kan ni se hur Styrelse-Navet fungerar — underhållsplan, upphandling och styrelsestöd samlat. Prova gärna gratis i 30 dagar när ni vill.",
+    "Tack för att ni besökte vår monter. Här kan ni se hur Styrelse-Navet fungerar, med underhållsplan, upphandling och annat stöd för styrelsen. Prova gärna gratis i 30 dagar.",
   massaMejlAmne: "Titta på Styrelse-Navet — {foreningsNamn}",
   massaMejlMall: [
     "{hälsning}",
@@ -58,7 +58,7 @@ export const STANDARD_INBJUDAN_TEXTER: InbjudanTexter = {
   ].join("\n"),
   mejlaLankRubrik: "Mejla mig en länk",
   mejlaLankIntro:
-    "Inte redo att skapa föreningen nu? Lämna namn och e-post — vi mejlar en länk till huvudsidan så ni kan börja när det passar.",
+    "Inte redo att skapa föreningen än? Lämna föreningens namn och er e-post, så mejlar vi en länk som ni kan använda när det passar.",
 };
 
 function franDb(rad: {
