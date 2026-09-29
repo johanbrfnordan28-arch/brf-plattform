@@ -6,35 +6,43 @@ import {
 } from "@/lib/auth/idura-konfig";
 import { bytIduraCodeMotIdToken } from "@/lib/auth/idura-oidc";
 import {
+  lasIduraLoginSida,
   lasIduraOAuthState,
   lasIduraReturnTo,
   pendingFranClaims,
   rensaIduraOAuthCookies,
   sparaIduraPendingPersonnummer,
   valideraReturnTo,
+  type IduraLoginSida,
 } from "@/lib/auth/idura-oauth-cookies";
 import { hamtaRequestMeta } from "@/lib/auth/server-hjalp";
 import { skrivSessionCookie } from "@/lib/auth/session";
 import { databasArKonfigurerad } from "@/lib/db";
 
-function felRedirect(origin: string, meddelande: string): NextResponse {
+function felRedirect(
+  origin: string,
+  loginSida: IduraLoginSida,
+  meddelande: string,
+): NextResponse {
   const params = new URLSearchParams({
     bankid: "fel",
     meddelande,
   });
   return NextResponse.redirect(
-    new URL(`/styrelse-login?${params.toString()}`, origin),
+    new URL(`${loginSida}?${params.toString()}`, origin),
   );
 }
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  const loginSida = await lasIduraLoginSida();
   if (!iduraArKonfigurerad()) {
-    return felRedirect(url.origin, "BankID är inte konfigurerat.");
+    return felRedirect(url.origin, loginSida, "BankID är inte konfigurerat.");
   }
   if (!databasArKonfigurerad()) {
     return felRedirect(
       url.origin,
+      loginSida,
       "Databasen saknas — BankID-inloggning kräver server.",
     );
   }
@@ -42,7 +50,8 @@ export async function GET(req: Request) {
   const error = url.searchParams.get("error");
   if (error) {
     const desc = url.searchParams.get("error_description") ?? error;
-    return felRedirect(url.origin, desc);
+    await rensaIduraOAuthCookies();
+    return felRedirect(url.origin, loginSida, desc);
   }
 
   const code = url.searchParams.get("code");
@@ -52,6 +61,7 @@ export async function GET(req: Request) {
     await rensaIduraOAuthCookies();
     return felRedirect(
       url.origin,
+      loginSida,
       "Ogiltig eller utgången BankID-session. Försök igen.",
     );
   }
@@ -86,7 +96,7 @@ export async function GET(req: Request) {
     } catch (e) {
       if (e instanceof Error && e.message === "BANKID_KOPPLA") {
         await sparaIduraPendingPersonnummer(pending);
-        const koppla = new URL("/styrelse-login", url.origin);
+        const koppla = new URL(loginSida, url.origin);
         koppla.searchParams.set("bankid", "koppla");
         if (pending.namn) koppla.searchParams.set("namn", pending.namn);
         return NextResponse.redirect(koppla);
@@ -97,6 +107,7 @@ export async function GET(req: Request) {
     await rensaIduraOAuthCookies();
     return felRedirect(
       url.origin,
+      loginSida,
       e instanceof Error ? e.message : "BankID-inloggning misslyckades.",
     );
   }

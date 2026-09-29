@@ -223,7 +223,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sokReqId = useRef(0);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
-  const bankidStartUrl = `/api/auth/idura/start?returnTo=${encodeURIComponent(IDURA_KLAR_PATH)}`;
+  const bankidStartUrl = `/api/auth/idura/start?returnTo=${encodeURIComponent(IDURA_KLAR_PATH)}&loginSida=${encodeURIComponent(inloggningsPath)}`;
   const bankidKopplaMeddelande =
     searchParams.get("bankid") === "koppla"
       ? searchParams.get("namn")
