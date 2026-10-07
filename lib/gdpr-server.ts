@@ -16,7 +16,8 @@ export async function exporteraForening(foreningId: string) {
   });
   if (!forening) throw new Error("Föreningen finns inte.");
 
-  const { accessNyckelHash: _nyckel, medlemmar, ...uppgifter } = forening;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { accessNyckelHash, medlemmar, ...uppgifter } = forening;
   const leads = await prisma.styrelsemassaLead.findMany({
     where: { foreningId },
   });
