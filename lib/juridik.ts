@@ -16,6 +16,13 @@ export const LEVERANTOR = {
 export const VILLKOR_VERSION = "2026-10-07";
 export const VILLKOR_VERSION_DATUM = "7 oktober 2026";
 
+/** Automatisk gallring — körs dagligen av /api/cron/gallring. */
+export const GALLRING_MANADER = {
+  inloggningshistorik: 12,
+  intresseanmalningar: 12,
+  mejlOutbox: 3,
+} as const;
+
 export const VILLKOR_PATH = "/villkor";
 export const PUB_PATH = "/villkor#personuppgiftsbitradesavtal";
 export const INTEGRITETSPOLICY_PATH = "/integritetspolicy";

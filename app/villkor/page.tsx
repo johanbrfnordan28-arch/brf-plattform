@@ -77,7 +77,7 @@ export default function VillkorPage() {
           punkter={[
             `Föreningen kan prova tjänsten kostnadsfritt i ${PROVOPERIODE_DAGAR} dagar från att den skapats.`,
             "Under prövoperioden finns ingen bindningstid eller betalningsskyldighet.",
-            "Tecknas inget kundavtal under prövoperioden raderas Föreningen och alla uppgifter som lagts in automatiskt när perioden löpt ut.",
+            "Tecknas inget kundavtal under prövoperioden stängs Föreningen automatiskt när perioden löpt ut. Föreningen och alla uppgifter som lagts in raderas permanent senast 30 dagar därefter.",
           ]}
         />
       </ContentSection>
