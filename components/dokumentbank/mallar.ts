@@ -446,6 +446,78 @@ Styrelsen i [Föreningens namn]
   },
   // ── Juridik ───────────────────────────────────────────────────────────────
   {
+    id: "personuppgifter-medlemmar",
+    titel: "Information till medlemmar om personuppgifter",
+    filnamn: "Information_personuppgifter_medlemmar.txt",
+    beskrivning:
+      "Föreningens information enligt GDPR om hur boendes uppgifter behandlas, bl.a. vid felanmälan i Styrelse-Navet.",
+    omrade: "juridik",
+    textInnehall: `SÅ BEHANDLAR [FÖRENINGENS NAMN] DINA PERSONUPPGIFTER
+====================================================
+
+Gäller från: [ÅÅÅÅ-MM-DD]
+
+1. VEM ANSVARAR FÖR DINA UPPGIFTER?
+Bostadsrättsföreningen [Föreningens namn], org.nr [XXXXXX-XXXX], är
+personuppgiftsansvarig.
+Kontakt: [föreningens e-post], [postadress]
+
+2. VILKA UPPGIFTER BEHANDLAR VI OCH VARFÖR?
+• Medlems- och lägenhetsförteckning: namn, personnummer, lägenhetsnummer,
+  andel och tillträdesdag. Vi är skyldiga att föra förteckningen enligt
+  bostadsrättslagen (rättslig förpliktelse).
+• Kontaktuppgifter: e-post och telefon, så att vi kan nå dig om
+  föreningens angelägenheter (berättigat intresse).
+• Felanmälningar: namn, e-post, telefon, lägenhetsnummer, beskrivning av
+  felet och uppgifter om tillträde (t.ex. var nyckel finns). Vi behöver
+  uppgifterna för att åtgärda felet och fullgöra föreningens underhållsansvar
+  (avtal och berättigat intresse).
+• Avgifter och ekonomi: avier och betalningar (avtal och bokföringslagen).
+• [Lägg till eller ta bort det som gäller er förening, t.ex. andrahand,
+  parkering, förråd, kameraövervakning.]
+
+3. VILKA FÅR TA DEL AV UPPGIFTERNA?
+• Styrelsen och de som styrelsen utsett att hantera ärendet, t.ex.
+  förvaltare, fastighetsskötare eller entreprenör vid en felanmälan.
+• Våra leverantörer, som bara behandlar uppgifterna för vår räkning och
+  enligt avtal (personuppgiftsbiträden):
+  – Styrelse-Navet (digital plattform för styrelsearbete och felanmälan).
+    Styrelse-Navet anlitar i sin tur Vercel (drift), Neon (databas),
+    Resend (e-post) och Idura (BankID-inloggning för styrelsen).
+  – [Ekonomisk förvaltare]
+  – [Teknisk förvaltare / fastighetsskötare]
+• Myndigheter när lagen kräver det.
+
+4. HUR LÄNGE SPARAR VI UPPGIFTERNA?
+• Medlems- och lägenhetsförteckning: så länge du är medlem, därefter
+  enligt lag.
+• Felanmälningar: [t.ex. 2 år efter att ärendet avslutats], eller längre om
+  det behövs för en garanti- eller skadefråga.
+• Bokföringsunderlag: 7 år enligt bokföringslagen.
+
+5. DINA RÄTTIGHETER
+Du har rätt att begära utdrag ur, rättelse av och i vissa fall radering
+av dina uppgifter. Du kan också invända mot behandling som grundar sig på
+berättigat intresse och begära att behandlingen begränsas. Kontakta
+styrelsen på [föreningens e-post].
+
+Är du missnöjd med hur vi behandlar dina uppgifter kan du klaga hos
+Integritetsskyddsmyndigheten (IMY), www.imy.se.
+
+Styrelsen i [Föreningens namn]
+
+-----------------------------------------------------------------------
+ANVISNING TILL STYRELSEN (ta bort före utskick)
+• Fyll i hakparenteserna och stryk det som inte gäller er.
+• Dela informationen med alla medlemmar, t.ex. på anslagstavlan, på
+  föreningens webbplats eller i välkomstbrevet till nya medlemmar.
+• Föreningen har godkänt Styrelse-Navets personuppgiftsbiträdesavtal när
+  föreningen skapades. Avtalet finns på styrelse-navet.se/villkor.
+• Begäran från medlemmar besvaras inom en månad. Behöver ni hjälp att ta
+  fram eller radera uppgifter ur Styrelse-Navet, kontakta oss.
+`,
+  },
+  {
     id: "varning-storning",
     titel: "Varning vid störning",
     filnamn: "Varning_storning.txt",
