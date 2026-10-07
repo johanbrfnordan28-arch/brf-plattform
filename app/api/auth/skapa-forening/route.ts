@@ -31,6 +31,7 @@ export async function POST(req: Request) {
       skapareNamn?: string;
       skapareEpost?: string;
       skapareRoll?: string;
+      villkorVersion?: string;
     };
 
     if (
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
       skapareNamn: body.skapareNamn.trim(),
       skapareEpost: body.skapareEpost.trim(),
       skapareRoll: body.skapareRoll?.trim() || "Ordförande",
+      villkorVersion: body.villkorVersion?.trim() ?? "",
       basUrl: basUrlFranRequest(req),
     });
 

@@ -7,6 +7,12 @@ import { skapaForeningMedKontoKlient } from "@/lib/auth/skapa-forening-klient";
 import { sparaBackupTillServerBestEffort } from "@/lib/forening-backup";
 import { STYRELSE_ROLLER } from "@/lib/styrelse-ledamot";
 import {
+  INTEGRITETSPOLICY_PATH,
+  PUB_PATH,
+  VILLKOR_PATH,
+  VILLKOR_VERSION,
+} from "@/lib/juridik";
+import {
   arGrundmallForening,
   lasAktivForeningId,
   lasForeningProfil,
@@ -41,6 +47,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
   );
   const [skickaIgenFel, setSkickaIgenFel] = useState<string | null>(null);
   const checkboxRef = useRef<HTMLInputElement>(null);
+  const villkorRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const skaFokuseraSkapa =
@@ -74,6 +81,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
         skapareNamn,
         skapareEpost,
         skapareRoll,
+        villkorVersion: VILLKOR_VERSION,
       });
       setSkapatNamn(resultat.profil.namn);
       if (resultat.tillfalligtLosenord) {
@@ -106,6 +114,12 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
     const trimmatNamn = namn.trim();
     if (!arStyrelseBekraftat()) {
       setFel("Bocka i rutan: du tillhör styrelsen (eller har mandat).");
+      return;
+    }
+    if (!villkorRef.current?.checked) {
+      setFel(
+        "Godkänn villkoren och personuppgiftsbiträdesavtalet för föreningens räkning.",
+      );
       return;
     }
     if (!trimmatNamn || trimmatNamn.toLowerCase() === "brf") {
@@ -349,6 +363,43 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
           <span className="text-muted">
             Jag bekräftar att jag är styrelseledamot eller har styrelsens mandat
             att skapa föreningens sida.
+          </span>
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <input
+            ref={villkorRef}
+            type="checkbox"
+            defaultChecked={false}
+            disabled={skapar}
+            className="mt-1 h-4 w-4 shrink-0 rounded border-border accent-[#5a9a6e]"
+          />
+          <span className="text-muted">
+            Jag godkänner{" "}
+            <Link
+              href={VILLKOR_PATH}
+              target="_blank"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              villkoren
+            </Link>{" "}
+            och{" "}
+            <Link
+              href={PUB_PATH}
+              target="_blank"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              personuppgiftsbiträdesavtalet
+            </Link>{" "}
+            för föreningens räkning, och har läst{" "}
+            <Link
+              href={INTEGRITETSPOLICY_PATH}
+              target="_blank"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              integritetspolicyn
+            </Link>
+            .
           </span>
         </label>
 

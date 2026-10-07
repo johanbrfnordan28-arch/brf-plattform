@@ -35,6 +35,7 @@ import {
   type ForeningServerDto,
 } from "@/lib/forening-server";
 import { markeraStyrelsemassaLeadSomSkapadeTest } from "@/lib/styrelsemassa-lead-server";
+import { VILLKOR_VERSION } from "@/lib/juridik";
 
 export type SkapaForeningAuthInput = {
   foreningId: string;
@@ -42,6 +43,7 @@ export type SkapaForeningAuthInput = {
   skapareNamn: string;
   skapareEpost: string;
   skapareRoll: string;
+  villkorVersion: string;
   basUrl: string;
 };
 
@@ -181,6 +183,12 @@ export async function skapaForeningMedKonto(
     throw new Error("Välj en giltig styrelseroll.");
   }
 
+  if (input.villkorVersion !== VILLKOR_VERSION) {
+    throw new Error(
+      "Godkänn villkoren och personuppgiftsbiträdesavtalet för att skapa föreningen. Ladda om sidan om du redan kryssat i rutan.",
+    );
+  }
+
   const namnNyckel = normaliseraNamnNyckel(namn);
   const befintlig = await prisma.forening.findUnique({ where: { namnNyckel } });
 
@@ -246,6 +254,9 @@ export async function skapaForeningMedKonto(
         epost,
         kontaktperson: skapareNamn,
         accessNyckelHash: hashAccessNyckel(accessNyckel),
+        villkorVersion: VILLKOR_VERSION,
+        villkorGodkantTidpunkt: new Date(),
+        villkorGodkantAvEpost: epost,
       },
     });
 
