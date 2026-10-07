@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { KontaktEpostLista } from "@/components/KontaktEpostLista";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { useStyrelseKontakt } from "@/components/forening/useStyrelseKontakt";
+import { INTEGRITETSPOLICY_PATH, VILLKOR_PATH } from "@/lib/juridik";
 import {
   PLATTFORM_STOD_EPOST,
   plattformStodMailto,
@@ -82,6 +83,20 @@ export function Footer() {
         </div>
         <p className="mt-8 text-xs text-muted">
           © {new Date().getFullYear()} {brand}
+          {" · "}
+          <Link
+            href={INTEGRITETSPOLICY_PATH}
+            className="text-muted underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Integritetspolicy
+          </Link>
+          {" · "}
+          <Link
+            href={VILLKOR_PATH}
+            className="text-muted underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Villkor
+          </Link>
           {!isForening ? (
             <>
               {" · "}

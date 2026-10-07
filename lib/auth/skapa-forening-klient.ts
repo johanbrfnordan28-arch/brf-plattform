@@ -103,6 +103,7 @@ export async function skapaForeningMedKontoKlient(opts: {
   skapareNamn: string;
   skapareEpost: string;
   skapareRoll: StyrelseRoll | string;
+  villkorVersion: string;
 }): Promise<SkapaForeningMedKontoResultat> {
   const namn = opts.foreningsNamn.trim();
   const skapareNamn = opts.skapareNamn.trim();
@@ -132,6 +133,7 @@ export async function skapaForeningMedKontoKlient(opts: {
         skapareNamn,
         skapareEpost,
         skapareRoll,
+        villkorVersion: opts.villkorVersion,
       }),
     });
     data = (await res.json()) as typeof data;

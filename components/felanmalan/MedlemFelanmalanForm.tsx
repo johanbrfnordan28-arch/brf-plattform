@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { INTEGRITETSPOLICY_PATH } from "@/lib/juridik";
 import {
   FELANMALAN_ORSAK,
   FELANMALAN_ORSAK_ETIKETT,
@@ -240,6 +242,20 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           {fel}
         </p>
       ) : null}
+
+      <p className="text-xs leading-relaxed text-muted">
+        Dina uppgifter skickas till föreningens styrelse och förvaltare, som
+        använder dem för att åtgärda felet och kontakta dig. Föreningen är
+        personuppgiftsansvarig. Läs mer i{" "}
+        <Link
+          href={INTEGRITETSPOLICY_PATH}
+          target="_blank"
+          className="font-medium text-primary-dark underline hover:no-underline"
+        >
+          integritetspolicyn
+        </Link>
+        .
+      </p>
 
       <button
         type="submit"

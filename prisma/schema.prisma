@@ -33,6 +33,10 @@ model Forening {
   /// BankID-signering av avtal (ISO när signering slutfördes).
   avtalBankidTidpunkt  DateTime?
   avtalBankidNamn      String    @default("")
+  /// Villkor + personuppgiftsbiträdesavtal som godkändes när föreningen skapades.
+  villkorVersion          String    @default("")
+  villkorGodkantTidpunkt  DateTime?
+  villkorGodkantAvEpost   String    @default("")
   /// Hemlig nyckel — behålls för bakåtkompatibilitet tills alla flöden använder konto.
   accessNyckelHash     String
   /// Soft-delete — föreningen syns under «Borttagna» i plattformen.
