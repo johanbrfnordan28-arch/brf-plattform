@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { lasSession } from "@/lib/auth/session";
 import { skickaMejl } from "@/lib/auth/mejl";
 import { databasArKonfigurerad, prisma } from "@/lib/db";
 import {
@@ -11,30 +10,7 @@ import {
 } from "@/lib/felanmalan/felanmalan-typer";
 import { uppdateraFelanmalan } from "@/lib/felanmalan/felanmalan-server";
 import { byggFelanmalanVidareMejl } from "@/lib/felanmalan/felanmalan-mejl";
-import { verifieraAccessNyckel } from "@/lib/forening-server";
-
-async function harStyrelseBehorighet(
-  req: Request,
-  foreningId: string,
-): Promise<{ ok: boolean; av: string }> {
-  const session = await lasSession();
-  if (session?.typ === "PLATTFORM") {
-    return { ok: true, av: session.epost || "Plattform" };
-  }
-  if (session?.typ === "STYRELSE" && session.foreningId === foreningId) {
-    return { ok: true, av: session.namn || session.epost };
-  }
-  const access =
-    req.headers.get("x-access-nyckel") ||
-    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (access) {
-    const rad = await prisma.forening.findUnique({ where: { id: foreningId } });
-    if (rad && verifieraAccessNyckel(access, rad.accessNyckelHash)) {
-      return { ok: true, av: "Styrelse (access)" };
-    }
-  }
-  return { ok: false, av: "" };
-}
+import { harStyrelseBehorighet } from "@/lib/auth/styrelse-behorighet";
 
 export async function PATCH(
   req: Request,
