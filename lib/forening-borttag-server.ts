@@ -69,6 +69,11 @@ export async function raderaForeningPermanent(foreningId: string): Promise<void>
     );
   }
 
+  await raderaForeningMedKonton(foreningId);
+}
+
+/** Raderar föreningen och styrelsekonton som inte längre har någon förening. */
+export async function raderaForeningMedKonton(foreningId: string): Promise<void> {
   const medlemmar = await prisma.foreningMedlem.findMany({
     where: { foreningId },
     select: { kontoId: true },

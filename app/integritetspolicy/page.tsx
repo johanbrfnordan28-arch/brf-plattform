@@ -4,6 +4,7 @@ import { ContentSection } from "@/components/ContentSection";
 import { JuridiskLista, JuridiskSida } from "@/components/juridik/JuridiskSida";
 import { BRF_NAVET_NAMN } from "@/lib/forening-konstanter";
 import {
+  GALLRING_MANADER,
   LEVERANTOR,
   PUB_PATH,
   UNDERBITRADEN,
@@ -105,10 +106,12 @@ export default function IntegritetspolicyPage() {
       <ContentSection title="3. Hur länge vi sparar uppgifterna">
         <JuridiskLista
           punkter={[
-            `Testföreningar utan tecknat avtal raderas automatiskt när prövoperioden på ${PROVOPERIODE_DAGAR} dagar löpt ut, tillsammans med föreningens uppgifter.`,
+            `Testföreningar utan tecknat avtal raderas automatiskt när prövoperioden på ${PROVOPERIODE_DAGAR} dagar löpt ut, och raderas permanent med alla föreningens uppgifter senast 30 dagar därefter.`,
             "Konton och föreningsuppgifter sparas så länge avtalet gäller. När avtalet upphör raderas eller lämnas uppgifterna tillbaka enligt personuppgiftsbiträdesavtalet.",
             "Underlag för bokföring sparas i sju år enligt bokföringslagen.",
-            "Intresseanmälningar sparas så länge de är relevanta för uppföljning, och raderas om du ber om det.",
+            `Inloggningshistorik raderas automatiskt efter ${GALLRING_MANADER.inloggningshistorik} månader.`,
+            `Intresseanmälningar raderas automatiskt efter ${GALLRING_MANADER.intresseanmalningar} månader, eller tidigare om du ber om det.`,
+            `Kopior av mejl som skickats från tjänsten raderas efter ${GALLRING_MANADER.mejlOutbox} månader.`,
           ]}
         />
       </ContentSection>
