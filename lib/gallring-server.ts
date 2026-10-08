@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { arProvoperiodUtgangen, PROVOPERIODE_DAGAR } from "@/lib/forening-avtal";
 import {
   flyttaForeningTillBorttagna,
+  GALLRING_AV_EPOST,
   raderaForeningMedKonton,
 } from "@/lib/forening-borttag-server";
 import {
@@ -10,7 +11,6 @@ import {
 } from "@/lib/forening-konstanter";
 import { GALLRING_MANADER } from "@/lib/juridik";
 
-export const GALLRING_AV_EPOST = "automatisk-gallring";
 /** Utgångna testföreningar ligger i «Borttagna» så här länge innan de raderas. */
 const BORTTAGNA_ANGERFRIST_DAGAR = 30;
 
@@ -57,6 +57,7 @@ export async function korGallring(nu = new Date()): Promise<GallringResultat> {
     where: {
       avtalGodkant: false,
       borttagenTidpunkt: null,
+      gallringUndantag: false,
       skapadTidpunkt: { lt: new Date(nu.getTime() - PROVOPERIODE_DAGAR * DAG_MS) },
     },
     select: { id: true, skapadTidpunkt: true },

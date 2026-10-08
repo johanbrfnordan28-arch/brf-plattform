@@ -8,6 +8,7 @@ import {
   arGrundmallForening,
   lasAktivForeningId,
 } from "@/lib/forening-registry";
+import { arStandardTestForening } from "@/lib/forening-konstanter";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import {
   INTEGRITETSPOLICY_PATH,
@@ -37,7 +38,7 @@ export function ForeningVillkorGate() {
     const id = lasAktivForeningId();
     setForeningId(id);
     setVisa(false);
-    if (!id || arGrundmallForening(id)) return;
+    if (!id || arGrundmallForening(id) || arStandardTestForening(id)) return;
     try {
       const res = await fetch(`/api/foreningar/${encodeURIComponent(id)}/villkor`, {
         headers: headers(id),
