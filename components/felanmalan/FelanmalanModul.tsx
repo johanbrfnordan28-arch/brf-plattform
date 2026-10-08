@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   lasAktivForeningId,
   lasForeningProfil,
@@ -16,6 +16,7 @@ import {
   FELANMALAN_STATUS,
   FELANMALAN_STATUS_ETIKETT,
   type FelanmalanArendeDto,
+  type FelanmalanPrioritet,
 } from "@/lib/felanmalan/felanmalan-typer";
 import Link from "next/link";
 import { FelanmalanInstallningarPanel } from "@/components/felanmalan/FelanmalanInstallningarPanel";
@@ -32,6 +33,23 @@ function formatDatum(iso: string): string {
   }
 }
 
+type Visning = "oppna" | "avslutade" | "alla";
+
+const PRIORITET_ORDNING: Record<FelanmalanPrioritet, number> = {
+  akut: 0,
+  hog: 1,
+  normal: 2,
+  lag: 3,
+};
+
+function matcharSok(a: FelanmalanArendeDto, sok: string): boolean {
+  if (!sok) return true;
+  return [a.arendeNummer, a.rubrik, a.beskrivning, a.medlemNamn, a.medlemEpost, a.lagenhetsnummer]
+    .join(" ")
+    .toLowerCase()
+    .includes(sok);
+}
+
 export function FelanmalanModul() {
   const foreningId = lasAktivForeningId();
   const profil = lasForeningProfil(foreningId);
@@ -44,7 +62,30 @@ export function FelanmalanModul() {
   const [tillBoende, setTillBoende] = useState("");
   const [sparar, setSparar] = useState(false);
 
+  const [visning, setVisning] = useState<Visning>("oppna");
+  const [sok, setSok] = useState("");
+  const [sortering, setSortering] = useState<"nyast" | "prioritet">("nyast");
+
   const vald = arenden.find((a) => a.id === valdId) ?? null;
+
+  const antalOppna = arenden.filter((a) => a.status !== "avslutad").length;
+  const synliga = useMemo(() => {
+    const s = sok.trim().toLowerCase();
+    const lista = arenden.filter(
+      (a) =>
+        (visning === "alla" ||
+          (visning === "oppna" ? a.status !== "avslutad" : a.status === "avslutad")) &&
+        matcharSok(a, s),
+    );
+    if (sortering === "prioritet") {
+      return [...lista].sort(
+        (x, y) =>
+          PRIORITET_ORDNING[x.prioritet] - PRIORITET_ORDNING[y.prioritet] ||
+          y.skapadTidpunkt.localeCompare(x.skapadTidpunkt),
+      );
+    }
+    return lista;
+  }, [arenden, visning, sok, sortering]);
 
   const ladda = useCallback(async () => {
     if (!foreningId) return;
@@ -179,15 +220,60 @@ export function FelanmalanModul() {
           </p>
         ) : null}
 
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {(
+            [
+              ["oppna", `Öppna (${antalOppna})`],
+              ["avslutade", `Avslutade (${arenden.length - antalOppna})`],
+              ["alla", `Alla (${arenden.length})`],
+            ] as const
+          ).map(([v, etikett]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setVisning(v)}
+              aria-pressed={visning === v}
+              className={
+                visning === v
+                  ? "rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white"
+                  : "rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/50"
+              }
+            >
+              {etikett}
+            </button>
+          ))}
+          <input
+            type="search"
+            value={sok}
+            onChange={(e) => setSok(e.target.value)}
+            placeholder="Sök nummer, rubrik, namn, lägenhet …"
+            aria-label="Sök ärenden"
+            className="min-w-[12rem] flex-1 rounded-lg border border-border px-3 py-1.5 text-sm"
+          />
+          <select
+            value={sortering}
+            onChange={(e) => setSortering(e.target.value as "nyast" | "prioritet")}
+            aria-label="Sortering"
+            className="rounded-lg border border-border px-2 py-1.5 text-sm"
+          >
+            <option value="nyast">Nyast först</option>
+            <option value="prioritet">Prioritet</option>
+          </select>
+        </div>
+
         {laddar ? (
           <p className="mt-4 text-sm text-muted">Laddar ärenden …</p>
         ) : (
           <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
             <ul className="max-h-[28rem] space-y-2 overflow-y-auto rounded-xl border border-border bg-surface p-2">
-              {arenden.length === 0 ? (
-                <li className="p-4 text-sm text-muted">Inga ärenden ännu.</li>
+              {synliga.length === 0 ? (
+                <li className="p-4 text-sm text-muted">
+                  {arenden.length === 0
+                    ? "Inga ärenden ännu."
+                    : "Inga ärenden matchar filtret."}
+                </li>
               ) : (
-                arenden.map((a) => (
+                synliga.map((a) => (
                   <li key={a.id}>
                     <button
                       type="button"
@@ -208,8 +294,17 @@ export function FelanmalanModul() {
                         {a.rubrik}
                       </span>
                       <span className="text-xs text-muted">
-                        {FELANMALAN_STATUS_ETIKETT[a.status]} ·{" "}
-                        {FELANMALAN_PRIORITET_ETIKETT[a.prioritet]}
+                        {a.prioritet === "akut" ? (
+                          <span className="mr-1 rounded bg-red-100 px-1.5 py-0.5 font-semibold text-red-800">
+                            Akut
+                          </span>
+                        ) : null}
+                        {FELANMALAN_STATUS_ETIKETT[a.status]}
+                        {a.prioritet !== "akut"
+                          ? ` · ${FELANMALAN_PRIORITET_ETIKETT[a.prioritet]}`
+                          : ""}
+                        {a.lagenhetsnummer ? ` · Lgh ${a.lagenhetsnummer}` : ""}
+                        {` · ${formatDatum(a.skapadTidpunkt)}`}
                       </span>
                     </button>
                   </li>
