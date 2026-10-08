@@ -2,6 +2,7 @@ import type { Forening } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { normaliseraEpost } from "@/lib/auth/epost";
 import { tillDto, type ForeningServerDto } from "@/lib/forening-server";
+import { raderaForeningensBilder } from "@/lib/felanmalan/felanmalan-bilder-server";
 
 export const GALLRING_AV_EPOST = "automatisk-gallring";
 
@@ -79,6 +80,9 @@ export async function raderaForeningPermanent(foreningId: string): Promise<void>
 
 /** Raderar föreningen och styrelsekonton som inte längre har någon förening. */
 export async function raderaForeningMedKonton(foreningId: string): Promise<void> {
+  await raderaForeningensBilder(foreningId).catch((e) => {
+    console.error("[radera förening] Bilder kunde inte tas bort:", e);
+  });
   const medlemmar = await prisma.foreningMedlem.findMany({
     where: { foreningId },
     select: { kontoId: true },

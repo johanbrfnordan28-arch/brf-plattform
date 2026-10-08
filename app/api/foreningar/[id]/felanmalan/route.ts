@@ -19,6 +19,11 @@ import {
   byggFelanmalanMejl,
 } from "@/lib/felanmalan/felanmalan-mejl";
 import { harStyrelseBehorighet } from "@/lib/auth/styrelse-behorighet";
+import {
+  BildFel,
+  sparaBilderPaArende,
+  valideraBilder,
+} from "@/lib/felanmalan/felanmalan-bilder-server";
 
 export async function GET(
   req: Request,
@@ -74,6 +79,21 @@ function forLangtFalt(body: NyFelanmalanBody): string | null {
   return null;
 }
 
+/** JSON eller multipart (fältet «data» med JSON + filer i «bilder»). */
+async function lasInkommande(
+  req: Request,
+): Promise<{ body: NyFelanmalanBody; filer: File[] }> {
+  if (!req.headers.get("content-type")?.includes("multipart/form-data")) {
+    return { body: (await req.json()) as NyFelanmalanBody, filer: [] };
+  }
+  const form = await req.formData();
+  const data = form.get("data");
+  return {
+    body: JSON.parse(typeof data === "string" ? data : "{}") as NyFelanmalanBody,
+    filer: form.getAll("bilder").filter((f): f is File => f instanceof File),
+  };
+}
+
 async function skickaUtanAttStoppa(
   meddelande: Parameters<typeof skickaMejl>[0],
 ): Promise<void> {
@@ -99,7 +119,7 @@ export async function POST(
 
   const { id } = await ctx.params;
   try {
-    const body = (await req.json()) as NyFelanmalanBody;
+    const { body, filer } = await lasInkommande(req);
 
     if (body.webbplats?.trim()) {
       return NextResponse.json(
@@ -130,6 +150,7 @@ export async function POST(
       return NextResponse.json({ fel: forLangt }, { status: 400 });
     }
 
+    const bilder = await valideraBilder(filer);
     await kontrolleraSkrapskydd(id, body.medlemEpost);
 
     const prioritet =
@@ -154,6 +175,10 @@ export async function POST(
       nyckelPlats: body.nyckelPlats,
       boendeEjHemma: body.boendeEjHemma,
     });
+    const antalBilder =
+      bilder.length > 0
+        ? await sparaBilderPaArende({ foreningId: id, arendeId: arende.id, bilder })
+        : 0;
 
     const forening = await prisma.forening.findUnique({ where: { id } });
     const foreningsNamn = forening?.namn ?? "Föreningen";
@@ -168,6 +193,7 @@ export async function POST(
       foreningsNamn,
       arende,
       styrelsePanelUrl: `${bas}/forening/felanmalan`,
+      antalBilder,
     });
     const kvitto = byggFelanmalanKvittoMejl({
       foreningsNamn,
@@ -193,8 +219,15 @@ export async function POST(
       }),
     ]);
 
-    return NextResponse.json({ ok: true, arende });
+    return NextResponse.json({
+      ok: true,
+      arende,
+      bilderEjSparade: bilder.length - antalBilder,
+    });
   } catch (e) {
+    if (e instanceof BildFel) {
+      return NextResponse.json({ fel: e.message }, { status: 400 });
+    }
     if (e instanceof SkrapskyddFel) {
       return NextResponse.json({ fel: e.message }, { status: 429 });
     }

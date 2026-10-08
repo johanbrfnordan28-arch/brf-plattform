@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { FelanmalanInstallningarPanel } from "@/components/felanmalan/FelanmalanInstallningarPanel";
 import { byggMedlemFelanmalanLank } from "@/lib/forening-medlem";
+import { FelanmalanBilder } from "@/components/felanmalan/FelanmalanBilder";
 
 function formatDatum(iso: string): string {
   try {
@@ -304,6 +305,7 @@ export function FelanmalanModul() {
                           ? ` · ${FELANMALAN_PRIORITET_ETIKETT[a.prioritet]}`
                           : ""}
                         {a.lagenhetsnummer ? ` · Lgh ${a.lagenhetsnummer}` : ""}
+                        {a.bilder?.length ? ` · ${a.bilder.length} ${a.bilder.length === 1 ? "bild" : "bilder"}` : ""}
                         {` · ${formatDatum(a.skapadTidpunkt)}`}
                       </span>
                     </button>
@@ -321,6 +323,11 @@ export function FelanmalanModul() {
                 <p className="mt-2 whitespace-pre-wrap text-sm text-muted">
                   {vald.beskrivning}
                 </p>
+                <FelanmalanBilder
+                  foreningId={foreningId}
+                  arendeId={vald.id}
+                  bilder={vald.bilder ?? []}
+                />
                 <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="text-muted">Medlem</dt>
