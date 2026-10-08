@@ -13,7 +13,6 @@ import {
   arKundForening,
   godkannForeningsAvtal,
   kanGodkannaAvtal,
-  KUND_LOGIN_KNAPP_RUBRIK,
   KUND_LOGIN_PATH,
 } from "@/lib/forening-kund";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
@@ -94,8 +93,8 @@ export function ForeningAvtalPanel() {
               : ""}
             . Uppsägningstid {AVTAL_UPPSAGNING_MANADER} månader. Nästa gång
             loggar styrelsen in via{" "}
-            <strong className="text-foreground">{KUND_LOGIN_KNAPP_RUBRIK}</strong>{" "}
-            på Styrelse-Navet.
+            <strong className="text-foreground">Logga in</strong> på
+            Styrelse-Navets startsida.
           </p>
           <ForeningPrisPanel variant="avtal" visaLankTillGrund />
           <Link
