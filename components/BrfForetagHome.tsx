@@ -192,22 +192,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   Börja gratis i 30 dagar
                 </Link>
                 <Link
-                  href="/upphandling"
+                  href="#intro-film"
                   className="rounded-lg border-2 border-primary bg-white px-7 py-3.5 text-base font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0]"
                 >
-                  Aktuella upphandlingar
-                </Link>
-                <Link
-                  href="#teknisk-forvaltning"
-                  className="rounded-lg border border-border bg-surface px-5 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-primary/50"
-                >
-                  Teknisk förvaltning
-                </Link>
-                <Link
-                  href="/medlem"
-                  className="rounded-lg border border-primary/40 bg-white px-5 py-3.5 text-sm font-medium text-primary-dark transition-colors hover:bg-[#eef6f0]"
-                >
-                  Felanmälan (medlem)
+                  Se hur det fungerar
                 </Link>
               </>
             )}
