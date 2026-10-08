@@ -111,6 +111,7 @@ export default function IntegritetspolicyPage() {
             "Underlag för bokföring sparas i sju år enligt bokföringslagen.",
             `Inloggningshistorik raderas automatiskt efter ${GALLRING_MANADER.inloggningshistorik} månader.`,
             `Intresseanmälningar raderas automatiskt efter ${GALLRING_MANADER.intresseanmalningar} månader, eller tidigare om du ber om det.`,
+            `Offertförfrågningar raderas automatiskt ${GALLRING_MANADER.offertforfragningar} månader efter senaste hantering, eller tidigare om du ber om det.`,
             `Kopior av mejl som skickats från tjänsten raderas efter ${GALLRING_MANADER.mejlOutbox} månader.`,
           ]}
         />

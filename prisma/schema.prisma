@@ -272,3 +272,25 @@ model StyrelsemassaLead {
   @@index([skapadTidpunkt])
 }
 
+/// Offertförfrågan från /offert (förvaltning & konsult) — hanteras i personalytan.
+model OffertForfragan {
+  id                  String    @id
+  foreningsNamn       String
+  kontaktperson       String
+  oonskadKontaktId    String    @default("offert")
+  epost               String
+  telefon             String    @default("")
+  antalLagenheter     String    @default("")
+  tjanster            String[]
+  meddelande          String    @default("")
+  /// ny | kontaktad | offert-skickad | avslutad
+  status              String    @default("ny")
+  internAnteckning    String    @default("")
+  senastOffertSkickad DateTime?
+  skapadTidpunkt      DateTime  @default(now())
+  uppdateradTidpunkt  DateTime  @updatedAt
+
+  @@index([epost])
+  @@index([skapadTidpunkt])
+  @@index([uppdateradTidpunkt])
+}

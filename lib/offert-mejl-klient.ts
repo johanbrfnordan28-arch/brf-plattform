@@ -1,4 +1,4 @@
-import type { OffertForfragan } from "@/components/offert/offert-forfragan-lager";
+import type { OffertForfragan } from "@/lib/offert-forfragan";
 import type { OffertKontaktpersonId } from "@/lib/kontakt-epost";
 
 type OffertMejlSvar = {
@@ -28,30 +28,6 @@ async function anropaOffertMejlApi(
     return { ok: true, ...data };
   } catch {
     return { ok: false, fel: "Kunde inte nå servern." };
-  }
-}
-
-/** Mejlar teamet när någon skickar offertförfrågan. */
-export async function mejlaOffertForfraganTillTeam(
-  forfragan: OffertForfragan,
-): Promise<void> {
-  const resultat = await anropaOffertMejlApi({
-    typ: "forfragan",
-    foreningsNamn: forfragan.foreningsNamn,
-    kontaktperson: forfragan.kontaktperson,
-    epost: forfragan.epost,
-    telefon: forfragan.telefon,
-    antalLagenheter: forfragan.antalLagenheter,
-    tjanster: forfragan.tjanster,
-    meddelande: forfragan.meddelande,
-    oonskadKontaktId: forfragan.oonskadKontaktId ?? "offert",
-  });
-
-  if (!resultat.ok) {
-    throw new Error(
-      resultat.fel ||
-        "Mejlet kunde inte skickas. Mejla oss direkt på offert@styrelse-navet.se.",
-    );
   }
 }
 
