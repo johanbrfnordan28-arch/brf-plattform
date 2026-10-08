@@ -10,7 +10,8 @@ export async function GET(req: Request, ctx: Ctx) {
     return NextResponse.json({ fel: "Databasen är inte konfigurerad." }, { status: 503 });
   }
   const { id } = await ctx.params;
-  if (!(await harStyrelseBehorighet(req, id)).ok) {
+  const behorighet = await harStyrelseBehorighet(req, id);
+  if (!behorighet.ok) {
     return NextResponse.json({ fel: "Saknar behörighet." }, { status: 403 });
   }
   const rad = await prisma.forening.findUnique({
@@ -24,7 +25,8 @@ export async function GET(req: Request, ctx: Ctx) {
     aktuellVersion: VILLKOR_VERSION,
     godkandVersion: rad.villkorVersion,
     godkantTidpunkt: rad.villkorGodkantTidpunkt?.toISOString() ?? "",
-    behoverGodkannas: rad.villkorVersion !== VILLKOR_VERSION,
+    behoverGodkannas:
+      !behorighet.plattform && rad.villkorVersion !== VILLKOR_VERSION,
   });
 }
 
@@ -37,6 +39,12 @@ export async function POST(req: Request, ctx: Ctx) {
   const behorighet = await harStyrelseBehorighet(req, id);
   if (!behorighet.ok) {
     return NextResponse.json({ fel: "Saknar behörighet." }, { status: 403 });
+  }
+  if (behorighet.plattform) {
+    return NextResponse.json(
+      { fel: "Villkoren godkänns av föreningens styrelse, inte av personalen." },
+      { status: 403 },
+    );
   }
   const body = (await req.json().catch(() => ({}))) as {
     villkorVersion?: string;

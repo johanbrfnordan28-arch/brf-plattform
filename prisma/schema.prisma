@@ -42,6 +42,8 @@ model Forening {
   /// Soft-delete — föreningen syns under «Borttagna» i plattformen.
   borttagenTidpunkt    DateTime?
   borttagenAvEpost     String    @default("")
+  /// Återställd av personal efter automatisk gallring — gallras inte igen.
+  gallringUndantag     Boolean   @default(false)
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
 
