@@ -758,7 +758,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
               ) : (
                 <>
                   1) Skapa via Pröva gratis · 2) Spara uppgifter · 3) Godkänn
-                  avtal · 4) Logga in via {KUND_LOGIN_KNAPP_RUBRIK}. Under
+                  avtal · 4) Logga in via «Logga in» uppe till höger. Under
                   testperioden: sök på namnet här — utan att se andras föreningar.
                 </>
               )}
