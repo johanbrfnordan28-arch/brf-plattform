@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { INTEGRITETSPOLICY_PATH } from "@/lib/juridik";
 import {
   FELANMALAN_ORSAK,
   FELANMALAN_ORSAK_ETIKETT,
   FELANMALAN_PRIORITET,
+  FELANMALAN_MAXLANGD,
   FELANMALAN_PRIORITET_ETIKETT,
+  type FelanmalanPublikInfo,
 } from "@/lib/felanmalan/felanmalan-typer";
 
 type Props = {
@@ -29,7 +31,39 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
   const [boendeEjHemma, setBoendeEjHemma] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
-  const [klart, setKlart] = useState<{ arendeNummer: string } | null>(null);
+  const [klart, setKlart] = useState<{ arendeNummer: string; epost: string } | null>(null);
+  const [webbplats, setWebbplats] = useState("");
+  const [info, setInfo] = useState<FelanmalanPublikInfo | null>(null);
+
+  useEffect(() => {
+    let avbruten = false;
+    fetch(`/api/foreningar/${encodeURIComponent(foreningId)}/publik`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { felanmalan?: FelanmalanPublikInfo } | null) => {
+        if (!avbruten && data?.felanmalan) setInfo(data.felanmalan);
+      })
+      .catch(() => {});
+    return () => {
+      avbruten = true;
+    };
+  }, [foreningId]);
+
+  const jour = info?.jourTelefon ? (
+    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm" role="note">
+      <p className="font-semibold text-red-900">Akut fel?</p>
+      <p className="mt-1 text-red-900">
+        Vid vattenläcka, inget vatten, ingen värme eller el: ring{" "}
+        {info.jourText || "jouren"} på{" "}
+        <a
+          href={`tel:${info.jourTelefon.replace(/[^\d+]/g, "")}`}
+          className="font-semibold underline"
+        >
+          {info.jourTelefon}
+        </a>
+        . Gör sedan gärna en felanmälan här också.
+      </p>
+    </div>
+  ) : null;
 
   async function skicka(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +88,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
             debiteringAnteckning,
             nyckelPlats,
             boendeEjHemma,
+            webbplats,
           }),
         },
       );
@@ -65,7 +100,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
         setFel(data.fel || "Kunde inte skicka felanmälan.");
         return;
       }
-      setKlart({ arendeNummer: data.arende.arendeNummer });
+      setKlart({ arendeNummer: data.arende.arendeNummer, epost: medlemEpost.trim() });
     } catch {
       setFel("Kunde inte nå servern.");
     } finally {
@@ -80,9 +115,12 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
         <p className="mt-2 text-sm text-muted">
           Ärendenummer:{" "}
           <strong className="text-foreground">{klart.arendeNummer}</strong>.
-          Förvaltaren har fått mejl och återkommer. Spara numret om ni behöver
-          följa upp.
+          Styrelsen och förvaltaren har fått ärendet. En bekräftelse har
+          skickats till <strong className="text-foreground">{klart.epost}</strong>,
+          och du får ett nytt mejl när ärendet är avslutat. Hittar du inte
+          mejlet, titta i skräpposten.
         </p>
+        {jour ? <div className="mt-4">{jour}</div> : null}
       </div>
     );
   }
@@ -94,11 +132,32 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
         förvaltare/styrelse och sparas som ärende med nummer och historik.
       </p>
 
+      {jour}
+
+      {info?.info ? (
+        <div className="whitespace-pre-wrap rounded-xl border border-border bg-surface p-4 text-sm text-foreground">
+          {info.info}
+        </div>
+      ) : null}
+
+      <div className="hidden" aria-hidden="true">
+        <label>
+          Lämna tomt
+          <input
+            tabIndex={-1}
+            autoComplete="off"
+            value={webbplats}
+            onChange={(e) => setWebbplats(e.target.value)}
+          />
+        </label>
+      </div>
+
       <label className="block text-sm">
         <span className="font-medium">Rubrik</span>
         <input
           required
           value={rubrik}
+          maxLength={FELANMALAN_MAXLANGD.rubrik}
           onChange={(e) => setRubrik(e.target.value)}
           className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           placeholder="T.ex. Vattenläcka under diskbänk"
@@ -111,6 +170,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           required
           rows={4}
           value={beskrivning}
+          maxLength={FELANMALAN_MAXLANGD.beskrivning}
           onChange={(e) => setBeskrivning(e.target.value)}
           className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           placeholder="När upptäcktes felet, var i lägenheten/huset, vad har ni provat?"
@@ -154,6 +214,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           <input
             required
             value={medlemNamn}
+          maxLength={FELANMALAN_MAXLANGD.medlemNamn}
             onChange={(e) => setMedlemNamn(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           />
@@ -164,6 +225,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
             required
             type="email"
             value={medlemEpost}
+          maxLength={FELANMALAN_MAXLANGD.medlemEpost}
             onChange={(e) => setMedlemEpost(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           />
@@ -175,6 +237,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           <span className="font-medium">Telefon (valfritt)</span>
           <input
             value={medlemTelefon}
+          maxLength={FELANMALAN_MAXLANGD.medlemTelefon}
             onChange={(e) => setMedlemTelefon(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border px-3 py-2"
           />
@@ -183,6 +246,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           <span className="font-medium">Lägenhetsnummer</span>
           <input
             value={lagenhetsnummer}
+          maxLength={FELANMALAN_MAXLANGD.lagenhetsnummer}
             onChange={(e) => setLagenhetsnummer(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border px-3 py-2"
             placeholder="T.ex. 1201"
@@ -209,6 +273,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           <span className="font-medium">Nyckel / passage</span>
           <input
             value={nyckelPlats}
+          maxLength={FELANMALAN_MAXLANGD.nyckelPlats}
             onChange={(e) => setNyckelPlats(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
             placeholder="T.ex. nyckel hos granne, portkod enligt avtal"
@@ -230,12 +295,21 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           <textarea
             rows={2}
             value={debiteringAnteckning}
+          maxLength={FELANMALAN_MAXLANGD.debiteringAnteckning}
             onChange={(e) => setDebiteringAnteckning(e.target.value)}
             className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2"
             placeholder="Valfri kommentar om debitering"
           />
         ) : null}
       </div>
+
+      {prioritet === "akut" && info?.jourTelefon ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+          Akuta fel ska också ringas in till {info.jourText || "jouren"} på{" "}
+          <strong>{info.jourTelefon}</strong>. Formuläret läses inte alltid
+          direkt.
+        </p>
+      ) : null}
 
       {fel ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">

@@ -18,6 +18,7 @@ import {
   type FelanmalanArendeDto,
 } from "@/lib/felanmalan/felanmalan-typer";
 import Link from "next/link";
+import { FelanmalanInstallningarPanel } from "@/components/felanmalan/FelanmalanInstallningarPanel";
 import { byggMedlemFelanmalanLank } from "@/lib/forening-medlem";
 
 function formatDatum(iso: string): string {
@@ -40,6 +41,7 @@ export function FelanmalanModul() {
   const [fel, setFel] = useState<string | null>(null);
   const [kommentar, setKommentar] = useState("");
   const [vidareEpost, setVidareEpost] = useState("");
+  const [tillBoende, setTillBoende] = useState("");
   const [sparar, setSparar] = useState(false);
 
   const vald = arenden.find((a) => a.id === valdId) ?? null;
@@ -109,6 +111,7 @@ export function FelanmalanModul() {
         prev.map((a) => (a.id === data.arende!.id ? data.arende! : a)),
       );
       setKommentar("");
+      if (patch.meddelandeTillBoende) setTillBoende("");
     } catch {
       setFel("Kunde inte nå servern.");
     } finally {
@@ -149,6 +152,8 @@ export function FelanmalanModul() {
           </Link>
         </div>
       </div>
+
+      {foreningId ? <FelanmalanInstallningarPanel foreningId={foreningId} /> : null}
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -258,7 +263,11 @@ export function FelanmalanModul() {
                   </div>
                 )}
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <p className="mt-4 text-xs text-muted">
+                  När status sätts till Avslutad får den boende ett mejl om det
+                  automatiskt.
+                </p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   <label className="text-sm">
                     Status
                     <select
@@ -355,7 +364,33 @@ export function FelanmalanModul() {
                 </button>
 
                 <label className="mt-4 block text-sm">
-                  Kommentar i historiken
+                  Meddela boende
+                  <span className="block text-xs text-muted">
+                    Mejlas till {vald.medlemEpost || "den boende"} och sparas i
+                    historiken.
+                  </span>
+                  <textarea
+                    rows={2}
+                    value={tillBoende}
+                    onChange={(e) => setTillBoende(e.target.value)}
+                    disabled={!vald.medlemEpost}
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+                    placeholder="T.ex. Rörmokaren kommer torsdag kl. 8–10."
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={sparar || !tillBoende.trim() || !vald.medlemEpost}
+                  onClick={() =>
+                    void uppdatera({ meddelandeTillBoende: tillBoende.trim() })
+                  }
+                  className="mt-2 rounded-lg border border-primary/40 px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0] disabled:opacity-50"
+                >
+                  Skicka till boende
+                </button>
+
+                <label className="mt-4 block text-sm">
+                  Intern kommentar i historiken
                   <textarea
                     rows={2}
                     value={kommentar}
