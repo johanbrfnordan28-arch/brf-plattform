@@ -20,6 +20,7 @@ export const VILLKOR_VERSION_DATUM = "7 oktober 2026";
 export const GALLRING_MANADER = {
   inloggningshistorik: 12,
   intresseanmalningar: 12,
+  offertforfragningar: 24,
   mejlOutbox: 3,
 } as const;
 
