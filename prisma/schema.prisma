@@ -81,6 +81,8 @@ model FelanmalanArende {
   vidareEpost          String   @default("")
   /// [{ tidpunkt, av, text }]
   historik             Json     @default("[]")
+  /// [{ id, pathname, contentType, storlekBytes }] — filerna ligger privat i Vercel Blob.
+  bilder               Json     @default("[]")
   skapadTidpunkt       DateTime @default(now())
   uppdateradTidpunkt   DateTime @updatedAt
 

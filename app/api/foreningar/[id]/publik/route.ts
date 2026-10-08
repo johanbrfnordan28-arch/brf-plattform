@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad, prisma } from "@/lib/db";
 import type { FelanmalanPublikInfo } from "@/lib/felanmalan/felanmalan-typer";
+import { bildlagringArKonfigurerad } from "@/lib/felanmalan/felanmalan-bilder-server";
 
 /** Offentligt namn och felanmälningsinfo för medlemsportalen — inga personuppgifter. */
 export async function GET(
@@ -32,6 +33,7 @@ export async function GET(
     jourTelefon: rad.felanmalanJourTelefon,
     jourText: rad.felanmalanJourText,
     info: rad.felanmalanInfo,
+    bilderTillatna: bildlagringArKonfigurerad(),
   };
   return NextResponse.json({ id: rad.id, namn: rad.namn, felanmalan });
 }

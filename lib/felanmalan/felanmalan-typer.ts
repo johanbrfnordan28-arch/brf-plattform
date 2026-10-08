@@ -46,6 +46,32 @@ export type FelanmalanHistorikRad = {
   text: string;
 };
 
+export const FELANMALAN_BILDER = {
+  maxAntal: 3,
+  /** Efter förminskning i webbläsaren — servern avvisar större filer. */
+  maxBytes: 1_500_000,
+  maxSida: 1600,
+} as const;
+
+export type FelanmalanBildDto = {
+  id: string;
+  contentType: string;
+  storlekBytes: number;
+};
+
+export type FelanmalanBildRad = FelanmalanBildDto & { pathname: string };
+
+export function parseBilder(raw: unknown): FelanmalanBildRad[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (b): b is FelanmalanBildRad =>
+      typeof b === "object" &&
+      b != null &&
+      typeof (b as FelanmalanBildRad).id === "string" &&
+      typeof (b as FelanmalanBildRad).pathname === "string",
+  );
+}
+
 export type FelanmalanArendeDto = {
   id: string;
   foreningId: string;
@@ -66,6 +92,7 @@ export type FelanmalanArendeDto = {
   tilldeladRoll: FelanmalanTilldeladRoll;
   vidareEpost: string;
   historik: FelanmalanHistorikRad[];
+  bilder: FelanmalanBildDto[];
   skapadTidpunkt: string;
   uppdateradTidpunkt: string;
 };
@@ -148,4 +175,6 @@ export const FELANMALAN_INSTALLNING_MAX = {
 } as const;
 
 /** Publik del av inställningarna — det boende ser i formuläret. */
-export type FelanmalanPublikInfo = Omit<FelanmalanInstallningar, "extraEpost">;
+export type FelanmalanPublikInfo = Omit<FelanmalanInstallningar, "extraEpost"> & {
+  bilderTillatna: boolean;
+};

@@ -9,6 +9,7 @@ import {
   arGiltigRoll,
   arGiltigStatus,
   FELANMALAN_INSTALLNING_MAX,
+  parseBilder,
   type FelanmalanArendeDto,
   type FelanmalanInstallningar,
   type FelanmalanHistorikRad,
@@ -53,6 +54,11 @@ export function tillFelanmalanDto(rad: FelanmalanArende): FelanmalanArendeDto {
       : "forvaltare",
     vidareEpost: rad.vidareEpost,
     historik,
+    bilder: parseBilder(rad.bilder).map(({ id, contentType, storlekBytes }) => ({
+      id,
+      contentType,
+      storlekBytes,
+    })),
     skapadTidpunkt: rad.skapadTidpunkt.toISOString(),
     uppdateradTidpunkt: rad.uppdateradTidpunkt.toISOString(),
   };

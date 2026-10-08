@@ -8,6 +8,7 @@ export function byggFelanmalanMejl(opts: {
   foreningsNamn: string;
   arende: FelanmalanArendeDto;
   styrelsePanelUrl: string;
+  antalBilder?: number;
 }): { amne: string; brodtext: string } {
   const a = opts.arende;
   const debitering = a.debiteringKan
@@ -39,6 +40,9 @@ export function byggFelanmalanMejl(opts: {
     "",
     debitering,
     "",
+    opts.antalBilder
+      ? `${opts.antalBilder} ${opts.antalBilder === 1 ? "bild bifogad" : "bilder bifogade"} — visas i ärendet i Styrelse-Navet.`
+      : "",
     `Hantera ärendet i Styrelse-Navet: ${opts.styrelsePanelUrl}`,
     "",
     "— Styrelse-Navet (automatisk avisering)",

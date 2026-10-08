@@ -41,6 +41,11 @@ export const UNDERBITRADEN: Underbitrade[] = [
       "USA/EU — överföring enligt EU–US Data Privacy Framework och EU-kommissionens standardavtalsklausuler",
   },
   {
+    namn: "Vercel Inc. (Blob)",
+    syfte: "Lagring av bilder som boende bifogar till felanmälningar",
+    plats: "EU (Stockholm)",
+  },
+  {
     namn: "Neon Inc.",
     syfte: "Databas för konton, föreningsuppgifter och ärenden",
     plats:

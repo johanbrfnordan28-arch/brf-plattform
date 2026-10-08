@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { forminskaBild } from "@/lib/felanmalan/forminska-bild";
 import { INTEGRITETSPOLICY_PATH } from "@/lib/juridik";
 import {
   FELANMALAN_ORSAK,
@@ -9,6 +10,7 @@ import {
   FELANMALAN_PRIORITET,
   FELANMALAN_MAXLANGD,
   FELANMALAN_PRIORITET_ETIKETT,
+  FELANMALAN_BILDER,
   type FelanmalanPublikInfo,
 } from "@/lib/felanmalan/felanmalan-typer";
 
@@ -31,9 +33,15 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
   const [boendeEjHemma, setBoendeEjHemma] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
-  const [klart, setKlart] = useState<{ arendeNummer: string; epost: string } | null>(null);
+  const [klart, setKlart] = useState<{
+    arendeNummer: string;
+    epost: string;
+    bilderEjSparade: number;
+  } | null>(null);
   const [webbplats, setWebbplats] = useState("");
   const [info, setInfo] = useState<FelanmalanPublikInfo | null>(null);
+  const [bilder, setBilder] = useState<{ fil: File; url: string }[]>([]);
+  const [forminskar, setForminskar] = useState(false);
 
   useEffect(() => {
     let avbruten = false;
@@ -65,17 +73,51 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
     </div>
   ) : null;
 
+  const bildUrlerRef = useRef<string[]>([]);
+  useEffect(() => {
+    bildUrlerRef.current = bilder.map((b) => b.url);
+  }, [bilder]);
+  useEffect(
+    () => () => bildUrlerRef.current.forEach((url) => URL.revokeObjectURL(url)),
+    [],
+  );
+
+  async function laggTillBilder(filer: FileList | null) {
+    if (!filer?.length) return;
+    setFel(null);
+    const plats = FELANMALAN_BILDER.maxAntal - bilder.length;
+    const valda = Array.from(filer).slice(0, Math.max(0, plats));
+    if (filer.length > plats) {
+      setFel(`Högst ${FELANMALAN_BILDER.maxAntal} bilder per felanmälan.`);
+    }
+    setForminskar(true);
+    try {
+      const nya: { fil: File; url: string }[] = [];
+      for (const fil of valda) {
+        const liten = await forminskaBild(fil);
+        nya.push({ fil: liten, url: URL.createObjectURL(liten) });
+      }
+      setBilder((prev) => [...prev, ...nya]);
+    } catch (err) {
+      setFel(err instanceof Error ? err.message : "Bilden kunde inte läggas till.");
+    } finally {
+      setForminskar(false);
+    }
+  }
+
+  function taBortBild(index: number) {
+    setBilder((prev) => {
+      URL.revokeObjectURL(prev[index]!.url);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
   async function skicka(e: React.FormEvent) {
     e.preventDefault();
     setFel(null);
     setLaddar(true);
     try {
-      const res = await fetch(
-        `/api/foreningar/${encodeURIComponent(foreningId)}/felanmalan`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+      const falt = JSON.stringify({
             rubrik,
             beskrivning,
             medlemNamn,
@@ -89,18 +131,35 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
             nyckelPlats,
             boendeEjHemma,
             webbplats,
-          }),
-        },
+      });
+      let body: BodyInit = falt;
+      const headers: HeadersInit = {};
+      if (bilder.length > 0) {
+        const form = new FormData();
+        form.append("data", falt);
+        for (const b of bilder) form.append("bilder", b.fil);
+        body = form;
+      } else {
+        headers["Content-Type"] = "application/json";
+      }
+      const res = await fetch(
+        `/api/foreningar/${encodeURIComponent(foreningId)}/felanmalan`,
+        { method: "POST", headers, body },
       );
-      const data = (await res.json()) as {
+      const data = (await res.json().catch(() => ({}))) as {
         fel?: string;
         arende?: { arendeNummer: string };
+        bilderEjSparade?: number;
       };
       if (!res.ok || !data.arende) {
         setFel(data.fel || "Kunde inte skicka felanmälan.");
         return;
       }
-      setKlart({ arendeNummer: data.arende.arendeNummer, epost: medlemEpost.trim() });
+      setKlart({
+        arendeNummer: data.arende.arendeNummer,
+        epost: medlemEpost.trim(),
+        bilderEjSparade: data.bilderEjSparade ?? 0,
+      });
     } catch {
       setFel("Kunde inte nå servern.");
     } finally {
@@ -120,6 +179,12 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           och du får ett nytt mejl när ärendet är avslutat. Hittar du inte
           mejlet, titta i skräpposten.
         </p>
+        {klart.bilderEjSparade > 0 ? (
+          <p className="mt-2 text-sm text-amber-800">
+            {klart.bilderEjSparade === 1 ? "En bild" : `${klart.bilderEjSparade} bilder`} kunde
+            inte sparas. Svara gärna på bekräftelsemejlet med bilderna.
+          </p>
+        ) : null}
         {jour ? <div className="mt-4">{jour}</div> : null}
       </div>
     );
@@ -176,6 +241,53 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
           placeholder="När upptäcktes felet, var i lägenheten/huset, vad har ni provat?"
         />
       </label>
+
+      {info?.bilderTillatna ? (
+        <div className="text-sm">
+          <span className="font-medium">
+            Bilder <span className="font-normal text-muted">(valfritt, högst {FELANMALAN_BILDER.maxAntal})</span>
+          </span>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {bilder.map((b, i) => (
+              <div key={b.url} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={b.url}
+                  alt={`Vald bild ${i + 1}`}
+                  className="h-20 w-20 rounded-lg border border-border object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => taBortBild(i)}
+                  aria-label={`Ta bort bild ${i + 1}`}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-white text-xs font-bold text-foreground shadow"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {bilder.length < FELANMALAN_BILDER.maxAntal ? (
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border text-center text-xs text-muted hover:border-primary/50">
+                {forminskar ? "Förbereder …" : "+ Lägg till bild"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={forminskar}
+                  className="sr-only"
+                  onChange={(e) => {
+                    void laggTillBilder(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            ) : null}
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            Bilderna syns bara för styrelsen och förvaltaren. Platsinformation tas bort automatiskt.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm">
@@ -333,7 +445,7 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
 
       <button
         type="submit"
-        disabled={laddar}
+        disabled={laddar || forminskar}
         className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
       >
         {laddar ? "Skickar …" : "Skicka felanmälan"}
