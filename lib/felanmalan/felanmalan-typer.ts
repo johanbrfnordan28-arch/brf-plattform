@@ -119,3 +119,33 @@ export function arGiltigOrsak(v: string): v is FelanmalanOrsak {
 export function arGiltigRoll(v: string): v is FelanmalanTilldeladRoll {
   return (FELANMALAN_ROLL as readonly string[]).includes(v);
 }
+
+export const FELANMALAN_MAXLANGD = {
+  rubrik: 150,
+  beskrivning: 4000,
+  medlemNamn: 120,
+  medlemEpost: 200,
+  medlemTelefon: 40,
+  lagenhetsnummer: 20,
+  nyckelPlats: 300,
+  debiteringAnteckning: 500,
+  meddelande: 2000,
+} as const;
+
+/** Per förening — styr mottagare och vad boende ser i felanmälan. */
+export type FelanmalanInstallningar = {
+  extraEpost: string[];
+  jourTelefon: string;
+  jourText: string;
+  info: string;
+};
+
+export const FELANMALAN_INSTALLNING_MAX = {
+  extraEpost: 5,
+  jourTelefon: 40,
+  jourText: 200,
+  info: 1500,
+} as const;
+
+/** Publik del av inställningarna — det boende ser i formuläret. */
+export type FelanmalanPublikInfo = Omit<FelanmalanInstallningar, "extraEpost">;

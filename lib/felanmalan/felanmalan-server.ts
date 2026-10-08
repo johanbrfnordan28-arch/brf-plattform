@@ -1,4 +1,5 @@
-import type { FelanmalanArende, Prisma } from "@prisma/client";
+import { Prisma, type FelanmalanArende, type Forening } from "@prisma/client";
+import { arGiltigEpost, normaliseraEpost } from "@/lib/auth/epost";
 import { prisma } from "@/lib/db";
 import { skapaId } from "@/lib/auth/session";
 import { kastaOmForeningBorttagen } from "@/lib/forening-borttag-server";
@@ -7,7 +8,9 @@ import {
   arGiltigPrioritet,
   arGiltigRoll,
   arGiltigStatus,
+  FELANMALAN_INSTALLNING_MAX,
   type FelanmalanArendeDto,
+  type FelanmalanInstallningar,
   type FelanmalanHistorikRad,
   type FelanmalanOrsak,
   type FelanmalanPrioritet,
@@ -56,17 +59,54 @@ export function tillFelanmalanDto(rad: FelanmalanArende): FelanmalanArendeDto {
 }
 
 async function nastaArendeNummer(foreningId: string): Promise<string> {
-  const ar = new Date().getFullYear();
-  const prefix = `FM-${ar}-`;
-  const count = await prisma.felanmalanArende.count({
-    where: {
-      foreningId,
-      arendeNummer: { startsWith: prefix },
-    },
+  const prefix = `FM-${new Date().getFullYear()}-`;
+  const senaste = await prisma.felanmalanArende.findFirst({
+    where: { foreningId, arendeNummer: { startsWith: prefix } },
+    orderBy: { arendeNummer: "desc" },
+    select: { arendeNummer: true },
   });
-  const seq = String(count + 1).padStart(4, "0");
-  return `${prefix}${seq}`;
+  const nr = senaste ? Number(senaste.arendeNummer.slice(prefix.length)) || 0 : 0;
+  return `${prefix}${String(nr + 1).padStart(4, "0")}`;
 }
+
+function arUnikKrock(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+}
+
+const SKRAPSKYDD = {
+  perEpostPerTimme: 5,
+  perForeningPerTimme: 30,
+};
+
+/** Kastar om samma avsändare eller förening skickat för många ärenden den senaste timmen. */
+export async function kontrolleraSkrapskydd(
+  foreningId: string,
+  medlemEpost: string,
+): Promise<void> {
+  const sedan = new Date(Date.now() - 60 * 60 * 1000);
+  const [perEpost, perForening] = await Promise.all([
+    prisma.felanmalanArende.count({
+      where: {
+        foreningId,
+        medlemEpost: normaliseraEpost(medlemEpost),
+        skapadTidpunkt: { gte: sedan },
+      },
+    }),
+    prisma.felanmalanArende.count({
+      where: { foreningId, skapadTidpunkt: { gte: sedan } },
+    }),
+  ]);
+  if (
+    perEpost >= SKRAPSKYDD.perEpostPerTimme ||
+    perForening >= SKRAPSKYDD.perForeningPerTimme
+  ) {
+    throw new SkrapskyddFel(
+      "Många felanmälningar har skickats på kort tid. Vänta en stund och försök igen, eller kontakta styrelsen direkt.",
+    );
+  }
+}
+
+export class SkrapskyddFel extends Error {}
 
 function laggTillHistorik(
   befintlig: FelanmalanHistorikRad[],
@@ -100,35 +140,39 @@ export async function skapaFelanmalan(opts: {
   if (!forening) throw new Error("Föreningen hittades inte.");
   kastaOmForeningBorttagen(forening);
 
-  const arendeNummer = await nastaArendeNummer(opts.foreningId);
   const historik: FelanmalanHistorikRad[] = laggTillHistorik(
     [],
     opts.medlemNamn || "Medlem",
     "Felanmälan skickad in av medlem.",
   );
 
-  const rad = await prisma.felanmalanArende.create({
-    data: {
-      id: skapaId("fel"),
-      foreningId: opts.foreningId,
-      arendeNummer,
-      rubrik: opts.rubrik.trim(),
-      beskrivning: opts.beskrivning.trim(),
-      medlemNamn: opts.medlemNamn.trim(),
-      medlemEpost: opts.medlemEpost.trim().toLowerCase(),
-      medlemTelefon: opts.medlemTelefon?.trim() ?? "",
-      lagenhetsnummer: opts.lagenhetsnummer?.trim() ?? "",
-      prioritet: opts.prioritet ?? "normal",
-      orsak: opts.orsak ?? "ovrigt",
-      debiteringKan: Boolean(opts.debiteringKan),
-      debiteringAnteckning: opts.debiteringAnteckning?.trim() ?? "",
-      nyckelPlats: opts.nyckelPlats?.trim() ?? "",
-      boendeEjHemma: Boolean(opts.boendeEjHemma),
-      historik: historik as unknown as Prisma.InputJsonValue,
-    },
-  });
-
-  return tillFelanmalanDto(rad);
+  for (let forsok = 0; ; forsok++) {
+    try {
+      const rad = await prisma.felanmalanArende.create({
+        data: {
+          id: skapaId("fel"),
+          foreningId: opts.foreningId,
+          arendeNummer: await nastaArendeNummer(opts.foreningId),
+          rubrik: opts.rubrik.trim(),
+          beskrivning: opts.beskrivning.trim(),
+          medlemNamn: opts.medlemNamn.trim(),
+          medlemEpost: opts.medlemEpost.trim().toLowerCase(),
+          medlemTelefon: opts.medlemTelefon?.trim() ?? "",
+          lagenhetsnummer: opts.lagenhetsnummer?.trim() ?? "",
+          prioritet: opts.prioritet ?? "normal",
+          orsak: opts.orsak ?? "ovrigt",
+          debiteringKan: Boolean(opts.debiteringKan),
+          debiteringAnteckning: opts.debiteringAnteckning?.trim() ?? "",
+          nyckelPlats: opts.nyckelPlats?.trim() ?? "",
+          boendeEjHemma: Boolean(opts.boendeEjHemma),
+          historik: historik as unknown as Prisma.InputJsonValue,
+        },
+      });
+      return tillFelanmalanDto(rad);
+    } catch (e) {
+      if (!arUnikKrock(e) || forsok >= 4) throw e;
+    }
+  }
 }
 
 export async function listaFelanmalan(
@@ -152,7 +196,7 @@ export async function uppdateraFelanmalan(opts: {
   vidareEpost?: string;
   kommentar?: string;
   skickaMejlVidare?: boolean;
-}): Promise<FelanmalanArendeDto> {
+}): Promise<{ arende: FelanmalanArendeDto; tidigareStatus: string }> {
   const rad = await prisma.felanmalanArende.findFirst({
     where: { id: opts.arendeId, foreningId: opts.foreningId },
   });
@@ -190,5 +234,61 @@ export async function uppdateraFelanmalan(opts: {
     },
   });
 
-  return tillFelanmalanDto(uppdaterad);
+  return { arende: tillFelanmalanDto(uppdaterad), tidigareStatus: rad.status };
+}
+
+function delaRader(text: string): string[] {
+  return text
+    .split(/[\n,;]+/)
+    .map((r) => r.trim())
+    .filter(Boolean);
+}
+
+export function tillInstallningar(rad: Forening): FelanmalanInstallningar {
+  return {
+    extraEpost: delaRader(rad.felanmalanExtraEpost),
+    jourTelefon: rad.felanmalanJourTelefon,
+    jourText: rad.felanmalanJourText,
+    info: rad.felanmalanInfo,
+  };
+}
+
+/** Alla som ska få mejl om nya ärenden — föreningens e-post plus extra mottagare. */
+export function felanmalanMottagare(rad: Forening): string[] {
+  const alla = [rad.epost, ...delaRader(rad.felanmalanExtraEpost)]
+    .map(normaliseraEpost)
+    .filter(arGiltigEpost);
+  return [...new Set(alla)];
+}
+
+export async function sparaFelanmalanInstallningar(
+  foreningId: string,
+  input: Partial<FelanmalanInstallningar>,
+): Promise<FelanmalanInstallningar> {
+  const max = FELANMALAN_INSTALLNING_MAX;
+  const extraEpost = (input.extraEpost ?? []).map(normaliseraEpost).filter(Boolean);
+  const ogiltig = extraEpost.find((e) => !arGiltigEpost(e));
+  if (ogiltig) throw new Error(`Ogiltig e-postadress: ${ogiltig}`);
+  if (extraEpost.length > max.extraEpost) {
+    throw new Error(`Högst ${max.extraEpost} extra mottagare.`);
+  }
+  const jourTelefon = (input.jourTelefon ?? "").trim();
+  const jourText = (input.jourText ?? "").trim();
+  const info = (input.info ?? "").trim();
+  if (jourTelefon.length > max.jourTelefon) throw new Error("Journumret är för långt.");
+  if (jourText.length > max.jourText) throw new Error("Jourtexten är för lång.");
+  if (info.length > max.info) {
+    throw new Error(`Informationen får vara högst ${max.info} tecken.`);
+  }
+
+  const rad = await prisma.forening.update({
+    where: { id: foreningId },
+    data: {
+      felanmalanExtraEpost: [...new Set(extraEpost)].join("\n"),
+      felanmalanJourTelefon: jourTelefon,
+      felanmalanJourText: jourText,
+      felanmalanInfo: info,
+    },
+  });
+  return tillInstallningar(rad);
 }

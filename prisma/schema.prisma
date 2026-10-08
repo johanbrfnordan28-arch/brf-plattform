@@ -44,6 +44,11 @@ model Forening {
   borttagenAvEpost     String    @default("")
   /// Återställd av personal efter automatisk gallring — gallras inte igen.
   gallringUndantag     Boolean   @default(false)
+  /// Felanmälan: extra mottagare (en per rad), journummer och information till boende.
+  felanmalanExtraEpost  String   @default("")
+  felanmalanJourTelefon String   @default("")
+  felanmalanJourText    String   @default("")
+  felanmalanInfo        String   @default("")
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
 
