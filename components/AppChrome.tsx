@@ -3,6 +3,7 @@
 import { Footer } from "@/components/Footer";
 import { ForeningHeader } from "@/components/ForeningHeader";
 import { ForeningAktivator } from "@/components/forening/ForeningAktivator";
+import { ForeningAutoSynk } from "@/components/forening/ForeningAutoSynk";
 import { ForeningSidTitel } from "@/components/forening/ForeningSidTitel";
 import { ForeningDataScope } from "@/components/forening/ForeningDataScope";
 import { ForeningPlattformSync } from "@/components/forening/ForeningPlattformSync";
@@ -39,6 +40,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <ForeningVillkorGate />
           <ForeningSidTitel />
           <ForeningPlattformSync />
+          <ForeningAutoSynk />
           <ForeningHeader />
         </>
       ) : (
