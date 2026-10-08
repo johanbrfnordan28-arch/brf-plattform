@@ -221,10 +221,15 @@ model ForeningSakerhetskopia {
   payload        Json
   skapadAvEpost  String   @default("")
   skapadTidpunkt DateTime @default(now())
+  /// Sparad automatiskt från webbläsaren (en per dag) i stället för manuellt.
+  automatisk     Boolean  @default(false)
+  /// SHA-256 av nycklarna — används för att upptäcka krockar mellan webbläsare.
+  innehallHash   String   @default("")
 
   forening Forening @relation(fields: [foreningId], references: [id], onDelete: Cascade)
 
   @@index([foreningId, skapadTidpunkt])
+  @@index([foreningId, automatisk, exportedAt])
   @@index([foreningsNamn])
 }
 
