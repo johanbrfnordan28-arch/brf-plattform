@@ -43,6 +43,8 @@ export type SkapaForeningAuthInput = {
   skapareEpost: string;
   skapareRoll: string;
   basUrl: string;
+  /** Kontot i aktuell session — krävs för att återkoppla en befintlig förening. */
+  inloggadKontoId?: string | null;
 };
 
 export type SkapaForeningAuthResultat = {
@@ -63,8 +65,11 @@ async function aterkopplaBefintligForening(opts: {
   skapareNamn: string;
   roll: string;
   konto: { id: string; namn: string } | null;
+  inloggadKontoId?: string | null;
 }): Promise<SkapaForeningAuthResultat | null> {
   if (!opts.konto) return null;
+  // Utan inloggning räcker inte e-postadressen: den kan vara känd för vem som helst.
+  if (!opts.inloggadKontoId || opts.inloggadKontoId !== opts.konto.id) return null;
 
   const foreningEpost = normaliseraEpost(opts.forening.epost || "");
   const medlem = await prisma.foreningMedlem.findUnique({
@@ -195,6 +200,7 @@ export async function skapaForeningMedKonto(
       skapareNamn,
       roll,
       konto: befintligtKonto,
+      inloggadKontoId: input.inloggadKontoId,
     });
     if (aterkopplad) {
       await markeraStyrelsemassaLeadSomSkapadeTest({
@@ -204,7 +210,7 @@ export async function skapaForeningMedKonto(
       return aterkopplad;
     }
     throw new Error(
-      `Föreningen «${befintlig.namn}» finns redan på servern med en annan ägare. Logga in med samma e-post som du skapade den med, eller välj ett annat namn.`,
+      `Föreningen «${befintlig.namn}» finns redan. Är du med i styrelsen? Logga in med e-post och lösenord eller BankID för att öppna den — annars välj ett annat namn.`,
     );
   }
 

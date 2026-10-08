@@ -43,6 +43,8 @@ import {
   importeraForeningFranServer,
 } from "@/lib/forening-server-sync";
 import { sokForeningarPaServerKlient } from "@/lib/forening-sok-klient";
+import { harForeningBehorighet } from "@/lib/forening-behorighet-klient";
+import { byggMedlemFelanmalanLank } from "@/lib/forening-medlem";
 
 export type LoginLage = "test" | "kund";
 
@@ -222,6 +224,11 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const listaRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sokReqId = useRef(0);
+  const inloggningRef = useRef<HTMLElement>(null);
+  const [lastForening, setLastForening] = useState<{
+    id: string;
+    namn: string;
+  } | null>(null);
   const inloggningsPath = lage === "kund" ? KUND_LOGIN_PATH : TEST_LOGIN_PATH;
   const bankidStartUrl = `/api/auth/idura/start?returnTo=${encodeURIComponent(IDURA_KLAR_PATH)}&loginSida=${encodeURIComponent(inloggningsPath)}`;
   const bankidKopplaMeddelande =
@@ -334,7 +341,15 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     MIN_SOK_BOKSTAVER_EFTER_BRF - hamtaSokSuffix(sok).length,
   );
 
-  function loggaIn(id: string) {
+  async function loggaIn(id: string) {
+    setLastForening(null);
+    if (!(await harForeningBehorighet(id))) {
+      const namn =
+        sammanslagnaForeningar.find((f) => f.id === id)?.namn || "Föreningen";
+      setLastForening({ id, namn });
+      inloggningRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     markeraPendingAktivForening(id);
     sattAktivForeningId(id);
     window.location.assign(hamtaForeningStartPath(id));
@@ -485,7 +500,31 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
 
   return (
     <div className="mx-auto max-w-lg space-y-5 px-4">
-      <section className="rounded-2xl border-2 border-primary/30 bg-white p-5 shadow-sm">
+      <section
+        ref={inloggningRef}
+        className="scroll-mt-32 rounded-2xl border-2 border-primary/30 bg-white p-5 shadow-sm"
+      >
+        {lastForening ? (
+          <div
+            className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-950"
+            role="alert"
+          >
+            <p>
+              <strong>{lastForening.namn}</strong> öppnas bara för styrelsen. Logga
+              in med e-post och lösenord eller BankID nedan.
+            </p>
+            <p className="mt-1">
+              Bor du i föreningen?{" "}
+              <Link
+                href={byggMedlemFelanmalanLank(lastForening.id)}
+                className="font-medium underline hover:no-underline"
+              >
+                Gör en felanmälan
+              </Link>
+              .
+            </p>
+          </div>
+        ) : null}
         <h2 className="text-base font-bold text-foreground">
           Logga in med e-post och lösenord
         </h2>
@@ -726,7 +765,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
                   <ForeningKort
                     forening={f}
                     lage={lage}
-                    onLoggaIn={() => loggaIn(f.id)}
+                    onLoggaIn={() => void loggaIn(f.id)}
                     onBekraftaRensa={
                       !arKundLage && arStandardTestForening(f.id)
                         ? () => setRensaId(f.id)
