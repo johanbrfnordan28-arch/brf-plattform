@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HEADER_NAV } from "@/lib/header-nav";
 import { MEDLEM_FELANMALAN_PATH } from "@/lib/forening-medlem";
 import { KUND_LOGIN_PATH, TEST_LOGIN_PATH } from "@/lib/forening-kund";
@@ -10,13 +10,29 @@ import { KUND_LOGIN_PATH, TEST_LOGIN_PATH } from "@/lib/forening-kund";
 export function HeaderMobilMeny() {
   const [oppen, setOppen] = useState(false);
   const pathname = usePathname();
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOppen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!oppen) return;
+    const stang = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) {
+        setOppen(false);
+      }
+    };
+    document.addEventListener("mousedown", stang);
+    document.addEventListener("keydown", stang);
+    return () => {
+      document.removeEventListener("mousedown", stang);
+      document.removeEventListener("keydown", stang);
+    };
+  }, [oppen]);
+
   return (
-    <div className="lg:hidden">
+    <div ref={ref} className="lg:hidden">
       <button
         type="button"
         onClick={() => setOppen((v) => !v)}

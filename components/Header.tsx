@@ -41,7 +41,7 @@ export function Header() {
       </div>
 
       <header className="sticky top-0 z-50 border-b border-border bg-surface/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[72px] max-w-6xl items-center gap-10 px-4 sm:px-6">
+        <div className="mx-auto flex h-[72px] max-w-6xl items-center gap-3 px-4 lg:gap-10 sm:px-6">
           <Link
             href="/"
             className="flex shrink-0 items-center gap-2.5 whitespace-nowrap"
@@ -65,7 +65,7 @@ export function Header() {
                 <circle cx="12" cy="14.5" r="2" />
               </svg>
             </span>
-            <span className="text-lg font-semibold tracking-tight text-foreground">
+            <span className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
               Styrelse-Navet
             </span>
           </Link>
@@ -82,7 +82,7 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2.5">
+          <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
             <Link
               href={KUND_LOGIN_PATH}
               className="hidden whitespace-nowrap rounded-[9px] border border-border bg-white px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary/50 sm:inline-flex"
@@ -91,7 +91,7 @@ export function Header() {
             </Link>
             <Link
               href={PROVA_GRATIS_PATH}
-              className="inline-flex whitespace-nowrap rounded-[9px] bg-primary-dark px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-foreground"
+              className="inline-flex whitespace-nowrap rounded-[9px] bg-primary-dark px-3 py-2 sm:px-4 text-sm font-semibold text-white transition-colors hover:bg-foreground"
             >
               <span className="sm:hidden">Prova gratis</span>
               <span className="hidden sm:inline">Prova gratis i 30 dagar</span>
