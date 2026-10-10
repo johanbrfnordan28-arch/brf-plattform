@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad, prisma } from "@/lib/db";
 import { arProvoperiodUtgangen } from "@/lib/forening-avtal";
+import { kravForeningBehorighet } from "@/lib/forening-sakerhetskopia-server";
 
 /**
  * Raderar förening på servern när prövoperioden gått ut utan tecknat avtal.
  * Anropas från klienten efter lokal rensning.
  */
 export async function POST(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   if (!databasArKonfigurerad()) {
@@ -15,6 +16,10 @@ export async function POST(
   }
 
   const { id } = await ctx.params;
+  const beh = await kravForeningBehorighet(req, id);
+  if (!beh.ok) {
+    return NextResponse.json({ fel: beh.fel }, { status: beh.status });
+  }
   try {
     const rad = await prisma.forening.findUnique({ where: { id } });
     if (!rad) {
