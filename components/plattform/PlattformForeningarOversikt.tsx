@@ -466,6 +466,12 @@ export function PlattformForeningarOversikt({
                   ) : null}
                 </td>
                 <td className="py-3">
+                  <a
+                    href={`/api/plattform/foreningar/${f.id}/export`}
+                    className="mb-1.5 block w-fit rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-medium text-foreground hover:bg-slate-50"
+                  >
+                    Exportera data
+                  </a>
                   {vy === "aktiva" ? (
                     <button
                       type="button"

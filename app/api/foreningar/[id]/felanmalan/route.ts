@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { lasSession } from "@/lib/auth/session";
 import { skickaMejl } from "@/lib/auth/mejl";
 import { databasArKonfigurerad, prisma } from "@/lib/db";
 import {
@@ -11,24 +10,7 @@ import {
   skapaFelanmalan,
 } from "@/lib/felanmalan/felanmalan-server";
 import { byggFelanmalanMejl } from "@/lib/felanmalan/felanmalan-mejl";
-import { verifieraAccessNyckel } from "@/lib/forening-server";
-
-async function harStyrelseBehorighet(
-  req: Request,
-  foreningId: string,
-): Promise<boolean> {
-  const session = await lasSession();
-  if (session?.typ === "PLATTFORM") return true;
-  if (session?.typ === "STYRELSE" && session.foreningId === foreningId) {
-    return true;
-  }
-  const access =
-    req.headers.get("x-access-nyckel") ||
-    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!access) return false;
-  const rad = await prisma.forening.findUnique({ where: { id: foreningId } });
-  return Boolean(rad && verifieraAccessNyckel(access, rad.accessNyckelHash));
-}
+import { harStyrelseBehorighet } from "@/lib/auth/styrelse-behorighet";
 
 export async function GET(
   req: Request,
@@ -41,7 +23,7 @@ export async function GET(
     );
   }
   const { id } = await ctx.params;
-  if (!(await harStyrelseBehorighet(req, id))) {
+  if (!(await harStyrelseBehorighet(req, id)).ok) {
     return NextResponse.json({ fel: "Saknar behörighet." }, { status: 403 });
   }
   const arenden = await listaFelanmalan(id);

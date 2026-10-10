@@ -8,6 +8,7 @@ import { ForeningDataScope } from "@/components/forening/ForeningDataScope";
 import { ForeningInloggningsGrind } from "@/components/forening/ForeningInloggningsGrind";
 import { ForeningPlattformSync } from "@/components/forening/ForeningPlattformSync";
 import { ForeningUppgifterGate } from "@/components/forening/ForeningUppgifterGate";
+import { ForeningVillkorGate } from "@/components/forening/ForeningVillkorGate";
 import { Header } from "@/components/Header";
 import { usePathname } from "next/navigation";
 
@@ -36,6 +37,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         <ForeningAktivator />
         <ForeningInloggningsGrind>
           <ForeningUppgifterGate />
+          <ForeningVillkorGate />
           <ForeningSidTitel />
           <ForeningPlattformSync />
           <ForeningHeader />

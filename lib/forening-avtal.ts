@@ -3,6 +3,11 @@
  */
 
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+import {
+  INTEGRITETSPOLICY_PATH,
+  VILLKOR_PATH,
+  leverantorRad,
+} from "@/lib/juridik";
 
 /** Prövoperiod utan bindning / uppsägningstid. */
 export const PROVOPERIODE_DAGAR = 30;
@@ -82,7 +87,7 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
     {
       rubrik: "1. Parter",
       punkter: [
-        `Leverantör: Styrelse-Navet (nedan »Leverantören«).`,
+        `Leverantör: ${leverantorRad()} (nedan »Leverantören«).`,
         `Kund: ${namn}${org ? `, org.nr ${org}` : ""}${
           part.ort?.trim() ? `, ${part.ort.trim()}` : ""
         } (nedan »Föreningen«).`,
@@ -129,7 +134,15 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
       ],
     },
     {
-      rubrik: "7. Signering",
+      rubrik: "7. Personuppgifter",
+      punkter: [
+        "Föreningen är personuppgiftsansvarig för de personuppgifter den lägger in i tjänsten, till exempel om medlemmar och boende. Leverantören är personuppgiftsbiträde.",
+        `Leverantörens personuppgiftsbiträdesavtal (${VILLKOR_PATH}#personuppgiftsbitradesavtal) ingår i detta avtal och gäller under hela avtalstiden.`,
+        `Hur Leverantören själv behandlar personuppgifter, till exempel om styrelsens konton, beskrivs i integritetspolicyn (${INTEGRITETSPOLICY_PATH}).`,
+      ],
+    },
+    {
+      rubrik: "8. Signering",
       punkter: [
         "Avtalet blir bindande när behörig företrädare för Föreningen signerar med BankID.",
         `Avtalet gäller för ${namn} och kan inte överlåtas utan Leverantörens skriftliga medgivande.`,
