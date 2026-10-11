@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
-import {
-  hamtaLokalKonto,
-  uppdateraLokalLosenord,
-  sparaLokalKonto,
-} from "@/lib/auth/lokal-konto";
+import { hamtaLokalKonto, sattLokalLosenord } from "@/lib/auth/lokal-konto";
 import { sparaLokalSession } from "@/lib/auth/lokal-session";
 
 type BytLosenordFormProps = {
@@ -18,8 +14,7 @@ type BytLosenordFormProps = {
 };
 
 /**
- * Byt lösenord — när du är inloggad fylls nuvarande lösenord i automatiskt
- * (endast ditt eget, aldrig andras).
+ * Sätt nytt lösenord när du är inne i föreningen — utan att behöva det gamla.
  */
 export function BytLosenordForm({
   inbaddad = false,
@@ -27,11 +22,8 @@ export function BytLosenordForm({
 }: BytLosenordFormProps) {
   const [epost, setEpost] = useState<string | null>(null);
   const [foreningId, setForeningId] = useState<string | null>(null);
-  const [nuvarande, setNuvarande] = useState("");
   const [nytt, setNytt] = useState("");
   const [bekrafta, setBekrafta] = useState("");
-  const [visaNuvarande, setVisaNuvarande] = useState(false);
-  const [harSparatNuvarande, setHarSparatNuvarande] = useState(false);
   const [laddarKonto, setLaddarKonto] = useState(true);
   const [fel, setFel] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -47,10 +39,6 @@ export function BytLosenordForm({
 
         setEpost(kontext.epost);
         setForeningId(kontext.foreningId);
-        if (kontext.losenord) {
-          setNuvarande(kontext.losenord);
-          setHarSparatNuvarande(true);
-        }
       } catch {
         /* låt fältet vara tomt */
       } finally {
@@ -65,20 +53,35 @@ export function BytLosenordForm({
 
   function sparaLokaltEfterByte(nyttLosenord: string) {
     if (!epost) return;
-    const befintligt = hamtaLokalKonto(epost, foreningId || undefined);
-    sparaLokalKonto({
-      epost,
-      losenord: nyttLosenord,
-      foreningId: foreningId || befintligt?.foreningId || "",
-      namn: befintligt?.namn || "",
-      roll: befintligt?.roll || "Ledamot",
-    });
+    const id = foreningId || "";
+    const lokal = sattLokalLosenord(epost, nyttLosenord, id);
+    if (!lokal.ok) return;
+    const befintligt = hamtaLokalKonto(epost, id || undefined);
     sparaLokalSession({
       epost,
-      foreningId: foreningId || befintligt?.foreningId || "",
+      foreningId: id || befintligt?.foreningId || "",
       namn: befintligt?.namn || "",
       inloggadTidpunkt: new Date().toISOString(),
     });
+  }
+
+  function sattEndastLokalt(nyttLosenord: string): boolean {
+    if (!epost) return false;
+    const lokal = sattLokalLosenord(
+      epost,
+      nyttLosenord,
+      foreningId || "",
+    );
+    if (!lokal.ok) {
+      setFel(lokal.fel);
+      return false;
+    }
+    sparaLokaltEfterByte(nyttLosenord);
+    setOk(true);
+    setNytt("");
+    setBekrafta("");
+    onLyckat?.();
+    return true;
   }
 
   async function skicka(e: React.FormEvent) {
@@ -89,76 +92,33 @@ export function BytLosenordForm({
       setFel("De nya lösenorden stämmer inte överens.");
       return;
     }
-    if (!nuvarande.trim()) {
-      setFel("Ange ditt nuvarande lösenord.");
-      return;
-    }
     setLaddar(true);
     try {
       const res = await fetch("/api/auth/byt-losenord", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nuvarande, nytt }),
+        body: JSON.stringify({ nytt }),
       });
       const data = (await res.json()) as { fel?: string; ok?: boolean };
 
       if (res.ok) {
         sparaLokaltEfterByte(nytt);
         setOk(true);
-        setNuvarande(nytt);
-        setHarSparatNuvarande(true);
         setNytt("");
         setBekrafta("");
         onLyckat?.();
         return;
       }
 
-      // Lokal fallback när databas saknas
       if (res.status === 503 || res.status === 401) {
-        if (epost) {
-          const lokal = uppdateraLokalLosenord(
-            epost,
-            nuvarande,
-            nytt,
-            foreningId || undefined,
-          );
-          if (lokal.ok) {
-            sparaLokaltEfterByte(nytt);
-            setOk(true);
-            setNuvarande(nytt);
-            setHarSparatNuvarande(true);
-            setNytt("");
-            setBekrafta("");
-            onLyckat?.();
-            return;
-          }
-          setFel(lokal.fel);
-          return;
-        }
+        if (sattEndastLokalt(nytt)) return;
+        return;
       }
 
       setFel(data.fel || "Kunde inte byta lösenord.");
     } catch {
-      if (epost) {
-        const lokal = uppdateraLokalLosenord(
-          epost,
-          nuvarande,
-          nytt,
-          foreningId || undefined,
-        );
-        if (lokal.ok) {
-          sparaLokaltEfterByte(nytt);
-          setOk(true);
-          setNuvarande(nytt);
-          setHarSparatNuvarande(true);
-          setNytt("");
-          setBekrafta("");
-          onLyckat?.();
-          return;
-        }
-        setFel(lokal.fel);
-      } else {
-        setFel("Kunde inte nå servern.");
+      if (!sattEndastLokalt(nytt)) {
+        if (!epost) setFel("Kunde inte nå servern.");
       }
     } finally {
       setLaddar(false);
@@ -183,10 +143,8 @@ export function BytLosenordForm({
           <>
             Inloggad som{" "}
             <strong className="font-medium text-foreground">{epost}</strong>
-            . Endast du ser ditt lösenord — aldrig andra i styrelsen.
-            {harSparatNuvarande
-              ? " Nuvarande lösenord är ifyllt automatiskt."
-              : ""}
+            . Välj ett nytt lösenord — du behöver inte det gamla. Endast du ser
+            det, aldrig andra i styrelsen.
           </>
         ) : (
           <>
@@ -194,55 +152,17 @@ export function BytLosenordForm({
             <Link href="/styrelse-login" className="text-primary-dark underline">
               logga in
             </Link>
+            . Har du glömt lösenordet?{" "}
+            <Link
+              href="/konto/glomt-losenord"
+              className="text-primary-dark underline"
+            >
+              Begär en återställningslänk
+            </Link>
             .
           </>
         )}
       </p>
-
-      {!harSparatNuvarande && epost ? (
-        <p className="text-sm text-muted">
-          Lösenordet kunde inte fyllas i automatiskt. Ange det du fick vid
-          skapande, eller{" "}
-          <Link
-            href="/konto/glomt-losenord"
-            className="font-medium text-primary-dark underline"
-          >
-            begär en återställningslänk
-          </Link>
-          .
-        </p>
-      ) : null}
-
-      <label className="block text-sm">
-        <span className="font-medium">Nuvarande lösenord</span>
-        <div className="mt-1 flex gap-2">
-          <input
-            type={visaNuvarande ? "text" : "password"}
-            value={nuvarande}
-            onChange={(e) => {
-              setNuvarande(e.target.value);
-              setHarSparatNuvarande(false);
-            }}
-            className="min-w-0 flex-1 rounded-lg border border-border px-3 py-2"
-            required
-            autoComplete="current-password"
-            disabled={laddarKonto}
-            placeholder={laddarKonto ? "Hämtar sparat lösenord…" : ""}
-          />
-          <button
-            type="button"
-            onClick={() => setVisaNuvarande((v) => !v)}
-            className="shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:text-foreground"
-          >
-            {visaNuvarande ? "Dölj" : "Visa"}
-          </button>
-        </div>
-        {harSparatNuvarande ? (
-          <span className="mt-1 block text-xs text-primary-dark">
-            Hämtat från ditt sparade lösenord (bara synligt för dig).
-          </span>
-        ) : null}
-      </label>
 
       <label className="block text-sm">
         <span className="font-medium">Nytt lösenord</span>
@@ -254,7 +174,7 @@ export function BytLosenordForm({
           required
           minLength={8}
           autoComplete="new-password"
-          autoFocus={harSparatNuvarande}
+          autoFocus={Boolean(epost)}
         />
       </label>
       <label className="block text-sm">

@@ -784,7 +784,8 @@ export async function uppdateraPlattformAnvandare(opts: {
 
 export async function bytLosenord(opts: {
   kontoId: string;
-  nuvarande: string;
+  /** Om utelämnat: anroparen är redan inloggad och behöver inte det gamla. */
+  nuvarande?: string;
   nytt: string;
 }): Promise<void> {
   const fel = valideraLosenordStyrka(opts.nytt);
@@ -792,8 +793,10 @@ export async function bytLosenord(opts: {
 
   const konto = await prisma.konto.findUnique({ where: { id: opts.kontoId } });
   if (!konto) throw new Error("Kontot hittades inte.");
-  if (!verifieraLosenord(opts.nuvarande, konto.losnordHash)) {
-    throw new Error("Nuvarande lösenord stämmer inte.");
+  if (opts.nuvarande) {
+    if (!verifieraLosenord(opts.nuvarande, konto.losnordHash)) {
+      throw new Error("Nuvarande lösenord stämmer inte.");
+    }
   }
 
   await prisma.konto.update({
@@ -878,7 +881,8 @@ export async function skickaTillfalligtLosenord(opts: {
   return {
     skickat: true,
     mejlVia: mejl.via,
-    tillfalligtLosenord: mejl.via !== "resend" ? tillfalligt : undefined,
+    // Visa alltid lösenordet på sidan — mejl kan fastna i skräppost.
+    tillfalligtLosenord: tillfalligt,
   };
 }
 
@@ -923,8 +927,8 @@ export async function begärAterstallning(opts: {
   return {
     skickat: true,
     mejlVia: mejl.via,
-    // Utan Resend: visa länken direkt så användaren kan återställa
-    aterstallningsLank: mejl.via !== "resend" ? länk : undefined,
+    // Visa alltid länken på sidan — mejl kan saknas eller fastna i skräppost.
+    aterstallningsLank: länk,
   };
 }
 

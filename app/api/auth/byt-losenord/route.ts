@@ -21,15 +21,15 @@ export async function POST(req: Request) {
       nuvarande?: string;
       nytt?: string;
     };
-    if (!body.nuvarande || !body.nytt) {
+    if (!body.nytt) {
       return NextResponse.json(
-        { fel: "Ange nuvarande och nytt lösenord." },
+        { fel: "Ange ett nytt lösenord." },
         { status: 400 },
       );
     }
     await bytLosenord({
       kontoId: session.kontoId,
-      nuvarande: body.nuvarande,
+      nuvarande: body.nuvarande?.trim() || undefined,
       nytt: body.nytt,
     });
     return NextResponse.json({ ok: true });
