@@ -35,6 +35,7 @@ import {
   type ForeningServerDto,
 } from "@/lib/forening-server";
 import { markeraStyrelsemassaLeadSomSkapadeTest } from "@/lib/styrelsemassa-lead-server";
+import { VILLKOR_VERSION } from "@/lib/juridik";
 
 export type SkapaForeningAuthInput = {
   foreningId: string;
@@ -42,6 +43,7 @@ export type SkapaForeningAuthInput = {
   skapareNamn: string;
   skapareEpost: string;
   skapareRoll: string;
+  villkorVersion: string;
   basUrl: string;
   /** Kontot i aktuell session — krävs för att återkoppla en befintlig förening. */
   inloggadKontoId?: string | null;
@@ -186,6 +188,12 @@ export async function skapaForeningMedKonto(
     throw new Error("Välj en giltig styrelseroll.");
   }
 
+  if (input.villkorVersion !== VILLKOR_VERSION) {
+    throw new Error(
+      "Godkänn villkoren och personuppgiftsbiträdesavtalet för att skapa föreningen. Ladda om sidan om du redan kryssat i rutan.",
+    );
+  }
+
   const namnNyckel = normaliseraNamnNyckel(namn);
   const befintlig = await prisma.forening.findUnique({ where: { namnNyckel } });
 
@@ -252,6 +260,9 @@ export async function skapaForeningMedKonto(
         epost,
         kontaktperson: skapareNamn,
         accessNyckelHash: hashAccessNyckel(accessNyckel),
+        villkorVersion: VILLKOR_VERSION,
+        villkorGodkantTidpunkt: new Date(),
+        villkorGodkantAvEpost: epost,
       },
     });
 
@@ -784,7 +795,8 @@ export async function uppdateraPlattformAnvandare(opts: {
 
 export async function bytLosenord(opts: {
   kontoId: string;
-  nuvarande: string;
+  /** Om utelämnat: anroparen är redan inloggad och behöver inte det gamla. */
+  nuvarande?: string;
   nytt: string;
 }): Promise<void> {
   const fel = valideraLosenordStyrka(opts.nytt);
@@ -792,8 +804,10 @@ export async function bytLosenord(opts: {
 
   const konto = await prisma.konto.findUnique({ where: { id: opts.kontoId } });
   if (!konto) throw new Error("Kontot hittades inte.");
-  if (!verifieraLosenord(opts.nuvarande, konto.losnordHash)) {
-    throw new Error("Nuvarande lösenord stämmer inte.");
+  if (opts.nuvarande) {
+    if (!verifieraLosenord(opts.nuvarande, konto.losnordHash)) {
+      throw new Error("Nuvarande lösenord stämmer inte.");
+    }
   }
 
   await prisma.konto.update({
@@ -878,7 +892,8 @@ export async function skickaTillfalligtLosenord(opts: {
   return {
     skickat: true,
     mejlVia: mejl.via,
-    tillfalligtLosenord: mejl.via !== "resend" ? tillfalligt : undefined,
+    // Visa alltid lösenordet på sidan — mejl kan fastna i skräppost.
+    tillfalligtLosenord: tillfalligt,
   };
 }
 
@@ -923,8 +938,8 @@ export async function begärAterstallning(opts: {
   return {
     skickat: true,
     mejlVia: mejl.via,
-    // Utan Resend: visa länken direkt så användaren kan återställa
-    aterstallningsLank: mejl.via !== "resend" ? länk : undefined,
+    // Visa alltid länken på sidan — mejl kan saknas eller fastna i skräppost.
+    aterstallningsLank: länk,
   };
 }
 

@@ -27,72 +27,68 @@ export function GlomtLosenordForm() {
     setMeddelande(null);
     setLokalLank(null);
     setLaddar(true);
+
+    const lokal = begärLokalAterstallning(epost);
+    const lokalLankVarde = lokal.ok ? lokal.lank : "";
+
     try {
       const res = await fetch("/api/auth/glomt-losenord", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ epost }),
+        body: JSON.stringify({
+          epost,
+          ...(lokalLankVarde ? { aterstallningsLank: lokalLankVarde } : {}),
+        }),
       });
-      const data = (await res.json()) as { fel?: string; meddelande?: string; aterstallningsLank?: string };
+      const data = (await res.json()) as {
+        fel?: string;
+        meddelande?: string;
+        aterstallningsLank?: string;
+        mejlVia?: string;
+      };
+
+      const lank = data.aterstallningsLank || lokalLankVarde;
+      if (lank) setLokalLank(lank);
 
       if (res.ok) {
+        const mejlOk = mejlSkickades(data.mejlVia || "");
+        const fallback = lokal.ok
+          ? lokal.meddelande
+          : "Använd länken nedan inom en timme.";
         setMeddelande(
-          data.meddelande ||
-            "Om kontot finns skickas en återställningslänk till e-postadressen.",
+          mejlOk
+            ? data.meddelande ||
+                "Återställningslänken har skickats till din e-post. Den visas också här."
+            : data.meddelande || fallback,
         );
-        if (data.aterstallningsLank) {
-          setLokalLank(data.aterstallningsLank);
-        }
         return;
       }
 
-      // Demoläge utan databas — lokal återställning + mejl om Resend finns
       if (res.status === 503 || /databas/i.test(data.fel || "")) {
-        const lokal = begärLokalAterstallning(epost);
         if (!lokal.ok) {
           setFel(lokal.fel);
           return;
         }
-        if (lokal.lank) {
-          setLokalLank(lokal.lank);
-          try {
-            const mejlRes = await fetch("/api/auth/glomt-losenord", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                epost,
-                aterstallningsLank: lokal.lank,
-              }),
-            });
-            const mejlData = (await mejlRes.json()) as {
-              meddelande?: string;
-              mejlVia?: string;
-            };
-            if (mejlRes.ok && mejlSkickades(mejlData.mejlVia || "")) {
-              setMeddelande(
-                mejlData.meddelande ||
-                  "Återställningslänken har skickats till din e-post.",
-              );
-            } else {
-              setMeddelande(lokal.meddelande);
-            }
-          } catch {
-            setMeddelande(lokal.meddelande);
-          }
-        } else {
-          setMeddelande(lokal.meddelande);
-        }
+        setMeddelande(lokal.meddelande);
+        return;
+      }
+
+      if (lank) {
+        setMeddelande(
+          lokal.ok
+            ? lokal.meddelande
+            : "Använd länken nedan inom en timme.",
+        );
         return;
       }
 
       setFel(data.fel || "Kunde inte skicka återställning.");
     } catch {
-      const lokal = begärLokalAterstallning(epost);
       if (!lokal.ok) {
         setFel(lokal.fel);
       } else {
         setMeddelande(lokal.meddelande);
-        if (lokal.lank) setLokalLank(lokal.lank);
+        if (lokalLankVarde) setLokalLank(lokalLankVarde);
       }
     } finally {
       setLaddar(false);
@@ -106,9 +102,10 @@ export function GlomtLosenordForm() {
     >
       <h1 className="text-xl font-bold text-foreground">Glömt lösenord</h1>
       <p className="text-sm text-muted">
-        Ange e-postadressen som användes när föreningen skapades. Du får en länk
-        för att välja nytt lösenord — använd detta om du inte kan logga in. Redan
-        inne i föreningen? Gå till{" "}
+        Ange e-postadressen som användes när föreningen skapades. En
+        återställningslänk visas här på sidan — den skickas också till e-posten
+        om mejl är igång. Du behöver inte det gamla lösenordet. Redan inne i
+        föreningen? Gå till{" "}
         <Link href="/forening/konto" className="font-medium underline">
           Konto → Byt lösenord
         </Link>

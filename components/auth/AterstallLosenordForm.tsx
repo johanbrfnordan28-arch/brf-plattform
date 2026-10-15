@@ -59,13 +59,11 @@ export function AterstallLosenordForm() {
       if (res.ok) {
         const sparadEpost = data.epost?.trim().toLowerCase();
         if (sparadEpost) {
-          const { hamtaLokalKonto, sparaLokalKonto } = await import(
-            "@/lib/auth/lokal-konto"
+          const { sattLokalLosenord } = await import("@/lib/auth/lokal-konto");
+          const { lasAktivForeningId } = await import(
+            "@/lib/forening-registry"
           );
-          const konto = hamtaLokalKonto(sparadEpost);
-          if (konto) {
-            sparaLokalKonto({ ...konto, losenord: nytt });
-          }
+          sattLokalLosenord(sparadEpost, nytt, lasAktivForeningId());
         }
         setOk(true);
         return;
@@ -122,8 +120,8 @@ export function AterstallLosenordForm() {
       <h1 className="text-xl font-bold text-foreground">Välj nytt lösenord</h1>
       {arLokal ? (
         <p className="text-sm text-muted">
-          Lokal återställning i den här webbläsaren (databasen saknas på
-          servern).
+          Återställning i den här webbläsaren — du behöver inte det gamla
+          lösenordet.
         </p>
       ) : null}
       {!tokenFranUrl ? (

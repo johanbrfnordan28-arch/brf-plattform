@@ -81,11 +81,9 @@ export async function POST(req: Request) {
       skickat: resultat.skickat,
       mejlVia: resultat.mejlVia,
       tillfalligtLosenord: resultat.tillfalligtLosenord,
-      meddelande: resultat.tillfalligtLosenord
-        ? "Mejltjänsten är inte konfigurerad — ditt nya tillfälliga lösenord visas nedan."
-        : mejlSkickades(resultat.mejlVia || "")
-          ? "Ett nytt tillfälligt lösenord har skickats till din e-post."
-          : "Lösenordet är sparat för utskick (mejltjänst ej konfigurerad — syns i mejl-outbox).",
+      meddelande: mejlSkickades(resultat.mejlVia || "")
+        ? "Ett nytt tillfälligt lösenord har skickats till din e-post. Det visas också nedan."
+        : "Ditt nya tillfälliga lösenord visas nedan (mejlet kan saknas — spara det här).",
     });
   } catch (e) {
     return NextResponse.json(
