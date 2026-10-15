@@ -7,6 +7,7 @@ import {
   hamtaLokalKonto,
   sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
+import { lasAktivForeningId } from "@/lib/forening-registry";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 const LOKAL_RESET_KEY = "brf-lokal-aterstall-v1";
@@ -16,6 +17,7 @@ type LokalResetPost = {
   token: string;
   epost: string;
   expires: number;
+  foreningId?: string;
 };
 
 function lasAlla(): LokalResetPost[] {
@@ -58,21 +60,14 @@ export function begärLokalAterstallning(epost: string): {
     return { ok: false, fel: "Ange en giltig e-postadress." };
   }
   const konto = hamtaLokalKonto(nyckel);
-  if (!konto) {
-    // Samma svar som servern — avslöja inte om kontot finns
-    return {
-      ok: true,
-      lank: "",
-      meddelande:
-        "Om kontot finns i den här webbläsaren visas en återställningslänk nedan. Annars logga in med lösenordet från när föreningen skapades, eller skapa föreningen på nytt.",
-    };
-  }
+  const foreningId = konto?.foreningId || lasAktivForeningId() || "";
 
   const token = skapaToken();
   const post: LokalResetPost = {
     token,
     epost: nyckel,
     expires: Date.now() + TOKEN_GILTIG_MS,
+    foreningId,
   };
   sparaAlla([post, ...lasAlla().filter((p) => p.epost !== nyckel)]);
 
@@ -84,7 +79,7 @@ export function begärLokalAterstallning(epost: string): {
     ok: true,
     lank,
     meddelande:
-      "Demoläge — öppna länken nedan inom en timme (samma webbläsare som när föreningen skapades).",
+      "Öppna länken nedan inom en timme. Den fungerar i den här webbläsaren även om mejlet inte kommer fram.",
   };
 }
 
@@ -112,11 +107,14 @@ export function aterstallLokalMedToken(
   }
 
   const konto = hamtaLokalKonto(post.epost);
-  if (!konto) {
-    return { ok: false, fel: "Kontot hittades inte i den här webbläsaren." };
-  }
-
-  sparaLokalKonto({ ...konto, losenord: nytt });
+  const foreningId = konto?.foreningId || post.foreningId || lasAktivForeningId() || "";
+  sparaLokalKonto({
+    epost: post.epost,
+    losenord: nytt.trim(),
+    foreningId,
+    namn: konto?.namn || "",
+    roll: konto?.roll || "Ledamot",
+  });
   sparaAlla(poster.filter((p) => p.token !== trimmed));
   return { ok: true, epost: post.epost };
 }

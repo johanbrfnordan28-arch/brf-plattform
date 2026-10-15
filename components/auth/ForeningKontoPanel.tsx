@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { BytLosenordForm } from "@/components/auth/BytLosenordForm";
 import { MittLosenordKort } from "@/components/auth/MittLosenordKort";
+import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
+import { sattLokalLosenord } from "@/lib/auth/lokal-konto";
 
 /**
  * Styrelsens kontosida — spara/visa lösenord + byt lösenord på samma ställe.
@@ -15,25 +17,44 @@ export function ForeningKontoPanel() {
     null,
   );
   const [skickatFel, setSkickatFel] = useState<string | null>(null);
+  const [tillfalligtLosenord, setTillfalligtLosenord] = useState<string | null>(
+    null,
+  );
 
   async function skickaLosenordMejl() {
     setSkickatFel(null);
     setSkickatMeddelande(null);
+    setTillfalligtLosenord(null);
     setSkickar(true);
     try {
+      const kontext = await hamtaKontoKontext();
       const res = await fetch("/api/auth/skicka-losenord", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ epost: kontext?.epost }),
       });
-      const data = (await res.json()) as { fel?: string; meddelande?: string };
+      const data = (await res.json()) as {
+        fel?: string;
+        meddelande?: string;
+        tillfalligtLosenord?: string;
+      };
       if (!res.ok) {
         setSkickatFel(data.fel || "Kunde inte skicka lösenordet.");
         return;
       }
+      if (data.tillfalligtLosenord) {
+        setTillfalligtLosenord(data.tillfalligtLosenord);
+        if (kontext?.epost) {
+          sattLokalLosenord(
+            kontext.epost,
+            data.tillfalligtLosenord,
+            kontext.foreningId || "",
+          );
+        }
+      }
       setSkickatMeddelande(
         data.meddelande ||
-          "Ett nytt tillfälligt lösenord har skickats till din e-post.",
+          "Ett nytt tillfälligt lösenord har skickats till din e-post. Det visas också här.",
       );
       setNyckel((n) => n + 1);
     } catch {
@@ -65,7 +86,7 @@ export function ForeningKontoPanel() {
           </li>
           <li>
             <strong className="font-medium text-foreground">Byt lösenord</strong>{" "}
-            — nuvarande lösenord fylls i automatiskt när du är inloggad
+            — välj ett nytt utan att behöva det gamla
           </li>
           <li>
             <strong className="font-medium text-foreground">
@@ -98,6 +119,25 @@ export function ForeningKontoPanel() {
           <p className="mt-3 text-sm text-primary-dark" role="status">
             {skickatMeddelande}
           </p>
+        ) : null}
+        {tillfalligtLosenord ? (
+          <div className="mt-3 rounded-lg border border-border bg-surface p-3">
+            <p className="text-xs font-medium text-foreground">
+              Ditt tillfälliga lösenord
+            </p>
+            <code className="mt-1 block break-all font-mono text-sm text-foreground">
+              {tillfalligtLosenord}
+            </code>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(tillfalligtLosenord);
+              }}
+              className="mt-2 text-sm font-medium text-primary-dark underline"
+            >
+              Kopiera
+            </button>
+          </div>
         ) : null}
         {skickatFel ? (
           <p className="mt-3 text-sm text-red-800" role="alert">

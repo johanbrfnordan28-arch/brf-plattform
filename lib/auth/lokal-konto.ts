@@ -79,6 +79,31 @@ export function uppdateraLokalLosenord(
   return { ok: true };
 }
 
+/** Sätter lösenord utan att kräva det gamla — glömt lösenord / första lösenord. */
+export function sattLokalLosenord(
+  epost: string,
+  nytt: string,
+  foreningId: string,
+  namn = "",
+): { ok: true } | { ok: false; fel: string } {
+  const nyckel = epost.trim().toLowerCase();
+  if (!nyckel.includes("@")) {
+    return { ok: false, fel: "Ange en giltig e-postadress." };
+  }
+  if (nytt.trim().length < 8) {
+    return { ok: false, fel: "Nytt lösenord måste vara minst 8 tecken." };
+  }
+  const befintligt = hamtaLokalKonto(nyckel, foreningId);
+  sparaLokalKonto({
+    epost: nyckel,
+    losenord: nytt.trim(),
+    foreningId,
+    namn: namn || befintligt?.namn || "",
+    roll: befintligt?.roll || "Ledamot",
+  });
+  return { ok: true };
+}
+
 export function verifieraLokalKonto(
   epost: string,
   losenord: string,

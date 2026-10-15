@@ -2,11 +2,11 @@
  * Kundavtal Styrelse-Navet — villkor för prövoperiod och årsavtal.
  */
 
+import { leverantorRad } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import {
   INTEGRITETSPOLICY_PATH,
   VILLKOR_PATH,
-  leverantorRad,
 } from "@/lib/juridik";
 
 /** Prövoperiod utan bindning / uppsägningstid. */
@@ -87,7 +87,7 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
     {
       rubrik: "1. Parter",
       punkter: [
-        `Leverantör: ${leverantorRad()} (nedan »Leverantören«).`,
+        `Leverantör: ${leverantorRad()} (nedan »Leverantören«), som tillhandahåller plattformen Styrelse-Navet.`,
         `Kund: ${namn}${org ? `, org.nr ${org}` : ""}${
           part.ort?.trim() ? `, ${part.ort.trim()}` : ""
         } (nedan »Föreningen«).`,

@@ -1,11 +1,17 @@
 import { KONTAKT_EPOST } from "@/lib/kontakt-epost";
+import {
+  LEVERANTOR as LEVERANTOR_BOLAG,
+  leverantorPostadress,
+  leverantorRad,
+} from "@/lib/leverantor";
+
+export { leverantorRad };
 
 /** Personuppgiftsansvarig / leverantör — visas i integritetspolicy och villkor. */
 export const LEVERANTOR = {
-  namn: "Styrelse-Navet",
-  /** Tomt värde döljs i texterna. */
-  organisationsnummer: "",
-  postadress: "",
+  namn: LEVERANTOR_BOLAG.namn,
+  organisationsnummer: LEVERANTOR_BOLAG.organisationsnummer,
+  postadress: leverantorPostadress(),
   dataskyddEpost: KONTAKT_EPOST.info,
 } as const;
 
@@ -59,12 +65,3 @@ export const UNDERBITRADEN: Underbitrade[] = [
   },
 ];
 
-export function leverantorRad(): string {
-  return [
-    LEVERANTOR.namn,
-    LEVERANTOR.organisationsnummer && `org.nr ${LEVERANTOR.organisationsnummer}`,
-    LEVERANTOR.postadress,
-  ]
-    .filter(Boolean)
-    .join(", ");
-}

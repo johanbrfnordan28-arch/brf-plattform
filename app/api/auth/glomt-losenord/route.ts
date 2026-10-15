@@ -61,11 +61,11 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({
       ok: true,
-      meddelande:
-        resultat.aterstallningsLank
-          ? "Mejltjänsten är inte konfigurerad — använd återställningslänken nedan inom en timme."
-          : "Om kontot finns skickas en återställningslänk till e-postadressen.",
+      meddelande: resultat.aterstallningsLank
+        ? "Använd länken nedan inom en timme. Den skickas också till e-posten om mejl är igång."
+        : "Om kontot finns skickas en återställningslänk till e-postadressen.",
       aterstallningsLank: resultat.aterstallningsLank,
+      mejlVia: resultat.mejlVia,
     });
   } catch (e) {
     return NextResponse.json(

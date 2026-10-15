@@ -10,6 +10,7 @@ import {
   formatAvtalsDatum,
   type AvtalsPart,
 } from "@/lib/forening-avtal";
+import { LEVERANTOR, leverantorPostadress } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 
 type Props = {
@@ -105,18 +106,37 @@ export function ForeningAvtalsdokument({
       </header>
 
       <div className="space-y-5 px-5 py-5 sm:px-7 sm:py-6">
-        <div className="rounded-xl border border-border bg-white px-4 py-3 text-sm">
-          <p className="font-semibold text-foreground">Kund</p>
-          <p className="mt-1 text-lg font-bold text-primary-dark">
-            {part.foreningsNamn}
-          </p>
-          {(part.organisationsnummer || part.ort) && (
-            <p className="mt-1 text-muted">
-              {[part.organisationsnummer && `Org.nr ${part.organisationsnummer}`, part.ort]
-                .filter(Boolean)
-                .join(" · ")}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-border bg-white px-4 py-3 text-sm">
+            <p className="font-semibold text-foreground">Leverantör</p>
+            <p className="mt-1 text-lg font-bold text-primary-dark">
+              {LEVERANTOR.namn}
             </p>
-          )}
+            <p className="mt-1 text-muted">
+              Org.nr {LEVERANTOR.organisationsnummer}
+            </p>
+            <p className="mt-1 text-muted">{leverantorPostadress()}</p>
+            <p className="mt-1 text-xs text-muted">
+              Plattform: {LEVERANTOR.varumarke}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-white px-4 py-3 text-sm">
+            <p className="font-semibold text-foreground">Kund</p>
+            <p className="mt-1 text-lg font-bold text-primary-dark">
+              {part.foreningsNamn}
+            </p>
+            {(part.organisationsnummer || part.ort) && (
+              <p className="mt-1 text-muted">
+                {[
+                  part.organisationsnummer &&
+                    `Org.nr ${part.organisationsnummer}`,
+                  part.ort,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+          </div>
         </div>
 
         {sektioner.map((s) => (
