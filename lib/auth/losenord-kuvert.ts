@@ -1,11 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import { lasAuthSecret } from "@/lib/auth/auth-secret";
 
 function nyckelFranSecret(): Buffer {
-  const secret =
-    process.env.AUTH_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    "brf-dev-secret-byt-i-produktion";
-  return createHash("sha256").update(secret, "utf8").digest();
+  return createHash("sha256").update(lasAuthSecret(), "utf8").digest();
 }
 
 /** Krypterar lösenord så endast servern (för ägarens session) kan visa det. */

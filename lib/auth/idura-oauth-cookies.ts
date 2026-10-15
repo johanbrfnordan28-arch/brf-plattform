@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import { lasAuthSecret } from "@/lib/auth/auth-secret";
 import {
   hamtaPersonnummerFranClaims,
   hamtaVisningsNamnFranClaims,
@@ -11,11 +12,7 @@ const PENDING_COOKIE = "brf_idura_pending";
 const TTL_SEK = 60 * 15;
 
 function signera(data: string): string {
-  const secret =
-    process.env.AUTH_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    "brf-dev-secret-byt-i-produktion";
-  return createHmac("sha256", secret).update(data).digest("base64url");
+  return createHmac("sha256", lasAuthSecret()).update(data).digest("base64url");
 }
 
 function pack(payload: object): string {

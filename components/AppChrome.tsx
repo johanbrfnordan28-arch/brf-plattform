@@ -5,6 +5,7 @@ import { ForeningHeader } from "@/components/ForeningHeader";
 import { ForeningAktivator } from "@/components/forening/ForeningAktivator";
 import { ForeningSidTitel } from "@/components/forening/ForeningSidTitel";
 import { ForeningDataScope } from "@/components/forening/ForeningDataScope";
+import { ForeningInloggningsGrind } from "@/components/forening/ForeningInloggningsGrind";
 import { ForeningPlattformSync } from "@/components/forening/ForeningPlattformSync";
 import { ForeningUppgifterGate } from "@/components/forening/ForeningUppgifterGate";
 import { ForeningVillkorGate } from "@/components/forening/ForeningVillkorGate";
@@ -30,21 +31,27 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return (
-    <>
-      {isForening ? (
-        <>
-          <ForeningAktivator />
+  if (isForening) {
+    return (
+      <>
+        <ForeningAktivator />
+        <ForeningInloggningsGrind>
           <ForeningUppgifterGate />
           <ForeningVillkorGate />
           <ForeningSidTitel />
           <ForeningPlattformSync />
           <ForeningHeader />
-        </>
-      ) : (
-        <Header />
-      )}
-      {isForening ? <ForeningDataScope>{children}</ForeningDataScope> : children}
+          <ForeningDataScope>{children}</ForeningDataScope>
+          <Footer />
+        </ForeningInloggningsGrind>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Header />
+      {children}
       <Footer />
     </>
   );

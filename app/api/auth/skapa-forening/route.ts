@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { skapaForeningMedKonto } from "@/lib/auth/auth-tjanst";
+import { lasSession } from "@/lib/auth/session";
 import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 
 function basUrlFranRequest(req: Request): string {
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
       );
     }
 
+    const session = await lasSession();
     const resultat = await skapaForeningMedKonto({
       foreningId: body.foreningId.trim(),
       foreningsNamn: body.foreningsNamn.trim(),
@@ -54,6 +56,7 @@ export async function POST(req: Request) {
       skapareRoll: body.skapareRoll?.trim() || "Ordförande",
       villkorVersion: body.villkorVersion?.trim() ?? "",
       basUrl: basUrlFranRequest(req),
+      inloggadKontoId: session?.kontoId ?? null,
     });
 
     return NextResponse.json({

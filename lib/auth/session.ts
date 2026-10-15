@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import { lasAuthSecret } from "@/lib/auth/auth-secret";
 
 export const SESSION_COOKIE = "brf_session";
 const SESSION_TTL_SEKUNDER = 60 * 60 * 24 * 14; // 14 dagar
@@ -13,16 +14,8 @@ export type SessionPayload = {
   exp: number;
 };
 
-function authSecret(): string {
-  return (
-    process.env.AUTH_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    "brf-dev-secret-byt-i-produktion"
-  );
-}
-
 function signera(data: string): string {
-  return createHmac("sha256", authSecret()).update(data).digest("base64url");
+  return createHmac("sha256", lasAuthSecret()).update(data).digest("base64url");
 }
 
 export function skapaSessionToken(payload: Omit<SessionPayload, "exp">): string {
