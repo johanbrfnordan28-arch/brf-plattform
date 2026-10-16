@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad, prisma } from "@/lib/db";
 import { arProvoperiodUtgangen } from "@/lib/forening-avtal";
-<<<<<<< HEAD
-import { kravForeningBehorighet } from "@/lib/forening-sakerhetskopia-server";
-=======
 import { raderaForeningMedKonton } from "@/lib/forening-borttag-server";
->>>>>>> 1fdcc83 (feat: daglig gallring av inloggningar, intresseanmälningar och utgångna testföreningar)
+import { kravForeningBehorighet } from "@/lib/forening-sakerhetskopia-server";
 
 /**
  * Raderar förening på servern när prövoperioden gått ut utan tecknat avtal.

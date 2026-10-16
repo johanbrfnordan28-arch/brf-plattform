@@ -16,8 +16,8 @@ const funktioner = [
   },
   {
     emoji: "✍️",
-    titel: "Månadssignering",
-    text: "Entreprenören signerar när arbetet är utfört. Bara det höjer kvaliteten — det går inte att säga \"det skötte sig\" utan att stå för det.",
+    titel: "Kvittens per uppdrag",
+    text: "Entreprenören kvitterar när städning eller rondering är utförd. Bara det höjer kvaliteten — det går inte att säga \"det skötte sig\" utan att stå för det.",
   },
   {
     emoji: "🔍",
@@ -32,7 +32,7 @@ const funktioner = [
   {
     emoji: "📅",
     titel: "Schema per roll",
-    text: "Fastighetsskötsel och städ har egna scheman — styrelsen ser om någon månad uteblir innan problem växer.",
+    text: "Fastighetsskötsel och städ har egna scheman som föreningen kan lägga till och ta bort i. Styrelsen ser om ett uppdrag uteblir innan problem växer.",
   },
   {
     emoji: "🔗",
@@ -59,7 +59,7 @@ export default function RonderingPage() {
           Signering höjer kvaliteten
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Det räcker att entreprenören signerar varje månad — då skärps leveransen.
+          Det räcker att entreprenören kvitterar varje uppdrag — då skärps leveransen.
           Kombinerat med spårbar historik slipper styrelsen gissa om städningen eller
           ronderingen verkligen gjorts. Verktyget finns i er föreningssida efter{" "}
           <Link
