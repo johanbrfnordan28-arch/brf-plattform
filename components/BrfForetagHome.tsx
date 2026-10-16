@@ -725,10 +725,10 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   <ForeningPrisPanel variant="hubb" />
                 </div>
                 <Link
-                  href="/forening/uppgifter#avtal"
+                  href="/forening/teckna-avtal"
                   className="brf-knapp-gron mt-6 inline-flex px-5 py-2.5 text-sm"
                 >
-                  Godkänn avtal och bli kund
+                  Teckna avtal och bli kund
                 </Link>
                 <p className="mt-3 text-xs text-muted">
                   När avtalet är godkänt loggar ni in via «Logga in till er BRF»

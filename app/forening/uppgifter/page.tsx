@@ -49,7 +49,14 @@ export default function ForeningUppgifterPage() {
             loggat in. Bara du ser ditt eget lösenord.
           </li>
           <li>
-            <strong>Godkänn avtal</strong> — längst ned. Signera med BankID.
+            <strong>Teckna avtal</strong> —{" "}
+            <Link
+              href="/forening/teckna-avtal"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              öppna sidan Teckna avtal
+            </Link>{" "}
+            eller scrolla hit nedan. Två personer signerar med BankID.
             Prövoperiod 30 dagar utan uppsägningstid; därefter årsavtal 1 år med
             6 månaders uppsägning och KPI-justering. Utan tecknat avtal raderas
             föreningen efter prövoperioden.

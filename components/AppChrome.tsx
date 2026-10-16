@@ -9,6 +9,7 @@ import { ForeningInloggningsGrind } from "@/components/forening/ForeningInloggni
 import { ForeningPlattformSync } from "@/components/forening/ForeningPlattformSync";
 import { ForeningUppgifterGate } from "@/components/forening/ForeningUppgifterGate";
 import { ForeningVillkorGate } from "@/components/forening/ForeningVillkorGate";
+import { TecknaAvtalBaner } from "@/components/forening/TecknaAvtalBaner";
 import { Header } from "@/components/Header";
 import { usePathname } from "next/navigation";
 
@@ -41,6 +42,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <ForeningSidTitel />
           <ForeningPlattformSync />
           <ForeningHeader />
+          <TecknaAvtalBaner />
           <ForeningDataScope>{children}</ForeningDataScope>
           <Footer />
         </ForeningInloggningsGrind>

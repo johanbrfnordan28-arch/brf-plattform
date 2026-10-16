@@ -5,8 +5,13 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ForeningVaxlare } from "@/components/forening/ForeningVaxlare";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
-import { arAktivKundForening } from "@/lib/forening-kund";
-import { FORENING_AKTIV_EVENT, GRUNDMALL_NAMN } from "@/lib/forening-registry";
+import { arAktivKundForening, TECKNA_AVTAL_PATH } from "@/lib/forening-kund";
+import { arEgenTestForening } from "@/lib/forening-inloggning";
+import {
+  FORENING_AKTIV_EVENT,
+  GRUNDMALL_NAMN,
+  lasAktivForeningId,
+} from "@/lib/forening-registry";
 
 const nav = [
   { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
@@ -51,6 +56,7 @@ export function ForeningHeader() {
   const pathname = usePathname();
   const foreningsNamn = useAktivForeningsNamn();
   const [arKund, setArKund] = useState(false);
+  const [visaTecknaAvtal, setVisaTecknaAvtal] = useState(false);
   const [loggarUt, setLoggarUt] = useState(false);
   const initial =
     foreningsNamn === GRUNDMALL_NAMN
@@ -59,7 +65,9 @@ export function ForeningHeader() {
 
   useEffect(() => {
     function ladda() {
-      setArKund(arAktivKundForening());
+      const kund = arAktivKundForening();
+      setArKund(kund);
+      setVisaTecknaAvtal(arEgenTestForening(lasAktivForeningId()) && !kund);
     }
     ladda();
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
@@ -112,8 +120,16 @@ export function ForeningHeader() {
         </nav>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <ForeningVaxlare />
+          {visaTecknaAvtal && (
+            <Link
+              href={TECKNA_AVTAL_PATH}
+              className="brf-knapp-gron px-3 py-2 text-sm"
+            >
+              Teckna avtal
+            </Link>
+          )}
           <span className="hidden rounded-full border border-primary/30 bg-[#e2f0e6] px-3 py-1 text-xs font-medium text-primary-dark lg:inline-flex">
-            {arKund ? "Kund · er förening" : "Inloggad styrelse"}
+            {arKund ? "Kund · er förening" : "Testperiod"}
           </span>
           <Link
             href="/"

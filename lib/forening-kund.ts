@@ -31,6 +31,8 @@ import {
 
 export const KUND_LOGIN_PATH = "/kund-login";
 export const TEST_LOGIN_PATH = "/styrelse-login";
+/** Egen sida för att teckna årsavtal och bli kund. */
+export const TECKNA_AVTAL_PATH = "/forening/teckna-avtal";
 
 /** Visningsnamn på publika knappen (bättre än «befintlig kund»). */
 export const KUND_LOGIN_KNAPP_RUBRIK = "Logga in till er BRF";

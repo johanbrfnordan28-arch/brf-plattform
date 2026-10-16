@@ -7,6 +7,7 @@ import { skaTvingaTillForeningsuppgifter } from "@/lib/styrelse-kontakt";
 
 const UNDANTAG = [
   "/forening/uppgifter",
+  "/forening/teckna-avtal",
   "/forening/aktivera",
 ];
 
