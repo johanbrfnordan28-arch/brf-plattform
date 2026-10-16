@@ -10,6 +10,8 @@ export type StyrelseLedamot = {
   bankidKopplad: boolean;
   /** ISO-tidpunkt när BankID kopplades (tom om ej kopplad). */
   bankidKoppladTidpunkt: string;
+  /** Maskerat personnummer som BankID kopplades mot. */
+  personnummerMaskerat: string;
 };
 
 export const MAX_STYRELSE_LEDAMOTER = 10;
@@ -48,6 +50,10 @@ export function skapaTomStyrelseLedamot(
       typeof delvis?.bankidKoppladTidpunkt === "string"
         ? delvis.bankidKoppladTidpunkt
         : "",
+    personnummerMaskerat:
+      typeof delvis?.personnummerMaskerat === "string"
+        ? delvis.personnummerMaskerat
+        : "",
   };
 }
 
@@ -66,6 +72,10 @@ export function normaliseraStyrelseLedamoter(raw: unknown): StyrelseLedamot[] {
         bankidKoppladTidpunkt:
           typeof rad.bankidKoppladTidpunkt === "string"
             ? rad.bankidKoppladTidpunkt
+            : "",
+        personnummerMaskerat:
+          typeof rad.personnummerMaskerat === "string"
+            ? rad.personnummerMaskerat
             : "",
       }),
     );

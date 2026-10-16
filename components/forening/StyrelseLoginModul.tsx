@@ -190,6 +190,10 @@ function slaIhopForeningar(
               avtalBankidTidpunkt:
                 befintlig.avtalBankidTidpunkt || f.avtalBankidTidpunkt,
               avtalBankidNamn: befintlig.avtalBankidNamn || f.avtalBankidNamn,
+              avtalSignaturer:
+                befintlig.avtalBankidSignaturer?.length
+                  ? befintlig.avtalBankidSignaturer
+                  : f.avtalBankidSignaturer,
               skapadTidpunkt: befintlig.skapadTidpunkt || f.skapadTidpunkt,
             },
             befintlig,

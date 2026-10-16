@@ -1,25 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { BankIdAvtalSignering } from "@/components/bankid/BankIdAvtalSignering";
 import {
   demoStyrelseledamoter,
   formatDatum,
   formatTidpunkt,
   hamtaSpårbarhetForUpphandling,
   hamtaStyrelseBeslut,
+  harTecknatUpphandlingsavtal,
   harTillrackligaGodkannanden,
   kravStyrelseGodkannanden,
+  laggTillUpphandlingAvtalSignatur,
   lasUpphandlingLager,
   laggTillBeslutGodkannande,
   laggTillPubliceringsGodkannande,
   registreraMejlbeslut,
   registreraProtokollfort,
+  sattValtForetag,
   slutforStyrelsebeslut,
   sparaUpphandlingLager,
   type StyrelseBeslut,
   type StyrelseGodkannande,
   type UpphandlingsSpårbarhet,
 } from "@/components/upphandling/upphandling-lager";
+import { harTillrackligaBankIdSignaturer } from "@/lib/bankid-signering";
 
 type StyrelseGodkannandeSektionProps = {
   rubrik: string;
@@ -223,8 +228,10 @@ export function StyrelseBeslutSektion({
           Godkännande och dokumentation av beslut
         </h4>
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          Två ledamöter godkänner beslutet efter anbudsutvärdering. Registrera sedan
-          protokollfört och/eller mejlbeslut — allt sparas i spårbarhetsloggen.
+          Två ledamöter godkänner beslutet efter anbudsutvärdering. Därefter
+          tecknas avtalet med BankID: först två personer i valt företag, sedan
+          två personer i föreningen. Varje signering är knuten till
+          undertecknarens personnummer.
         </p>
       </div>
 
@@ -357,6 +364,14 @@ export function StyrelseBeslutSektion({
         </p>
       )}
 
+      {beslut.slutfort && (
+        <UpphandlingAvtalSignering
+          upphandlingId={upphandlingId}
+          beslut={beslut}
+          onUppdaterad={onUppdaterad}
+        />
+      )}
+
       {fel && (
         <p className="text-sm text-red-700" role="alert">
           {fel}
@@ -364,6 +379,116 @@ export function StyrelseBeslutSektion({
       )}
 
       <SpårbarhetsLogg rader={spårbarhet} />
+    </div>
+  );
+}
+
+function UpphandlingAvtalSignering({
+  upphandlingId,
+  beslut,
+  onUppdaterad,
+}: {
+  upphandlingId: string;
+  beslut: StyrelseBeslut;
+  onUppdaterad: () => void;
+}) {
+  const [foretagNamn, setForetagNamn] = useState(beslut.valtForetagNamn);
+  const [fel, setFel] = useState<string | null>(null);
+  const foretagKlart = harTillrackligaBankIdSignaturer(beslut.foretagSignaturer);
+  const avtalKlart = harTecknatUpphandlingsavtal(beslut);
+
+  function sparaForetag() {
+    const result = sattValtForetag(lasUpphandlingLager(), upphandlingId, foretagNamn);
+    if ("fel" in result) {
+      setFel(result.fel);
+      return;
+    }
+    sparaUpphandlingLager(result.lager);
+    setFel(null);
+    onUppdaterad();
+  }
+
+  function signera(signatur: Parameters<typeof laggTillUpphandlingAvtalSignatur>[2]) {
+    const result = laggTillUpphandlingAvtalSignatur(
+      lasUpphandlingLager(),
+      upphandlingId,
+      signatur,
+    );
+    if ("fel" in result) {
+      throw new Error(result.fel);
+    }
+    sparaUpphandlingLager(result.lager);
+    onUppdaterad();
+  }
+
+  return (
+    <div className="space-y-4 rounded-xl border-2 border-primary/20 bg-white p-4">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">
+          Teckna avtal med BankID
+        </p>
+        <h5 className="mt-1 text-sm font-semibold text-foreground">
+          Först företaget, sedan föreningen
+        </h5>
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          Två personer i valt företag signerar avtalet med BankID och
+          personnummer. Först därefter signerar två personer i föreningen.
+        </p>
+      </div>
+
+      <label className="block text-sm">
+        <span className="font-medium text-foreground">Valt företag</span>
+        <div className="mt-1 flex flex-wrap gap-2">
+          <input
+            type="text"
+            value={foretagNamn}
+            onChange={(e) => setForetagNamn(e.target.value)}
+            disabled={foretagKlart}
+            placeholder="Företagsnamn"
+            className="min-w-[220px] flex-1 rounded-lg border border-border px-3 py-2 text-sm"
+          />
+          {!foretagKlart && (
+            <button
+              type="button"
+              onClick={sparaForetag}
+              className="rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+            >
+              Spara företag
+            </button>
+          )}
+        </div>
+      </label>
+
+      {fel && (
+        <p className="text-sm text-red-700" role="alert">
+          {fel}
+        </p>
+      )}
+
+      <BankIdAvtalSignering
+        part="foretag"
+        partEtikett={beslut.valtForetagNamn || "valt företag"}
+        signaturer={beslut.foretagSignaturer}
+        disabled={!beslut.valtForetagNamn.trim()}
+        disabledOrsak="Ange och spara valt företag först."
+        onSignera={async (s) => signera(s)}
+      />
+
+      <BankIdAvtalSignering
+        part="forening"
+        partEtikett="föreningen"
+        signaturer={beslut.foreningAvtalSignaturer}
+        disabled={!foretagKlart}
+        disabledOrsak="Två personer i företaget måste signera med BankID innan föreningen kan signera."
+        onSignera={async (s) => signera(s)}
+      />
+
+      {avtalKlart && (
+        <p className="rounded-lg bg-[#eef6f0] px-3 py-2 text-sm font-medium text-primary-dark">
+          Avtalet med {beslut.valtForetagNamn} är tecknat — två BankID i
+          företaget och två i föreningen.
+        </p>
+      )}
     </div>
   );
 }

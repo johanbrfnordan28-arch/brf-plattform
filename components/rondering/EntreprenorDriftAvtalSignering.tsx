@@ -11,7 +11,13 @@ import {
 import { genereraAvtalstext } from "@/components/rondering/drift-avtal-text";
 import type { DriftAvtal } from "@/components/rondering/drift-avtal-typer";
 import { SigneringSchemaPunktLista } from "@/components/rondering/SigneringSchemaPunktLista";
-import { godkannAvtalIState, hamtaAvtalViaToken } from "@/lib/drift-tjanst-logik";
+import { hamtaAvtalViaToken, signeraDriftAvtalIState } from "@/lib/drift-tjanst-logik";
+import { BankIdAvtalSignering } from "@/components/bankid/BankIdAvtalSignering";
+import {
+  harTillrackligaBankIdSignaturer,
+  normaliseraBankIdSignaturer,
+  type BankIdSignatur,
+} from "@/lib/bankid-signering";
 import { signeringRollInfo } from "@/components/rondering/signering";
 import {
   GRUNDMALL_NAMN,
@@ -29,9 +35,7 @@ export function EntreprenorDriftAvtalSignering() {
 
   const [avtal, setAvtal] = useState<DriftAvtal | null>(null);
   const [laddar, setLaddar] = useState(true);
-  const [namn, setNamn] = useState("");
   const [fel, setFel] = useState<string | null>(null);
-  const [bankidSteg, setBankidSteg] = useState<"idle" | "pagar" | "klar">("idle");
 
   useEffect(() => {
     let aktiv = true;
@@ -64,33 +68,31 @@ export function EntreprenorDriftAvtalSignering() {
     };
   }, [foreningId, token]);
 
-  async function signera() {
-    if (!avtal || !namn.trim()) {
-      setFel("Ange namn för BankID-signering.");
-      return;
-    }
+  async function signeraForetag(
+    signatur: BankIdSignatur,
+    personnummerKlartext: string,
+  ) {
     setFel(null);
-    setBankidSteg("pagar");
-    await new Promise((r) => window.setTimeout(r, 1800));
-    const lokal = godkannAvtalIState(
+    const lokal = signeraDriftAvtalIState(
       lasDriftState(foreningId),
       token,
-      namn.trim(),
+      signatur,
     );
-    if (lokal.ok) {
-      sparaDriftState(lokal.state, foreningId, { synkaServer: false });
-      setAvtal(lokal.avtal);
+    if (!lokal.ok) {
+      throw new Error(lokal.fel);
     }
+    sparaDriftState(lokal.state, foreningId, { synkaServer: false });
+    setAvtal(lokal.avtal);
     const remote = await skickaPublikDriftAtgard({
       foreningId,
       token,
       atgard: "godkann-avtal",
-      namn: namn.trim(),
+      namn: signatur.namn,
+      personnummer: personnummerKlartext,
+      part: "foretag",
     });
-    setBankidSteg("klar");
-    if ("fel" in remote && !lokal.ok) {
+    if ("fel" in remote) {
       setFel(remote.fel);
-      setBankidSteg("idle");
     }
   }
 
@@ -117,6 +119,9 @@ export function EntreprenorDriftAvtalSignering() {
 
   const info = signeringRollInfo[avtal.roll];
   const godkant = avtal.status === "godkant";
+  const foretagSignaturer = normaliseraBankIdSignaturer(avtal.foretagSignaturer);
+  const foreningSignaturer = normaliseraBankIdSignaturer(avtal.foreningSignaturer);
+  const foretagKlart = harTillrackligaBankIdSignaturer(foretagSignaturer);
 
   return (
     <main className="mx-auto max-w-lg px-4 py-10 sm:py-16">
@@ -144,20 +149,18 @@ export function EntreprenorDriftAvtalSignering() {
               valdaIds={new Set(avtal.schemaPunkter.map((p) => p.id))}
               onToggle={() => {}}
               readonly
-              oppnaAlla
+              forstaOppen
+              enITaget
             />
           </div>
         </div>
 
         {godkant ? (
           <div className="mt-6 rounded-xl border border-border bg-background p-4">
-            <p className="font-semibold text-primary-dark">Avtalet är godkänt</p>
+            <p className="font-semibold text-primary-dark">Avtalet är tecknat</p>
             <p className="mt-2 text-sm text-foreground">
-              {avtal.godkantNamn} ·{" "}
-              {avtal.godkantTidpunkt
-                ? new Date(avtal.godkantTidpunkt).toLocaleString("sv-SE")
-                : ""}{" "}
-              · BankID
+              Två personer i företaget och två i föreningen har signerat med
+              BankID.
             </p>
             <p className="mt-2 text-xs text-muted">
               Styrelsen skickar en kvittenslänk för varje uppdrag. Du kan stänga
@@ -165,38 +168,30 @@ export function EntreprenorDriftAvtalSignering() {
             </p>
           </div>
         ) : (
-          <>
-            <label className="mt-6 block">
-              <span className="text-sm font-medium text-foreground">
-                Namn vid BankID-signering
-              </span>
-              <input
-                type="text"
-                value={namn}
-                onChange={(e) => setNamn(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              />
-            </label>
+          <div className="mt-6 space-y-4">
+            <BankIdAvtalSignering
+              part="foretag"
+              partEtikett={avtal.entreprenorNamn || "företaget"}
+              signaturer={foretagSignaturer}
+              onSignera={signeraForetag}
+            />
+            {foretagKlart && (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                Företagets två BankID-signaturer är klara. Nu ska två personer i
+                föreningen signera avtalet.
+              </p>
+            )}
+            {foreningSignaturer.length > 0 && (
+              <p className="text-sm text-muted">
+                Föreningen har {foreningSignaturer.length} av 2 signaturer.
+              </p>
+            )}
             {fel && (
-              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
                 {fel}
               </p>
             )}
-            <button
-              type="button"
-              disabled={!namn.trim() || bankidSteg === "pagar"}
-              onClick={() => void signera()}
-              className="mt-4 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
-            >
-              {bankidSteg === "pagar"
-                ? "Öppnar BankID…"
-                : "Godkänn avtalet med BankID"}
-            </button>
-            <p className="mt-2 text-xs text-muted">
-              Demo: simulerad BankID tills riktig e-legitimation kopplas för
-              dokumentsignering.
-            </p>
-          </>
+          </div>
         )}
       </div>
     </main>

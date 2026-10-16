@@ -8,6 +8,13 @@ import {
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { hamtaAktivForeningsNamn } from "@/lib/forening-registry";
+import {
+  BANKID_KRAV_SIGNATURER,
+  harTillrackligaBankIdSignaturer,
+  laggTillBankIdSignatur,
+  normaliseraBankIdSignaturer,
+  type BankIdSignatur,
+} from "@/lib/bankid-signering";
 
 const UPPHANDLING_BASE = "brf-upphandling-lager";
 
@@ -48,7 +55,10 @@ export type SpårbarhetTyp =
   | "godkannande_beslut"
   | "protokollfort"
   | "mejlbeslut"
-  | "beslut_slutfort";
+  | "beslut_slutfort"
+  | "avtal_foretag_signatur"
+  | "avtal_forening_signatur"
+  | "avtal_tecknat";
 
 export type UpphandlingsSpårbarhet = {
   id: string;
@@ -71,6 +81,12 @@ export type StyrelseBeslut = {
   mejlReferens: string;
   slutfort: boolean;
   slutfortTidpunkt?: string;
+  /** Företag som tilldelats avtalet. */
+  valtForetagNamn: string;
+  /** Två personer i valt företag signerar först. */
+  foretagSignaturer: BankIdSignatur[];
+  /** Därefter två personer i föreningen. */
+  foreningAvtalSignaturer: BankIdSignatur[];
 };
 
 export type PubliceradUpphandling = {
@@ -144,6 +160,9 @@ export function skapaTomtStyrelseBeslut(upphandlingId: string): StyrelseBeslut {
     mejlDatum: "",
     mejlReferens: "",
     slutfort: false,
+    valtForetagNamn: "",
+    foretagSignaturer: [],
+    foreningAvtalSignaturer: [],
   };
 }
 
@@ -167,6 +186,12 @@ function normaliseraBeslut(raw?: Partial<StyrelseBeslut>, upphandlingId?: string
     ...raw,
     upphandlingId: raw.upphandlingId ?? upphandlingId ?? "",
     godkannanden: normaliseraGodkannanden(raw.godkannanden),
+    valtForetagNamn:
+      typeof raw.valtForetagNamn === "string" ? raw.valtForetagNamn : "",
+    foretagSignaturer: normaliseraBankIdSignaturer(raw.foretagSignaturer),
+    foreningAvtalSignaturer: normaliseraBankIdSignaturer(
+      raw.foreningAvtalSignaturer,
+    ),
   };
 }
 
@@ -465,6 +490,91 @@ export function slutforStyrelsebeslut(
   });
 
   return { lager: nytt };
+}
+
+export function sattValtForetag(
+  lager: UpphandlingLager,
+  upphandlingId: string,
+  namn: string,
+): { lager: UpphandlingLager } | { fel: string } {
+  const beslut = hamtaStyrelseBeslut(lager, upphandlingId);
+  if (!beslut.slutfort) {
+    return { fel: "Lås styrelsebeslutet innan avtalet tecknas." };
+  }
+  const trim = namn.trim();
+  if (!trim) return { fel: "Ange namn på valt företag." };
+  if (harTillrackligaBankIdSignaturer(beslut.foretagSignaturer)) {
+    return { fel: "Företaget har redan börjat signera — namnet kan inte ändras." };
+  }
+  return {
+    lager: uppdateraStyrelseBeslut(lager, upphandlingId, {
+      valtForetagNamn: trim,
+    }),
+  };
+}
+
+export function laggTillUpphandlingAvtalSignatur(
+  lager: UpphandlingLager,
+  upphandlingId: string,
+  signatur: BankIdSignatur,
+): { lager: UpphandlingLager } | { fel: string } {
+  const beslut = hamtaStyrelseBeslut(lager, upphandlingId);
+  if (!beslut.slutfort) {
+    return { fel: "Lås styrelsebeslutet innan avtalet tecknas med BankID." };
+  }
+  if (!beslut.valtForetagNamn.trim()) {
+    return { fel: "Ange valt företag innan signering." };
+  }
+
+  if (signatur.part === "foretag") {
+    const tillagd = laggTillBankIdSignatur(beslut.foretagSignaturer, signatur);
+    if (!tillagd.ok) return { fel: tillagd.fel };
+    let nytt = uppdateraStyrelseBeslut(lager, upphandlingId, {
+      foretagSignaturer: tillagd.signaturer,
+    });
+    nytt = loggaHandelse(nytt, {
+      upphandlingId,
+      typ: "avtal_foretag_signatur",
+      av: signatur.namn,
+      beskrivning: `${signatur.namn} (${signatur.personnummerMaskerat}) signerade för ${beslut.valtForetagNamn} med BankID (${tillagd.signaturer.length} av ${BANKID_KRAV_SIGNATURER}).`,
+    });
+    return { lager: nytt };
+  }
+
+  if (signatur.part === "forening") {
+    if (!harTillrackligaBankIdSignaturer(beslut.foretagSignaturer)) {
+      return {
+        fel: "Två personer i valt företag måste signera med BankID innan föreningen kan signera.",
+      };
+    }
+    const tillagd = laggTillBankIdSignatur(
+      beslut.foreningAvtalSignaturer,
+      signatur,
+    );
+    if (!tillagd.ok) return { fel: tillagd.fel };
+    let nytt = uppdateraStyrelseBeslut(lager, upphandlingId, {
+      foreningAvtalSignaturer: tillagd.signaturer,
+    });
+    const tecknat = harTillrackligaBankIdSignaturer(tillagd.signaturer);
+    nytt = loggaHandelse(nytt, {
+      upphandlingId,
+      typ: tecknat ? "avtal_tecknat" : "avtal_forening_signatur",
+      av: signatur.namn,
+      beskrivning: tecknat
+        ? `Avtalet med ${beslut.valtForetagNamn} är tecknat med BankID av två personer i företaget och två i föreningen.`
+        : `${signatur.namn} (${signatur.personnummerMaskerat}) signerade för föreningen med BankID (${tillagd.signaturer.length} av ${BANKID_KRAV_SIGNATURER}).`,
+    });
+    return { lager: nytt };
+  }
+
+  return { fel: "Okänd undertecknande part." };
+}
+
+export function harTecknatUpphandlingsavtal(beslut: StyrelseBeslut): boolean {
+  return (
+    harTillrackligaBankIdSignaturer(beslut.foretagSignaturer) &&
+    harTillrackligaBankIdSignaturer(beslut.foreningAvtalSignaturer)
+  );
 }
 
 export function formatDatum(iso: string): string {

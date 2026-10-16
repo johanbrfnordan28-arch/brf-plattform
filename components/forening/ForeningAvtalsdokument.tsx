@@ -10,6 +10,7 @@ import {
   formatAvtalsDatum,
   type AvtalsPart,
 } from "@/lib/forening-avtal";
+import { formateraBankIdSignatur, type BankIdSignatur } from "@/lib/bankid-signering";
 import { LEVERANTOR, leverantorPostadress } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 
@@ -21,6 +22,7 @@ type Props = {
   signerat?: {
     namn: string;
     tidpunkt: string;
+    signaturer?: BankIdSignatur[];
   } | null;
 };
 
@@ -162,15 +164,27 @@ export function ForeningAvtalsdokument({
         </aside>
 
         {signerat?.tidpunkt ? (
-          <p className="rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm text-foreground">
-            Signerat med BankID
-            {signerat.namn ? ` av ${signerat.namn}` : ""} den{" "}
-            {formatAvtalsDatum(signerat.tidpunkt)}.
-          </p>
+          <div className="rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm text-foreground">
+            <p>
+              Signerat med BankID av två företrädare den{" "}
+              {formatAvtalsDatum(signerat.tidpunkt)}.
+            </p>
+            {signerat.signaturer && signerat.signaturer.length > 0 ? (
+              <ul className="mt-2 space-y-1 text-muted">
+                {signerat.signaturer.map((s) => (
+                  <li key={s.personnummerNyckel}>
+                    {formateraBankIdSignatur(s)}
+                  </li>
+                ))}
+              </ul>
+            ) : signerat.namn ? (
+              <p className="mt-1 text-muted">{signerat.namn}</p>
+            ) : null}
+          </div>
         ) : (
           <p className="text-xs text-muted">
-            Avtalet blir bindande när behörig företrädare signerar med BankID
-            nedan.
+            Avtalet blir bindande när två behöriga företrädare signerar med
+            BankID — personnummer på den som ska signera anges i BankID.
           </p>
         )}
       </div>

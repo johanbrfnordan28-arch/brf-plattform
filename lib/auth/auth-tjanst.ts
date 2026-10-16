@@ -28,6 +28,7 @@ import {
   arGiltigStyrelseRoll,
 } from "@/lib/styrelse-ledamot";
 import {
+  avtalSignaturerTillJson,
   hashAccessNyckel,
   skapaAccessNyckel,
   normaliseraNamnNyckel,
@@ -36,6 +37,17 @@ import {
 } from "@/lib/forening-server";
 import { markeraStyrelsemassaLeadSomSkapadeTest } from "@/lib/styrelsemassa-lead-server";
 import { VILLKOR_VERSION } from "@/lib/juridik";
+import {
+  harTillrackligaBankIdSignaturer,
+  laggTillBankIdSignatur,
+  normaliseraBankIdSignaturer,
+  sammanfattaBankIdSignaturer,
+} from "@/lib/bankid-signering";
+import { personnummerTillNyckel } from "@/lib/auth/personnummer-nyckel";
+import {
+  arGiltigtPersonnummer,
+  maskeraPersonnummer,
+} from "@/lib/personnummer-format";
 
 export type SkapaForeningAuthInput = {
   foreningId: string;
@@ -979,9 +991,17 @@ export async function aterstallLosenordMedToken(opts: {
 export async function signeraAvtalMedBankId(opts: {
   foreningId: string;
   signerNamn: string;
+  personnummer: string;
 }): Promise<ForeningServerDto> {
   const namn = opts.signerNamn.trim();
   if (!namn) throw new Error("Ange namn för BankID-signering.");
+  if (!arGiltigtPersonnummer(opts.personnummer)) {
+    throw new Error("Ange ett giltigt personnummer för den som ska signera.");
+  }
+  const personnummerNyckel = personnummerTillNyckel(opts.personnummer);
+  if (!personnummerNyckel) {
+    throw new Error("Kunde inte läsa personnummer från BankID.");
+  }
 
   const rad = await prisma.forening.findUnique({
     where: { id: opts.foreningId },
@@ -991,13 +1011,28 @@ export async function signeraAvtalMedBankId(opts: {
     throw new Error("Fyll i e-post innan avtalssignering.");
   }
 
+  const tillagd = laggTillBankIdSignatur(
+    normaliseraBankIdSignaturer(rad.avtalSignaturer),
+    {
+      namn,
+      personnummerMaskerat: maskeraPersonnummer(opts.personnummer),
+      personnummerNyckel,
+      tidpunkt: new Date().toISOString(),
+      part: "kund",
+    },
+  );
+  if (!tillagd.ok) throw new Error(tillagd.fel);
+
+  const klar = harTillrackligaBankIdSignaturer(tillagd.signaturer);
+  const nu = new Date();
   const uppdaterad = await prisma.forening.update({
     where: { id: opts.foreningId },
     data: {
-      avtalGodkant: true,
-      avtalGodkantTidpunkt: new Date(),
-      avtalBankidTidpunkt: new Date(),
-      avtalBankidNamn: namn,
+      avtalGodkant: klar ? true : rad.avtalGodkant,
+      avtalGodkantTidpunkt: klar ? nu : rad.avtalGodkantTidpunkt,
+      avtalBankidTidpunkt: nu,
+      avtalBankidNamn: sammanfattaBankIdSignaturer(tillagd.signaturer),
+      avtalSignaturer: avtalSignaturerTillJson(tillagd.signaturer),
     },
   });
 

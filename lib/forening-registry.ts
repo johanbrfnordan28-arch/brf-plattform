@@ -15,6 +15,10 @@ import {
   safeSetLocalStorage,
 } from "@/lib/localStorage";
 import {
+  normaliseraBankIdSignaturer,
+  type BankIdSignatur,
+} from "@/lib/bankid-signering";
+import {
   normaliseraStyrelseLedamoter,
   type StyrelseLedamot,
 } from "@/lib/styrelse-ledamot";
@@ -68,6 +72,8 @@ export type ForeningProfil = {
   /** BankID-signering av avtal. */
   avtalBankidTidpunkt: string;
   avtalBankidNamn: string;
+  /** Två undertecknare med BankID + personnummer. */
+  avtalBankidSignaturer: BankIdSignatur[];
 };
 
 /** Säkerställer nya fält för profiler sparade innan avtal/kund fanns. */
@@ -102,6 +108,7 @@ export function normaliseraForeningProfil(
         : "",
     avtalBankidNamn:
       typeof raw.avtalBankidNamn === "string" ? raw.avtalBankidNamn : "",
+    avtalBankidSignaturer: normaliseraBankIdSignaturer(raw.avtalBankidSignaturer),
   };
 }
 

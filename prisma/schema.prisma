@@ -33,6 +33,8 @@ model Forening {
   /// BankID-signering av avtal (ISO när signering slutfördes).
   avtalBankidTidpunkt  DateTime?
   avtalBankidNamn      String    @default("")
+  /// Två BankID-signaturer: [{ namn, personnummerMaskerat, personnummerNyckel, tidpunkt, part }]
+  avtalSignaturer      Json?
   /// Villkor + personuppgiftsbiträdesavtal som godkändes när föreningen skapades.
   villkorVersion          String    @default("")
   villkorGodkantTidpunkt  DateTime?

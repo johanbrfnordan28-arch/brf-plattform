@@ -5,11 +5,17 @@ import {
   sparaDriftTjanstState,
 } from "@/lib/drift-tjanst-server";
 import {
-  godkannAvtalIState,
   hamtaAvtalViaToken,
   hamtaUppdragViaToken,
   kvitteraUppdragIState,
+  signeraDriftAvtalIState,
 } from "@/lib/drift-tjanst-logik";
+import { personnummerTillNyckel } from "@/lib/auth/personnummer-nyckel";
+import {
+  arGiltigtPersonnummer,
+  maskeraPersonnummer,
+} from "@/lib/personnummer-format";
+import type { BankIdPart } from "@/lib/bankid-signering";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +74,8 @@ export async function POST(
       token?: string;
       atgard?: string;
       namn?: string;
+      personnummer?: string;
+      part?: BankIdPart;
       metod?: "bankid" | "namn";
       genomfordaPunktIds?: string[];
     };
@@ -86,7 +94,29 @@ export async function POST(
     }
 
     if (atgard === "godkann-avtal") {
-      const resultat = godkannAvtalIState(state, token, namn);
+      const pnr = body.personnummer?.trim() ?? "";
+      if (!arGiltigtPersonnummer(pnr)) {
+        return NextResponse.json(
+          { fel: "Ange ett giltigt personnummer för den som ska signera." },
+          { status: 400 },
+        );
+      }
+      const nyckel = personnummerTillNyckel(pnr);
+      if (!nyckel) {
+        return NextResponse.json(
+          { fel: "Kunde inte läsa personnummer från BankID." },
+          { status: 400 },
+        );
+      }
+      const part: BankIdPart =
+        body.part === "forening" ? "forening" : "foretag";
+      const resultat = signeraDriftAvtalIState(state, token, {
+        namn,
+        personnummerMaskerat: maskeraPersonnummer(pnr),
+        personnummerNyckel: nyckel,
+        tidpunkt: new Date().toISOString(),
+        part,
+      });
       if (!resultat.ok) {
         return NextResponse.json({ fel: resultat.fel }, { status: 400 });
       }

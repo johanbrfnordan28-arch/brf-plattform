@@ -31,6 +31,13 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import { BankIdAvtalSignering } from "@/components/bankid/BankIdAvtalSignering";
+import { signeraDriftAvtalIState } from "@/lib/drift-tjanst-logik";
+import {
+  harTillrackligaBankIdSignaturer,
+  normaliseraBankIdSignaturer,
+  type BankIdSignatur,
+} from "@/lib/bankid-signering";
 
 const roller: SigneringRoll[] = ["fastighetsskotare", "stadning"];
 
@@ -331,6 +338,30 @@ export function DriftOffertAvtalPanel() {
           {avtalForRoll.map((avtal) => {
             const lank = skapaAvtalLank(avtal);
             const godkant = avtal.status === "godkant";
+            const foretagSignaturer = normaliseraBankIdSignaturer(
+              avtal.foretagSignaturer,
+            );
+            const foreningSignaturer = normaliseraBankIdSignaturer(
+              avtal.foreningSignaturer,
+            );
+            const foretagKlart = harTillrackligaBankIdSignaturer(foretagSignaturer);
+            const statusTextAvtal = godkant
+              ? "Tecknat med BankID (2+2)"
+              : foretagKlart
+                ? "Väntar på föreningens två BankID"
+                : "Väntar på företagets två BankID";
+
+            function signeraForening(signatur: BankIdSignatur) {
+              const lokal = signeraDriftAvtalIState(
+                lasDriftState(),
+                avtal.token,
+                signatur,
+              );
+              if (!lokal.ok) throw new Error(lokal.fel);
+              sparaDriftState(lokal.state);
+              uppdatera();
+            }
+
             return (
               <li
                 key={avtal.id}
@@ -353,9 +384,7 @@ export function DriftOffertAvtalPanel() {
                         : "bg-amber-50 text-amber-900"
                     }`}
                   >
-                    {godkant
-                      ? `Godkänt med BankID${avtal.godkantNamn ? ` av ${avtal.godkantNamn}` : ""}`
-                      : "Väntar på godkännande"}
+                    {statusTextAvtal}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -378,6 +407,18 @@ export function DriftOffertAvtalPanel() {
                   </a>
                 </div>
                 <p className="mt-2 break-all text-xs text-muted">{lank}</p>
+                {!godkant && (
+                  <div className="mt-4">
+                    <BankIdAvtalSignering
+                      part="forening"
+                      partEtikett="föreningen"
+                      signaturer={foreningSignaturer}
+                      disabled={!foretagKlart}
+                      disabledOrsak="Två personer i företaget måste signera med BankID först. Skicka avtalslänken till entreprenören."
+                      onSignera={async (s) => signeraForening(s)}
+                    />
+                  </div>
+                )}
               </li>
             );
           })}

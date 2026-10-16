@@ -43,7 +43,7 @@ export function genereraOffertunderlag(opts: {
     `Datum: ${new Date().toLocaleDateString("sv-SE")}`,
     "",
     "Schemat nedan är bindande underlag för vad som ska utföras vid varje uppdrag.",
-    "När ni tilldelas avtalet godkänner ni det med BankID. Varje utfört uppdrag kvitteras därefter.",
+    "När ni tilldelas avtalet signerar två personer i företaget med BankID (personnummer på undertecknaren). Därefter signerar två personer i föreningen. Varje utfört uppdrag kvitteras därefter.",
     "",
     opts.extraMeddelande?.trim() ? opts.extraMeddelande.trim() : "",
     opts.extraMeddelande?.trim() ? "" : "",
@@ -73,7 +73,7 @@ export function genereraAvtalstext(
     avtal.kravBankIdKvittens
       ? "Varje utfört uppdrag ska kvitteras med BankID."
       : "Varje utfört uppdrag ska kvitteras. Föreningen kräver inte BankID vid kvittens.",
-    "Avtalet godkänns av entreprenören med BankID.",
+    "Avtalet tecknas med BankID: först två personer i företaget, därefter två personer i föreningen. Varje BankID-signering är knuten till undertecknarens personnummer.",
     "",
     avtal.offertMeddelande ? avtal.offertMeddelande : "",
     avtal.offertMeddelande ? "" : "",

@@ -91,7 +91,7 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
         `Kund: ${namn}${org ? `, org.nr ${org}` : ""}${
           part.ort?.trim() ? `, ${part.ort.trim()}` : ""
         } (nedan »Föreningen«).`,
-        "Avtalet tecknas av behörig företrädare för Föreningen och signeras med BankID.",
+        "Avtalet tecknas av två behöriga företrädare för Föreningen och signeras med BankID. Varje BankID-signering är knuten till undertecknarens personnummer.",
       ],
     },
     {
@@ -144,7 +144,7 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
     {
       rubrik: "8. Signering",
       punkter: [
-        "Avtalet blir bindande när behörig företrädare för Föreningen signerar med BankID.",
+        "Avtalet blir bindande när två behöriga företrädare för Föreningen har signerat med BankID, vardera med sitt personnummer.",
         `Avtalet gäller för ${namn} och kan inte överlåtas utan Leverantörens skriftliga medgivande.`,
       ],
     },
