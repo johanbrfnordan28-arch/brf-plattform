@@ -15,10 +15,7 @@ import {
   RonderingChecklistaVal,
 } from "@/components/rondering/RonderingChecklista";
 import { RonderingChecklistaAnpassa } from "@/components/rondering/RonderingChecklistaAnpassa";
-import {
-  RonderingChecklistaUtskrift,
-  skrivUtChecklista,
-} from "@/components/rondering/RonderingChecklistaUtskrift";
+import { skrivUtChecklista } from "@/components/rondering/RonderingChecklistaUtskrift";
 import { RonderingForeningEgenskaper } from "@/components/rondering/RonderingForeningEgenskaper";
 import { RonderingAvvikelser } from "@/components/rondering/RonderingAvvikelser";
 import { hittaEffektivPunktText } from "@/components/rondering/checklist-effektiv";
@@ -30,8 +27,6 @@ import {
   type RonderingAvvikelse,
   type RonderingState,
 } from "@/components/rondering/rondering-lager";
-
-const UTSKRIFT_ID = "rondering-checklista-utskrift";
 
 type PendingAvvikelse = {
   kategori: AvvikelseKategori;
@@ -211,7 +206,15 @@ export function RonderingModul() {
             </select>
             <button
               type="button"
-              onClick={() => skrivUtChecklista(UTSKRIFT_ID)}
+              onClick={() =>
+                skrivUtChecklista({
+                  typer: utskriftsTyper,
+                  egenskaper: state.egenskaper,
+                  anpassning,
+                  klaraPunkter: state.klaraPunkter,
+                  foreningNamn,
+                })
+              }
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
             >
               Skriv ut / PDF
@@ -235,6 +238,7 @@ export function RonderingModul() {
         />
 
         <RonderingChecklista
+          key={aktivChecklista}
           typ={aktivChecklista}
           egenskaper={state.egenskaper}
           anpassning={anpassning}
@@ -263,14 +267,6 @@ export function RonderingModul() {
         />
       </section>
 
-      <RonderingChecklistaUtskrift
-        utskriftsId={UTSKRIFT_ID}
-        typer={utskriftsTyper}
-        egenskaper={state.egenskaper}
-        anpassning={anpassning}
-        klaraPunkter={state.klaraPunkter}
-        foreningNamn={foreningNamn}
-      />
     </div>
   );
 }

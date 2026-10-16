@@ -1,8 +1,12 @@
 import { createHash, randomBytes } from "crypto";
-import type { Forening } from "@prisma/client";
+import type { Forening, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { kastaOmForeningBorttagen } from "@/lib/forening-borttag-server";
 import { matcharForeningsNamn } from "@/lib/forening-namn-match";
+import {
+  normaliseraBankIdSignaturer,
+  type BankIdSignatur,
+} from "@/lib/bankid-signering";
 
 export type ForeningServerDto = {
   id: string;
@@ -18,6 +22,7 @@ export type ForeningServerDto = {
   avtalGodkantTidpunkt: string;
   avtalBankidTidpunkt: string;
   avtalBankidNamn: string;
+  avtalSignaturer: BankIdSignatur[];
   skapadTidpunkt: string;
 };
 
@@ -88,8 +93,15 @@ export function tillDto(rad: Forening): ForeningServerDto {
       ? rad.avtalBankidTidpunkt.toISOString()
       : "",
     avtalBankidNamn: rad.avtalBankidNamn ?? "",
+    avtalSignaturer: normaliseraBankIdSignaturer(rad.avtalSignaturer),
     skapadTidpunkt: rad.skapadTidpunkt.toISOString(),
   };
+}
+
+export function avtalSignaturerTillJson(
+  signaturer: BankIdSignatur[],
+): Prisma.InputJsonValue {
+  return signaturer as unknown as Prisma.InputJsonValue;
 }
 
 export async function skapaForeningPaServer(

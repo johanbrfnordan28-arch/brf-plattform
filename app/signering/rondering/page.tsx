@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { EntreprenorRonderingSignering } from "@/components/rondering/EntreprenorRonderingSignering";
 
 export const metadata: Metadata = {
-  title: "Månadssignering — rondering och städ",
-  description: "Signering för entreprenör — endast aktuellt ronderings- eller städdokument.",
+  title: "Kvittens av uppdrag — rondering och städ",
+  description: "Kvittens för entreprenör — endast aktuellt ronderings- eller städuppdrag.",
   robots: { index: false, follow: false },
 };
 

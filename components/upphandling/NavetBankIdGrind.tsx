@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import {
+  arGiltigtPersonnummer,
+  maskeraPersonnummer,
+  personnummerFelmeddelande,
+} from "@/lib/personnummer-format";
 
 const SESSION_KEY = "brf-navet-upphandling-bankid";
 
@@ -24,15 +29,23 @@ export function NavetBankIdGrind({
   const [hydrated, setHydrated] = useState(false);
   const [steg, setSteg] = useState<BankidSteg>("idle");
   const [namn, setNamn] = useState("");
+  const [personnummer, setPersonnummer] = useState("");
+  const [fel, setFel] = useState<string | null>(null);
+  const [maskeratPnr, setMaskeratPnr] = useState("");
 
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as { namn?: string; ok?: boolean };
+        const parsed = JSON.parse(raw) as {
+          namn?: string;
+          ok?: boolean;
+          personnummerMaskerat?: string;
+        };
         if (parsed.ok) {
           setInloggad(true);
           setNamn(parsed.namn ?? "");
+          setMaskeratPnr(parsed.personnummerMaskerat ?? "");
         }
       }
     } catch {
@@ -43,10 +56,23 @@ export function NavetBankIdGrind({
 
   function loggaIn() {
     if (!namn.trim()) return;
+    const pnrFel = personnummerFelmeddelande(personnummer);
+    if (pnrFel || !arGiltigtPersonnummer(personnummer)) {
+      setFel(pnrFel ?? "Ange personnummer på den som ska identifiera sig.");
+      return;
+    }
+    setFel(null);
     setSteg("pågår");
+    const maskerat = maskeraPersonnummer(personnummer);
     window.setTimeout(() => {
-      const sparad = { ok: true, namn: namn.trim(), tid: new Date().toISOString() };
+      const sparad = {
+        ok: true,
+        namn: namn.trim(),
+        personnummerMaskerat: maskerat,
+        tid: new Date().toISOString(),
+      };
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(sparad));
+      setMaskeratPnr(maskerat);
       setInloggad(true);
       setSteg("klar");
       window.setTimeout(() => setSteg("idle"), 1200);
@@ -77,7 +103,7 @@ export function NavetBankIdGrind({
           Demo: simulerad BankID-inloggning (ingen riktig e-legitimation ännu).
         </p>
         <label className="mt-4 block text-sm">
-          <span className="font-medium text-foreground">Namn (demo)</span>
+          <span className="font-medium text-foreground">Namn</span>
           <input
             value={namn}
             onChange={(e) => setNamn(e.target.value)}
@@ -86,9 +112,27 @@ export function NavetBankIdGrind({
             disabled={steg === "pågår"}
           />
         </label>
+        <label className="mt-3 block text-sm">
+          <span className="font-medium text-foreground">
+            Personnummer på den som ska identifiera sig
+          </span>
+          <input
+            value={personnummer}
+            onChange={(e) => setPersonnummer(e.target.value)}
+            className="mt-1 w-full max-w-md rounded-lg border border-border bg-white px-3 py-2"
+            placeholder="ÅÅÅÅMMDD-XXXX"
+            inputMode="numeric"
+            disabled={steg === "pågår"}
+          />
+        </label>
+        {fel && (
+          <p className="mt-2 text-sm text-red-700" role="alert">
+            {fel}
+          </p>
+        )}
         <button
           type="button"
-          disabled={!namn.trim() || steg === "pågår"}
+          disabled={!namn.trim() || !personnummer.trim() || steg === "pågår"}
           onClick={loggaIn}
           className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
         >
@@ -111,6 +155,7 @@ export function NavetBankIdGrind({
             <>
               {" "}
               · <span className="font-medium">{namn}</span>
+              {maskeratPnr ? ` · ${maskeratPnr}` : ""}
             </>
           ) : null}
         </p>

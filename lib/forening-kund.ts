@@ -17,6 +17,12 @@ import {
   taBortForeningFranRegistryOchLagring,
   type ForeningProfil,
 } from "@/lib/forening-registry";
+import {
+  harTillrackligaBankIdSignaturer,
+  laggTillBankIdSignatur,
+  sammanfattaBankIdSignaturer,
+  type BankIdSignatur,
+} from "@/lib/bankid-signering";
 import { arProvoperiodUtgangen } from "@/lib/forening-avtal";
 import {
   arStyrelseKontaktKomplett,
@@ -107,8 +113,54 @@ export function kanGodkannaAvtal(profil: ForeningProfil): {
 }
 
 /**
+ * Registrerar en BankID-signatur på kundavtalet.
+ * Avtalet blir bindande (föreningen blir kund) först efter två olika personer.
+ */
+export function registreraKundAvtalSignatur(
+  signatur: BankIdSignatur,
+  foreningId?: string,
+): ForeningProfil {
+  const id = foreningId ?? lasAktivForeningId();
+  const profil = lasForeningProfil(id);
+  if (!profil || !arEgenTestForening(profil.id)) {
+    throw new Error(
+      "Avtal kan bara godkännas för er skapade testförening — inte för demoföreningar.",
+    );
+  }
+  if (arKundForening(profil) && harTillrackligaBankIdSignaturer(profil.avtalBankidSignaturer)) {
+    return normaliseraForeningProfil(profil);
+  }
+  const check = kanGodkannaAvtal(profil);
+  if (!check.ok) {
+    throw new Error(
+      `Fyll i och spara föreningsuppgifter först (saknas: ${check.saknas.join(", ")}).`,
+    );
+  }
+  const tillagd = laggTillBankIdSignatur(profil.avtalBankidSignaturer, {
+    ...signatur,
+    part: "kund",
+  });
+  if (!tillagd.ok) throw new Error(tillagd.fel);
+  const klar = harTillrackligaBankIdSignaturer(tillagd.signaturer);
+  const nu = new Date().toISOString();
+  const uppdaterad = normaliseraForeningProfil({
+    ...profil,
+    grundinfoPaborjad: true,
+    avtalBankidSignaturer: tillagd.signaturer,
+    avtalBankidNamn: sammanfattaBankIdSignaturer(tillagd.signaturer),
+    avtalBankidTidpunkt: nu,
+    avtalGodkant: klar,
+    avtalGodkantTidpunkt: klar ? nu : profil.avtalGodkantTidpunkt,
+  });
+  sparaForeningProfil(uppdaterad, { synkaServer: false });
+  window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
+  return uppdaterad;
+}
+
+/**
  * Godkänner ettårsavtalet för aktiv (eller angiven) förening → blir kund.
  * Isolerad till den föreningens profil — påverkar inte andra.
+ * Kräver att två BankID-signaturer redan finns.
  */
 export function godkannForeningsAvtal(foreningId?: string): ForeningProfil {
   const id = foreningId ?? lasAktivForeningId();
@@ -120,6 +172,11 @@ export function godkannForeningsAvtal(foreningId?: string): ForeningProfil {
   }
   if (arKundForening(profil)) {
     return normaliseraForeningProfil(profil);
+  }
+  if (!harTillrackligaBankIdSignaturer(profil.avtalBankidSignaturer)) {
+    throw new Error(
+      "Avtalet måste signeras med BankID av två personer, vardera med sitt personnummer.",
+    );
   }
   const check = kanGodkannaAvtal(profil);
   if (!check.ok) {

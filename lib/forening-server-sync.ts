@@ -43,6 +43,10 @@ export function dtoTillForeningProfil(
       dto.avtalGodkantTidpunkt || befintlig?.avtalGodkantTidpunkt || "",
     avtalBankidTidpunkt: dto.avtalBankidTidpunkt,
     avtalBankidNamn: dto.avtalBankidNamn,
+    avtalBankidSignaturer:
+      dto.avtalSignaturer?.length
+        ? dto.avtalSignaturer
+        : befintlig?.avtalBankidSignaturer,
     styrelseledamoter: befintlig?.styrelseledamoter,
   });
 }
