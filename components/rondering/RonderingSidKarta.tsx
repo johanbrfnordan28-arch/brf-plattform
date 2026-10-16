@@ -6,13 +6,10 @@ export function RonderingSidKarta() {
       aria-label="Innehåll på ronderingssidan"
       className="rounded-2xl border-2 border-primary bg-[#eef6f0] p-5 sm:p-6"
     >
-      <p className="text-sm font-semibold text-primary-dark">Var justerar jag schemat?</p>
+      <p className="text-sm font-semibold text-primary-dark">Så här gör ni</p>
       <p className="mt-2 text-sm leading-relaxed text-foreground">
-        Gå till{" "}
-        <strong>Grundmall föreningar → Rondering & avvikelser</strong> (adressen{" "}
-        <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs">/forening/rondering</code>
-        ). Där finns månadsschemat <em>överst</em> på sidan — inte under den publika
-        sidan &quot;Rondering&quot; utan inloggning.
+        Börja med föreningens eget schema. Det blir underlag för offert och avtal.
+        När entreprenören godkänt avtalet kvitteras varje utfört uppdrag.
       </p>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-foreground">
         <li>
@@ -20,20 +17,30 @@ export function RonderingSidKarta() {
             href="#manadssignering-schema"
             className="font-medium text-primary-dark underline underline-offset-2 hover:text-primary"
           >
-            Justera moment i månadsschema
+            Justera schema
           </a>
           {" "}
-          — bocka i/ur som vid nyckelkvittering
+          — lägg till och ta bort moment för städ och rondering
         </li>
         <li>
           <a
-            href="#manadssignering-lankar"
+            href="#drift-offert-avtal"
             className="font-medium text-primary-dark underline underline-offset-2 hover:text-primary"
           >
-            Kopiera signeringslänk
+            Offert och avtal
           </a>
           {" "}
-          till fastighetsskötare eller städ
+          — skicka underlag och låt vald part godkänna med BankID
+        </li>
+        <li>
+          <a
+            href="#drift-uppdrag"
+            className="font-medium text-primary-dark underline underline-offset-2 hover:text-primary"
+          >
+            Skapa uppdrag
+          </a>
+          {" "}
+          — kvittens per städning eller rondering
         </li>
         <li>
           <a
@@ -42,8 +49,6 @@ export function RonderingSidKarta() {
           >
             Bifoga schema vid upphandling
           </a>
-          {" "}
-          — städ/rondering + vite, ID06, entreprenör
         </li>
         <li>
           <a
@@ -52,19 +57,13 @@ export function RonderingSidKarta() {
           >
             Checklistor och avvikelser
           </a>
-          {" "}
-          — operativ rondering (annat än månadssignering)
         </li>
       </ol>
-      <p className="mt-4 text-xs text-muted">
-        I demo sparas schemat i webbläsaren. Använd{" "}
-        <strong>Förhandsgranska</strong> i samma webbläsare efter att ni bockat i moment.
-      </p>
       <Link
         href="#manadssignering-schema"
         className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
       >
-        Hoppa till schema — justera moment
+        Hoppa till schema
       </Link>
     </nav>
   );

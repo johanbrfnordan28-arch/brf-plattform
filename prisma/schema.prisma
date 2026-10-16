@@ -44,6 +44,8 @@ model Forening {
   borttagenAvEpost     String    @default("")
   /// Återställd av personal efter automatisk gallring — gallras inte igen.
   gallringUndantag     Boolean   @default(false)
+  /// Offert, avtal och uppdragskvittens för städ/rondering.
+  driftTjanst          Json?
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
 

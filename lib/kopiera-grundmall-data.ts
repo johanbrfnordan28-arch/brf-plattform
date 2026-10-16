@@ -9,6 +9,7 @@ const GRUNDMALL_DATA_NYCKLAR = [
   "brf-rondering-state",
   "brf-rondering-signering-schema",
   "brf-rondering-manadssignering",
+  "brf-rondering-drift-avtal",
   "brf-upphandling-lager",
   "brf-upphandling-schema-bilagor",
   // Årshjul kopieras inte — ny förening ska ha tomt hjul (fylls via "Lägg in standardkategorier").

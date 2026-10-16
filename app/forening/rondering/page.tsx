@@ -24,12 +24,12 @@ export default function ForeningRonderingPage() {
     <ModulePage
       title="Rondering & avvikelser"
       icon="✅"
-      intro="Strukturerad rondering med digital signering — månadsvis dokumentation av städ och fastighetsskötsel. Avvikelser registreras och följs upp tills de är åtgärdade."
+      intro="Eget schema, offert och avtal med entreprenör, samt kvittens per utfört städ- eller ronderingsuppdrag. Avvikelser registreras och följs upp tills de är åtgärdade."
     >
       <TipsPanel tips={tips.rondering} />
       <RonderingSidKarta />
 
-      <ContentSection title="1. Månadssignering — justera schema" plain>
+      <ContentSection title="1. Schema, offert, avtal och kvittens" plain>
         <SigneringSchemaGrundmallInfo />
         <div className="mt-6">
           <RonderingSigneringStyrelse />
