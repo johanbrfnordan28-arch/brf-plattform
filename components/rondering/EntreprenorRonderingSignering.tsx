@@ -21,6 +21,10 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import {
+  maskeraPersonnummer,
+  personnummerFelmeddelande,
+} from "@/lib/personnummer-format";
 
 export function EntreprenorRonderingSignering() {
   const searchParams = useSearchParams();
@@ -34,6 +38,7 @@ export function EntreprenorRonderingSignering() {
   const [avtal, setAvtal] = useState<DriftAvtal | null>(null);
   const [laddar, setLaddar] = useState(true);
   const [namn, setNamn] = useState("");
+  const [personnummer, setPersonnummer] = useState("");
   const [genomfordaPunktIds, setGenomfordaPunktIds] = useState<string[]>([]);
   const [schemaFel, setSchemaFel] = useState<string | null>(null);
   const [bankidSteg, setBankidSteg] = useState<"idle" | "pagar" | "klar">("idle");
@@ -115,6 +120,8 @@ export function EntreprenorRonderingSignering() {
       namn: namn.trim(),
       metod,
       genomfordaPunktIds,
+      personnummerMaskerat:
+        metod === "bankid" ? maskeraPersonnummer(personnummer) : undefined,
     });
     if (!lokal.ok) {
       setSchemaFel(lokal.fel);
@@ -138,6 +145,11 @@ export function EntreprenorRonderingSignering() {
   async function signeraMedBankId() {
     if (!namn.trim()) {
       setSchemaFel("Ange namn för BankID-signering.");
+      return;
+    }
+    const pnrFel = personnummerFelmeddelande(personnummer);
+    if (pnrFel) {
+      setSchemaFel(pnrFel);
       return;
     }
     setBankidSteg("pagar");
@@ -200,7 +212,11 @@ export function EntreprenorRonderingSignering() {
           <div className="mt-6 rounded-xl border border-border bg-background p-4">
             <p className="font-semibold text-primary-dark">Uppdraget är kvitterat</p>
             <p className="mt-2 text-sm text-foreground">
-              {uppdrag.signeradNamn} ·{" "}
+              {uppdrag.signeradNamn}
+              {uppdrag.signeradPersonnummerMaskerat
+                ? ` · ${uppdrag.signeradPersonnummerMaskerat}`
+                : ""}{" "}
+              ·{" "}
               {uppdrag.signeradTidpunkt
                 ? new Date(uppdrag.signeradTidpunkt).toLocaleString("sv-SE")
                 : ""}
@@ -248,6 +264,19 @@ export function EntreprenorRonderingSignering() {
                 className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-foreground">
+                Personnummer på den som kvitterar med BankID
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={personnummer}
+                onChange={(event) => setPersonnummer(event.target.value)}
+                placeholder="ÅÅÅÅMMDD-XXXX"
+                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
 
             <div className="mt-6 space-y-4">
               <div className="rounded-xl border border-border p-4">
@@ -261,7 +290,7 @@ export function EntreprenorRonderingSignering() {
                 </p>
                 <button
                   type="button"
-                  disabled={!namn.trim() || bankidSteg === "pagar"}
+                  disabled={!namn.trim() || !personnummer.trim() || bankidSteg === "pagar"}
                   onClick={() => void signeraMedBankId()}
                   className="mt-3 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >

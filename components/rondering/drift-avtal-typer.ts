@@ -1,7 +1,8 @@
 import type { SigneringRoll } from "@/components/rondering/signering";
 import type { SigneringSchemaPunkt } from "@/components/rondering/signering-schema";
+import type { BankIdSignatur } from "@/lib/bankid-signering";
 
-export type DriftAvtalStatus = "skickat" | "godkant";
+export type DriftAvtalStatus = "skickat" | "foretag_signerat" | "godkant";
 
 export type DriftAvtal = {
   id: string;
@@ -18,6 +19,10 @@ export type DriftAvtal = {
   skapadTidpunkt: string;
   godkantTidpunkt?: string;
   godkantNamn?: string;
+  /** Två personer i företaget signerar först. */
+  foretagSignaturer?: BankIdSignatur[];
+  /** Därefter två personer i föreningen. */
+  foreningSignaturer?: BankIdSignatur[];
 };
 
 export type DriftOffert = {
@@ -42,6 +47,7 @@ export type DriftUppdrag = {
   metod?: "bankid" | "namn";
   signeradTidpunkt?: string;
   signeradNamn?: string;
+  signeradPersonnummerMaskerat?: string;
 };
 
 export type DriftState = {

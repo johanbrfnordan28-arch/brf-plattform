@@ -1,11 +1,7 @@
 import { createHash } from "crypto";
+import { normaliseraPersonnummerSiffror } from "@/lib/personnummer-format";
 
-/** Normaliserar till siffror (10 eller 12 tecken) för svenskt personnummer. */
-export function normaliseraPersonnummerSiffror(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 10 || digits.length === 12) return digits;
-  return null;
-}
+export { normaliseraPersonnummerSiffror } from "@/lib/personnummer-format";
 
 /** Stabil nyckel för databassökning — lagrar inte klartext personnummer. */
 export function personnummerTillNyckel(raw: string): string | null {

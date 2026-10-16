@@ -23,6 +23,11 @@ import {
   STYRELSE_ROLLER,
   type StyrelseLedamot,
 } from "@/lib/styrelse-ledamot";
+import {
+  arGiltigtPersonnummer,
+  maskeraPersonnummer,
+  personnummerFelmeddelande,
+} from "@/lib/personnummer-format";
 
 function lasAktivProfil(): ForeningProfil | null {
   repareraForeningRegistry();
@@ -70,6 +75,7 @@ export function ForeningGrunduppgifterPanel() {
   const [sparad, setSparad] = useState(false);
   const [sparFel, setSparFel] = useState<string | null>(null);
   const [bankidPagarId, setBankidPagarId] = useState<string | null>(null);
+  const [bankidPnr, setBankidPnr] = useState<Record<string, string>>({});
 
   const ladda = useCallback(() => {
     const p = lasAktivProfil();
@@ -176,6 +182,16 @@ export function ForeningGrunduppgifterPanel() {
       setSparFel("Ange ledamotens namn innan BankID kopplas.");
       return;
     }
+    const pnr = bankidPnr[id] ?? "";
+    const pnrFel = personnummerFelmeddelande(pnr);
+    if (pnrFel) {
+      setSparFel(pnrFel);
+      return;
+    }
+    if (!arGiltigtPersonnummer(pnr)) {
+      setSparFel("Ange personnummer på den person som ska koppla BankID.");
+      return;
+    }
     setSparFel(null);
     setBankidPagarId(id);
     window.setTimeout(() => {
@@ -189,11 +205,13 @@ export function ForeningGrunduppgifterPanel() {
                   ...l,
                   bankidKopplad: true,
                   bankidKoppladTidpunkt: new Date().toISOString(),
+                  personnummerMaskerat: maskeraPersonnummer(pnr),
                 }
               : l,
           ),
         };
       });
+      setBankidPnr((nu) => ({ ...nu, [id]: "" }));
       setBankidPagarId(null);
       setSparad(false);
     }, 1600);
@@ -206,7 +224,12 @@ export function ForeningGrunduppgifterPanel() {
         ...current,
         styrelseledamoter: current.styrelseledamoter.map((l) =>
           l.id === id
-            ? { ...l, bankidKopplad: false, bankidKoppladTidpunkt: "" }
+            ? {
+                ...l,
+                bankidKopplad: false,
+                bankidKoppladTidpunkt: "",
+                personnummerMaskerat: "",
+              }
             : l,
         ),
       };
@@ -466,6 +489,9 @@ export function ForeningGrunduppgifterPanel() {
                       <>
                         <p className="text-xs font-medium text-primary-dark">
                           BankID kopplat
+                          {ledamot.personnummerMaskerat
+                            ? ` · ${ledamot.personnummerMaskerat}`
+                            : ""}
                         </p>
                         <button
                           type="button"
@@ -476,16 +502,31 @@ export function ForeningGrunduppgifterPanel() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={bankidPagarId === ledamot.id}
-                        onClick={() => kopplaBankId(ledamot.id)}
-                        className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-                      >
-                        {bankidPagarId === ledamot.id
-                          ? "Öppnar BankID…"
-                          : "Koppla BankID"}
-                      </button>
+                      <>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={bankidPnr[ledamot.id] ?? ""}
+                          onChange={(e) =>
+                            setBankidPnr((nu) => ({
+                              ...nu,
+                              [ledamot.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Personnummer ÅÅÅÅMMDD-XXXX"
+                          className="w-full rounded-lg border border-border px-3 py-2 text-xs"
+                        />
+                        <button
+                          type="button"
+                          disabled={bankidPagarId === ledamot.id}
+                          onClick={() => kopplaBankId(ledamot.id)}
+                          className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+                        >
+                          {bankidPagarId === ledamot.id
+                            ? "Öppnar BankID…"
+                            : "Koppla BankID"}
+                        </button>
+                      </>
                     )}
                     {form.styrelseledamoter.length > 1 ? (
                       <button

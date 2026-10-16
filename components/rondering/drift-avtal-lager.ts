@@ -263,6 +263,8 @@ export async function skickaPublikDriftAtgard(opts: {
   token: string;
   atgard: "godkann-avtal" | "kvittera-uppdrag";
   namn: string;
+  personnummer?: string;
+  part?: "foretag" | "forening";
   metod?: "bankid" | "namn";
   genomfordaPunktIds?: string[];
 }): Promise<{ ok: true } | { fel: string }> {
@@ -276,6 +278,8 @@ export async function skickaPublikDriftAtgard(opts: {
           token: opts.token,
           atgard: opts.atgard,
           namn: opts.namn,
+          personnummer: opts.personnummer,
+          part: opts.part,
           metod: opts.metod,
           genomfordaPunktIds: opts.genomfordaPunktIds,
         }),

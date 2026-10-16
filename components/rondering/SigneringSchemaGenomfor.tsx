@@ -58,7 +58,8 @@ export function SigneringSchemaGenomfor({
         valdaIds={genomfordaSet}
         onToggle={onToggle}
         readonly={readonly}
-        oppnaAlla={!readonly}
+        forstaOppen
+        enITaget={!readonly}
       />
       {!readonly && !allaKlara && (
         <p className="text-xs text-muted">

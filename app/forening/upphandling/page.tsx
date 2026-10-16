@@ -48,6 +48,8 @@ export default function ForeningUpphandlingPage() {
           Bygg professionella förfrågningsunderlag per kategori — från stambyte och
           fasadrenovering till städ och fastighetsskötsel. Scheman från Rondering kan
           bifogas direkt. Två styrelseledamöter godkänner publicering och beslut.
+          Avtalet med valt företag signeras med BankID av två personer i företaget
+          först, därefter två i föreningen.
         </p>
         <UpphandlingSidaInnehall />
       </ContentSection>

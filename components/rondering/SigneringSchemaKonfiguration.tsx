@@ -242,7 +242,8 @@ export function SigneringSchemaKonfiguration() {
               onToggle={togglePunkt}
               onToggleGrupp={toggleGrupp}
               onTaBortEget={taBortEgetMoment}
-              oppnaAlla
+              forstaOppen
+              enITaget
             />
           </div>
         </div>

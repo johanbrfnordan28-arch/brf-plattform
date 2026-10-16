@@ -194,7 +194,11 @@ export function DriftUppdragStyrelse() {
                   ) : null}
                   {utfort && (
                     <p className="mt-1 text-sm text-foreground">
-                      {u.signeradNamn} ·{" "}
+                      {u.signeradNamn}
+                      {u.signeradPersonnummerMaskerat
+                        ? ` · ${u.signeradPersonnummerMaskerat}`
+                        : ""}{" "}
+                      ·{" "}
                       {u.signeradTidpunkt
                         ? new Date(u.signeradTidpunkt).toLocaleString("sv-SE")
                         : ""}{" "}

@@ -144,23 +144,3 @@ body {
   }
 }
 
-/* Rondering — utskrift av anpassad checklista */
-@media print {
-  body.rondering-print-lage * {
-    visibility: hidden;
-  }
-  body.rondering-print-lage #rondering-checklista-utskrift,
-  body.rondering-print-lage #rondering-checklista-utskrift * {
-    visibility: visible;
-  }
-  body.rondering-print-lage #rondering-checklista-utskrift {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    display: block !important;
-  }
-  body.rondering-print-lage {
-    background: white;
-  }
-}

@@ -17,97 +17,101 @@ type RonderingChecklistaUtskriftProps = {
   anpassning: ChecklistaAnpassning;
   klaraPunkter: string[];
   foreningNamn?: string;
-  utskriftsId: string;
 };
 
-export function RonderingChecklistaUtskrift({
-  typer,
-  egenskaper,
-  anpassning,
-  klaraPunkter,
-  foreningNamn,
-  utskriftsId,
-}: RonderingChecklistaUtskriftProps) {
-  const klaraSet = new Set(klaraPunkter);
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function byggChecklistaHtml(opts: RonderingChecklistaUtskriftProps): string {
+  const klaraSet = new Set(opts.klaraPunkter);
   const datum = new Date().toLocaleDateString("sv-SE");
+  const forening = opts.foreningNamn
+    ? `<p>${escapeHtml(opts.foreningNamn)}</p>`
+    : "";
 
-  return (
-    <div
-      id={utskriftsId}
-      className="rondering-utskrift hidden print:block"
-      aria-hidden
-    >
-      {typer.map((typ, idx) => {
-        const mall = byggEffektivChecklista(typ, egenskaper, anpassning);
-        return (
-          <div
-            key={typ}
-            className={`bg-white p-8 text-black ${idx < typer.length - 1 ? "print:break-after-page" : ""}`}
-          >
-            <header className="border-b-2 border-black pb-4">
-              <p className="text-xs uppercase tracking-wide">
-                Underhålls- och städchecklista
-              </p>
-              <h1 className="mt-1 text-2xl font-bold">{mall.titel}</h1>
-              {foreningNamn && (
-                <p className="mt-2 text-sm">{foreningNamn}</p>
-              )}
-              <p className="mt-1 text-sm">Datum: {datum}</p>
-              <p className="mt-2 text-xs leading-relaxed">{mall.beskrivning}</p>
-            </header>
+  const sidor = opts.typer.map((typ, idx) => {
+    const mall = byggEffektivChecklista(typ, opts.egenskaper, opts.anpassning);
+    const sektioner = mall.sektioner
+      .map((sektion) => {
+        const punkter = sektion.punkter
+          .map((punkt) => {
+            const nyckel = checklistaPunktNyckel(typ, sektion.id, punkt.id);
+            const klar = klaraSet.has(nyckel);
+            return `<li style="display:flex;gap:10px;margin:0 0 8px;page-break-inside:avoid;">
+  <span style="display:inline-block;width:14px;height:14px;border:2px solid #000;text-align:center;font-size:10px;line-height:12px;flex-shrink:0;margin-top:2px;">${klar ? "✓" : ""}</span>
+  <span>${escapeHtml(punkt.text)}</span>
+</li>`;
+          })
+          .join("");
+        const beskrivning = sektion.beskrivning
+          ? `<p style="font-size:11px;color:#444;margin:4px 0 8px;">${escapeHtml(sektion.beskrivning)}</p>`
+          : "";
+        return `<section style="margin:18px 0;">
+  <h2 style="font-size:13pt;margin:0 0 4px;">${escapeHtml(sektion.etikett)}</h2>
+  ${beskrivning}
+  <ul style="list-style:none;padding:0;margin:0;">${punkter}</ul>
+</section>`;
+      })
+      .join("");
 
-            <div className="mt-6 space-y-5">
-              {mall.sektioner.map((sektion) => (
-                <section key={sektion.id}>
-                  <h2 className="text-base font-bold">{sektion.etikett}</h2>
-                  {sektion.beskrivning && (
-                    <p className="text-xs text-gray-600">{sektion.beskrivning}</p>
-                  )}
-                  <ul className="mt-2 space-y-2">
-                    {sektion.punkter.map((punkt) => {
-                      const nyckel = checklistaPunktNyckel(
-                        typ,
-                        sektion.id,
-                        punkt.id,
-                      );
-                      const klar = klaraSet.has(nyckel);
-                      return (
-                        <li key={nyckel} className="flex gap-3 text-sm leading-snug">
-                          <span
-                            className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center border-2 border-black text-[10px] font-bold"
-                            aria-hidden
-                          >
-                            {klar ? "✓" : ""}
-                          </span>
-                          <span>{punkt.text}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              ))}
-            </div>
+    return `<article style="padding:8px 4px;${idx < opts.typer.length - 1 ? "page-break-after:always;" : ""}">
+  <header style="border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin:0;">Underhålls- och städchecklista</p>
+    <h1 style="font-size:20pt;margin:6px 0 8px;">${escapeHtml(mall.titel)}</h1>
+    ${forening}
+    <p style="margin:4px 0;">Datum: ${escapeHtml(datum)}</p>
+    <p style="font-size:11px;line-height:1.4;">${escapeHtml(mall.beskrivning)}</p>
+  </header>
+  ${sektioner}
+  <footer style="border-top:1px solid #888;margin-top:28px;padding-top:12px;font-size:11px;">
+    <p>Utförd av: _________________________ Datum: _____________</p>
+    <p>Signatur / attest (entreprenör): _________________________</p>
+    <p style="color:#555;margin-top:12px;">${escapeHtml(ronderingChecklistaEtiketter[typ])} — anpassad checklista för föreningen.</p>
+  </footer>
+</article>`;
+  });
 
-            <footer className="mt-10 border-t border-gray-400 pt-4 text-xs">
-              <p>Utförd av: _________________________ Datum: _____________</p>
-              <p className="mt-2">
-                Signatur / attest (entreprenör): _________________________
-              </p>
-              <p className="mt-4 text-gray-600">
-                {ronderingChecklistaEtiketter[typ]} — anpassad checklista för
-                föreningen.
-              </p>
-            </footer>
-          </div>
-        );
-      })}
-    </div>
-  );
+  return `<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"/>
+<title>Rondering — utskrift</title>
+<style>
+  body { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.4; color: #111; background: #fff; margin: 24px; }
+  @media print { body { margin: 12mm; } }
+</style>
+</head>
+<body>
+${sidor.join("\n")}
+</body>
+</html>`;
 }
 
-export function skrivUtChecklista(elementId: string) {
-  const rensa = () => document.body.classList.remove("rondering-print-lage");
-  document.body.classList.add("rondering-print-lage");
-  window.addEventListener("afterprint", rensa, { once: true });
-  window.print();
+/** Öppnar utskriftsvänlig HTML med text — spara som PDF i utskriftsdialogen. */
+export function skrivUtChecklista(opts: RonderingChecklistaUtskriftProps): void {
+  const html = byggChecklistaHtml(opts);
+  const w = window.open("", "_blank", "width=900,height=700");
+  if (!w) {
+    const blob = new Blob(["\ufeff", html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Rondering_checklista_${new Date().toISOString().slice(0, 10)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  window.setTimeout(() => {
+    w.print();
+  }, 400);
 }
+
