@@ -26,6 +26,9 @@ export type AvtalsPart = {
   foreningsNamn: string;
   organisationsnummer?: string;
   ort?: string;
+  postadress?: string;
+  postnummer?: string;
+  fakturaEpost?: string;
 };
 
 export type AvtalsSektion = {
@@ -89,7 +92,15 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
       punkter: [
         `Leverantör: ${leverantorRad()} (nedan »Leverantören«), som tillhandahåller plattformen Styrelse-Navet.`,
         `Kund: ${namn}${org ? `, org.nr ${org}` : ""}${
-          part.ort?.trim() ? `, ${part.ort.trim()}` : ""
+          part.postadress?.trim()
+            ? `, ${part.postadress.trim()}${
+                part.postnummer?.trim() || part.ort?.trim()
+                  ? `, ${[part.postnummer, part.ort].filter(Boolean).join(" ")}`
+                  : ""
+              }`
+            : part.ort?.trim()
+              ? `, ${part.ort.trim()}`
+              : ""
         } (nedan »Föreningen«).`,
         "Avtalet tecknas av två behöriga företrädare för Föreningen och signeras med BankID. Varje BankID-signering är knuten till undertecknarens personnummer.",
       ],
@@ -129,6 +140,9 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
       punkter: [
         `Årsavtal ger ${ARSAVTAL_RABATT_PROCENT} % rabatt mot ordinarie månadsdebitering.`,
         "Fakturering sker kvartalsvis i förskott enligt gällande prislista baserad på antal lägenheter.",
+        part.fakturaEpost?.trim()
+          ? `Fakturan skickas till ${part.fakturaEpost.trim()}.`
+          : "Fakturan skickas till den e-postadress föreningen anger som fakturamottagare.",
         "Alla priser anges exklusive moms.",
         AVTAL_KPI_TEXT,
       ],

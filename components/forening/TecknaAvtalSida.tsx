@@ -2,13 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ForeningAvtalPanel } from "@/components/forening/ForeningAvtalPanel";
-import { ForeningGrunduppgifterPanel } from "@/components/forening/ForeningGrunduppgifterPanel";
-import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
+import { ForeningAvtalSammanfattning } from "@/components/forening/ForeningAvtalSammanfattning";
+import { ForeningFakturaUppgifter } from "@/components/forening/ForeningFakturaUppgifter";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
-import {
-  arKundForening,
-  kanGodkannaAvtal,
-} from "@/lib/forening-kund";
+import { arKundForening } from "@/lib/forening-kund";
 import {
   dagarKvarAvProvoperiod,
   PROVOPERIODE_DAGAR,
@@ -48,7 +45,6 @@ export function TecknaAvtalSida() {
 
   const egen = profil ? arEgenTestForening(profil.id) : false;
   const kund = arKundForening(profil);
-  const check = profil && egen ? kanGodkannaAvtal(profil) : { ok: false, saknas: [] };
   const dagarKvar = profil ? dagarKvarAvProvoperiod(profil.skapadTidpunkt) : null;
 
   return (
@@ -63,10 +59,12 @@ export function TecknaAvtalSida() {
             : "Teckna avtal och bli kund"}
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-foreground">
-          Under prövoperioden har ni redan samma funktioner som en kund. Skillnaden
-          är att avtalet gör föreningen permanent — den raderas inte efter{" "}
-          {PROVOPERIODE_DAGAR} dagar
-          {dagarKvar != null && !kund ? ` (${dagarKvar} dagar kvar nu)` : ""}.
+          Namn, organisationsnummer och adress hämtas från de grunduppgifter ni
+          registrerade. Två personer signerar med BankID. Det enda ni fyller i
+          här är fakturamottagare — därefter kan fakturan skickas direkt.
+          {dagarKvar != null && !kund
+            ? ` Prövoperioden är ${PROVOPERIODE_DAGAR} dagar (${dagarKvar} dagar kvar).`
+            : ""}
         </p>
         {!kund && (
           <ul className="mt-4 list-disc space-y-1.5 pl-5 text-sm text-foreground">
@@ -77,18 +75,10 @@ export function TecknaAvtalSida() {
         )}
       </div>
 
-      {egen && !kund && !check.ok && (
-        <div className="space-y-6">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-            <p className="font-semibold">Komplettera uppgifter först</p>
-            <p className="mt-1">
-              Saknas: {check.saknas.join(", ")}. Fyll i och spara nedan — sedan
-              kan två personer signera avtalet med BankID.
-            </p>
-          </div>
-          <ForeningProfilFormular />
-          <ForeningGrunduppgifterPanel />
-        </div>
+      {egen && profil && <ForeningAvtalSammanfattning profil={profil} />}
+
+      {egen && profil && (
+        <ForeningFakturaUppgifter profil={profil} onSparad={setProfil} />
       )}
 
       <ForeningAvtalPanel />

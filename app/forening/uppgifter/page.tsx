@@ -30,19 +30,16 @@ export default function ForeningUppgifterPage() {
         </p>
         <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
           <li>
-            <strong>Identitet</strong> — namn och organisationsnummer (ofta
-            redan ifyllda vid uppstart) plus e-post.
-          </li>
-          <li>
-            <strong>Grunduppgifter</strong> — adresser, postnummer, ort, antal
-            lägenheter/våningar och styrelse. Synkas till{" "}
+            <strong>Identitet och grunduppgifter</strong> — namn,
+            organisationsnummer, adress, styrelse och antal lägenheter fylls i
+            när föreningen skapas och synkas hit och till{" "}
             <Link
               href="/forening/underhallsplan#grund"
               className="font-medium text-primary-dark underline hover:no-underline"
             >
               underhållsplanen
             </Link>
-            .
+            . Saknas något kompletterar ni här — inte på övriga sidor.
           </li>
           <li>
             <strong>Inloggning</strong> — se vilka som har konto och när de

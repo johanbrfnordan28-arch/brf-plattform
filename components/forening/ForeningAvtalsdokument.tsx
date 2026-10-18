@@ -127,17 +127,23 @@ export function ForeningAvtalsdokument({
             <p className="mt-1 text-lg font-bold text-primary-dark">
               {part.foreningsNamn}
             </p>
-            {(part.organisationsnummer || part.ort) && (
+            {(part.organisationsnummer || part.ort || part.postadress) && (
               <p className="mt-1 text-muted">
                 {[
                   part.organisationsnummer &&
                     `Org.nr ${part.organisationsnummer}`,
-                  part.ort,
+                  part.postadress,
+                  [part.postnummer, part.ort].filter(Boolean).join(" "),
                 ]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
             )}
+            {part.fakturaEpost?.trim() ? (
+              <p className="mt-1 text-muted">
+                Faktura: {part.fakturaEpost.trim()}
+              </p>
+            ) : null}
           </div>
         </div>
 

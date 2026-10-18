@@ -5,6 +5,7 @@ import {
   appliceraLagenhetsnummerByte,
   bytLagenhetsnummer,
   bytRenoveringsMappMall,
+  filtreraLagenheter,
   formatLagenhetEtikett,
   hamtaNastaLagenhetsnummer,
   lagenhetsBasSidor,
@@ -27,10 +28,13 @@ import {
   forsokMigreraLegacyLagenhetsarkiv,
   lasLagenhetsarkiv,
   skapaGrundmallDemoArkiv,
+  skapaLagenhetsarkivMedAntal,
   skapaTomtLagenhetsarkiv,
   sparaLagenhetsarkiv,
   type LagenhetsarkivState,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
+import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
+import { parseHeltalFranText } from "@/components/underhallsplan/parse-grundtal";
 import { ForeningSakerhetskopiaKompakt } from "@/components/forening/ForeningSakerhetskopiaKompakt";
 import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
 import {
@@ -40,6 +44,12 @@ import {
 import {
   RENOVERING_MEDLEM_SIGNERING_EVENT,
 } from "@/components/medlemmar/renovering-medlems-signering-lager";
+import { OMBYGGNADSAVTAL_SIGNERING_EVENT } from "@/components/lagenhetsarkiv/ombyggnadsavtal-signering-lager";
+import { OmbyggnadsavtalPanel } from "@/components/lagenhetsarkiv/OmbyggnadsavtalPanel";
+import {
+  ombyggnadsavtalStatus,
+  ombyggnadsavtalStatusEtikett,
+} from "@/components/lagenhetsarkiv/lagenhet-ombyggnadsavtal";
 import type { MedlemsKravState } from "@/components/lagenhetsarkiv/medlems-krav";
 import {
   RenoveringsMappPanel,
@@ -53,6 +63,7 @@ import {
   arStartbesiktningPunkt,
   type RenoveringsMallId,
 } from "@/components/lagenhetsarkiv/renoverings-mallar";
+import { LagenhetSokRullgardin } from "@/components/lagenhetsarkiv/LagenhetSokRullgardin";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { localStorageFelMeddelande } from "@/lib/localStorage";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
@@ -68,6 +79,7 @@ function uppdateraRenoveringsMapp(
 export function ApartmentArchiveDemo() {
   const [apartments, setApartments] = useState<ApartmentFolder[]>([]);
   const [oppenLagenhetsId, setOppenLagenhetsId] = useState<number | null>(null);
+  const [lagenhetSok, setLagenhetSok] = useState("");
   const [nextApartmentNumber, setNextApartmentNumber] = useState(1002);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
@@ -99,7 +111,13 @@ export function ApartmentArchiveDemo() {
     } else if (arGrundmallForening(lasAktivForeningId())) {
       state = skapaGrundmallDemoArkiv();
     } else {
-      state = skapaTomtLagenhetsarkiv();
+      const plan = lasUnderhallsplanState();
+      const antal = parseHeltalFranText(plan?.grund.antalLagenheter ?? "");
+      const adress = plan?.grund.adresser.map((a) => a.trim()).find(Boolean);
+      state =
+        antal > 0
+          ? skapaLagenhetsarkivMedAntal(antal, { adress })
+          : skapaTomtLagenhetsarkiv();
     }
     setApartments(state.apartments);
     setNextApartmentNumber(state.nextApartmentNumber);
@@ -144,12 +162,26 @@ export function ApartmentArchiveDemo() {
       RENOVERING_MEDLEM_SIGNERING_EVENT,
       syncEfterMedlemSignering,
     );
-    return () =>
+    window.addEventListener(
+      OMBYGGNADSAVTAL_SIGNERING_EVENT,
+      syncEfterMedlemSignering,
+    );
+    return () => {
       window.removeEventListener(
         RENOVERING_MEDLEM_SIGNERING_EVENT,
         syncEfterMedlemSignering,
       );
+      window.removeEventListener(
+        OMBYGGNADSAVTAL_SIGNERING_EVENT,
+        syncEfterMedlemSignering,
+      );
+    };
   }, []);
+
+  const visadeLagenheter = useMemo(
+    () => filtreraLagenheter(apartments, lagenhetSok),
+    [apartments, lagenhetSok],
+  );
 
   const valdMallObj = useMemo(
     () => hamtaRenoveringsMall(valdMall),
@@ -180,6 +212,19 @@ export function ApartmentArchiveDemo() {
     );
   }
 
+  function valjLagenhetFranSok(id: number) {
+    const apartment = apartments.find((a) => a.id === id);
+    if (apartment) setLagenhetSok(apartment.lagenhetsnummer);
+    setOppenLagenhetsId(id);
+    setSkapadFeedback(null);
+    setNummerbyteMeddelande(null);
+    window.setTimeout(() => {
+      document
+        .getElementById(`lagenhet-kort-${id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+
   function vaxlaOppenLagenhet(id: number) {
     setOppenLagenhetsId((current) => {
       const stangs = current === id;
@@ -201,6 +246,7 @@ export function ApartmentArchiveDemo() {
 
     setApartments((current) => [...current, apartment]);
     setOppenLagenhetsId(id);
+    setLagenhetSok(apartment.lagenhetsnummer);
     setNextApartmentNumber((current) => current + 1);
   }
 
@@ -546,7 +592,7 @@ export function ApartmentArchiveDemo() {
               Lägenhetsregister
             </p>
             <p className="mt-1 text-sm text-muted">
-              Sammanställning av alla lägenheter högst upp. Öppna en lägenhet för
+              Sök bland skapade lägenheter i rullgardinen. Öppna en lägenhet för
               grunduppgifter, renoveringsmappar och signerade överenskommelser.
             </p>
           </div>
@@ -558,6 +604,15 @@ export function ApartmentArchiveDemo() {
             Skapa lägenhet
           </button>
         </div>
+        <div className="mt-4">
+          <LagenhetSokRullgardin
+            apartments={apartments}
+            sok={lagenhetSok}
+            onSokChange={setLagenhetSok}
+            valdId={oppenLagenhetsId}
+            onValj={valjLagenhetFranSok}
+          />
+        </div>
       </div>
 
       <LagenhetsarkivSammanstallning apartments={apartments} />
@@ -567,10 +622,18 @@ export function ApartmentArchiveDemo() {
       </div>
 
       <div className="space-y-4 p-5 sm:p-6">
-        {apartments.map((apartment) => {
+        {visadeLagenheter.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-muted">
+            Ingen lägenhet matchar sökningen. Rensa fältet eller sök på nummer
+            eller adress.
+          </p>
+        ) : null}
+        {visadeLagenheter.map((apartment) => {
           const oppen = apartment.id === oppenLagenhetsId;
           const foreslagnaMallar = hamtaForeslagnaMallar(apartment);
           const etikett = formatLagenhetEtikett(apartment.lagenhetsnummer);
+          const avtalStatus = ombyggnadsavtalStatus(apartment.ombyggnadsavtal);
+          const avtalEtikett = ombyggnadsavtalStatusEtikett(avtalStatus);
           const renoveringsOversikt = [...apartment.folders]
             .map((m) => ({
               mapp: m,
@@ -581,7 +644,8 @@ export function ApartmentArchiveDemo() {
           return (
             <article
               key={apartment.id}
-              className="rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20"
+              id={`lagenhet-kort-${apartment.id}`}
+              className="scroll-mt-24 rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20"
             >
               <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                 <div className="min-w-0 flex-1">
@@ -610,6 +674,30 @@ export function ApartmentArchiveDemo() {
                           {mapp.historisk ? " (historisk)" : ""}
                         </span>
                       ))}
+                      {avtalEtikett && (
+                        <span
+                          className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                            avtalStatus === "klart"
+                              ? "border-primary/25 bg-[#eef6f0] text-primary-dark"
+                              : "border-amber-200 bg-amber-50 text-amber-950"
+                          }`}
+                        >
+                          {avtalEtikett}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {!renoveringsOversikt.length && avtalEtikett && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <span
+                        className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                          avtalStatus === "klart"
+                            ? "border-primary/25 bg-[#eef6f0] text-primary-dark"
+                            : "border-amber-200 bg-amber-50 text-amber-950"
+                        }`}
+                      >
+                        {avtalEtikett}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -632,6 +720,25 @@ export function ApartmentArchiveDemo() {
                     apartment={apartment}
                     onUppdatera={(patch) =>
                       uppdateraLägenhet(apartment.id, (a) => ({ ...a, ...patch }))
+                    }
+                  />
+
+                  <OmbyggnadsavtalPanel
+                    apartment={apartment}
+                    onUppdatera={(avtal) =>
+                      uppdateraLägenhet(apartment.id, (a) => ({
+                        ...a,
+                        ombyggnadsavtal: avtal,
+                      }))
+                    }
+                    onArkivera={(signerat) =>
+                      uppdateraLägenhet(apartment.id, (a) => ({
+                        ...a,
+                        ombyggnadsavtalHistorik: [
+                          signerat,
+                          ...(a.ombyggnadsavtalHistorik ?? []),
+                        ],
+                      }))
                     }
                   />
 

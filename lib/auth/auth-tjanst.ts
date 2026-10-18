@@ -59,6 +59,10 @@ export type SkapaForeningAuthInput = {
   basUrl: string;
   /** Kontot i aktuell session — krävs för att återkoppla en befintlig förening. */
   inloggadKontoId?: string | null;
+  organisationsnummer?: string;
+  postadress?: string;
+  postnummer?: string;
+  ort?: string;
 };
 
 export type SkapaForeningAuthResultat = {
@@ -271,6 +275,13 @@ export async function skapaForeningMedKonto(
         namnNyckel,
         epost,
         kontaktperson: skapareNamn,
+        organisationsnummer: input.organisationsnummer?.trim() ?? "",
+        postadress: input.postadress?.trim() ?? "",
+        postnummer: input.postnummer?.trim() ?? "",
+        ort: input.ort?.trim() ?? "",
+        grundinfoPaborjad: Boolean(
+          input.postadress?.trim() || input.organisationsnummer?.trim(),
+        ),
         accessNyckelHash: hashAccessNyckel(accessNyckel),
         villkorVersion: VILLKOR_VERSION,
         villkorGodkantTidpunkt: new Date(),

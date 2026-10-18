@@ -50,16 +50,10 @@ export function ForeningValkommenRand() {
           Teckna avtal och bli kund
         </Link>
         <Link
-          href="/forening/uppgifter"
-          className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-        >
-          Spara föreningsuppgifter
-        </Link>
-        <Link
           href="/forening/uppgifter#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
-          Grunduppgifter
+          Komplettera grunduppgifter
         </Link>
         <Link
           href="/forening/arshjul"

@@ -94,14 +94,17 @@ export function ForeningProfilFormular() {
     try {
       sparaForeningProfil(uppdaterad, { synkaServer: false });
       const kontakt = styrelseKontaktFranProfil(uppdaterad);
-      const plan = lasUnderhallsplanState();
+      const plan = lasUnderhallsplanState(uppdaterad.id);
       if (plan) {
-        sparaUnderhallsplanState({
-          ...plan,
-          planNamn: plan.planNamn || planNamnFranKontakt(kontakt),
-          grund: appliceraKontaktPaGrund(plan.grund, kontakt),
-          sparad: new Date().toISOString(),
-        });
+        sparaUnderhallsplanState(
+          {
+            ...plan,
+            planNamn: plan.planNamn || planNamnFranKontakt(kontakt),
+            grund: appliceraKontaktPaGrund(plan.grund, kontakt),
+            sparad: new Date().toISOString(),
+          },
+          uppdaterad.id,
+        );
       }
       rensaNyssSkapadMarkering();
       setProfil(uppdaterad);

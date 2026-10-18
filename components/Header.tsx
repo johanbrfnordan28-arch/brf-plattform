@@ -1,5 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
 import { HeaderMobilMeny } from "@/components/HeaderMobilMeny";
+import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
+import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { MEDLEM_FELANMALAN_PATH } from "@/lib/forening-medlem";
 import { KUND_LOGIN_PATH } from "@/lib/forening-kund";
@@ -15,6 +21,23 @@ const knappBas =
   "h-9 items-center whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold";
 
 export function Header() {
+  const [inloggad, setInloggad] = useState<boolean | null>(null);
+
+  const ladda = useCallback(() => {
+    setInloggad(arInloggadPaEgenForening());
+  }, []);
+
+  useEffect(() => {
+    ladda();
+    window.addEventListener(FORENING_AKTIV_EVENT, ladda);
+    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+  }, [ladda]);
+
+  const mobilLankar =
+    inloggad === true
+      ? nav
+      : [...nav, { href: PROVA_GRATIS_PATH, label: "Pröva gratis 30 dagar" }];
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-5 px-4 py-3.5 sm:px-6">
@@ -48,21 +71,27 @@ export function Header() {
           >
             Felanmälan
           </Link>
-          <Link
-            href={KUND_LOGIN_PATH}
-            className={`${knappBas} inline-flex border border-border bg-white text-foreground hover:border-primary/50`}
-          >
-            Logga in
-          </Link>
-          <Link
-            href={PROVA_GRATIS_PATH}
-            className={`${knappBas} hidden bg-primary text-white hover:bg-primary-dark sm:inline-flex`}
-          >
-            Pröva gratis
-          </Link>
-          <HeaderMobilMeny
-            lankar={[...nav, { href: PROVA_GRATIS_PATH, label: "Pröva gratis 30 dagar" }]}
-          />
+          {inloggad === true ? (
+            <LoggaUtKnapp />
+          ) : inloggad === false ? (
+            <>
+              <Link
+                href={KUND_LOGIN_PATH}
+                className={`${knappBas} inline-flex border border-border bg-white text-foreground hover:border-primary/50`}
+              >
+                Logga in
+              </Link>
+              <Link
+                href={PROVA_GRATIS_PATH}
+                className={`${knappBas} hidden bg-primary text-white hover:bg-primary-dark sm:inline-flex`}
+              >
+                Pröva gratis
+              </Link>
+            </>
+          ) : (
+            <span className={`${knappBas} inline-flex w-[5.5rem]`} aria-hidden />
+          )}
+          <HeaderMobilMeny lankar={mobilLankar} />
         </div>
       </div>
     </header>

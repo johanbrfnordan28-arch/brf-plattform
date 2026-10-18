@@ -38,6 +38,7 @@ function lasAktivProfil(): ForeningProfil | null {
 }
 
 type FormState = {
+  organisationsnummer: string;
   adresser: string[];
   postnummer: string;
   ort: string;
@@ -47,8 +48,9 @@ type FormState = {
 };
 
 function formFranProfil(profil: ForeningProfil): FormState {
-  const plan = lasUnderhallsplanState();
+  const plan = lasUnderhallsplanState(profil.id);
   return {
+    organisationsnummer: profil.organisationsnummer,
     adresser: adresserFranProfilOchPlan(profil, plan?.grund),
     postnummer: profil.postnummer,
     ort: profil.ort,
@@ -264,6 +266,7 @@ export function ForeningGrunduppgifterPanel() {
 
       const uppdaterad: ForeningProfil = {
         ...profil,
+        organisationsnummer: form.organisationsnummer.trim(),
         postadress: forstaAdress || profil.postadress,
         postnummer: form.postnummer.trim(),
         ort: form.ort.trim(),
@@ -309,15 +312,34 @@ export function ForeningGrunduppgifterPanel() {
         </div>
         <p className="rounded-lg border border-border bg-white px-3 py-2 text-xs text-muted">
           <span className="font-medium text-foreground">{profil.namn}</span>
-          {profil.organisationsnummer ? (
-            <> · org.nr {profil.organisationsnummer}</>
+          {form.organisationsnummer.trim() ? (
+            <> · org.nr {form.organisationsnummer.trim()}</>
           ) : (
-            <> · org.nr fylls i ovan</>
+            <> · org.nr saknas</>
           )}
         </p>
       </div>
 
       <div className="mt-5 space-y-6">
+        <section>
+          <h3 className="text-sm font-semibold text-foreground">
+            Organisationsnummer
+          </h3>
+          <label className="mt-3 block text-sm">
+            <span className="sr-only">Organisationsnummer</span>
+            <input
+              type="text"
+              value={form.organisationsnummer}
+              onChange={(e) => {
+                setForm({ ...form, organisationsnummer: e.target.value });
+                setSparad(false);
+              }}
+              placeholder="t.ex. 769623-8166"
+              className="w-full rounded-lg border border-border bg-white px-3 py-2"
+            />
+          </label>
+        </section>
+
         <section>
           <h3 className="text-sm font-semibold text-foreground">Fastighetsadresser</h3>
           <p className="mt-1 text-xs text-muted">

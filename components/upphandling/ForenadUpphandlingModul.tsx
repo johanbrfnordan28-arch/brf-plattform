@@ -547,14 +547,15 @@ function GrunduppgifterRad({ grund }: { grund: Grunduppgifter }) {
         ))}
       </dl>
       <p className="mt-2 text-xs text-muted">
-        Fyll i grunduppgifter i{" "}
+        Uppgifterna synkas från föreningens registrering. Saknas något, komplettera
+        under{" "}
         <a
-          href="/forening/underhallsplan#grund"
+          href="/forening/uppgifter#grunduppgifter"
           className="text-primary-dark underline hover:no-underline"
         >
-          underhållsplanens steg 1
-        </a>{" "}
-        för att se fler uppgifter här.
+          grunduppgifter
+        </a>
+        .
       </p>
     </div>
   );

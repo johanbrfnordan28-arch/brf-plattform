@@ -22,6 +22,10 @@ import {
 } from "@/lib/auth/lokal-konto";
 import { sparaLokalSession } from "@/lib/auth/lokal-session";
 import { markeraStyrelsemassaLeadLokalSomSkapadeTest } from "@/lib/styrelsemassa-lager";
+import {
+  appliceraForeningStartData,
+  type ForeningStartGrund,
+} from "@/lib/forening-start-data";
 
 async function etableraKontoEfterSkapa(opts: {
   epost: string;
@@ -65,25 +69,36 @@ export type SkapaForeningMedKontoResultat = {
   epost: string;
 };
 
+function forstaAdress(grund: ForeningStartGrund): string {
+  return grund.adresser.map((a) => a.trim()).find(Boolean) ?? "";
+}
+
 function skapaLokalProfil(opts: {
   namn: string;
   foreningId: string;
   skapareNamn: string;
   skapareEpost: string;
   skapareRoll: string;
+  startGrund: ForeningStartGrund;
 }): ForeningProfil {
   const ledamot = skapaTomStyrelseLedamot({
     namn: opts.skapareNamn,
     roll: opts.skapareRoll,
     epost: opts.skapareEpost,
   });
-  return skapaNyForening(opts.namn, {
+  const profil = skapaNyForening(opts.namn, {
     id: opts.foreningId,
     synkaServer: false,
     epost: opts.skapareEpost,
     kontaktperson: opts.skapareNamn,
     styrelseledamoter: [ledamot],
+    organisationsnummer: opts.startGrund.organisationsnummer,
+    postadress: forstaAdress(opts.startGrund),
+    postnummer: opts.startGrund.postnummer,
+    ort: opts.startGrund.ort,
+    grundinfoPaborjad: true,
   });
+  return appliceraForeningStartData(profil, opts.startGrund);
 }
 
 function hamtaEllerSkapaLokalProfil(opts: {
@@ -92,9 +107,14 @@ function hamtaEllerSkapaLokalProfil(opts: {
   skapareNamn: string;
   skapareEpost: string;
   skapareRoll: string;
+  startGrund: ForeningStartGrund;
 }): ForeningProfil {
   const befintlig = finnForeningMedNamn(opts.namn);
-  if (befintlig) return befintlig;
+  if (befintlig) {
+    return appliceraForeningStartData(befintlig, opts.startGrund, {
+      baraOmTom: true,
+    });
+  }
   return skapaLokalProfil(opts);
 }
 
@@ -104,6 +124,7 @@ export async function skapaForeningMedKontoKlient(opts: {
   skapareEpost: string;
   skapareRoll: StyrelseRoll | string;
   villkorVersion: string;
+  startGrund: ForeningStartGrund;
 }): Promise<SkapaForeningMedKontoResultat> {
   const namn = opts.foreningsNamn.trim();
   const skapareNamn = opts.skapareNamn.trim();
@@ -134,6 +155,10 @@ export async function skapaForeningMedKontoKlient(opts: {
         skapareEpost,
         skapareRoll,
         villkorVersion: opts.villkorVersion,
+        organisationsnummer: opts.startGrund.organisationsnummer,
+        postadress: forstaAdress(opts.startGrund),
+        postnummer: opts.startGrund.postnummer,
+        ort: opts.startGrund.ort,
       }),
     });
     data = (await res.json()) as typeof data;
@@ -155,6 +180,7 @@ export async function skapaForeningMedKontoKlient(opts: {
       skapareNamn,
       skapareEpost,
       skapareRoll,
+      startGrund: opts.startGrund,
     });
     markeraStyrelsemassaLeadLokalSomSkapadeTest({
       epost: skapareEpost,
@@ -237,6 +263,7 @@ export async function skapaForeningMedKontoKlient(opts: {
     skapareNamn,
     skapareEpost,
     skapareRoll,
+    startGrund: opts.startGrund,
   });
 
   if (data.accessNyckel) {

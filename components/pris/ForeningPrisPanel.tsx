@@ -77,15 +77,15 @@ export function ForeningPrisPanel({
       >
         <p className="font-medium text-foreground">Er kostnad visas här</p>
         <p className="mt-1">
-          Ange antal lägenheter i underhållsplanens grunduppgifter — då räknas
-          ert pris ut automatiskt. Prislistan är dold tills dess.
+          Antal lägenheter hämtas från grunduppgifterna ni registrerade. Saknas
+          det kompletterar ni där — då räknas priset ut automatiskt.
         </p>
         {visaLankTillGrund && (
           <Link
-            href="/forening/underhallsplan#grund"
+            href="/forening/uppgifter#grunduppgifter"
             className="mt-2 inline-block font-medium text-primary-dark underline hover:no-underline"
           >
-            Fyll i antal lägenheter →
+            Komplettera grunduppgifter →
           </Link>
         )}
         <ul className="mt-3 space-y-1 text-xs text-muted">
