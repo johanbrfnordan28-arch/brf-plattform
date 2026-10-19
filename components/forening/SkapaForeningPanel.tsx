@@ -17,6 +17,10 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import {
+  MAX_LAGENHETER_VID_SKAPANDE,
+  parseAntalLagenheter,
+} from "@/lib/forening-start-data";
 
 type Props = {
   kompakt?: boolean;
@@ -32,6 +36,12 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
   const [skapareNamn, setSkapareNamn] = useState("");
   const [skapareEpost, setSkapareEpost] = useState("");
   const [skapareRoll, setSkapareRoll] = useState<string>("Ordförande");
+  const [organisationsnummer, setOrganisationsnummer] = useState("");
+  const [adresser, setAdresser] = useState<string[]>([""]);
+  const [postnummer, setPostnummer] = useState("");
+  const [ort, setOrt] = useState("");
+  const [antalLagenheter, setAntalLagenheter] = useState("");
+  const [antalVaningar, setAntalVaningar] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [skapar, setSkapar] = useState(false);
   const [skapatNamn, setSkapatNamn] = useState<string | null>(null);
@@ -82,6 +92,14 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
         skapareEpost,
         skapareRoll,
         villkorVersion: VILLKOR_VERSION,
+        startGrund: {
+          organisationsnummer,
+          adresser,
+          postnummer,
+          ort,
+          antalLagenheter,
+          antalVaningar,
+        },
       });
       setSkapatNamn(resultat.profil.namn);
       if (resultat.tillfalligtLosenord) {
@@ -132,6 +150,29 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
     }
     if (!skapareEpost.trim() || !skapareEpost.includes("@")) {
       setFel("Ange en giltig e-postadress — dit skickas lösenordet.");
+      return;
+    }
+    if (!organisationsnummer.trim()) {
+      setFel("Ange föreningens organisationsnummer.");
+      return;
+    }
+    if (!adresser.map((a) => a.trim()).some(Boolean)) {
+      setFel("Ange minst en fastighetsadress.");
+      return;
+    }
+    if (!postnummer.trim() || !ort.trim()) {
+      setFel("Ange postnummer och ort.");
+      return;
+    }
+    const antal = parseAntalLagenheter(antalLagenheter);
+    if (antal < 1) {
+      setFel("Ange antal lägenheter (minst 1).");
+      return;
+    }
+    if (antal > MAX_LAGENHETER_VID_SKAPANDE) {
+      setFel(
+        `Ange högst ${MAX_LAGENHETER_VID_SKAPANDE} lägenheter vid skapandet.`,
+      );
       return;
     }
     void korSkapa(trimmatNamn);
@@ -279,10 +320,10 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Ni får en egen sida med{" "}
-        <strong className="text-foreground">ert föreningsnamn</strong>. Ett
-        tillfälligt lösenord skickas till din e-post. Nästa gång: logga in via{" "}
-        <strong className="text-foreground">Testperiod</strong> med e-post och
-        lösenord.
+        <strong className="text-foreground">ert föreningsnamn</strong>. Adress,
+        org.nr och antal lägenheter sparas direkt och synkas till
+        föreningsuppgifter, underhållsplan och lägenhetsregister. Ett tillfälligt
+        lösenord skickas till din e-post.
       </p>
       <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950">
         <strong>Endast styrelsen</strong> ska skapa föreningens sida.
@@ -351,6 +392,122 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
             ))}
           </select>
         </label>
+
+        <label className="block text-sm">
+          <span className="font-medium text-foreground">Organisationsnummer</span>
+          <input
+            type="text"
+            value={organisationsnummer}
+            onChange={(e) => setOrganisationsnummer(e.target.value)}
+            placeholder="t.ex. 769623-8166"
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-foreground"
+            autoComplete="off"
+            disabled={skapar}
+          />
+        </label>
+
+        <div>
+          <p className="text-sm font-medium text-foreground">Fastighetsadresser</p>
+          <p className="mt-0.5 text-xs text-muted">
+            En rad per husadress. Första adressen används som postadress.
+          </p>
+          <div className="mt-2 space-y-2">
+            {adresser.map((adress, index) => (
+              <div key={`skapa-adress-${index}`} className="flex gap-2">
+                <input
+                  type="text"
+                  value={adress}
+                  onChange={(e) => {
+                    const nasta = [...adresser];
+                    nasta[index] = e.target.value;
+                    setAdresser(nasta);
+                  }}
+                  placeholder="t.ex. Storgatan 12"
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
+                  disabled={skapar}
+                />
+                {adresser.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAdresser((nu) => {
+                        const nasta = nu.filter((_, i) => i !== index);
+                        return nasta.length > 0 ? nasta : [""];
+                      })
+                    }
+                    className="rounded-lg border border-border px-3 text-sm text-muted hover:text-foreground"
+                    disabled={skapar}
+                  >
+                    Ta bort
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAdresser((nu) => [...nu, ""])}
+            className="mt-2 text-sm font-medium text-primary-dark hover:underline"
+            disabled={skapar}
+          >
+            + Lägg till adress
+          </button>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="font-medium text-foreground">Postnummer</span>
+              <input
+                type="text"
+                value={postnummer}
+                onChange={(e) => setPostnummer(e.target.value)}
+                placeholder="123 45"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-foreground"
+                autoComplete="postal-code"
+                disabled={skapar}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium text-foreground">Ort</span>
+              <input
+                type="text"
+                value={ort}
+                onChange={(e) => setOrt(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-foreground"
+                autoComplete="address-level2"
+                disabled={skapar}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="font-medium text-foreground">Antal lägenheter</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={antalLagenheter}
+              onChange={(e) => setAntalLagenheter(e.target.value)}
+              placeholder="t.ex. 24"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-foreground"
+              disabled={skapar}
+            />
+            <span className="mt-1 block text-xs text-muted">
+              Skapas som tomma poster i lägenhetsregistret.
+            </span>
+          </label>
+          <label className="block text-sm">
+            <span className="font-medium text-foreground">Antal våningar</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={antalVaningar}
+              onChange={(e) => setAntalVaningar(e.target.value)}
+              placeholder="t.ex. 4"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-foreground"
+              disabled={skapar}
+            />
+          </label>
+        </div>
 
         <label className="flex cursor-pointer items-start gap-3 text-sm">
           <input

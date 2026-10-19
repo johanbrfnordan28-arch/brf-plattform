@@ -14,10 +14,17 @@ import {
  */
 const INLINE_AKTIVERA_BODY = `
     var profilKey = "brf-f-" + id + "--${FORENING_PROFIL_BASE_KEY}";
+    function lasProfilJson(raw) {
+      if (!raw) return null;
+      try {
+        var p = JSON.parse(raw);
+        if (p && p.id === id) return p;
+      } catch (eParse) {}
+      return null;
+    }
     var befintlig = null;
     try {
-      var rawProfil = localStorage.getItem(profilKey);
-      if (rawProfil) befintlig = JSON.parse(rawProfil);
+      befintlig = lasProfilJson(localStorage.getItem(profilKey));
     } catch (e0) {}
     if (!befintlig) {
       try {
@@ -33,24 +40,34 @@ const INLINE_AKTIVERA_BODY = `
         }
       } catch (e0b) {}
     }
-    var skaSkrivaProfil =
-      !befintlig ||
-      befintlig.id === "${GRUNDMALL_FORENING_ID}" ||
-      befintlig.namn !== namn;
-    var profil = skaSkrivaProfil
-      ? {
+    if (!befintlig) {
+      try {
+        befintlig = lasProfilJson(sessionStorage.getItem("${SENAST_SKAPAD_PROFIL_KEY}"));
+      } catch (e0c) {}
+    }
+    if (!befintlig) {
+      try {
+        var ck = document.cookie.match(/(?:^|; )brf_senast_profil=([^;]*)/);
+        if (ck) befintlig = lasProfilJson(decodeURIComponent(ck[1]));
+      } catch (e0d) {}
+    }
+    var profil = (befintlig && befintlig.id !== "${GRUNDMALL_FORENING_ID}")
+      ? befintlig
+      : {
           id: id,
           namn: namn,
           skapadTidpunkt: new Date().toISOString(),
-          organisationsnummer: befintlig && befintlig.organisationsnummer ? befintlig.organisationsnummer : "",
-          epost: befintlig && befintlig.epost ? befintlig.epost : "",
-          postadress: befintlig && befintlig.postadress ? befintlig.postadress : "",
-          ort: befintlig && befintlig.ort ? befintlig.ort : "",
-          kontaktperson: befintlig && befintlig.kontaktperson ? befintlig.kontaktperson : "",
-          grundinfoPaborjad: befintlig && befintlig.grundinfoPaborjad ? befintlig.grundinfoPaborjad : false
-        }
-      : befintlig;
+          organisationsnummer: "",
+          epost: "",
+          postadress: "",
+          postnummer: "",
+          ort: "",
+          kontaktperson: "",
+          grundinfoPaborjad: false
+        };
+    if (namn && !profil.namn) profil.namn = namn;
     var profilJson = JSON.stringify(profil);
+    var skaSkrivaProfil = true;
     try {
       if (skaSkrivaProfil) {
         var regRaw = localStorage.getItem("${FORENING_REGISTRY_KEY}");

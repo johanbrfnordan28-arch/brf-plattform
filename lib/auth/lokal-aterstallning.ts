@@ -4,7 +4,9 @@
  */
 
 import {
+  genereraLokalLosenord,
   hamtaLokalKonto,
+  sattLokalLosenord,
   sparaLokalKonto,
 } from "@/lib/auth/lokal-konto";
 import { lasAktivForeningId } from "@/lib/forening-registry";
@@ -80,6 +82,62 @@ export function begärLokalAterstallning(epost: string): {
     lank,
     meddelande:
       "Öppna länken nedan inom en timme. Den fungerar i den här webbläsaren även om mejlet inte kommer fram.",
+  };
+}
+
+/** Sparar lösenordet som servern mejlade så lokal inloggning matchar. */
+export function sparaNyttLosenordFranServer(
+  epost: string,
+  losenord: string,
+  foreningId?: string,
+  namn?: string,
+): void {
+  const konto = hamtaLokalKonto(epost, foreningId);
+  const id = foreningId || konto?.foreningId || lasAktivForeningId() || "";
+  if (!id && !konto) return;
+  sattLokalLosenord(
+    epost,
+    losenord,
+    id || konto?.foreningId || "",
+    namn || konto?.namn || "",
+  );
+}
+
+/** Nytt tillfälligt lösenord när servern saknar konto men webbläsaren har ett. */
+export function begärLokaltNyttLosenord(epost: string):
+  | {
+      ok: true;
+      losenord: string;
+      foreningId: string;
+      meddelande: string;
+    }
+  | { ok: false; fel: string } {
+  const nyckel = epost.trim().toLowerCase();
+  if (!nyckel || !nyckel.includes("@")) {
+    return { ok: false, fel: "Ange en giltig e-postadress." };
+  }
+  const konto = hamtaLokalKonto(nyckel);
+  const foreningId = konto?.foreningId || lasAktivForeningId() || "";
+  if (!konto && !foreningId) {
+    return {
+      ok: false,
+      fel: "Inget lokalt konto hittades för den e-postadressen i den här webbläsaren.",
+    };
+  }
+  const losenord = genereraLokalLosenord(12);
+  const sparat = sattLokalLosenord(
+    nyckel,
+    losenord,
+    foreningId,
+    konto?.namn || "",
+  );
+  if (!sparat.ok) return sparat;
+  return {
+    ok: true,
+    losenord,
+    foreningId,
+    meddelande:
+      "Ett nytt tillfälligt lösenord är sparat i den här webbläsaren.",
   };
 }
 

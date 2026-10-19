@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import {
   beraknaEffektivFramsteg,
   byggEffektivChecklista,
@@ -87,6 +88,9 @@ export function RonderingChecklista({
   );
   const klaraSet = useMemo(() => new Set(klaraPunkter), [klaraPunkter]);
   const alltKlart = framsteg.totalt > 0 && framsteg.klara === framsteg.totalt;
+  const [oppnaSektion, setOppnaSektion] = useState<string | null>(
+    () => mall.sektioner[0]?.id ?? null,
+  );
 
   return (
     <details
@@ -126,19 +130,38 @@ export function RonderingChecklista({
             ovan eller lägg till egna punkter under Anpassa.
           </p>
         ) : (
-          <div className="mt-4 space-y-4">
-            {mall.sektioner.map((sektion) => (
+          <div className="mt-4 space-y-2">
+            {mall.sektioner.map((sektion) => {
+              const oppen = oppnaSektion === sektion.id;
+              const klaraISektion = sektion.punkter.filter((punkt) =>
+                klaraSet.has(checklistaPunktNyckel(typ, sektion.id, punkt.id)),
+              ).length;
+              return (
               <section
                 key={sektion.id}
-                className="rounded-xl border border-border bg-white p-4"
+                className="overflow-hidden rounded-xl border border-border bg-white"
               >
-                <h4 className="text-base font-semibold text-foreground">
-                  {sektion.etikett}
-                </h4>
-                {sektion.beskrivning && (
-                  <p className="mt-1 text-xs text-muted">{sektion.beskrivning}</p>
-                )}
-                <ul className="mt-3 space-y-2">
+                <button
+                  type="button"
+                  aria-expanded={oppen}
+                  onClick={() =>
+                    setOppnaSektion((nu) => (nu === sektion.id ? null : sektion.id))
+                  }
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left"
+                >
+                  <OppnaStangIkon oppen={oppen} storlek="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-foreground">
+                      {sektion.etikett}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {klaraISektion} av {sektion.punkter.length} klara
+                      {sektion.beskrivning ? ` · ${sektion.beskrivning}` : ""}
+                    </span>
+                  </span>
+                </button>
+                {oppen && (
+                <ul className="space-y-2 border-t border-border/70 px-3 py-3">
                   {sektion.punkter.map((punkt) => {
                     const nyckel = checklistaPunktNyckel(typ, sektion.id, punkt.id);
                     const klar = klaraSet.has(nyckel);
@@ -184,8 +207,10 @@ export function RonderingChecklista({
                     );
                   })}
                 </ul>
+                )}
               </section>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

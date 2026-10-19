@@ -6,6 +6,7 @@ import {
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import type { Besiktning } from "@/components/underhallsplan/besiktningar";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
+import { normaliseraGrund } from "@/components/underhallsplan/grund-synk";
 import {
   normaliseraPlaninstallningar,
   standardPlaninstallningar,
@@ -24,8 +25,8 @@ export const UNDERHALLSPLAN_STATE_EVENT = "underhallsplan-state-uppdaterad";
 
 const STORAGE_KEY_BASE = "brf-underhallsplan-state";
 
-function storageKey(): string {
-  return foreningStorageKey(STORAGE_KEY_BASE);
+function storageKey(foreningId?: string): string {
+  return foreningStorageKey(STORAGE_KEY_BASE, foreningId);
 }
 const LAGER_VERSION = 1;
 
@@ -102,10 +103,61 @@ function uppgraderaUnderhallsplanState(
   };
 }
 
-export function lasUnderhallsplanState(): UnderhallsplanLagratState | null {
+export function tomGrunduppgifter(
+  patch?: Partial<Grunduppgifter>,
+): Grunduppgifter {
+  return {
+    boarea: "",
+    lokalyta: "",
+    lokaler: [],
+    antalLagenheter: "",
+    byggar: "",
+    tomtstorlek: "",
+    antalVaningar: "",
+    antalByggnader: "1",
+    adresser: [""],
+    uppvarmning: "",
+    ventilationssystem: "",
+    fastighetsbeteckning: "",
+    ...patch,
+  };
+}
+
+export function tomtUnderhallsplanState(
+  grund: Grunduppgifter,
+  planNamn?: string | null,
+): UnderhallsplanLagratState {
+  const grundNorm = normaliseraGrund(grund);
+  const harStart =
+    grundNorm.adresser.some((a) => a.trim()) ||
+    Boolean(grundNorm.antalLagenheter.trim());
+  return {
+    version: LAGER_VERSION,
+    sparad: new Date().toISOString(),
+    aktivTestplan: null,
+    planNamn: planNamn ?? null,
+    planNotering: null,
+    grund: grundNorm,
+    planinstallningar: standardPlaninstallningar(),
+    grundSaved: harStart,
+    renoveringarSaved: false,
+    komponenterSaved: false,
+    besiktningarSaved: false,
+    activeComponents: [],
+    komponentDetaljer: {},
+    besiktningar: [],
+    renoveringarLista: [],
+    renoveringSammanfattning: null,
+    krPerKvmAr: 0,
+  };
+}
+
+export function lasUnderhallsplanState(
+  foreningId?: string,
+): UnderhallsplanLagratState | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(storageKey());
+    const raw = localStorage.getItem(storageKey(foreningId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<UnderhallsplanLagratState>;
     if (!parsed) return null;

@@ -33,6 +33,8 @@ model Forening {
   /// BankID-signering av avtal (ISO när signering slutfördes).
   avtalBankidTidpunkt  DateTime?
   avtalBankidNamn      String    @default("")
+  /// Två BankID-signaturer: [{ namn, personnummerMaskerat, personnummerNyckel, tidpunkt, part }]
+  avtalSignaturer      Json?
   /// Villkor + personuppgiftsbiträdesavtal som godkändes när föreningen skapades.
   villkorVersion          String    @default("")
   villkorGodkantTidpunkt  DateTime?
@@ -44,6 +46,8 @@ model Forening {
   borttagenAvEpost     String    @default("")
   /// Återställd av personal efter automatisk gallring — gallras inte igen.
   gallringUndantag     Boolean   @default(false)
+  /// Offert, avtal och uppdragskvittens för städ/rondering.
+  driftTjanst          Json?
   skapadTidpunkt       DateTime  @default(now())
   uppdateradTidpunkt   DateTime  @updatedAt
 

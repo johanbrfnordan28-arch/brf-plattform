@@ -22,11 +22,21 @@ export async function POST(
 
   const { id } = await ctx.params;
   try {
-    const body = (await req.json()) as { signerNamn?: string };
+    const body = (await req.json()) as {
+      signerNamn?: string;
+      personnummer?: string;
+    };
     const signerNamn = body.signerNamn?.trim();
+    const personnummer = body.personnummer?.trim();
     if (!signerNamn) {
       return NextResponse.json(
         { fel: "Ange namn för BankID-signering." },
+        { status: 400 },
+      );
+    }
+    if (!personnummer) {
+      return NextResponse.json(
+        { fel: "Ange personnummer för den som ska signera." },
         { status: 400 },
       );
     }
@@ -52,7 +62,11 @@ export async function POST(
       return NextResponse.json({ fel: "Saknar behörighet." }, { status: 403 });
     }
 
-    const dto = await signeraAvtalMedBankId({ foreningId: id, signerNamn });
+    const dto = await signeraAvtalMedBankId({
+      foreningId: id,
+      signerNamn,
+      personnummer,
+    });
     return NextResponse.json({ forening: dto });
   } catch (e) {
     return NextResponse.json(

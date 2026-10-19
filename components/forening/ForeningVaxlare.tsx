@@ -1,13 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
 import {
   arAktivKundForening,
   arKundForening,
-  KUND_LOGIN_PATH,
-  TEST_LOGIN_PATH,
 } from "@/lib/forening-kund";
 import {
   FORENING_AKTIV_EVENT,
@@ -17,7 +14,6 @@ import {
   normaliseraForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
-import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 function tomProfil(id: string, namn: string): ForeningProfil {
   return normaliseraForeningProfil({
@@ -28,8 +24,7 @@ function tomProfil(id: string, namn: string): ForeningProfil {
 }
 
 /**
- * Visar alltid bara den aktiva föreningen — aldrig en lista över andra
- * skapade test- eller kundföreningar.
+ * Visar alltid bara den aktiva föreningen — aldrig inloggning eller skapa-ny.
  */
 export function ForeningVaxlare() {
   const [aktivNamn, setAktivNamn] = useState("");
@@ -81,29 +76,6 @@ export function ForeningVaxlare() {
           {arKund ? " · Kund" : egenAktiv ? " · Test" : ""}
         </span>
       </div>
-      {arKund ? (
-        <Link
-          href={KUND_LOGIN_PATH}
-          className="text-xs font-medium text-primary-dark hover:underline"
-        >
-          Sök och logga in igen
-        </Link>
-      ) : (
-        <Link
-          href={TEST_LOGIN_PATH}
-          className="text-xs font-medium text-primary-dark hover:underline"
-        >
-          {egenAktiv ? "Logga in på annan förening" : "Byt förening via sök"}
-        </Link>
-      )}
-      {!arKund && (
-        <Link
-          href={PROVA_GRATIS_PATH}
-          className="text-xs font-medium text-primary-dark hover:underline"
-        >
-          + Ny förening
-        </Link>
-      )}
     </div>
   );
 }

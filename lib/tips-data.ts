@@ -72,8 +72,8 @@ export const tips: Record<string, TipsPunkt[]> = {
   rondering: [
     {
       ikon: "✅",
-      titel: "Digital signering varje månad",
-      text: "Städning och fastighetsskötsel signeras digitalt av fastighetsskötare eller städbolag — ni slipper pappersprotokoll och mejlkedjor.",
+      titel: "Kvittens per uppdrag",
+      text: "Städning och rondering kvitteras vid varje tillfälle mot föreningens schema. Avtalet godkänns med BankID — ni ser om tjänsten är utförd.",
     },
     {
       ikon: "📌",

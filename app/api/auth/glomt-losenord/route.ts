@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { databasArKonfigurerad } from "@/lib/db";
 import { begärAterstallning } from "@/lib/auth/auth-tjanst";
-import { skickaAterstallningDemoMejl } from "@/lib/auth/demo-mejl";
-import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
+import { skickaLosenordDemoMejl } from "@/lib/auth/demo-mejl";
+import { mejlLeveransMeddelande } from "@/lib/auth/mejl-konfiguration";
 
 function basUrlFranRequest(req: Request): string {
   const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -17,8 +17,8 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
       epost?: string;
-      aterstallningsLank?: string;
       namn?: string;
+      foreningsNamn?: string;
     };
 
     if (!body.epost?.trim()) {
@@ -26,45 +26,34 @@ export async function POST(req: Request) {
     }
 
     if (!databasArKonfigurerad()) {
-      const lank = body.aterstallningsLank?.trim();
-      if (lank) {
-        const mejl = await skickaAterstallningDemoMejl({
-          epost: body.epost,
-          aterstallningsLank: lank,
-          namn: body.namn,
-        });
-        return NextResponse.json({
-          ok: true,
-          demoLage: true,
-          aterstallningsLank: lank,
-          mejlVia: mejl.mejlVia,
-          meddelande:
-            mejlSkickades(mejl.mejlVia)
-              ? "Återställningslänken har skickats till din e-post."
-              : "Mejltjänsten saknas — använd länken nedan inom en timme.",
-        });
-      }
-
-      return NextResponse.json(
-        {
-          demoLage: true,
-          meddelande:
-            "Demoläge utan databas — återställning sker i webbläsaren där föreningen skapades.",
-        },
-        { status: 503 },
-      );
+      const mejl = await skickaLosenordDemoMejl({
+        epost: body.epost,
+        foreningsNamn: body.foreningsNamn?.trim() || "er förening",
+        mottagarNamn: body.namn,
+        basUrl: basUrlFranRequest(req),
+        arSkickaIgen: true,
+        genereraNytt: true,
+      });
+      return NextResponse.json({
+        ok: true,
+        demoLage: true,
+        tillfalligtLosenord: mejl.tillfalligtLosenord,
+        mejlVia: mejl.mejlVia,
+        meddelande: mejlLeveransMeddelande(mejl.mejlVia),
+      });
     }
 
     const resultat = await begärAterstallning({
       epost: body.epost,
       basUrl: basUrlFranRequest(req),
+      foreningsNamn: body.foreningsNamn,
     });
     return NextResponse.json({
       ok: true,
-      meddelande: resultat.aterstallningsLank
-        ? "Använd länken nedan inom en timme. Den skickas också till e-posten om mejl är igång."
-        : "Om kontot finns skickas en återställningslänk till e-postadressen.",
-      aterstallningsLank: resultat.aterstallningsLank,
+      meddelande: resultat.tillfalligtLosenord
+        ? mejlLeveransMeddelande(resultat.mejlVia || "")
+        : "Om kontot finns skickas ett nytt tillfälligt lösenord till e-postadressen.",
+      tillfalligtLosenord: resultat.tillfalligtLosenord,
       mejlVia: resultat.mejlVia,
     });
   } catch (e) {

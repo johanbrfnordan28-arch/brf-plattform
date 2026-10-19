@@ -2,12 +2,13 @@
  * Kundavtal Styrelse-Navet — villkor för prövoperiod och årsavtal.
  */
 
-import { leverantorRad } from "@/lib/leverantor";
+import { LEVERANTOR, leverantorAdressRader } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import {
   INTEGRITETSPOLICY_PATH,
   VILLKOR_PATH,
 } from "@/lib/juridik";
+import { svenskAdressRader } from "@/lib/svensk-adress";
 
 /** Prövoperiod utan bindning / uppsägningstid. */
 export const PROVOPERIODE_DAGAR = 30;
@@ -22,10 +23,24 @@ export const AVTAL_UPPSAGNING_MANADER = 6;
 export const AVTAL_KPI_TEXT =
   "Årsavgiften justeras årligen enligt Statistiska centralbyråns konsumentprisindex (KPI), med basmånad oktober året före justeringen. Justering sker vid respektive förlängning.";
 
+export type AvtalsForetradare = {
+  namn: string;
+  roll?: string;
+  epost?: string;
+};
+
 export type AvtalsPart = {
   foreningsNamn: string;
   organisationsnummer?: string;
   ort?: string;
+  postadress?: string;
+  /** Flera gatadresser — var och en på egen rad, skilda från postnummer/ort. */
+  gatadresser?: string[];
+  postnummer?: string;
+  fakturaEpost?: string;
+  epost?: string;
+  /** Styrelseledamöter / kontaktpersoner som tecknar eller beställer. */
+  foretradare?: AvtalsForetradare[];
 };
 
 export type AvtalsSektion = {
@@ -78,20 +93,58 @@ export function formatAvtalsDatum(isoOrDate: string | Date): string {
   }
 }
 
+function formateraForetradare(part: AvtalsPart): string {
+  const rader = (part.foretradare ?? [])
+    .filter((p) => p.namn.trim())
+    .map((p) => {
+      const roll = p.roll?.trim();
+      const epost = p.epost?.trim();
+      return [p.namn.trim(), roll, epost].filter(Boolean).join(", ");
+    });
+  return rader.length > 0
+    ? `Företrädare som tecknar/beställer:\n${rader.join("\n")}`
+    : "";
+}
+
 /** Sektioner i kundavtalet — föreningens namn binds in. */
 export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
   const namn = part.foreningsNamn.trim() || "Föreningen";
   const org = part.organisationsnummer?.trim();
+  const leverantorAdress = leverantorAdressRader().join("\n");
+  const kundAdress = svenskAdressRader({
+    gator: part.gatadresser,
+    gata: part.postadress,
+    postnummer: part.postnummer,
+    ort: part.ort,
+  }).join("\n");
+  const foretradare = formateraForetradare(part);
 
   return [
     {
       rubrik: "1. Parter",
       punkter: [
-        `Leverantör: ${leverantorRad()} (nedan »Leverantören«), som tillhandahåller plattformen Styrelse-Navet.`,
-        `Kund: ${namn}${org ? `, org.nr ${org}` : ""}${
-          part.ort?.trim() ? `, ${part.ort.trim()}` : ""
-        } (nedan »Föreningen«).`,
-        "Avtalet tecknas av behörig företrädare för Föreningen och signeras med BankID.",
+        [
+          "Leverantör",
+          LEVERANTOR.namn,
+          `Org.nr ${LEVERANTOR.organisationsnummer}`,
+          leverantorAdress,
+          `Plattform: ${LEVERANTOR.varumarke}`,
+          "(nedan »Leverantören«), som tillhandahåller plattformen Styrelse-Navet.",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        [
+          "Kund",
+          namn,
+          org ? `Org.nr ${org}` : "",
+          kundAdress,
+          part.epost?.trim() ? `E-post: ${part.epost.trim()}` : "",
+          foretradare,
+          "(nedan »Föreningen«).",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        "Avtalet tecknas av två behöriga företrädare för Föreningen och signeras med BankID. Varje BankID-signering är knuten till undertecknarens personnummer.",
       ],
     },
     {
@@ -129,6 +182,9 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
       punkter: [
         `Årsavtal ger ${ARSAVTAL_RABATT_PROCENT} % rabatt mot ordinarie månadsdebitering.`,
         "Fakturering sker kvartalsvis i förskott enligt gällande prislista baserad på antal lägenheter.",
+        part.fakturaEpost?.trim()
+          ? `Fakturan skickas till ${part.fakturaEpost.trim()}.`
+          : "Fakturan skickas till den e-postadress föreningen anger som fakturamottagare.",
         "Alla priser anges exklusive moms.",
         AVTAL_KPI_TEXT,
       ],
@@ -144,7 +200,7 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
     {
       rubrik: "8. Signering",
       punkter: [
-        "Avtalet blir bindande när behörig företrädare för Föreningen signerar med BankID.",
+        "Avtalet blir bindande när två behöriga företrädare för Föreningen har signerat med BankID, vardera med sitt personnummer.",
         `Avtalet gäller för ${namn} och kan inte överlåtas utan Leverantörens skriftliga medgivande.`,
       ],
     },

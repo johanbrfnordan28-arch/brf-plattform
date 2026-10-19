@@ -133,7 +133,9 @@ export function SigneringSchemaKonfiguration() {
   return (
     <div id="manadssignering-schema" className="scroll-mt-24 space-y-4">
       <p className="text-sm leading-relaxed text-muted">
-        <strong className="text-foreground">Steg 1 — justera moment:</strong>{" "}
+        <strong className="text-foreground">Steg 1 — föreningens schema:</strong>{" "}
+        Lägg till och ta bort moment. Schemat är grunden för offert och det avtal
+        entreprenören godkänner.{" "}
         {aktivRoll === "fastighetsskotare" ? (
           <>
             öppna sektionerna <em>Utvändigt</em>, <em>Stuprör och hängrännor</em>,{" "}
@@ -240,7 +242,8 @@ export function SigneringSchemaKonfiguration() {
               onToggle={togglePunkt}
               onToggleGrupp={toggleGrupp}
               onTaBortEget={taBortEgetMoment}
-              oppnaAlla
+              forstaOppen
+              enITaget
             />
           </div>
         </div>

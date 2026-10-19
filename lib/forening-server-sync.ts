@@ -43,7 +43,19 @@ export function dtoTillForeningProfil(
       dto.avtalGodkantTidpunkt || befintlig?.avtalGodkantTidpunkt || "",
     avtalBankidTidpunkt: dto.avtalBankidTidpunkt,
     avtalBankidNamn: dto.avtalBankidNamn,
+    avtalBankidSignaturer:
+      dto.avtalSignaturer?.length
+        ? dto.avtalSignaturer
+        : befintlig?.avtalBankidSignaturer,
     styrelseledamoter: befintlig?.styrelseledamoter,
+    antalLagenheter: befintlig?.antalLagenheter,
+    antalVaningar: befintlig?.antalVaningar,
+    fakturaEpost: befintlig?.fakturaEpost,
+    fakturaAdress: befintlig?.fakturaAdress,
+    fakturaPostnummer: befintlig?.fakturaPostnummer,
+    fakturaOrt: befintlig?.fakturaOrt,
+    fakturaReferens: befintlig?.fakturaReferens,
+    fakturaSkickadTidpunkt: befintlig?.fakturaSkickadTidpunkt,
   });
 }
 

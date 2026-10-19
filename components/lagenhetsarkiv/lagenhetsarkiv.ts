@@ -11,6 +11,7 @@ import {
   skapaMedlemsKravForTyp,
   type MedlemsKravState,
 } from "@/components/lagenhetsarkiv/medlems-krav";
+import type { LagenhetOmbyggnadsavtal } from "@/components/lagenhetsarkiv/lagenhet-ombyggnadsavtal";
 
 export type LagenhetsDokument = {
   id: string;
@@ -131,6 +132,13 @@ export type ApartmentFolder = {
   pPlats?: string;
   /** Övrig notering om lägenheten. */
   lagenhetNotering?: string;
+  /**
+   * Ombyggnadsavtal / överenskommelse på lägenhetskortet.
+   * Styrelsen sätter villkor, lägger till undertecknare och mejlar BankID-länk.
+   */
+  ombyggnadsavtal?: LagenhetOmbyggnadsavtal;
+  /** Tidigare signerade ombyggnadsavtal — sparas för historik. */
+  ombyggnadsavtalHistorik?: LagenhetOmbyggnadsavtal[];
   /** Hall, kök, badrum och övriga rum med uppvärmning m.m. */
   lagenhetsRum?: import("@/components/lagenhetsarkiv/lagenhet-info").LagenhetsRumsInfo;
   /** Eldstäder i lägenheten — godkännande per eldstad. */
@@ -355,6 +363,57 @@ export function antalDokumentRenoveringsMapp(mapp: RenoveringsMapp): number {
 export function formatLagenhetEtikett(lagenhetsnummer: string): string {
   const nr = normaliseraLagenhetsnummer(lagenhetsnummer);
   return nr ? `Lägenhet ${nr}` : "Lägenhet";
+}
+
+/** Text som rullgardinen söker mot (nummer, adress, våning m.m.). */
+export function lagenhetSoktext(apartment: ApartmentFolder): string {
+  return [
+    apartment.lagenhetsnummer,
+    formatLagenhetEtikett(apartment.lagenhetsnummer),
+    apartment.adress,
+    apartment.vaning ? `vån ${apartment.vaning}` : "",
+    apartment.vaning,
+    apartment.antalRum,
+    apartment.boyta,
+  ]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+export function lagenhetRullgardinEtikett(apartment: ApartmentFolder): string {
+  const delar = [
+    formatLagenhetEtikett(apartment.lagenhetsnummer),
+    apartment.adress?.trim(),
+    apartment.vaning?.trim() ? `vån ${apartment.vaning.trim()}` : "",
+  ].filter(Boolean);
+  return delar.join(" · ");
+}
+
+export function sorteraLagenheter(
+  apartments: ApartmentFolder[],
+): ApartmentFolder[] {
+  return [...apartments].sort((a, b) => {
+    const na = Number.parseInt(a.lagenhetsnummer, 10);
+    const nb = Number.parseInt(b.lagenhetsnummer, 10);
+    if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+    return a.lagenhetsnummer.localeCompare(b.lagenhetsnummer, "sv");
+  });
+}
+
+export function filtreraLagenheter(
+  apartments: ApartmentFolder[],
+  sok: string,
+): ApartmentFolder[] {
+  const q = sok.trim().toLowerCase().replace(/\s+/g, " ");
+  const lista = sorteraLagenheter(apartments);
+  if (!q) return lista;
+  const delar = q.split(" ");
+  return lista.filter((a) => {
+    const text = lagenhetSoktext(a);
+    return delar.every((del) => text.includes(del));
+  });
 }
 
 export function normaliseraLagenhetsnummer(raw: string): string {

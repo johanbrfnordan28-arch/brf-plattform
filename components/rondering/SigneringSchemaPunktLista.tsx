@@ -19,6 +19,10 @@ type SigneringSchemaPunktListaProps = {
   readonly?: boolean;
   /** Öppna alla sektioner från start */
   oppnaAlla?: boolean;
+  /** Bara första sektionen öppen från start (övriga ihopfällda). */
+  forstaOppen?: boolean;
+  /** Öppna en sektion i taget — de hör fortfarande till samma schema. */
+  enITaget?: boolean;
 };
 
 export function SigneringSchemaPunktLista({
@@ -29,7 +33,9 @@ export function SigneringSchemaPunktLista({
   onToggleGrupp,
   onTaBortEget,
   readonly = false,
-  oppnaAlla = true,
+  oppnaAlla = false,
+  forstaOppen = false,
+  enITaget = false,
 }: SigneringSchemaPunktListaProps) {
   const grupper = useMemo(
     () => grupperaSchemaPunkter(punkter, roll),
@@ -38,14 +44,24 @@ export function SigneringSchemaPunktLista({
 
   const [oppna, setOppna] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const g of grupper) {
-      init[g.namn] = oppnaAlla;
-    }
+    grupper.forEach((g, i) => {
+      init[g.namn] = oppnaAlla || (forstaOppen && i === 0);
+    });
     return init;
   });
 
   function toggleGrupp(grupp: SigneringSchemaGrupp) {
-    setOppna((prev) => ({ ...prev, [grupp.namn]: !prev[grupp.namn] }));
+    setOppna((prev) => {
+      const skaOppna = !prev[grupp.namn];
+      if (!enITaget) {
+        return { ...prev, [grupp.namn]: skaOppna };
+      }
+      const next: Record<string, boolean> = {};
+      for (const g of grupper) {
+        next[g.namn] = skaOppna && g.namn === grupp.namn;
+      }
+      return next;
+    });
   }
 
   function allaIOppna() {

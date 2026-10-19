@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
-  FORENING_MODULER,
   hamtaModul,
+  hubbModuler,
   type ForeningModulDef,
 } from "@/lib/forening-moduler";
 import {
@@ -145,7 +145,9 @@ export function ForeningSnabbvagar() {
                   <p className="px-2 py-1 text-xs font-medium text-muted">
                     Ersätt med
                   </p>
-                  {FORENING_MODULER.filter((m) => !ids.includes(m.id)).map(
+                  {hubbModuler()
+                    .filter((m) => !ids.includes(m.id))
+                    .map(
                     (alt) => (
                       <button
                         key={alt.id}

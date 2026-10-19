@@ -7,14 +7,13 @@ import {
   verifieraLosenord,
 } from "@/lib/auth/losenord";
 import { krypteraLosenordForVisning } from "@/lib/auth/losenord-kuvert";
-import { byggAterstallningsMejl, byggLosenordMejl, skickaMejl, type MejlLeveransVia } from "@/lib/auth/mejl";
+import { byggLosenordMejl, skickaMejl, type MejlLeveransVia } from "@/lib/auth/mejl";
 import {
   skapaSessionToken,
   skapaId,
   type SessionPayload,
 } from "@/lib/auth/session";
 import {
-  skapaAterstallningsToken,
   hashToken,
   loggaInloggning,
   sakraPlattformAdminKonton,
@@ -28,6 +27,7 @@ import {
   arGiltigStyrelseRoll,
 } from "@/lib/styrelse-ledamot";
 import {
+  avtalSignaturerTillJson,
   hashAccessNyckel,
   skapaAccessNyckel,
   normaliseraNamnNyckel,
@@ -36,6 +36,17 @@ import {
 } from "@/lib/forening-server";
 import { markeraStyrelsemassaLeadSomSkapadeTest } from "@/lib/styrelsemassa-lead-server";
 import { VILLKOR_VERSION } from "@/lib/juridik";
+import {
+  harTillrackligaBankIdSignaturer,
+  laggTillBankIdSignatur,
+  normaliseraBankIdSignaturer,
+  sammanfattaBankIdSignaturer,
+} from "@/lib/bankid-signering";
+import { personnummerTillNyckel } from "@/lib/auth/personnummer-nyckel";
+import {
+  arGiltigtPersonnummer,
+  maskeraPersonnummer,
+} from "@/lib/personnummer-format";
 
 export type SkapaForeningAuthInput = {
   foreningId: string;
@@ -47,6 +58,10 @@ export type SkapaForeningAuthInput = {
   basUrl: string;
   /** Kontot i aktuell session — krävs för att återkoppla en befintlig förening. */
   inloggadKontoId?: string | null;
+  organisationsnummer?: string;
+  postadress?: string;
+  postnummer?: string;
+  ort?: string;
 };
 
 export type SkapaForeningAuthResultat = {
@@ -259,6 +274,13 @@ export async function skapaForeningMedKonto(
         namnNyckel,
         epost,
         kontaktperson: skapareNamn,
+        organisationsnummer: input.organisationsnummer?.trim() ?? "",
+        postadress: input.postadress?.trim() ?? "",
+        postnummer: input.postnummer?.trim() ?? "",
+        ort: input.ort?.trim() ?? "",
+        grundinfoPaborjad: Boolean(
+          input.postadress?.trim() || input.organisationsnummer?.trim(),
+        ),
         accessNyckelHash: hashAccessNyckel(accessNyckel),
         villkorVersion: VILLKOR_VERSION,
         villkorGodkantTidpunkt: new Date(),
@@ -853,21 +875,41 @@ export async function skickaTillfalligtLosenord(opts: {
     const maxAlderMs = 2 * 60 * 60 * 1000;
     if (konto.senasteInloggning != null || Date.now() - skapadMs > maxAlderMs) {
       throw new Error(
-        "Logga in eller använd «Glömt lösenord» för att få en återställningslänk.",
+        "Logga in eller använd «Glömt lösenord» för att få ett nytt lösenord.",
       );
     }
   }
 
+  return mejlaNyttTillfalligtLosenord({
+    kontoId: konto.id,
+    epost: konto.epost,
+    namn: konto.namn,
+    basUrl: opts.basUrl,
+  });
+}
+
+async function mejlaNyttTillfalligtLosenord(opts: {
+  kontoId: string;
+  epost: string;
+  namn: string;
+  basUrl: string;
+  foreningsNamn?: string;
+}): Promise<{
+  skickat: boolean;
+  mejlVia: MejlLeveransVia;
+  tillfalligtLosenord: string;
+}> {
   const medlemskap = await prisma.foreningMedlem.findFirst({
-    where: { kontoId: konto.id },
+    where: { kontoId: opts.kontoId },
     include: { forening: true },
     orderBy: { skapadTidpunkt: "asc" },
   });
-  const foreningsNamn = medlemskap?.forening.namn || "er förening";
+  const foreningsNamn =
+    opts.foreningsNamn?.trim() || medlemskap?.forening.namn || "er förening";
 
   const tillfalligt = genereraTillfalligtLosenord(12);
   await prisma.konto.update({
-    where: { id: konto.id },
+    where: { id: opts.kontoId },
     data: {
       losnordHash: hashLosenord(tillfalligt),
       losenordKuvert: krypteraLosenordForVisning(tillfalligt),
@@ -878,21 +920,20 @@ export async function skickaTillfalligtLosenord(opts: {
   const mejl = await skickaMejl(
     byggLosenordMejl({
       foreningsNamn,
-      mottagarNamn: konto.namn,
-      epost: konto.epost,
+      mottagarNamn: opts.namn,
+      epost: opts.epost,
       losenord: tillfalligt,
       loginUrl,
       arSkickaIgen: true,
     }),
   ).catch((error) => {
-    console.error("[auth] Mejl vid skicka lösenord misslyckades:", error);
+    console.error("[auth] Mejl vid nytt lösenord misslyckades:", error);
     return { via: "ingen" as const, id: "" };
   });
 
   return {
     skickat: true,
     mejlVia: mejl.via,
-    // Visa alltid lösenordet på sidan — mejl kan fastna i skräppost.
     tillfalligtLosenord: tillfalligt,
   };
 }
@@ -900,47 +941,26 @@ export async function skickaTillfalligtLosenord(opts: {
 export async function begärAterstallning(opts: {
   epost: string;
   basUrl: string;
+  foreningsNamn?: string;
 }): Promise<{
   skickat: boolean;
-  aterstallningsLank?: string;
+  tillfalligtLosenord?: string;
   mejlVia?: MejlLeveransVia;
 }> {
   const epost = normaliseraEpost(opts.epost);
   const konto = await prisma.konto.findUnique({ where: { epostNyckel: epost } });
   // Samma svar oavsett om kontot finns (undvik e-postläckage)
-  if (!konto || !konto.aktiv) {
+  if (!konto || !konto.aktiv || konto.typ !== "STYRELSE") {
     return { skickat: true };
   }
 
-  const token = skapaAterstallningsToken();
-  await prisma.losnordAterstallning.create({
-    data: {
-      id: skapaId("reset"),
-      kontoId: konto.id,
-      tokenHash: hashToken(token),
-      utgar: new Date(Date.now() + 60 * 60 * 1000),
-      anvand: false,
-    },
+  return mejlaNyttTillfalligtLosenord({
+    kontoId: konto.id,
+    epost: konto.epost,
+    namn: konto.namn,
+    basUrl: opts.basUrl,
+    foreningsNamn: opts.foreningsNamn,
   });
-
-  const länk = `${opts.basUrl.replace(/\/$/, "")}/konto/aterstall?token=${encodeURIComponent(token)}`;
-  const mejl = await skickaMejl(
-    byggAterstallningsMejl({
-      epost: konto.epost,
-      namn: konto.namn,
-      länk,
-    }),
-  ).catch((error) => {
-    console.error("[auth] Mejl vid återställning misslyckades:", error);
-    return { via: "ingen" as const, id: "" };
-  });
-
-  return {
-    skickat: true,
-    mejlVia: mejl.via,
-    // Visa alltid länken på sidan — mejl kan saknas eller fastna i skräppost.
-    aterstallningsLank: länk,
-  };
 }
 
 export async function aterstallLosenordMedToken(opts: {
@@ -979,9 +999,17 @@ export async function aterstallLosenordMedToken(opts: {
 export async function signeraAvtalMedBankId(opts: {
   foreningId: string;
   signerNamn: string;
+  personnummer: string;
 }): Promise<ForeningServerDto> {
   const namn = opts.signerNamn.trim();
   if (!namn) throw new Error("Ange namn för BankID-signering.");
+  if (!arGiltigtPersonnummer(opts.personnummer)) {
+    throw new Error("Ange ett giltigt personnummer för den som ska signera.");
+  }
+  const personnummerNyckel = personnummerTillNyckel(opts.personnummer);
+  if (!personnummerNyckel) {
+    throw new Error("Kunde inte läsa personnummer från BankID.");
+  }
 
   const rad = await prisma.forening.findUnique({
     where: { id: opts.foreningId },
@@ -991,13 +1019,28 @@ export async function signeraAvtalMedBankId(opts: {
     throw new Error("Fyll i e-post innan avtalssignering.");
   }
 
+  const tillagd = laggTillBankIdSignatur(
+    normaliseraBankIdSignaturer(rad.avtalSignaturer),
+    {
+      namn,
+      personnummerMaskerat: maskeraPersonnummer(opts.personnummer),
+      personnummerNyckel,
+      tidpunkt: new Date().toISOString(),
+      part: "kund",
+    },
+  );
+  if (!tillagd.ok) throw new Error(tillagd.fel);
+
+  const klar = harTillrackligaBankIdSignaturer(tillagd.signaturer);
+  const nu = new Date();
   const uppdaterad = await prisma.forening.update({
     where: { id: opts.foreningId },
     data: {
-      avtalGodkant: true,
-      avtalGodkantTidpunkt: new Date(),
-      avtalBankidTidpunkt: new Date(),
-      avtalBankidNamn: namn,
+      avtalGodkant: klar ? true : rad.avtalGodkant,
+      avtalGodkantTidpunkt: klar ? nu : rad.avtalGodkantTidpunkt,
+      avtalBankidTidpunkt: nu,
+      avtalBankidNamn: sammanfattaBankIdSignaturer(tillagd.signaturer),
+      avtalSignaturer: avtalSignaturerTillJson(tillagd.signaturer),
     },
   });
 

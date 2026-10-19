@@ -88,6 +88,43 @@ export function byggOverenskommelseBrodtext(opts: {
   return rader.join("\n");
 }
 
+export function byggOmbyggnadsavtalBrodtext(opts: {
+  lagenhetsnummer: string;
+  foreningsnamn?: string;
+  mottagareNamn?: string;
+  punkter: { text: string; sektionEtikett: string }[];
+  signeringLank?: string;
+}): string {
+  const rader = [
+    opts.mottagareNamn ? `Hej ${opts.mottagareNamn},` : "Hej,",
+    "",
+    opts.foreningsnamn
+      ? `${opts.foreningsnamn} har skickat ett ombyggnadsavtal / överenskommelse för din lägenhet.`
+      : "Styrelsen har skickat ett ombyggnadsavtal / överenskommelse för din lägenhet.",
+    "Läs villkoren och godkänn med BankID via länken nedan.",
+    "",
+    `Lägenhet: ${opts.lagenhetsnummer}`,
+    "",
+    "Villkor och kravmoment:",
+  ];
+
+  let forraSektion = "";
+  for (const p of opts.punkter) {
+    if (p.sektionEtikett !== forraSektion) {
+      rader.push("", `— ${p.sektionEtikett}`);
+      forraSektion = p.sektionEtikett;
+    }
+    rader.push(`• ${p.text}`);
+  }
+
+  if (opts.signeringLank) {
+    rader.push("", `Godkänn med BankID: ${opts.signeringLank}`);
+  }
+
+  rader.push("", "Vänliga hälsningar", "Styrelsen");
+  return rader.join("\n");
+}
+
 /**
  * Försöker skicka via API (Resend/outbox). Faller tillbaka till lokal logg
  * så flödet fungerar även utan databas.

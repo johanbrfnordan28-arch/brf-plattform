@@ -35,10 +35,9 @@ export default function ForeningMedlemmarPage() {
         <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-foreground">Lägenhetsarkiv</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
-            Sammanställning av alla skapade lägenheter högst upp. Per lägenhet syns
-            år och typ av renovering. Flera mappar kan läggas till — inklusive
-            äldre renoveringar i efterhand. Signerade överenskommelser ligger i
-            respektive mapp.
+            Sök lägenhet i rullgardinen ovanför listan — särskilt när det finns
+            många. Per lägenhet syns år och typ av renovering. Flera mappar kan
+            läggas till. Signerade överenskommelser ligger i respektive mapp.
           </p>
 
           <div className="mt-8">

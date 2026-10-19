@@ -131,6 +131,11 @@ import {
   markeraGrundinfoPaborjad,
   planNamnFranKontakt,
 } from "@/lib/styrelse-kontakt";
+import {
+  fyllTomtGrundFranProfil,
+  hamtaSynkadForeningGrund,
+  synkaGrundFormTillUnderhallsplan,
+} from "@/lib/forening-grund-synk";
 import { VerksamhetsLokalerPanel } from "@/components/underhallsplan/VerksamhetsLokalerPanel";
 import {
   besiktningarBehoverGrundSynk,
@@ -640,6 +645,29 @@ export function UnderhallsplanWizard() {
       };
       sparaUnderhallsplanState(sparad, foreningId);
     }
+    if (
+      sparad &&
+      profil &&
+      !arGrundmallForening(foreningId) &&
+      !arSailorForening(foreningId)
+    ) {
+      const mergedGrund = fyllTomtGrundFranProfil(sparad.grund, profil);
+      const andrad =
+        mergedGrund.antalLagenheter !== sparad.grund.antalLagenheter ||
+        mergedGrund.antalVaningar !== sparad.grund.antalVaningar ||
+        mergedGrund.adresser.join("\n") !== sparad.grund.adresser.join("\n");
+      if (andrad) {
+        sparad = {
+          ...sparad,
+          grund: mergedGrund,
+          grundSaved:
+            sparad.grundSaved ||
+            mergedGrund.adresser.some((a) => a.trim()) ||
+            Boolean(mergedGrund.antalLagenheter.trim()),
+        };
+        sparaUnderhallsplanState(sparad, foreningId);
+      }
+    }
     if (sparad) {
       if (
         sparad.aktivTestplan &&
@@ -670,6 +698,22 @@ export function UnderhallsplanWizard() {
             sparaUnderhallsplanState({ ...sparad, planNamn: synkat });
           }
         }
+      }
+    } else if (profil && !arGrundmallForening(foreningId)) {
+      const synkad = hamtaSynkadForeningGrund(profil);
+      synkaGrundFormTillUnderhallsplan(profil, synkad);
+      const ny = lasUnderhallsplanState(profil.id);
+      if (ny) {
+        appliceraLagratState(ny);
+      } else {
+        const kontakt = hamtaStyrelseKontakt(foreningId);
+        setGrund((current) =>
+          fyllTomtGrundFranProfil(
+            appliceraKontaktPaGrund(current, kontakt),
+            profil,
+          ),
+        );
+        setPlanNamn(planNamnFranKontakt(kontakt));
       }
     } else {
       const kontakt = hamtaStyrelseKontakt();

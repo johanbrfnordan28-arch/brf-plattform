@@ -1,49 +1,109 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { SigneringSchemaGenomfor } from "@/components/rondering/SigneringSchemaGenomfor";
 import {
-  allaSchemaMomentGenomforda,
-  SigneringSchemaGenomfor,
-} from "@/components/rondering/SigneringSchemaGenomfor";
+  hamtaPublikDriftPost,
+  lasDriftState,
+  sparaDriftState,
+  skickaPublikDriftAtgard,
+  formateraUppdragsDatum,
+} from "@/components/rondering/drift-avtal-lager";
+import type { DriftAvtal, DriftUppdrag } from "@/components/rondering/drift-avtal-typer";
 import {
-  aktuellPeriod,
-  arGiltigRoll,
-  formateraPeriod,
-  hamtaSignering,
-  signeringRollInfo,
-  sparaSignering,
-  type SigneringMetod,
-  type SigneringRoll,
-} from "@/components/rondering/signering";
+  hamtaUppdragViaToken,
+  kvitteraUppdragIState,
+} from "@/lib/drift-tjanst-logik";
+import { signeringRollInfo } from "@/components/rondering/signering";
 import {
   GRUNDMALL_NAMN,
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import {
+  maskeraPersonnummer,
+  personnummerFelmeddelande,
+} from "@/lib/personnummer-format";
 
 export function EntreprenorRonderingSignering() {
   const searchParams = useSearchParams();
-  const rollParam = searchParams.get("roll");
-  const periodParam = searchParams.get("period") ?? aktuellPeriod();
+  const token = searchParams.get("token")?.trim() ?? "";
   const foreningId =
     searchParams.get("foreningId") ?? lasAktivForeningId();
   const foreningsNamn =
     lasForeningProfil(foreningId)?.namn ?? GRUNDMALL_NAMN;
 
-  const roll: SigneringRoll | null = arGiltigRoll(rollParam) ? rollParam : null;
-  const info = roll ? signeringRollInfo[roll] : null;
-
-  const [foretagsnamn, setForetagsnamn] = useState("");
+  const [uppdrag, setUppdrag] = useState<DriftUppdrag | null>(null);
+  const [avtal, setAvtal] = useState<DriftAvtal | null>(null);
+  const [laddar, setLaddar] = useState(true);
+  const [namn, setNamn] = useState("");
+  const [personnummer, setPersonnummer] = useState("");
   const [genomfordaPunktIds, setGenomfordaPunktIds] = useState<string[]>([]);
   const [schemaFel, setSchemaFel] = useState<string | null>(null);
-  const [klar, setKlar] = useState(false);
-  const [metod, setMetod] = useState<SigneringMetod | null>(null);
-  const [bankidSteg, setBankidSteg] = useState<"idle" | "pågår" | "klar">("idle");
+  const [bankidSteg, setBankidSteg] = useState<"idle" | "pagar" | "klar">("idle");
 
-  const befintlig = roll ? hamtaSignering(roll, periodParam, foreningId) : null;
-
-  const redanSignerad = befintlig?.status === "signerad" || klar;
+  useEffect(() => {
+    let aktiv = true;
+    async function ladda() {
+      const lokalState = lasDriftState(foreningId);
+      const lokalUppdrag = hamtaUppdragViaToken(lokalState, token);
+      const lokalAvtal = lokalUppdrag
+        ? lokalState.avtal.find((a) => a.id === lokalUppdrag.avtalId) ?? null
+        : null;
+      if (lokalUppdrag && aktiv) {
+        setUppdrag(lokalUppdrag);
+        setAvtal(lokalAvtal);
+        if (lokalUppdrag.genomfordaPunktIds) {
+          setGenomfordaPunktIds(lokalUppdrag.genomfordaPunktIds);
+        }
+      }
+      const remote = await hamtaPublikDriftPost({ foreningId, token });
+      if (!aktiv) return;
+      if ("typ" in remote && remote.typ === "uppdrag") {
+        setUppdrag(remote.uppdrag);
+        setAvtal(remote.avtal);
+        if (remote.uppdrag.genomfordaPunktIds) {
+          setGenomfordaPunktIds(remote.uppdrag.genomfordaPunktIds);
+        }
+        const state = lasDriftState(foreningId);
+        sparaDriftState(
+          {
+            ...state,
+            uppdrag: [
+              remote.uppdrag,
+              ...state.uppdrag.filter((u) => u.id !== remote.uppdrag.id),
+            ],
+            avtal: remote.avtal
+              ? [
+                  remote.avtal,
+                  ...state.avtal.filter((a) => a.id !== remote.avtal!.id),
+                ]
+              : state.avtal,
+          },
+          foreningId,
+          { synkaServer: false },
+        );
+      } else if (!lokalUppdrag) {
+        setSchemaFel(
+          "fel" in remote
+            ? remote.fel
+            : "Uppdraget hittades inte. Be styrelsen skicka en kvittenslänk för uppdraget.",
+        );
+      }
+      setLaddar(false);
+    }
+    if (token) void ladda();
+    else {
+      setSchemaFel(
+        "Ogiltig länk. Be styrelsen skicka en kvittenslänk för det utförda uppdraget.",
+      );
+      setLaddar(false);
+    }
+    return () => {
+      aktiv = false;
+    };
+  }, [foreningId, token]);
 
   function toggleGenomfordPunkt(punktId: string) {
     setSchemaFel(null);
@@ -54,128 +114,134 @@ export function EntreprenorRonderingSignering() {
     );
   }
 
-  function valideraSchema(): string | null {
-    if (!roll) return "Ogiltig roll.";
-    if (!allaSchemaMomentGenomforda(roll, genomfordaPunktIds, foreningId)) {
-      return "Bocka i alla moment i schemat innan du signerar.";
-    }
-    return null;
-  }
-
-  function fullforSignering(signMetod: SigneringMetod, filnamn?: string) {
-    if (!roll || !foretagsnamn.trim()) return;
-    const schemaValidering = valideraSchema();
-    if (schemaValidering) {
-      setSchemaFel(schemaValidering);
+  async function fullfor(metod: "bankid" | "namn") {
+    if (!uppdrag || !avtal || !namn.trim()) return;
+    const lokal = kvitteraUppdragIState(lasDriftState(foreningId), token, {
+      namn: namn.trim(),
+      metod,
+      genomfordaPunktIds,
+      personnummerMaskerat:
+        metod === "bankid" ? maskeraPersonnummer(personnummer) : undefined,
+    });
+    if (!lokal.ok) {
+      setSchemaFel(lokal.fel);
       return;
     }
-    sparaSignering(
-      {
-        roll,
-        period: periodParam,
-        status: "signerad",
-        metod: signMetod,
-        signeradDatum: new Date().toLocaleDateString("sv-SE"),
-        filnamn,
-        foretagsnamn: foretagsnamn.trim(),
-        genomfordaPunktIds: [...genomfordaPunktIds],
-      },
+    sparaDriftState(lokal.state, foreningId, { synkaServer: false });
+    setUppdrag(lokal.uppdrag);
+    const remote = await skickaPublikDriftAtgard({
       foreningId,
-    );
-    setMetod(signMetod);
-    setKlar(true);
-    setSchemaFel(null);
+      token,
+      atgard: "kvittera-uppdrag",
+      namn: namn.trim(),
+      metod,
+      genomfordaPunktIds,
+    });
+    if ("fel" in remote && lokal.uppdrag.status !== "utfort") {
+      setSchemaFel(remote.fel);
+    }
   }
 
-  function signeraMedBankId() {
-    if (!foretagsnamn.trim()) return;
-    const schemaValidering = valideraSchema();
-    if (schemaValidering) {
-      setSchemaFel(schemaValidering);
+  async function signeraMedBankId() {
+    if (!namn.trim()) {
+      setSchemaFel("Ange namn för BankID-signering.");
       return;
     }
-    setBankidSteg("pågår");
-    window.setTimeout(() => {
-      setBankidSteg("klar");
-      fullforSignering("bankid");
-    }, 1800);
+    const pnrFel = personnummerFelmeddelande(personnummer);
+    if (pnrFel) {
+      setSchemaFel(pnrFel);
+      return;
+    }
+    setBankidSteg("pagar");
+    await new Promise((r) => window.setTimeout(r, 1800));
+    await fullfor("bankid");
+    setBankidSteg("klar");
   }
 
-  function laddaUppSignerat(fil: File | null) {
-    if (!fil || !foretagsnamn.trim()) return;
-    fullforSignering("uppladdning", fil.name);
+  if (laddar) {
+    return (
+      <main className="mx-auto max-w-lg px-4 py-16 text-center text-sm text-muted">
+        Laddar uppdrag…
+      </main>
+    );
   }
 
-  if (!roll || !info) {
+  if (!uppdrag || !avtal) {
     return (
       <main className="mx-auto max-w-lg px-4 py-16">
         <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
-          <h1 className="text-xl font-semibold text-foreground">Ogiltig signeringslänk</h1>
+          <h1 className="text-xl font-semibold text-foreground">Ogiltig kvittenslänk</h1>
           <p className="mt-3 text-sm text-muted">
-            Länken ska komma från föreningen och gälla antingen rondering
-            (fastighetsskötare) eller städning. Kontakta styrelsen om du behöver
-            en ny länk.
+            {schemaFel ||
+              "Länken ska komma från föreningen och gälla ett visst uppdrag. Kontakta styrelsen om du behöver en ny länk."}
           </p>
         </div>
       </main>
     );
   }
 
+  const info = signeringRollInfo[uppdrag.roll];
+  const redanSignerad = uppdrag.status === "utfort";
+  const kravBankId = avtal.kravBankIdKvittens;
+
   return (
     <main className="mx-auto max-w-lg px-4 py-10 sm:py-16">
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
         <p className="text-xs font-medium uppercase tracking-wide text-primary-dark">
-          Månadssignering · endast detta dokument
+          Kvittens av uppdrag · endast detta dokument
         </p>
         <h1 className="mt-2 text-2xl font-bold text-foreground">{info.titel}</h1>
         <p className="mt-2 text-sm text-muted">
-          {formateraPeriod(periodParam)} · {foreningsNamn}
+          {formateraUppdragsDatum(uppdrag.utforandedatum)} · {foreningsNamn} ·{" "}
+          {avtal.entreprenorNamn}
         </p>
+        {uppdrag.anteckning ? (
+          <p className="mt-1 text-sm text-foreground">{uppdrag.anteckning}</p>
+        ) : null}
 
         <div className="mt-6 rounded-xl border border-primary/30 bg-[#eef6f0] p-4 text-sm text-foreground">
           <p className="font-semibold text-primary-dark">{info.dokument}</p>
           <p className="mt-2 text-xs text-muted">
-            Du ser inte övriga delar av portalen — bara månadsschemat för{" "}
-            {info.entreprenorTyp.toLowerCase()}. Signering görs en gång per månad.
+            Bocka av alla moment enligt avtalet. Kvittensen visar styrelsen att
+            uppdraget är utfört.
+            {kravBankId ? " Föreningen kräver BankID." : ""}
           </p>
         </div>
 
         {redanSignerad ? (
           <div className="mt-6 rounded-xl border border-border bg-background p-4">
-            <p className="font-semibold text-primary-dark">Redan signerat</p>
+            <p className="font-semibold text-primary-dark">Uppdraget är kvitterat</p>
             <p className="mt-2 text-sm text-foreground">
-              {befintlig?.foretagsnamn ?? foretagsnamn} ·{" "}
-              {befintlig?.signeradDatum ?? new Date().toLocaleDateString("sv-SE")}
+              {uppdrag.signeradNamn}
+              {uppdrag.signeradPersonnummerMaskerat
+                ? ` · ${uppdrag.signeradPersonnummerMaskerat}`
+                : ""}{" "}
+              ·{" "}
+              {uppdrag.signeradTidpunkt
+                ? new Date(uppdrag.signeradTidpunkt).toLocaleString("sv-SE")
+                : ""}
             </p>
             <p className="mt-1 text-sm text-muted">
-              Metod:{" "}
-              {(befintlig?.metod ?? metod) === "bankid"
-                ? "BankID"
-                : `Uppladdat dokument${befintlig?.filnamn ? `: ${befintlig.filnamn}` : ""}`}
+              Metod: {uppdrag.metod === "bankid" ? "BankID" : "Namnkvittens"}
             </p>
-            {befintlig?.genomfordaPunktIds && befintlig.genomfordaPunktIds.length > 0 && (
-              <div className="mt-4">
-                <SigneringSchemaGenomfor
-                  roll={roll}
-                  genomforda={befintlig.genomfordaPunktIds}
-                  onToggle={() => {}}
-                  readonly
-                  foreningId={foreningId}
-                />
-              </div>
-            )}
-            <p className="mt-4 text-xs text-muted">
-              Du kan stänga sidan. Ingen ytterligare åtgärd krävs denna månad.
-            </p>
+            <div className="mt-4">
+              <SigneringSchemaGenomfor
+                roll={uppdrag.roll}
+                genomforda={uppdrag.genomfordaPunktIds ?? []}
+                onToggle={() => {}}
+                readonly
+                punkter={avtal.schemaPunkter}
+              />
+            </div>
           </div>
         ) : (
           <>
             <div className="mt-6 rounded-xl border border-border bg-background p-4">
               <SigneringSchemaGenomfor
-                roll={roll}
+                roll={uppdrag.roll}
                 genomforda={genomfordaPunktIds}
                 onToggle={toggleGenomfordPunkt}
-                foreningId={foreningId}
+                punkter={avtal.schemaPunkter}
               />
             </div>
 
@@ -186,62 +252,80 @@ export function EntreprenorRonderingSignering() {
             )}
 
             <label className="mt-6 block">
-              <span className="text-sm font-medium text-foreground">Företagsnamn</span>
+              <span className="text-sm font-medium text-foreground">
+                Namn vid kvittens
+              </span>
               <input
                 type="text"
                 required
-                value={foretagsnamn}
-                onChange={(event) => setForetagsnamn(event.target.value)}
-                placeholder="t.ex. Fastighetsservice AB"
+                value={namn}
+                onChange={(event) => setNamn(event.target.value)}
+                placeholder="För- och efternamn"
+                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-foreground">
+                Personnummer på den som kvitterar med BankID
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={personnummer}
+                onChange={(event) => setPersonnummer(event.target.value)}
+                placeholder="ÅÅÅÅMMDD-XXXX"
                 className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
 
             <div className="mt-6 space-y-4">
               <div className="rounded-xl border border-border p-4">
-                <p className="text-sm font-semibold text-foreground">Signera med BankID</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Kvittera med BankID
+                </p>
                 <p className="mt-1 text-xs text-muted">
-                  Rekommenderat — identitet verifieras och signeringen kopplas till
-                  månaden (demo utan riktig BankID-koppling).
+                  {kravBankId
+                    ? "Föreningen kräver BankID för det här avtalet."
+                    : "Rekommenderas. Föreningen har inte krävt BankID för kvittens."}
                 </p>
                 <button
                   type="button"
-                  disabled={!foretagsnamn.trim() || bankidSteg === "pågår"}
-                  onClick={signeraMedBankId}
+                  disabled={!namn.trim() || !personnummer.trim() || bankidSteg === "pagar"}
+                  onClick={() => void signeraMedBankId()}
                   className="mt-3 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
                 >
-                  {bankidSteg === "pågår"
+                  {bankidSteg === "pagar"
                     ? "Öppnar BankID…"
-                    : "Signera med BankID"}
+                    : "Kvittera med BankID"}
                 </button>
               </div>
 
-              <div className="rounded-xl border border-dashed border-border p-4">
-                <p className="text-sm font-semibold text-foreground">
-                  Alternativ: mejla in signerat underlag
-                </p>
-                <p className="mt-1 text-xs text-muted">
-                  Om föreningen begär papper eller PDF — ladda upp det signerade
-                  dokumentet här i stället för att mejla (samma månad, samma post).
-                </p>
-                <label className="mt-3 inline-flex cursor-pointer rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]">
-                  Ladda upp signerat dokument
-                  <input
-                    type="file"
-                    accept=".pdf,image/*,.doc,.docx"
-                    className="sr-only"
-                    disabled={!foretagsnamn.trim()}
-                    onChange={(event) => laddaUppSignerat(event.target.files?.[0] ?? null)}
-                  />
-                </label>
-              </div>
+              {!kravBankId && (
+                <div className="rounded-xl border border-dashed border-border p-4">
+                  <p className="text-sm font-semibold text-foreground">
+                    Kvittera utan BankID
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Föreningen har valt att BankID inte är krav. Namn och tid
+                    sparas ändå.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={!namn.trim()}
+                    onClick={() => void fullfor("namn")}
+                    className="mt-3 w-full rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0] disabled:opacity-50"
+                  >
+                    Kvittera uppdraget
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
       </div>
 
       <p className="mt-6 text-center text-xs text-muted">
-        Den här sidan är endast för signering. Du loggas inte in i styrelsens portal.
+        Den här sidan är endast för kvittens. Du loggas inte in i styrelsens portal.
       </p>
     </main>
   );
