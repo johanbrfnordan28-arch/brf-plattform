@@ -4,10 +4,8 @@ import { ModulePage } from "@/components/ModulePage";
 import { ForeningAvtalPanel } from "@/components/forening/ForeningAvtalPanel";
 import { ForeningGrunduppgifterPanel } from "@/components/forening/ForeningGrunduppgifterPanel";
 import { ForeningInloggningsPanel } from "@/components/forening/ForeningInloggningsPanel";
-import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
 import { ForeningSakerhetskopieringPanel } from "@/components/forening/ForeningSakerhetskopieringPanel";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
-import { KUND_LOGIN_KNAPP_RUBRIK } from "@/lib/forening-kund";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -22,7 +20,7 @@ export default function ForeningUppgifterPage() {
     <ModulePage
       title="Föreningsuppgifter"
       icon="🏠"
-      intro="Här fyller styrelsen i föreningens identitet och grunduppgifter. Adresser, lägenheter och våningar kopieras till underhållsplanen. BankID kopplas på styrelsens medlemmar."
+      intro="Uppgifterna ni angav när föreningen skapades ligger här. Ändra eller komplettera vid behov — då synkas det till underhållsplan, lägenhetsregister, pris och avtal."
     >
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-5">
         <p className="text-sm font-semibold text-primary-dark">
@@ -70,8 +68,6 @@ export default function ForeningUppgifterPage() {
           </li>
         </ol>
       </div>
-
-      <ForeningProfilFormular />
 
       <ForeningGrunduppgifterPanel />
 

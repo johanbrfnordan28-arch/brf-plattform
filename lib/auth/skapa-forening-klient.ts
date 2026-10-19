@@ -96,6 +96,8 @@ function skapaLokalProfil(opts: {
     postadress: forstaAdress(opts.startGrund),
     postnummer: opts.startGrund.postnummer,
     ort: opts.startGrund.ort,
+    antalLagenheter: opts.startGrund.antalLagenheter,
+    antalVaningar: opts.startGrund.antalVaningar,
     grundinfoPaborjad: true,
   });
   return appliceraForeningStartData(profil, opts.startGrund);

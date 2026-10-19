@@ -41,6 +41,9 @@ export function appliceraForeningStartData(
     postadress: forstaAdress || profil.postadress,
     postnummer: grund.postnummer.trim() || profil.postnummer,
     ort: grund.ort.trim() || profil.ort,
+    antalLagenheter:
+      grund.antalLagenheter.trim() || profil.antalLagenheter,
+    antalVaningar: grund.antalVaningar.trim() || profil.antalVaningar,
     grundinfoPaborjad: true,
   };
   sparaForeningProfil(uppdaterad, { tyst: true });

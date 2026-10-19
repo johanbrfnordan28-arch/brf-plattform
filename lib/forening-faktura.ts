@@ -3,8 +3,7 @@
  * grunduppgifterna. Underlaget mejlas till fakturamottagaren.
  */
 
-import { hamtaAntalLagenheterFranGrund } from "@/components/underhallsplan/grund-synk";
-import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
+import { hamtaAntalLagenheterSynkat } from "@/lib/forening-grund-synk";
 import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import { LEVERANTOR, leverantorPostadress } from "@/lib/leverantor";
@@ -47,8 +46,7 @@ export function arFakturaUppgifterKlara(
 }
 
 export function hamtaAntalLagenheterForFaktura(): number {
-  const plan = lasUnderhallsplanState();
-  return plan?.grund ? hamtaAntalLagenheterFranGrund(plan.grund) : 0;
+  return hamtaAntalLagenheterSynkat();
 }
 
 export function kvartalsperiod(nu = new Date()): { etikett: string; start: Date } {

@@ -33,10 +33,16 @@ import {
   sparaLagenhetsarkiv,
   type LagenhetsarkivState,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
-import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
-import { parseHeltalFranText } from "@/components/underhallsplan/parse-grundtal";
 import { ForeningSakerhetskopiaKompakt } from "@/components/forening/ForeningSakerhetskopiaKompakt";
-import { arGrundmallForening, lasAktivForeningId } from "@/lib/forening-registry";
+import {
+  hamtaAntalLagenheterSynkat,
+  hamtaSynkadForeningGrund,
+} from "@/lib/forening-grund-synk";
+import {
+  arGrundmallForening,
+  lasAktivForeningId,
+  lasForeningProfil,
+} from "@/lib/forening-registry";
 import {
   lasRenoveringsAnmalan,
   MEDLEMMAR_RENOVERING_EVENT,
@@ -111,9 +117,10 @@ export function ApartmentArchiveDemo() {
     } else if (arGrundmallForening(lasAktivForeningId())) {
       state = skapaGrundmallDemoArkiv();
     } else {
-      const plan = lasUnderhallsplanState();
-      const antal = parseHeltalFranText(plan?.grund.antalLagenheter ?? "");
-      const adress = plan?.grund.adresser.map((a) => a.trim()).find(Boolean);
+      const profil = lasForeningProfil(lasAktivForeningId());
+      const synkad = profil ? hamtaSynkadForeningGrund(profil) : null;
+      const antal = hamtaAntalLagenheterSynkat(profil);
+      const adress = synkad?.adresser.map((a) => a.trim()).find(Boolean);
       state =
         antal > 0
           ? skapaLagenhetsarkivMedAntal(antal, { adress })

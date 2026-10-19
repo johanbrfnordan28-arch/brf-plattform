@@ -38,9 +38,10 @@ export function ForeningValkommenRand() {
       <p className="text-sm font-semibold text-primary-dark">Välkommen!</p>
       <p className="mt-1 text-base font-bold text-foreground">{namn}</p>
       <p className="mt-2 text-sm text-muted">
-        Er föreningssida är sparad i den här webbläsaren. Ni har redan alla
-        funktioner under prövoperioden. När ni vill bli kund trycker ni Teckna
-        avtal — två personer signerar med BankID.
+        Er föreningssida är sparad. Org.nr, adress och lägenheter ni angav vid
+        skapandet syns i föreningsuppgifter, underhållsplan och lägenhetsregister.
+        När ni vill bli kund trycker ni Teckna avtal — två personer signerar med
+        BankID.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
@@ -53,7 +54,7 @@ export function ForeningValkommenRand() {
           href="/forening/uppgifter#grunduppgifter"
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
-          Komplettera grunduppgifter
+          Visa föreningsuppgifter
         </Link>
         <Link
           href="/forening/arshjul"

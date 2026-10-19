@@ -12,7 +12,11 @@ import {
   tomtUnderhallsplanState,
 } from "@/components/underhallsplan/underhallsplan-lager";
 import { synkaLagenhetsarkivTillAntal } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
-import type { ForeningProfil } from "@/lib/forening-registry";
+import {
+  arGrundmallForening,
+  lasForeningProfil,
+  type ForeningProfil,
+} from "@/lib/forening-registry";
 import { planNamnFranKontakt, styrelseKontaktFranProfil } from "@/lib/styrelse-kontakt";
 
 export type ForeningGrundForm = {
@@ -22,6 +26,62 @@ export type ForeningGrundForm = {
   antalLagenheter: string;
   antalVaningar: string;
 };
+
+export type SynkadForeningGrund = ForeningGrundForm & {
+  organisationsnummer: string;
+};
+
+export function hamtaSynkadForeningGrund(
+  profil: ForeningProfil,
+): SynkadForeningGrund {
+  const plan = lasUnderhallsplanState(profil.id);
+  return {
+    organisationsnummer: profil.organisationsnummer.trim(),
+    adresser: adresserFranProfilOchPlan(profil, plan?.grund),
+    postnummer: profil.postnummer,
+    ort: profil.ort,
+    antalLagenheter:
+      (plan?.grund.antalLagenheter ?? "").trim() ||
+      profil.antalLagenheter.trim(),
+    antalVaningar:
+      (plan?.grund.antalVaningar ?? "").trim() || profil.antalVaningar.trim(),
+  };
+}
+
+export function hamtaAntalLagenheterSynkat(profil?: ForeningProfil | null): number {
+  const p = profil ?? lasForeningProfil();
+  if (p) {
+    return parseHeltalFranText(hamtaSynkadForeningGrund(p).antalLagenheter);
+  }
+  const plan = lasUnderhallsplanState();
+  return plan?.grund ? parseHeltalFranText(plan.grund.antalLagenheter) : 0;
+}
+
+/** Fyller tomma planfält från profilen utan att skriva över det styrelsen redan angett i planen. */
+export function fyllTomtGrundFranProfil(
+  grund: Grunduppgifter,
+  profil: ForeningProfil,
+): Grunduppgifter {
+  const synkad = hamtaSynkadForeningGrund(profil);
+  const harAdress = grund.adresser.some((a) => a.trim());
+  return appliceraGrundFormPaPlan(grund, {
+    adresser: harAdress ? grund.adresser : synkad.adresser,
+    postnummer: synkad.postnummer,
+    ort: synkad.ort,
+    antalLagenheter: grund.antalLagenheter.trim() || synkad.antalLagenheter,
+    antalVaningar: grund.antalVaningar.trim() || synkad.antalVaningar,
+  });
+}
+
+/** Underhållsplanens grund med registrerad föreningsdata ifylld där planen är tom. */
+export function hamtaSynkadPlanGrund(foreningId?: string): Grunduppgifter | null {
+  const profil = lasForeningProfil(foreningId);
+  const plan = lasUnderhallsplanState(foreningId);
+  if (!profil || arGrundmallForening(profil.id)) {
+    return plan?.grund ?? null;
+  }
+  return fyllTomtGrundFranProfil(plan?.grund ?? tomGrunduppgifter(), profil);
+}
 
 export function adresserFranProfilOchPlan(
   profil: ForeningProfil,

@@ -29,6 +29,7 @@ import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 import { ForeningAvtalsdokument } from "@/components/forening/ForeningAvtalsdokument";
+import { avtalsPartFranProfil } from "@/lib/forening-avtal-part";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import {
   AVTAL_LANGD_AR,
@@ -110,14 +111,7 @@ export function ForeningAvtalPanel() {
         </div>
 
         <ForeningAvtalsdokument
-          part={{
-            foreningsNamn: profil.namn,
-            organisationsnummer: profil.organisationsnummer,
-            ort: profil.ort,
-            postadress: profil.postadress,
-            postnummer: profil.postnummer,
-            fakturaEpost: profil.fakturaEpost,
-          }}
+          part={avtalsPartFranProfil(profil)}
           skapadTidpunkt={profil.skapadTidpunkt}
           signerat={{
             namn: profil.avtalBankidNamn,
@@ -210,7 +204,7 @@ export function ForeningAvtalPanel() {
 
         {!check.ok && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-            <p className="font-semibold">Komplettera grunduppgifter</p>
+            <p className="font-semibold">Uppgifter saknas för att signera</p>
             <p className="mt-1">
               Saknas: {check.saknas.join(", ")}.{" "}
               <Link
@@ -226,14 +220,7 @@ export function ForeningAvtalPanel() {
       </div>
 
         <ForeningAvtalsdokument
-          part={{
-            foreningsNamn: profil.namn,
-            organisationsnummer: profil.organisationsnummer,
-            ort: profil.ort,
-            postadress: profil.postadress,
-            postnummer: profil.postnummer,
-            fakturaEpost: profil.fakturaEpost,
-          }}
+          part={avtalsPartFranProfil(profil)}
           skapadTidpunkt={profil.skapadTidpunkt}
         />
 

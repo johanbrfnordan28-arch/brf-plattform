@@ -1,3 +1,5 @@
+import { appendFileSync, mkdirSync } from "fs";
+import { dirname, join } from "path";
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { skapaId } from "@/lib/auth/session";
@@ -5,6 +7,34 @@ import {
   hamtaMejlFranAdress,
   hamtaMejlTransportStatus,
 } from "@/lib/auth/mejl-konfiguration";
+
+/** JSONL-utkorg i dev när Resend/SMTP saknas. */
+export const LOKAL_MEJL_OUTBOX_FIL = join(
+  process.cwd(),
+  "tmp",
+  "mejl-outbox.jsonl",
+);
+
+function sparaFilOutbox(meddelande: MejlMeddelande): string | null {
+  try {
+    mkdirSync(dirname(LOKAL_MEJL_OUTBOX_FIL), { recursive: true });
+    const id = skapaId("outbox");
+    appendFileSync(
+      LOKAL_MEJL_OUTBOX_FIL,
+      `${JSON.stringify({
+        id,
+        tid: new Date().toISOString(),
+        till: meddelande.till,
+        amne: meddelande.amne,
+        brodtext: meddelande.brodtext,
+      })}\n`,
+    );
+    return id;
+  } catch (error) {
+    console.error("[mejl] Kunde inte skriva lokal utkorg:", error);
+    return null;
+  }
+}
 
 export type MejlMeddelande = {
   till: string;
@@ -154,6 +184,11 @@ export async function skickaMejlDirekt(
       "Ingen mejltjänst konfigurerad — sätt RESEND_API_KEY eller SMTP_* i Vercel.";
   }
 
+  const filId = sparaFilOutbox(meddelande);
+  if (filId) {
+    return { via: "outbox", id: filId, fel: senasteFel };
+  }
+
   return {
     via: "ingen",
     id: skapaId("mejl"),
@@ -207,6 +242,7 @@ export async function skickaMejl(
         `[mejl/fallback] till=${meddelande.till} amne=${meddelande.amne}\n${meddelande.brodtext}`,
       );
     }
+    if (direkt.via === "outbox") return direkt;
     return { via: "ingen", id, fel: direkt.fel };
   }
 

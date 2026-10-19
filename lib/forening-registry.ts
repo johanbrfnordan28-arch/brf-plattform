@@ -57,6 +57,9 @@ export type ForeningProfil = {
   postadress: string;
   postnummer: string;
   ort: string;
+  /** Speglas till underhållsplan och lägenhetsregister. */
+  antalLagenheter: string;
+  antalVaningar: string;
   kontaktperson: string;
   /** Styrelsens medlemmar — BankID kopplas per person (demo tills riktig e-legitimation). */
   styrelseledamoter: StyrelseLedamot[];
@@ -100,6 +103,10 @@ export function normaliseraForeningProfil(
     postadress: typeof raw.postadress === "string" ? raw.postadress : "",
     postnummer: typeof raw.postnummer === "string" ? raw.postnummer : "",
     ort: typeof raw.ort === "string" ? raw.ort : "",
+    antalLagenheter:
+      typeof raw.antalLagenheter === "string" ? raw.antalLagenheter : "",
+    antalVaningar:
+      typeof raw.antalVaningar === "string" ? raw.antalVaningar : "",
     kontaktperson:
       typeof raw.kontaktperson === "string" ? raw.kontaktperson : "",
     styrelseledamoter: normaliseraStyrelseLedamoter(raw.styrelseledamoter),
@@ -853,6 +860,8 @@ export function skapaNyForening(
     postadress?: string;
     postnummer?: string;
     ort?: string;
+    antalLagenheter?: string;
+    antalVaningar?: string;
     grundinfoPaborjad?: boolean;
   },
 ): ForeningProfil {
@@ -888,6 +897,8 @@ export function skapaNyForening(
     val?.postadress ||
     val?.postnummer ||
     val?.ort ||
+    val?.antalLagenheter ||
+    val?.antalVaningar ||
     val?.grundinfoPaborjad
   ) {
     profil = normaliseraForeningProfil({
@@ -899,6 +910,8 @@ export function skapaNyForening(
       postadress: val.postadress ?? profil.postadress,
       postnummer: val.postnummer ?? profil.postnummer,
       ort: val.ort ?? profil.ort,
+      antalLagenheter: val.antalLagenheter ?? profil.antalLagenheter,
+      antalVaningar: val.antalVaningar ?? profil.antalVaningar,
       grundinfoPaborjad: Boolean(val.grundinfoPaborjad),
     });
   }

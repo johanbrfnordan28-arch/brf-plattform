@@ -3,12 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
-  hamtaAntalLagenheterFranGrund,
-} from "@/components/underhallsplan/grund-synk";
-import {
-  lasUnderhallsplanState,
   UNDERHALLSPLAN_STATE_EVENT,
 } from "@/components/underhallsplan/underhallsplan-lager";
+import { hamtaAntalLagenheterSynkat } from "@/lib/forening-grund-synk";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 import {
   ARSAVTAL_RABATT_PROCENT,
@@ -38,11 +35,7 @@ export function ForeningPrisPanel({
   const [redo, setRedo] = useState(false);
 
   const ladda = useCallback(() => {
-    const plan = lasUnderhallsplanState();
-    const n = plan?.grund
-      ? hamtaAntalLagenheterFranGrund(plan.grund)
-      : 0;
-    setAntal(n);
+    setAntal(hamtaAntalLagenheterSynkat());
     setRedo(true);
   }, []);
 
@@ -85,7 +78,7 @@ export function ForeningPrisPanel({
             href="/forening/uppgifter#grunduppgifter"
             className="mt-2 inline-block font-medium text-primary-dark underline hover:no-underline"
           >
-            Komplettera grunduppgifter →
+            Öppna föreningsuppgifter →
           </Link>
         )}
         <ul className="mt-3 space-y-1 text-xs text-muted">

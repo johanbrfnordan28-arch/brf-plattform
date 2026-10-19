@@ -11,7 +11,7 @@ import { PublikPrisInfo } from "@/components/pris/PublikPrisInfo";
 import { PersonalInloggningFot } from "@/components/plattform/PersonalInloggningFot";
 import { TekniskForvaltningErbjudande } from "@/components/pris/TekniskForvaltningErbjudande";
 import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
-import { FORENING_MODULER } from "@/lib/forening-moduler";
+import { FORENING_MODULER, hubbModuler } from "@/lib/forening-moduler";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { MejlaLankStartRuta } from "@/components/styrelsemassa/MejlaLankStartRuta";
 import { InbjudanHuvudsidaInnehall } from "@/components/inbjudan/InbjudanHuvudsidaInnehall";
@@ -96,7 +96,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
   const base = mode === "forening" ? "/forening" : "";
   const isForening = mode === "forening";
 
-  const modules = FORENING_MODULER.map((mod) => ({
+  const modules = (isForening ? hubbModuler() : FORENING_MODULER).map((mod) => ({
     title: mod.title,
     description: mod.description,
     icon: mod.icon,

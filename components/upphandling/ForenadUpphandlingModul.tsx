@@ -22,8 +22,8 @@ import {
   type OvkData,
   type RadonMatningData,
 } from "@/components/upphandling/forenklad-upphandling-lager";
-import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
+import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -580,9 +580,9 @@ export function ForenadUpphandlingModul() {
     const laddad = lasForenkladUpphandling();
     setState(laddad);
 
-    const underhallsState = lasUnderhallsplanState();
-    if (underhallsState?.grund) {
-      setGrund(underhallsState.grund);
+    const synkadGrund = hamtaSynkadPlanGrund();
+    if (synkadGrund) {
+      setGrund(synkadGrund);
     }
     setHydrated(true);
 
