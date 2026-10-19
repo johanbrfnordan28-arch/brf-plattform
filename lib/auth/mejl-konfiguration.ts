@@ -37,3 +37,13 @@ export function hamtaMejlFranAdress(): string {
 export function mejlSkickades(via: string): boolean {
   return via === "resend" || via === "smtp";
 }
+
+export function mejlLeveransMeddelande(via: string): string {
+  if (mejlSkickades(via)) {
+    return "Ett nytt tillfälligt lösenord har skickats till din e-post.";
+  }
+  if (via === "outbox") {
+    return "Mejltjänst saknas lokalt (sätt RESEND_API_KEY eller SMTP_*). Lösenordet sparades i utkorgen och visas här.";
+  }
+  return "Mejlet kunde inte skickas. Lösenordet visas här så du kan logga in.";
+}

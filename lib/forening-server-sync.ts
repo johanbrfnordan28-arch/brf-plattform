@@ -48,6 +48,14 @@ export function dtoTillForeningProfil(
         ? dto.avtalSignaturer
         : befintlig?.avtalBankidSignaturer,
     styrelseledamoter: befintlig?.styrelseledamoter,
+    antalLagenheter: befintlig?.antalLagenheter,
+    antalVaningar: befintlig?.antalVaningar,
+    fakturaEpost: befintlig?.fakturaEpost,
+    fakturaAdress: befintlig?.fakturaAdress,
+    fakturaPostnummer: befintlig?.fakturaPostnummer,
+    fakturaOrt: befintlig?.fakturaOrt,
+    fakturaReferens: befintlig?.fakturaReferens,
+    fakturaSkickadTidpunkt: befintlig?.fakturaSkickadTidpunkt,
   });
 }
 

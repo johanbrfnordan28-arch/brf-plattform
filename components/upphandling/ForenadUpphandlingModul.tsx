@@ -22,8 +22,8 @@ import {
   type OvkData,
   type RadonMatningData,
 } from "@/components/upphandling/forenklad-upphandling-lager";
-import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
+import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -547,14 +547,15 @@ function GrunduppgifterRad({ grund }: { grund: Grunduppgifter }) {
         ))}
       </dl>
       <p className="mt-2 text-xs text-muted">
-        Fyll i grunduppgifter i{" "}
+        Uppgifterna synkas från föreningens registrering. Saknas något, komplettera
+        under{" "}
         <a
-          href="/forening/underhallsplan#grund"
+          href="/forening/uppgifter#grunduppgifter"
           className="text-primary-dark underline hover:no-underline"
         >
-          underhållsplanens steg 1
-        </a>{" "}
-        för att se fler uppgifter här.
+          grunduppgifter
+        </a>
+        .
       </p>
     </div>
   );
@@ -579,9 +580,9 @@ export function ForenadUpphandlingModul() {
     const laddad = lasForenkladUpphandling();
     setState(laddad);
 
-    const underhallsState = lasUnderhallsplanState();
-    if (underhallsState?.grund) {
-      setGrund(underhallsState.grund);
+    const synkadGrund = hamtaSynkadPlanGrund();
+    if (synkadGrund) {
+      setGrund(synkadGrund);
     }
     setHydrated(true);
 

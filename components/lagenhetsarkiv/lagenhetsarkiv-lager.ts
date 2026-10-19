@@ -17,8 +17,8 @@ const LEGACY_LAGENHETSARKIV_BASES = [
 
 export const LAGENHETSARKIV_EVENT = "lagenhetsarkiv-uppdaterad";
 
-export function lagenhetsarkivStorageKey(): string {
-  return foreningStorageKey(LAGENHETSARKIV_BASE);
+export function lagenhetsarkivStorageKey(foreningId?: string): string {
+  return foreningStorageKey(LAGENHETSARKIV_BASE, foreningId);
 }
 
 export type LagenhetsarkivState = {
@@ -123,18 +123,48 @@ export function skapaGrundmallDemoArkiv(): LagenhetsarkivState {
   };
 }
 
-export function skapaTomtLagenhetsarkiv(): LagenhetsarkivState {
+export function skapaTomLagenhet(
+  id: number,
+  lagenhetsnummer: string,
+  adress?: string,
+): ApartmentFolder {
   return {
-    apartments: [
-      {
-        id: 1,
-        lagenhetsnummer: "1001",
-        basePages: [...lagenhetsBasSidor],
-        folders: [],
-      },
-    ],
-    nextApartmentNumber: 1002,
+    id,
+    lagenhetsnummer,
+    basePages: [...lagenhetsBasSidor],
+    folders: [],
+    ...(adress?.trim() ? { adress: adress.trim() } : {}),
   };
+}
+
+export const MAX_LAGENHETER_I_REGISTER = 400;
+
+export function skapaLagenhetsarkivMedAntal(
+  antal: number,
+  opts?: { adress?: string },
+): LagenhetsarkivState {
+  const n = Math.min(
+    MAX_LAGENHETER_I_REGISTER,
+    Math.max(0, Math.floor(antal)),
+  );
+  const apartments: ApartmentFolder[] =
+    n > 0
+      ? Array.from({ length: n }, (_, i) =>
+          skapaTomLagenhet(i + 1, String(1001 + i), opts?.adress),
+        )
+      : [skapaTomLagenhet(1, "1001", opts?.adress)];
+  const sista = Number.parseInt(
+    apartments[apartments.length - 1]?.lagenhetsnummer ?? "1001",
+    10,
+  );
+  return {
+    apartments,
+    nextApartmentNumber: (Number.isFinite(sista) ? sista : 1001) + 1,
+  };
+}
+
+export function skapaTomtLagenhetsarkiv(): LagenhetsarkivState {
+  return skapaLagenhetsarkivMedAntal(1);
 }
 
 function normaliseraState(raw: unknown): LagenhetsarkivState | null {
@@ -151,10 +181,12 @@ function normaliseraState(raw: unknown): LagenhetsarkivState | null {
   };
 }
 
-export function lasLagenhetsarkiv(): LagenhetsarkivState | null {
+export function lasLagenhetsarkiv(
+  foreningId?: string,
+): LagenhetsarkivState | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(lagenhetsarkivStorageKey());
+    const raw = localStorage.getItem(lagenhetsarkivStorageKey(foreningId));
     if (!raw) return null;
     return normaliseraState(JSON.parse(raw));
   } catch {
@@ -187,16 +219,55 @@ export function forsokMigreraLegacyLagenhetsarkiv(): LagenhetsarkivState | null 
 
 export function sparaLagenhetsarkiv(
   state: LagenhetsarkivState,
+  foreningId?: string,
 ): { ok: true } | { ok: false; error: import("@/lib/localStorage").LocalStorageSetError } {
   if (typeof window === "undefined") {
     return { ok: false, error: "unavailable" };
   }
   const result = safeSetLocalStorage(
-    lagenhetsarkivStorageKey(),
+    lagenhetsarkivStorageKey(foreningId),
     JSON.stringify(state),
   );
   if (result.ok) {
     window.dispatchEvent(new Event(LAGENHETSARKIV_EVENT));
   }
   return result;
+}
+
+/**
+ * Skapar saknade tomma lägenheter upp till angivet antal.
+ * Tar aldrig bort befintliga lägenheter.
+ */
+export function synkaLagenhetsarkivTillAntal(
+  antal: number,
+  opts?: { foreningId?: string; adress?: string },
+): LagenhetsarkivState {
+  const n = Math.min(
+    MAX_LAGENHETER_I_REGISTER,
+    Math.max(0, Math.floor(antal)),
+  );
+  const befintlig = lasLagenhetsarkiv(opts?.foreningId);
+  if (!befintlig || befintlig.apartments.length === 0) {
+    const skapad = skapaLagenhetsarkivMedAntal(n || 1, { adress: opts?.adress });
+    sparaLagenhetsarkiv(skapad, opts?.foreningId);
+    return skapad;
+  }
+  if (n <= befintlig.apartments.length) return befintlig;
+
+  const maxId = Math.max(...befintlig.apartments.map((a) => a.id), 0);
+  const maxNr = Math.max(
+    ...befintlig.apartments.map((a) => Number.parseInt(a.lagenhetsnummer, 10) || 0),
+    1000,
+  );
+  const saknas = n - befintlig.apartments.length;
+  const tillagda = Array.from({ length: saknas }, (_, i) =>
+    skapaTomLagenhet(maxId + i + 1, String(maxNr + i + 1), opts?.adress),
+  );
+  const nastaNr = maxNr + saknas + 1;
+  const uppdaterad: LagenhetsarkivState = {
+    apartments: [...befintlig.apartments, ...tillagda],
+    nextApartmentNumber: Math.max(befintlig.nextApartmentNumber, nastaNr),
+  };
+  sparaLagenhetsarkiv(uppdaterad, opts?.foreningId);
+  return uppdaterad;
 }

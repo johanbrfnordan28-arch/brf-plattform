@@ -4,9 +4,9 @@
  */
 
 import {
-  FORENING_MODULER,
   SNABBVAG_ANTAL,
   STANDARD_SNABBVAG_IDS,
+  hubbModuler,
 } from "@/lib/forening-moduler";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
@@ -16,7 +16,7 @@ const STORAGE_BASE = "brf-snabbvagar-moduler-v2";
 export const SNABBVAGAR_EVENT = "brf-snabbvagar-uppdaterad";
 
 function giltigId(id: string): boolean {
-  return FORENING_MODULER.some((m) => m.id === id);
+  return hubbModuler().some((m) => m.id === id);
 }
 
 export function normaliseraSnabbvagIds(ids: string[]): string[] {
@@ -30,7 +30,7 @@ export function normaliseraSnabbvagIds(ids: string[]): string[] {
   }
   for (const fallback of [
     ...STANDARD_SNABBVAG_IDS,
-    ...FORENING_MODULER.map((m) => m.id),
+    ...hubbModuler().map((m) => m.id),
   ]) {
     if (rena.length >= SNABBVAG_ANTAL) break;
     if (sedda.has(fallback)) continue;

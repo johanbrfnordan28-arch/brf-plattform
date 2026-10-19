@@ -13,6 +13,7 @@ import {
   maskeraPersonnummer,
   personnummerFelmeddelande,
 } from "@/lib/personnummer-format";
+import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 
 type Props = {
   part: BankIdPart;
@@ -21,6 +22,8 @@ type Props = {
   disabled?: boolean;
   disabledOrsak?: string;
   knaptext?: string;
+  /** Styrelsens registrerade namn — väljs som undertecknare. */
+  ledamoter?: StyrelseLedamot[];
   onSignera: (
     signatur: BankIdSignatur,
     personnummerKlartext: string,
@@ -38,6 +41,7 @@ export function BankIdAvtalSignering({
   disabled = false,
   disabledOrsak,
   knaptext,
+  ledamoter,
   onSignera,
 }: Props) {
   const [namn, setNamn] = useState("");
@@ -129,13 +133,25 @@ export function BankIdAvtalSignering({
               <span className="font-medium text-foreground">Namn</span>
               <input
                 type="text"
+                list="avtal-styrelse-namn"
                 value={namn}
                 onChange={(e) => setNamn(e.target.value)}
                 disabled={disabled || steg === "pagar"}
-                placeholder="För- och efternamn"
+                placeholder="Välj från styrelsen eller skriv namn"
                 autoComplete="name"
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
               />
+              {ledamoter && ledamoter.some((l) => l.namn.trim()) ? (
+                <datalist id="avtal-styrelse-namn">
+                  {ledamoter
+                    .filter((l) => l.namn.trim())
+                    .map((l) => (
+                      <option key={l.id} value={l.namn}>
+                        {l.roll}
+                      </option>
+                    ))}
+                </datalist>
+              ) : null}
             </label>
             <label className="block text-sm">
               <span className="font-medium text-foreground">

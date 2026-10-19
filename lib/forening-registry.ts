@@ -57,6 +57,9 @@ export type ForeningProfil = {
   postadress: string;
   postnummer: string;
   ort: string;
+  /** Speglas till underhållsplan och lägenhetsregister. */
+  antalLagenheter: string;
+  antalVaningar: string;
   kontaktperson: string;
   /** Styrelsens medlemmar — BankID kopplas per person (demo tills riktig e-legitimation). */
   styrelseledamoter: StyrelseLedamot[];
@@ -74,6 +77,13 @@ export type ForeningProfil = {
   avtalBankidNamn: string;
   /** Två undertecknare med BankID + personnummer. */
   avtalBankidSignaturer: BankIdSignatur[];
+  /** Fakturamottagare — enda uppgifter som fylls vid teckna avtal. */
+  fakturaEpost: string;
+  fakturaAdress: string;
+  fakturaPostnummer: string;
+  fakturaOrt: string;
+  fakturaReferens: string;
+  fakturaSkickadTidpunkt: string;
 };
 
 /** Säkerställer nya fält för profiler sparade innan avtal/kund fanns. */
@@ -93,6 +103,10 @@ export function normaliseraForeningProfil(
     postadress: typeof raw.postadress === "string" ? raw.postadress : "",
     postnummer: typeof raw.postnummer === "string" ? raw.postnummer : "",
     ort: typeof raw.ort === "string" ? raw.ort : "",
+    antalLagenheter:
+      typeof raw.antalLagenheter === "string" ? raw.antalLagenheter : "",
+    antalVaningar:
+      typeof raw.antalVaningar === "string" ? raw.antalVaningar : "",
     kontaktperson:
       typeof raw.kontaktperson === "string" ? raw.kontaktperson : "",
     styrelseledamoter: normaliseraStyrelseLedamoter(raw.styrelseledamoter),
@@ -109,6 +123,18 @@ export function normaliseraForeningProfil(
     avtalBankidNamn:
       typeof raw.avtalBankidNamn === "string" ? raw.avtalBankidNamn : "",
     avtalBankidSignaturer: normaliseraBankIdSignaturer(raw.avtalBankidSignaturer),
+    fakturaEpost: typeof raw.fakturaEpost === "string" ? raw.fakturaEpost : "",
+    fakturaAdress:
+      typeof raw.fakturaAdress === "string" ? raw.fakturaAdress : "",
+    fakturaPostnummer:
+      typeof raw.fakturaPostnummer === "string" ? raw.fakturaPostnummer : "",
+    fakturaOrt: typeof raw.fakturaOrt === "string" ? raw.fakturaOrt : "",
+    fakturaReferens:
+      typeof raw.fakturaReferens === "string" ? raw.fakturaReferens : "",
+    fakturaSkickadTidpunkt:
+      typeof raw.fakturaSkickadTidpunkt === "string"
+        ? raw.fakturaSkickadTidpunkt
+        : "",
   };
 }
 
@@ -830,6 +856,13 @@ export function skapaNyForening(
     epost?: string;
     kontaktperson?: string;
     styrelseledamoter?: StyrelseLedamot[];
+    organisationsnummer?: string;
+    postadress?: string;
+    postnummer?: string;
+    ort?: string;
+    antalLagenheter?: string;
+    antalVaningar?: string;
+    grundinfoPaborjad?: boolean;
   },
 ): ForeningProfil {
   const trimmat = namn.trim();
@@ -856,12 +889,30 @@ export function skapaNyForening(
   }
 
   let profil = tomProfil(id, trimmat);
-  if (val?.epost || val?.kontaktperson || val?.styrelseledamoter) {
+  if (
+    val?.epost ||
+    val?.kontaktperson ||
+    val?.styrelseledamoter ||
+    val?.organisationsnummer ||
+    val?.postadress ||
+    val?.postnummer ||
+    val?.ort ||
+    val?.antalLagenheter ||
+    val?.antalVaningar ||
+    val?.grundinfoPaborjad
+  ) {
     profil = normaliseraForeningProfil({
       ...profil,
       epost: val.epost ?? profil.epost,
       kontaktperson: val.kontaktperson ?? profil.kontaktperson,
       styrelseledamoter: val.styrelseledamoter ?? profil.styrelseledamoter,
+      organisationsnummer: val.organisationsnummer ?? profil.organisationsnummer,
+      postadress: val.postadress ?? profil.postadress,
+      postnummer: val.postnummer ?? profil.postnummer,
+      ort: val.ort ?? profil.ort,
+      antalLagenheter: val.antalLagenheter ?? profil.antalLagenheter,
+      antalVaningar: val.antalVaningar ?? profil.antalVaningar,
+      grundinfoPaborjad: Boolean(val.grundinfoPaborjad),
     });
   }
 

@@ -9,11 +9,21 @@ import {
   arStandardTestForening,
   GRUNDMALL_FORENING_ID,
 } from "@/lib/forening-konstanter";
+import { lasAktivForeningId } from "@/lib/forening-registry";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 
 /** Grundmallen och de gemensamma demoföreningarna är öppna för alla. */
 export function arOppenForening(foreningId: string): boolean {
   return foreningId === GRUNDMALL_FORENING_ID || arStandardTestForening(foreningId);
+}
+
+/** Inloggad på en egen skapad förening (inte grundmall/demo). */
+export function arInloggadPaEgenForening(): boolean {
+  if (typeof window === "undefined") return false;
+  const session = lasLokalSession();
+  if (session && !arOppenForening(session.foreningId)) return true;
+  const id = lasAktivForeningId();
+  return harLokalForeningBehorighet(id) && !arOppenForening(id);
 }
 
 /** Skapad eller inloggad i den här webbläsaren. */

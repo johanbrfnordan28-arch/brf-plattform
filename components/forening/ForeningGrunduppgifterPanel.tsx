@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import {
-  adresserFranProfilOchPlan,
+  hamtaSynkadForeningGrund,
   synkaGrundFormTillUnderhallsplan,
 } from "@/lib/forening-grund-synk";
 import {
@@ -38,6 +37,9 @@ function lasAktivProfil(): ForeningProfil | null {
 }
 
 type FormState = {
+  namn: string;
+  epost: string;
+  organisationsnummer: string;
   adresser: string[];
   postnummer: string;
   ort: string;
@@ -47,13 +49,17 @@ type FormState = {
 };
 
 function formFranProfil(profil: ForeningProfil): FormState {
-  const plan = lasUnderhallsplanState();
+  const synkad = hamtaSynkadForeningGrund(profil);
   return {
-    adresser: adresserFranProfilOchPlan(profil, plan?.grund),
-    postnummer: profil.postnummer,
-    ort: profil.ort,
-    antalLagenheter: plan?.grund.antalLagenheter ?? "",
-    antalVaningar: plan?.grund.antalVaningar ?? "",
+    namn: profil.namn,
+    epost: profil.epost,
+    organisationsnummer:
+      synkad.organisationsnummer || profil.organisationsnummer,
+    adresser: synkad.adresser,
+    postnummer: synkad.postnummer,
+    ort: synkad.ort,
+    antalLagenheter: synkad.antalLagenheter,
+    antalVaningar: synkad.antalVaningar,
     styrelseledamoter:
       profil.styrelseledamoter.length > 0
         ? profil.styrelseledamoter
@@ -100,7 +106,20 @@ export function ForeningGrunduppgifterPanel() {
   }
 
   if (!profil || !form) {
-    return null;
+    return (
+      <div
+        id="grunduppgifter"
+        className="scroll-mt-24 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"
+      >
+        <p className="font-semibold">Ingen förening vald</p>
+        <p className="mt-2">
+          <Link href="/prova-gratis" className="font-medium underline">
+            Skapa er förening
+          </Link>{" "}
+          först, eller logga in så visas de uppgifter ni redan registrerat.
+        </p>
+      </div>
+    );
   }
 
   function setAdress(index: number, varde: string) {
@@ -264,9 +283,14 @@ export function ForeningGrunduppgifterPanel() {
 
       const uppdaterad: ForeningProfil = {
         ...profil,
+        namn: form.namn.trim() || profil.namn,
+        epost: form.epost.trim(),
+        organisationsnummer: form.organisationsnummer.trim(),
         postadress: forstaAdress || profil.postadress,
         postnummer: form.postnummer.trim(),
         ort: form.ort.trim(),
+        antalLagenheter: form.antalLagenheter.trim(),
+        antalVaningar: form.antalVaningar.trim(),
         kontaktperson,
         styrelseledamoter:
           ledamoter.length > 0
@@ -300,24 +324,73 @@ export function ForeningGrunduppgifterPanel() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            Grunduppgifter för föreningen
+            Föreningsuppgifter
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Adresser, storlek och styrelse. Lägenheter, våningar och adresser
-            kopieras automatiskt in i underhållsplanens steg 1.
+            Samma uppgifter som vid skapandet. Ändringar synkas till underhållsplan,
+            lägenhetsregister, pris och avtal.
           </p>
         </div>
         <p className="rounded-lg border border-border bg-white px-3 py-2 text-xs text-muted">
-          <span className="font-medium text-foreground">{profil.namn}</span>
-          {profil.organisationsnummer ? (
-            <> · org.nr {profil.organisationsnummer}</>
+          <span className="font-medium text-foreground">{form.namn || profil.namn}</span>
+          {form.organisationsnummer.trim() ? (
+            <> · org.nr {form.organisationsnummer.trim()}</>
           ) : (
-            <> · org.nr fylls i ovan</>
+            <> · org.nr saknas</>
           )}
+          {form.antalLagenheter.trim() ? (
+            <> · {form.antalLagenheter.trim()} lägenheter</>
+          ) : null}
         </p>
       </div>
 
       <div className="mt-5 space-y-6">
+        <section>
+          <h3 className="text-sm font-semibold text-foreground">Identitet</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm sm:col-span-2">
+              <span className="font-medium text-foreground">Föreningens namn</span>
+              <input
+                type="text"
+                value={form.namn}
+                onChange={(e) => {
+                  setForm({ ...form, namn: e.target.value });
+                  setSparad(false);
+                }}
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium text-foreground">
+                Organisationsnummer
+              </span>
+              <input
+                type="text"
+                value={form.organisationsnummer}
+                onChange={(e) => {
+                  setForm({ ...form, organisationsnummer: e.target.value });
+                  setSparad(false);
+                }}
+                placeholder="t.ex. 769623-8166"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium text-foreground">E-post styrelse</span>
+              <input
+                type="email"
+                value={form.epost}
+                onChange={(e) => {
+                  setForm({ ...form, epost: e.target.value });
+                  setSparad(false);
+                }}
+                placeholder="styrelsen@exempel.se"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+              />
+            </label>
+          </div>
+        </section>
+
         <section>
           <h3 className="text-sm font-semibold text-foreground">Fastighetsadresser</h3>
           <p className="mt-1 text-xs text-muted">
@@ -571,7 +644,7 @@ export function ForeningGrunduppgifterPanel() {
           onClick={spara}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Spara grunduppgifter
+          Spara föreningsuppgifter
         </button>
         <Link
           href="/forening/underhallsplan#grund"
@@ -583,8 +656,8 @@ export function ForeningGrunduppgifterPanel() {
 
       {sparad ? (
         <p className="mt-3 text-sm text-primary-dark" role="status">
-          Sparat. Adresser, lägenheter och våningar är kopierade till
-          underhållsplanen.
+          Sparat. Uppgifterna syns i underhållsplanen, lägenhetsregistret och
+          avtalet.
         </p>
       ) : null}
     </div>

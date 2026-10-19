@@ -3,14 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { hamtaKontoKontext } from "@/lib/auth/konto-kontext";
-import { begärLokalAterstallning } from "@/lib/auth/lokal-aterstallning";
-import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
+import {
+  begärLokaltNyttLosenord,
+  sparaNyttLosenordFranServer,
+} from "@/lib/auth/lokal-aterstallning";
+import { hamtaLokalKonto } from "@/lib/auth/lokal-konto";
+import {
+  mejlLeveransMeddelande,
+  mejlSkickades,
+} from "@/lib/auth/mejl-konfiguration";
+import { lasForeningProfil } from "@/lib/forening-registry";
 
 export function GlomtLosenordForm() {
   const [epost, setEpost] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [meddelande, setMeddelande] = useState<string | null>(null);
-  const [lokalLank, setLokalLank] = useState<string | null>(null);
+  const [losenord, setLosenord] = useState<string | null>(null);
   const [laddar, setLaddar] = useState(false);
 
   useEffect(() => {
@@ -25,11 +33,11 @@ export function GlomtLosenordForm() {
     e.preventDefault();
     setFel(null);
     setMeddelande(null);
-    setLokalLank(null);
+    setLosenord(null);
     setLaddar(true);
 
-    const lokal = begärLokalAterstallning(epost);
-    const lokalLankVarde = lokal.ok ? lokal.lank : "";
+    const lokalKonto = hamtaLokalKonto(epost);
+    const profil = lasForeningProfil(lokalKonto?.foreningId);
 
     try {
       const res = await fetch("/api/auth/glomt-losenord", {
@@ -37,58 +45,68 @@ export function GlomtLosenordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           epost,
-          ...(lokalLankVarde ? { aterstallningsLank: lokalLankVarde } : {}),
+          namn: lokalKonto?.namn || profil?.kontaktperson,
+          foreningsNamn: profil?.namn,
         }),
       });
       const data = (await res.json()) as {
         fel?: string;
         meddelande?: string;
-        aterstallningsLank?: string;
+        tillfalligtLosenord?: string;
         mejlVia?: string;
       };
 
-      const lank = data.aterstallningsLank || lokalLankVarde;
-      if (lank) setLokalLank(lank);
+      if (data.tillfalligtLosenord) {
+        sparaNyttLosenordFranServer(
+          epost,
+          data.tillfalligtLosenord,
+          lokalKonto?.foreningId || profil?.id,
+          lokalKonto?.namn,
+        );
+        setLosenord(data.tillfalligtLosenord);
+        setMeddelande(
+          data.meddelande || mejlLeveransMeddelande(data.mejlVia || ""),
+        );
+        return;
+      }
 
       if (res.ok) {
-        const mejlOk = mejlSkickades(data.mejlVia || "");
-        const fallback = lokal.ok
-          ? lokal.meddelande
-          : "Använd länken nedan inom en timme.";
+        const lokal = begärLokaltNyttLosenord(epost);
+        if (lokal.ok) {
+          setLosenord(lokal.losenord);
+          setMeddelande(
+            mejlSkickades(data.mejlVia || "")
+              ? data.meddelande || lokal.meddelande
+              : `${lokal.meddelande} ${data.meddelande || ""}`.trim(),
+          );
+          return;
+        }
         setMeddelande(
-          mejlOk
-            ? data.meddelande ||
-                "Återställningslänken har skickats till din e-post. Den visas också här."
-            : data.meddelande || fallback,
+          data.meddelande ||
+            "Om kontot finns skickas ett nytt tillfälligt lösenord till e-postadressen.",
         );
         return;
       }
 
       if (res.status === 503 || /databas/i.test(data.fel || "")) {
+        const lokal = begärLokaltNyttLosenord(epost);
         if (!lokal.ok) {
           setFel(lokal.fel);
           return;
         }
+        setLosenord(lokal.losenord);
         setMeddelande(lokal.meddelande);
         return;
       }
 
-      if (lank) {
-        setMeddelande(
-          lokal.ok
-            ? lokal.meddelande
-            : "Använd länken nedan inom en timme.",
-        );
-        return;
-      }
-
-      setFel(data.fel || "Kunde inte skicka återställning.");
+      setFel(data.fel || "Kunde inte skicka nytt lösenord.");
     } catch {
+      const lokal = begärLokaltNyttLosenord(epost);
       if (!lokal.ok) {
         setFel(lokal.fel);
       } else {
+        setLosenord(lokal.losenord);
         setMeddelande(lokal.meddelande);
-        if (lokalLankVarde) setLokalLank(lokalLankVarde);
       }
     } finally {
       setLaddar(false);
@@ -102,10 +120,9 @@ export function GlomtLosenordForm() {
     >
       <h1 className="text-xl font-bold text-foreground">Glömt lösenord</h1>
       <p className="text-sm text-muted">
-        Ange e-postadressen som användes när föreningen skapades. En
-        återställningslänk visas här på sidan — den skickas också till e-posten
-        om mejl är igång. Du behöver inte det gamla lösenordet. Redan inne i
-        föreningen? Gå till{" "}
+        Ange e-postadressen som användes när föreningen skapades. Ett nytt
+        tillfälligt lösenord skickas till mejlen. Du behöver inte det gamla
+        lösenordet. Redan inne i föreningen? Gå till{" "}
         <Link href="/forening/konto" className="font-medium underline">
           Konto → Byt lösenord
         </Link>
@@ -138,29 +155,23 @@ export function GlomtLosenordForm() {
           {meddelande}
         </p>
       ) : null}
-      {lokalLank ? (
+      {losenord ? (
         <div className="rounded-lg border border-border bg-surface p-3">
           <p className="text-xs font-medium text-foreground">
-            Din återställningslänk
+            Ditt tillfälliga lösenord
           </p>
-          <p className="mt-1 break-all text-xs text-primary-dark">{lokalLank}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Link
-              href={lokalLank}
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-dark"
-            >
-              Öppna länken
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(lokalLank);
-              }}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium"
-            >
-              Kopiera
-            </button>
-          </div>
+          <code className="mt-1 block break-all font-mono text-sm text-foreground">
+            {losenord}
+          </code>
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(losenord);
+            }}
+            className="mt-2 text-sm font-medium text-primary-dark underline"
+          >
+            Kopiera
+          </button>
         </div>
       ) : null}
       <button
@@ -168,7 +179,7 @@ export function GlomtLosenordForm() {
         disabled={laddar}
         className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
       >
-        {laddar ? "Skickar …" : "Skicka återställningslänk"}
+        {laddar ? "Skickar …" : "Skicka nytt lösenord"}
       </button>
       <Link
         href="/styrelse-login"

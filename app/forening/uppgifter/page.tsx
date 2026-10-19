@@ -4,10 +4,8 @@ import { ModulePage } from "@/components/ModulePage";
 import { ForeningAvtalPanel } from "@/components/forening/ForeningAvtalPanel";
 import { ForeningGrunduppgifterPanel } from "@/components/forening/ForeningGrunduppgifterPanel";
 import { ForeningInloggningsPanel } from "@/components/forening/ForeningInloggningsPanel";
-import { ForeningProfilFormular } from "@/components/forening/ForeningProfilFormular";
 import { ForeningSakerhetskopieringPanel } from "@/components/forening/ForeningSakerhetskopieringPanel";
 import { foreningModulMetadata } from "@/lib/forening-metadata-server";
-import { KUND_LOGIN_KNAPP_RUBRIK } from "@/lib/forening-kund";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -22,7 +20,7 @@ export default function ForeningUppgifterPage() {
     <ModulePage
       title="Föreningsuppgifter"
       icon="🏠"
-      intro="Här fyller styrelsen i föreningens identitet och grunduppgifter. Adresser, lägenheter och våningar kopieras till underhållsplanen. BankID kopplas på styrelsens medlemmar."
+      intro="Uppgifterna ni angav när föreningen skapades ligger här. Ändra eller komplettera vid behov — då synkas det till underhållsplan, lägenhetsregister, pris och avtal."
     >
       <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-5">
         <p className="text-sm font-semibold text-primary-dark">
@@ -30,26 +28,30 @@ export default function ForeningUppgifterPage() {
         </p>
         <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
           <li>
-            <strong>Identitet</strong> — namn och organisationsnummer (ofta
-            redan ifyllda vid uppstart) plus e-post.
-          </li>
-          <li>
-            <strong>Grunduppgifter</strong> — adresser, postnummer, ort, antal
-            lägenheter/våningar och styrelse. Synkas till{" "}
+            <strong>Identitet och grunduppgifter</strong> — namn,
+            organisationsnummer, adress, styrelse och antal lägenheter fylls i
+            när föreningen skapas och synkas hit och till{" "}
             <Link
               href="/forening/underhallsplan#grund"
               className="font-medium text-primary-dark underline hover:no-underline"
             >
               underhållsplanen
             </Link>
-            .
+            . Saknas något kompletterar ni här — inte på övriga sidor.
           </li>
           <li>
             <strong>Inloggning</strong> — se vilka som har konto och när de
             loggat in. Bara du ser ditt eget lösenord.
           </li>
           <li>
-            <strong>Godkänn avtal</strong> — längst ned. Signera med BankID.
+            <strong>Teckna avtal</strong> —{" "}
+            <Link
+              href="/forening/teckna-avtal"
+              className="font-medium text-primary-dark underline hover:no-underline"
+            >
+              öppna sidan Teckna avtal
+            </Link>{" "}
+            eller scrolla hit nedan. Två personer signerar med BankID.
             Prövoperiod 30 dagar utan uppsägningstid; därefter årsavtal 1 år med
             6 månaders uppsägning och KPI-justering. Utan tecknat avtal raderas
             föreningen efter prövoperioden.
@@ -66,8 +68,6 @@ export default function ForeningUppgifterPage() {
           </li>
         </ol>
       </div>
-
-      <ForeningProfilFormular />
 
       <ForeningGrunduppgifterPanel />
 

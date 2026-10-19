@@ -33,6 +33,10 @@ export async function POST(req: Request) {
       skapareEpost?: string;
       skapareRoll?: string;
       villkorVersion?: string;
+      organisationsnummer?: string;
+      postadress?: string;
+      postnummer?: string;
+      ort?: string;
     };
 
     if (
@@ -57,6 +61,10 @@ export async function POST(req: Request) {
       villkorVersion: body.villkorVersion?.trim() ?? "",
       basUrl: basUrlFranRequest(req),
       inloggadKontoId: session?.kontoId ?? null,
+      organisationsnummer: body.organisationsnummer?.trim() ?? "",
+      postadress: body.postadress?.trim() ?? "",
+      postnummer: body.postnummer?.trim() ?? "",
+      ort: body.ort?.trim() ?? "",
     });
 
     return NextResponse.json({

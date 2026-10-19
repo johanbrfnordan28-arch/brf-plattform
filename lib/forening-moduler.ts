@@ -1,4 +1,4 @@
-/** De 12 styrelsemodulerna — samma lista överallt på föreningssidor. */
+/** Styrelsemodulerna — samma lista överallt. Föreningsuppgifter ligger i menyn, inte som hubb-kort. */
 
 export type ForeningModulDef = {
   /** Stabil id (sökväg utan /forening) */
@@ -7,6 +7,8 @@ export type ForeningModulDef = {
   description: string;
   path: string;
   icon: string;
+  /** False = syns i menyn/sidan men inte som modul-kort på föreningshubben. */
+  visaPaHubb?: boolean;
 };
 
 export const FORENING_MODULER: ForeningModulDef[] = [
@@ -89,6 +91,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
       "Adress, styrelse och övriga fakta om föreningen — samlade på ett ställe.",
     path: "/uppgifter",
     icon: "🏢",
+    visaPaHubb: false,
   },
   {
     id: "juridik",
@@ -109,11 +112,15 @@ export const FORENING_MODULER: ForeningModulDef[] = [
 
 export const SNABBVAG_ANTAL = 4;
 
-/** Standard: de fyra översta modulerna i 12-listan. */
-export const STANDARD_SNABBVAG_IDS = FORENING_MODULER.slice(
-  0,
-  SNABBVAG_ANTAL,
-).map((m) => m.id);
+/** Moduler som visas som kort på föreningshubben (inte Föreningsuppgifter). */
+export function hubbModuler(): ForeningModulDef[] {
+  return FORENING_MODULER.filter((m) => m.visaPaHubb !== false);
+}
+
+/** Standard: de fyra översta hubb-modulerna. */
+export const STANDARD_SNABBVAG_IDS = hubbModuler()
+  .slice(0, SNABBVAG_ANTAL)
+  .map((m) => m.id);
 
 export function hamtaModul(id: string): ForeningModulDef | undefined {
   return FORENING_MODULER.find((m) => m.id === id);

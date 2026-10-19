@@ -16,6 +16,12 @@ import {
   registreraKundAvtalSignatur,
 } from "@/lib/forening-kund";
 import {
+  arFakturaUppgifterKlara,
+  fakturaFranProfil,
+  hamtaAntalLagenheterForFaktura,
+  skickaForeningFakturaKlient,
+} from "@/lib/forening-faktura";
+import {
   BANKID_KRAV_SIGNATURER,
   harTillrackligaBankIdSignaturer,
 } from "@/lib/bankid-signering";
@@ -23,6 +29,7 @@ import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 import { ForeningAvtalsdokument } from "@/components/forening/ForeningAvtalsdokument";
+import { avtalsPartFranProfil } from "@/lib/forening-avtal-part";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import {
   AVTAL_LANGD_AR,
@@ -104,11 +111,7 @@ export function ForeningAvtalPanel() {
         </div>
 
         <ForeningAvtalsdokument
-          part={{
-            foreningsNamn: profil.namn,
-            organisationsnummer: profil.organisationsnummer,
-            ort: profil.ort,
-          }}
+          part={avtalsPartFranProfil(profil)}
           skapadTidpunkt={profil.skapadTidpunkt}
           signerat={{
             namn: profil.avtalBankidNamn,
@@ -151,13 +154,28 @@ export function ForeningAvtalPanel() {
     });
     const data = (await res.json()) as { fel?: string };
     const klar = harTillrackligaBankIdSignaturer(uppdaterad.avtalBankidSignaturer);
-    setServerStatus(
-      res.ok
-        ? klar
-          ? "Avtalet är signerat med BankID av två personer och sparat."
-          : `Signatur 1 av ${BANKID_KRAV_SIGNATURER} sparad. Nästa person ska signera med sitt personnummer.`
-        : `Signerat lokalt. Server: ${data.fel || "kunde inte synkas"}`,
-    );
+    let status = res.ok
+      ? klar
+        ? "Avtalet är signerat med BankID av två personer och sparat."
+        : `Signatur 1 av ${BANKID_KRAV_SIGNATURER} sparad. Nästa person ska signera med sitt personnummer.`
+      : `Signerat lokalt. Server: ${data.fel || "kunde inte synkas"}`;
+    if (klar) {
+      const faktura = fakturaFranProfil(uppdaterad);
+      const antal = hamtaAntalLagenheterForFaktura();
+      if (arFakturaUppgifterKlara(faktura) && antal > 0) {
+        const skickad = await skickaForeningFakturaKlient({
+          foreningId: uppdaterad.id,
+          foreningsNamn: uppdaterad.namn,
+          organisationsnummer: uppdaterad.organisationsnummer,
+          faktura,
+          antalLagenheter: antal,
+        });
+        status = skickad.ok
+          ? `${status} ${skickad.meddelande}`
+          : `${status} Fakturan kunde inte skickas: ${skickad.meddelande}`;
+      }
+    }
+    setServerStatus(status);
   }
 
   return (
@@ -186,23 +204,25 @@ export function ForeningAvtalPanel() {
 
         {!check.ok && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-            <p className="font-semibold">Fyll i och spara uppgifter först</p>
+            <p className="font-semibold">Uppgifter saknas för att signera</p>
             <p className="mt-1">
-              Saknas: {check.saknas.join(", ")}. Gå till formuläret ovan, spara,
-              och kom tillbaka hit.
+              Saknas: {check.saknas.join(", ")}.{" "}
+              <Link
+                href="/forening/uppgifter#grunduppgifter"
+                className="font-medium underline hover:no-underline"
+              >
+                Öppna grunduppgifter
+              </Link>{" "}
+              och spara — sedan kan två personer signera.
             </p>
           </div>
         )}
       </div>
 
-      <ForeningAvtalsdokument
-        part={{
-          foreningsNamn: profil.namn,
-          organisationsnummer: profil.organisationsnummer,
-          ort: profil.ort,
-        }}
-        skapadTidpunkt={profil.skapadTidpunkt}
-      />
+        <ForeningAvtalsdokument
+          part={avtalsPartFranProfil(profil)}
+          skapadTidpunkt={profil.skapadTidpunkt}
+        />
 
       <div className="rounded-xl border border-border bg-white p-5 shadow-sm sm:p-6">
         <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
@@ -241,9 +261,10 @@ export function ForeningAvtalPanel() {
             partEtikett="föreningen"
             signaturer={profil.avtalBankidSignaturer}
             disabled={!check.ok || !bekraftat}
+            ledamoter={profil.styrelseledamoter}
             disabledOrsak={
               !check.ok
-                ? "Fyll i och spara föreningsuppgifter först."
+                ? "Komplettera saknade grunduppgifter under Föreningsuppgifter."
                 : !bekraftat
                   ? "Bekräfta avtalsvillkoren ovan innan BankID öppnas."
                   : undefined

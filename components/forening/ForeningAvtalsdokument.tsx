@@ -11,8 +11,11 @@ import {
   type AvtalsPart,
 } from "@/lib/forening-avtal";
 import { formateraBankIdSignatur, type BankIdSignatur } from "@/lib/bankid-signering";
-import { LEVERANTOR, leverantorPostadress } from "@/lib/leverantor";
+import { AvtalsForetradareLista } from "@/components/forening/AvtalsForetradareLista";
+import { SvenskAdressBlock } from "@/components/forening/SvenskAdressBlock";
+import { LEVERANTOR } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+import { KONTAKT_EPOST } from "@/lib/kontakt-epost";
 
 type Props = {
   part: AvtalsPart;
@@ -109,35 +112,64 @@ export function ForeningAvtalsdokument({
 
       <div className="space-y-5 px-5 py-5 sm:px-7 sm:py-6">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-border bg-white px-4 py-3 text-sm">
-            <p className="font-semibold text-foreground">Leverantör</p>
-            <p className="mt-1 text-lg font-bold text-primary-dark">
+          <div className="rounded-xl border border-border bg-white px-4 py-4 text-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-dark">
+              Leverantör
+            </p>
+            <p className="mt-1 font-serif text-lg font-semibold text-foreground">
               {LEVERANTOR.namn}
             </p>
             <p className="mt-1 text-muted">
               Org.nr {LEVERANTOR.organisationsnummer}
             </p>
-            <p className="mt-1 text-muted">{leverantorPostadress()}</p>
-            <p className="mt-1 text-xs text-muted">
+            <SvenskAdressBlock
+              className="mt-3 text-sm leading-relaxed text-foreground"
+              gata={LEVERANTOR.gatuadress}
+              postnummer={LEVERANTOR.postnummer}
+              ort={LEVERANTOR.ort}
+            />
+            <p className="mt-3 text-xs text-muted">
               Plattform: {LEVERANTOR.varumarke}
             </p>
+            <p className="mt-1 text-xs text-muted">{KONTAKT_EPOST.info}</p>
           </div>
-          <div className="rounded-xl border border-border bg-white px-4 py-3 text-sm">
-            <p className="font-semibold text-foreground">Kund</p>
-            <p className="mt-1 text-lg font-bold text-primary-dark">
+          <div className="rounded-xl border border-border bg-white px-4 py-4 text-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-dark">
+              Kund
+            </p>
+            <p className="mt-1 font-serif text-lg font-semibold text-foreground">
               {part.foreningsNamn}
             </p>
-            {(part.organisationsnummer || part.ort) && (
+            {part.organisationsnummer?.trim() ? (
               <p className="mt-1 text-muted">
-                {[
-                  part.organisationsnummer &&
-                    `Org.nr ${part.organisationsnummer}`,
-                  part.ort,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+                Org.nr {part.organisationsnummer.trim()}
               </p>
-            )}
+            ) : null}
+            <SvenskAdressBlock
+              className="mt-3 text-sm leading-relaxed text-foreground"
+              gator={part.gatadresser}
+              gata={part.postadress}
+              postnummer={part.postnummer}
+              ort={part.ort}
+            />
+            {part.epost?.trim() ? (
+              <p className="mt-3 text-sm text-muted">{part.epost.trim()}</p>
+            ) : null}
+            {part.fakturaEpost?.trim() ? (
+              <p className="mt-1 text-xs text-muted">
+                Faktura: {part.fakturaEpost.trim()}
+              </p>
+            ) : null}
+            {(part.foretradare?.some((p) => p.namn.trim()) ?? false) ? (
+              <div className="mt-4 border-t border-border pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  Företrädare som tecknar / beställer
+                </p>
+                <div className="mt-2">
+                  <AvtalsForetradareLista personer={part.foretradare ?? []} />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -148,7 +180,7 @@ export function ForeningAvtalsdokument({
               {s.punkter.map((p) => (
                 <li key={p} className="flex gap-2">
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                  <span>{p}</span>
+                  <span className="whitespace-pre-line">{p}</span>
                 </li>
               ))}
             </ul>

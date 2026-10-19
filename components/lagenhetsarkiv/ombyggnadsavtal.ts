@@ -3,6 +3,12 @@ import {
   type MedlemsKravPunkt,
 } from "@/components/lagenhetsarkiv/medlems-krav";
 
+export type OmbyggnadsavtalUndertecknareRad = {
+  namn: string;
+  personnummerMaskerat: string;
+  signeradDatum?: string;
+};
+
 export type OmbyggnadsavtalMeta = {
   foreningsnamn: string;
   organisationsnummer?: string;
@@ -12,6 +18,8 @@ export type OmbyggnadsavtalMeta = {
   datum: string;
   postadress?: string;
   ort?: string;
+  /** Namn + maskerat personnummer på dem som ska / har godkänt. */
+  undertecknare?: OmbyggnadsavtalUndertecknareRad[];
 };
 
 function escapeHtml(s: string): string {
@@ -161,6 +169,20 @@ export function byggOmbyggnadsavtalText(
     "Medlemmen (BankID/underskrift): ________________________",
     "",
   );
+
+  if (meta.undertecknare && meta.undertecknare.length > 0) {
+    rader.push(
+      "§ 10 BankID-undertecknare",
+      "------------------------",
+    );
+    for (const u of meta.undertecknare) {
+      const status = u.signeradDatum
+        ? `Godkänd med BankID ${u.signeradDatum}`
+        : "Väntar på BankID-godkännande";
+      rader.push(`• ${u.namn} · ${u.personnummerMaskerat} — ${status}`);
+    }
+    rader.push("");
+  }
 
   return rader.join("\n");
 }
