@@ -4,37 +4,28 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
-import { ForeningVaxlare } from "@/components/forening/ForeningVaxlare";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { arAktivKundForening, TECKNA_AVTAL_PATH } from "@/lib/forening-kund";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
+import { dagarKvarAvProvoperiod } from "@/lib/forening-avtal";
 import {
   FORENING_AKTIV_EVENT,
   GRUNDMALL_NAMN,
   lasAktivForeningId,
+  lasForeningProfil,
 } from "@/lib/forening-registry";
 
 const nav = [
-  { href: "/forening#moduler", label: "Moduler", aktivPa: (p: string) => p === "/forening" },
   {
-    href: "/forening/underhallsplan",
-    label: "Underhåll",
-    aktivPa: (p: string) => p.startsWith("/forening/underhallsplan"),
+    href: "/forening#moduler",
+    label: "Moduler",
+    framed: true,
+    aktivPa: (p: string) => p === "/forening",
   },
   {
     href: "/forening/rondering#manadssignering-schema",
     label: "Rondering",
     aktivPa: (p: string) => p.startsWith("/forening/rondering"),
-  },
-  {
-    href: "/forening/arshjul",
-    label: "Årshjul",
-    aktivPa: (p: string) => p.startsWith("/forening/arshjul"),
-  },
-  {
-    href: "/forening/medlemmar",
-    label: "Medlemmar",
-    aktivPa: (p: string) => p.startsWith("/forening/medlemmar"),
   },
   {
     href: "/forening/guider",
@@ -53,21 +44,37 @@ const nav = [
   },
 ];
 
+function testperiodEtikett(dagarKvar: number | null): string {
+  if (dagarKvar == null) return "Testperiod";
+  if (dagarKvar <= 0) return "0 dagar kvar";
+  if (dagarKvar === 1) return "1 dag kvar";
+  return `${dagarKvar} dagar kvar`;
+}
+
 export function ForeningHeader() {
   const pathname = usePathname();
   const foreningsNamn = useAktivForeningsNamn();
   const [arKund, setArKund] = useState(false);
   const [visaTecknaAvtal, setVisaTecknaAvtal] = useState(false);
+  const [dagarKvar, setDagarKvar] = useState<number | null>(null);
+  const visatNamn = foreningsNamn.trim() || "Föreningsportal";
   const initial =
-    foreningsNamn === GRUNDMALL_NAMN
+    visatNamn === GRUNDMALL_NAMN
       ? "G"
-      : foreningsNamn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
+      : visatNamn.replace(/^brf\s+/i, "").charAt(0).toUpperCase() || "F";
 
   useEffect(() => {
     function ladda() {
+      const id = lasAktivForeningId();
       const kund = arAktivKundForening();
+      const profil = lasForeningProfil(id);
       setArKund(kund);
-      setVisaTecknaAvtal(arEgenTestForening(lasAktivForeningId()) && !kund);
+      setVisaTecknaAvtal(arEgenTestForening(id) && !kund);
+      setDagarKvar(
+        !kund && profil
+          ? dagarKvarAvProvoperiod(profil.skapadTidpunkt)
+          : null,
+      );
     }
     ladda();
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
@@ -76,38 +83,53 @@ export function ForeningHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-        <Link href="/forening" className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+        <Link href="/forening" className="flex min-w-0 shrink-0 items-center gap-2">
           <span
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white"
             aria-hidden
           >
             {initial}
           </span>
-          <span className="text-lg font-semibold tracking-tight text-foreground">
-            {foreningsNamn}
+          <span className="max-w-[10rem] truncate text-lg font-semibold tracking-tight text-foreground sm:max-w-[16rem]">
+            {visatNamn}
           </span>
         </Link>
         <nav
-          className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm font-medium text-muted sm:gap-6"
+          className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm font-medium text-muted sm:gap-x-4"
           aria-label="Föreningsmeny"
         >
-          {nav.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`transition-colors hover:text-primary-dark ${
-                item.aktivPa(pathname)
-                  ? "font-semibold text-primary-dark"
-                  : ""
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {nav.map((item) => {
+            const aktiv = item.aktivPa(pathname);
+            if (item.framed) {
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                    aktiv
+                      ? "border-primary bg-[#eef6f0] text-primary-dark"
+                      : "border-primary/45 bg-white text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`transition-colors hover:text-primary-dark ${
+                  aktiv ? "font-semibold text-primary-dark" : ""
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ForeningVaxlare />
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {visaTecknaAvtal && (
             <Link
               href={TECKNA_AVTAL_PATH}
@@ -116,8 +138,14 @@ export function ForeningHeader() {
               Teckna avtal
             </Link>
           )}
-          <span className="hidden rounded-full border border-primary/30 bg-[#e2f0e6] px-3 py-1 text-xs font-medium text-primary-dark lg:inline-flex">
-            {arKund ? "Kund · er förening" : "Testperiod"}
+          <span
+            className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${
+              arKund
+                ? "border-primary/30 bg-[#e2f0e6] text-primary-dark"
+                : "border-amber-300 bg-amber-50 text-amber-950"
+            }`}
+          >
+            {arKund ? "Kund" : testperiodEtikett(dagarKvar)}
           </span>
           <LoggaUtKnapp />
         </div>

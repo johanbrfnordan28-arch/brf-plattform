@@ -593,8 +593,13 @@ export function aktiveraForeningVidSidladdning(): ForeningProfil | null {
 
   repareraForeningRegistry();
   synkaAktivForeningFranUrl();
+  const aktivId = lasAktivForeningId();
   const profil =
-    aterstallForeningFranSenastSkapad() ?? bootstrapForeningFranUrl();
+    aterstallForeningFranSenastSkapad() ??
+    bootstrapForeningFranUrl() ??
+    (aktivId !== GRUNDMALL_FORENING_ID
+      ? aterstallForeningFranSenastSkapad(aktivId)
+      : null);
 
   const params = new URLSearchParams(window.location.search);
   const id = profil?.id ?? hamtaAktivForeningId();
@@ -718,7 +723,7 @@ export function sparaSenastSkapadProfil(profil: ForeningProfil): void {
   cookieSattSenastProfil(json);
 }
 
-/** Återställ profil från session om URL har foreningId men registry saknar post. */
+/** Återställ profil från session/cookie om registry saknar post eller namn. */
 export function aterstallForeningFranSenastSkapad(
   foreningId?: string,
 ): ForeningProfil | null {
@@ -727,33 +732,44 @@ export function aterstallForeningFranSenastSkapad(
     foreningId ??
     hamtaForeningIdFranUrl() ??
     hamtaPendingForeningId() ??
+    hamtaSparatEgetAktivId() ??
     undefined;
   if (!id || id === GRUNDMALL_FORENING_ID) return null;
 
-  const befintlig = lasForeningProfil(id);
-  if (befintlig && befintlig.id !== GRUNDMALL_FORENING_ID) {
+  const reserv = lasSenastSkapadProfilForId(id);
+  const befintlig = lasForeningProfilUtanReserv(id);
+  if (
+    befintlig &&
+    befintlig.id !== GRUNDMALL_FORENING_ID &&
+    befintlig.namn.trim()
+  ) {
     return befintlig;
   }
 
-  try {
-    const raw =
-      sessionStorage.getItem(SENAST_SKAPAD_PROFIL_KEY) ||
-      cookieHamtaSenastProfil();
-    if (!raw) return bootstrapForeningFranUrl();
-    const profil = JSON.parse(raw) as ForeningProfil;
-    if (profil.id !== id) return bootstrapForeningFranUrl();
-    try {
-      sparaForeningProfil(profil, { tyst: true });
-      sattAktivForeningId(id, { tyst: true });
-    } catch {
-      tillampaAktivForeningIdOmSkiljer(id);
-      cookieSattAktivForeningId(id);
-      cookieSattSenastProfil(JSON.stringify(profil));
-    }
-    return profil;
-  } catch {
+  const profil =
+    reserv && reserv.id === id
+      ? reserv.namn.trim()
+        ? { ...(befintlig ?? reserv), ...reserv, namn: reserv.namn.trim() }
+        : befintlig
+      : befintlig;
+  if (!profil || profil.id === GRUNDMALL_FORENING_ID) {
     return bootstrapForeningFranUrl();
   }
+  if (!profil.namn.trim()) {
+    const urlNamn = hamtaForeningsNamnFranUrl();
+    const ifyllt = urlNamn || namnFranForeningId(id);
+    if (ifyllt) profil.namn = ifyllt;
+  }
+
+  try {
+    sparaForeningProfil(profil, { tyst: true });
+    sattAktivForeningId(id, { tyst: true });
+  } catch {
+    tillampaAktivForeningIdOmSkiljer(id);
+    cookieSattAktivForeningId(id);
+    cookieSattSenastProfil(JSON.stringify(profil));
+  }
+  return profil;
 }
 
 export function webblasarenKanSparaIData(): boolean {
@@ -768,35 +784,108 @@ export function webblasarenKanSparaIData(): boolean {
   }
 }
 
-export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
-  const id = foreningId ?? hamtaAktivForeningId();
-  if (id === GRUNDMALL_FORENING_ID) {
-    return normaliseraForeningProfil({
-      id: GRUNDMALL_FORENING_ID,
-      namn: GRUNDMALL_NAMN,
-      skapadTidpunkt: "",
-      organisationsnummer: "",
-      epost: "",
-      postadress: "",
-      ort: "",
-      kontaktperson: "",
-      grundinfoPaborjad: true,
-      avtalGodkant: false,
-      avtalGodkantTidpunkt: "",
-    });
-  }
-  const key = profilStorageKey(id);
+function grundmallProfil(): ForeningProfil {
+  return normaliseraForeningProfil({
+    id: GRUNDMALL_FORENING_ID,
+    namn: GRUNDMALL_NAMN,
+    skapadTidpunkt: "",
+    organisationsnummer: "",
+    epost: "",
+    postadress: "",
+    ort: "",
+    kontaktperson: "",
+    grundinfoPaborjad: true,
+    avtalGodkant: false,
+    avtalGodkantTidpunkt: "",
+  });
+}
+
+function hamtaSparatEgetAktivId(): string | null {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      const reg = lasForeningRegistry();
-      const post = reg.poster.find((p) => p.id === id);
-      return post ? normaliseraForeningProfil(post) : null;
-    }
-    return normaliseraForeningProfil(JSON.parse(raw) as ForeningProfil);
+    const id =
+      localStorage.getItem(FORENING_AKTIV_ID_KEY) ||
+      sessionStorage.getItem(SESSION_AKTIV_ID_KEY) ||
+      cookieHamtaAktivForeningId();
+    if (!id || id === GRUNDMALL_FORENING_ID) return null;
+    return id;
+  } catch {
+    const id = cookieHamtaAktivForeningId();
+    return id && id !== GRUNDMALL_FORENING_ID ? id : null;
+  }
+}
+
+function hamtaForeningsNamnFranUrl(): string {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("namn")?.trim() || "";
+}
+
+/** «brf-fastigheten» → «Brf Fastigheten» när sparat namn saknas. */
+export function namnFranForeningId(id: string): string {
+  if (!id || id === GRUNDMALL_FORENING_ID) return "";
+  const delar = id.split("-").filter(Boolean);
+  if (delar.length === 0) return "";
+  return delar
+    .map((del) => del.charAt(0).toUpperCase() + del.slice(1))
+    .join(" ");
+}
+
+function lasSenastSkapadProfilForId(id: string): ForeningProfil | null {
+  if (typeof window === "undefined" || !id || id === GRUNDMALL_FORENING_ID) {
+    return null;
+  }
+  try {
+    const raw =
+      sessionStorage.getItem(SENAST_SKAPAD_PROFIL_KEY) ||
+      cookieHamtaSenastProfil();
+    if (!raw) return null;
+    const profil = normaliseraForeningProfil(JSON.parse(raw) as ForeningProfil);
+    return profil.id === id ? profil : null;
   } catch {
     return null;
   }
+}
+
+function fyllTomtForeningsNamn(profil: ForeningProfil): ForeningProfil {
+  if (profil.namn.trim()) return profil;
+  const franReg = lasForeningRegistryInternt().poster.find(
+    (p) => p.id === profil.id,
+  )?.namn?.trim();
+  if (franReg) return { ...profil, namn: franReg };
+  const franReserv = lasSenastSkapadProfilForId(profil.id)?.namn?.trim();
+  if (franReserv) return { ...profil, namn: franReserv };
+  const franUrl = hamtaForeningsNamnFranUrl();
+  if (franUrl) return { ...profil, namn: franUrl };
+  const franId = namnFranForeningId(profil.id);
+  if (franId) return { ...profil, namn: franId };
+  return profil;
+}
+
+function lasForeningProfilUtanReserv(foreningId: string): ForeningProfil | null {
+  if (foreningId === GRUNDMALL_FORENING_ID) return grundmallProfil();
+  const key = profilStorageKey(foreningId);
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      return normaliseraForeningProfil(JSON.parse(raw) as ForeningProfil);
+    }
+    const post = lasForeningRegistryInternt().poster.find(
+      (p) => p.id === foreningId,
+    );
+    return post ? normaliseraForeningProfil(post) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function lasForeningProfil(foreningId?: string): ForeningProfil | null {
+  const id = foreningId ?? hamtaAktivForeningId();
+  if (id === GRUNDMALL_FORENING_ID) return grundmallProfil();
+
+  const franLagring = lasForeningProfilUtanReserv(id);
+  const profil = franLagring ?? lasSenastSkapadProfilForId(id);
+  if (!profil) return null;
+  return fyllTomtForeningsNamn(profil);
 }
 
 export function sparaForeningProfil(
@@ -832,15 +921,23 @@ export function sparaForeningProfil(
   }
 }
 
+/** Etikett när ingen förening är vald — aldrig tom pill i headern. */
+export const INGEN_AKTIV_FORENING_ETIKETT = "Ingen förening vald";
+
 export function hamtaAktivForeningsNamn(): string {
-  if (typeof window !== "undefined") {
-    const urlNamn = new URLSearchParams(window.location.search)
-      .get("namn")
-      ?.trim();
-    if (urlNamn) return urlNamn;
+  const urlNamn = hamtaForeningsNamnFranUrl();
+  if (urlNamn) return urlNamn;
+
+  const id = lasAktivForeningId();
+  const profil = lasForeningProfil(id);
+  const profilNamn = profil?.namn?.trim();
+  if (profilNamn) return profilNamn;
+
+  if (id && id !== GRUNDMALL_FORENING_ID) {
+    const franId = namnFranForeningId(id);
+    if (franId) return franId;
   }
-  const profil = lasForeningProfil(lasAktivForeningId());
-  if (profil && !arGrundmallForening(profil.id)) return profil.namn;
+
   return GRUNDMALL_NAMN;
 }
 

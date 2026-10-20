@@ -65,7 +65,7 @@ const INLINE_AKTIVERA_BODY = `
           kontaktperson: "",
           grundinfoPaborjad: false
         };
-    if (namn && !profil.namn) profil.namn = namn;
+    if (namn && !(profil.namn && String(profil.namn).trim())) profil.namn = namn;
     var profilJson = JSON.stringify(profil);
     var skaSkrivaProfil = true;
     try {

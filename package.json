@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3010 -H 127.0.0.1",
+    "dev:aterstall": "bash scripts/aterstall-dev.sh",
     "dev:3000": "next dev",
     "dev:turbo": "next dev --turbopack",
     "dev:clean": "rm -rf .next && next dev",

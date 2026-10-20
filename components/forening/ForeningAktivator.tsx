@@ -30,8 +30,8 @@ export function ForeningAktivator() {
         korPlattformMigreringarForForening(id);
       }
       rensaSkapaParametrarFranUrl();
-      window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
     }
+    window.dispatchEvent(new Event(FORENING_AKTIV_EVENT));
   }, []);
 
   return null;

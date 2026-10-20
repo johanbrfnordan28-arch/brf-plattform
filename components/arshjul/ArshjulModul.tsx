@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
+  ARSHJUL_PLANERING_AR,
+  arSerieHandelse,
   arshjulStorageKey,
+  byggSerieTillfallen,
+  defaultSerieFalt,
   expanderaTillfallen,
   formatDatumKort,
   fyllPaStandardHandelser,
@@ -11,18 +15,26 @@ import {
   kategoriEtiketter,
   kategoriFarger,
   manadsnamn,
+  migreraArshjulHandelser,
+  MOTESKEDJA_KATEGORIER,
+  nastaOppnaSerieTillfalle,
   normaliseraHandelse,
+  senastKlaraSerieTillfalle,
+  serieIntervallText,
   skapaHandelseId,
   skapaTomHandelse,
   SOMMAR_EXKLUDERADE_MANADER,
   SOTNING_FORESLAGET_INTERVALL_AR,
   STANDARD_PAMINNELSE_DAGAR,
   OVK_INTERVALL_VERKSAMHET_AR,
+  taBortSerieMote,
+  utokaSerie,
   veckodagsnamn,
   type ArshjulHandelse,
   type ArshjulHandelseTyp,
   type ArshjulKategori,
   type ArshjulTillfalle,
+  type SerieIntervallEnhet,
   type Veckodag,
 } from "@/components/arshjul/arshjul";
 import {
@@ -45,7 +57,9 @@ function lasHandelser(): ArshjulHandelse[] {
   try {
     const raw = localStorage.getItem(arshjulStorageKey());
     return raw
-      ? (JSON.parse(raw) as ArshjulHandelse[]).map(normaliseraHandelse)
+      ? migreraArshjulHandelser(
+          (JSON.parse(raw) as ArshjulHandelse[]).map(normaliseraHandelse),
+        )
       : [];
   } catch {
     return [];
@@ -88,8 +102,15 @@ function beskrivIntervall(h: ArshjulHandelse): string {
     const manad = h.manad ? manadsnamn[h.manad - 1] : "—";
     return `Vart ${intervall}:e år från ${ar} (${manad})`;
   }
+  if (h.typ === "serie") {
+    const antal = h.serieAntal ?? 0;
+    return `${serieIntervallText(h)} · ${antal} ${antal === 1 ? "möte" : "möten"}`;
+  }
   return "—";
 }
+
+const TA_BORT_KLASS =
+  "rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-700";
 
 export function ArshjulModul() {
   const innevarandeAr = new Date().getFullYear();
@@ -97,7 +118,9 @@ export function ArshjulModul() {
   const [hydrated, setHydrated] = useState(false);
   const [vy, setVy] = useState<Vy>("arshjul");
   const [valtAr, setValtAr] = useState(innevarandeAr);
-  const [tidslinjeSlutAr, setTidslinjeSlutAr] = useState(innevarandeAr + 15);
+  const [tidslinjeSlutAr, setTidslinjeSlutAr] = useState(
+    innevarandeAr + ARSHJUL_PLANERING_AR,
+  );
   const [skapaOppen, setSkapaOppen] = useState(false);
   const [redigeraId, setRedigeraId] = useState<string | null>(null);
   const [form, setForm] = useState(skapaTomHandelse());
@@ -191,8 +214,26 @@ export function ArshjulModul() {
   }
 
   function taBortHandelse(id: string) {
-    setHandelser((current) => current.filter((h) => h.id !== id));
+    const h = handelser.find((x) => x.id === id);
+    const namn = h?.titel?.trim() || "händelsen";
+    if (!window.confirm(`Ta bort «${namn}»? Möten i serien försvinner också.`)) {
+      return;
+    }
+    setHandelser((current) => current.filter((x) => x.id !== id));
     if (redigeraId === id) setRedigeraId(null);
+  }
+
+  function utokaHandelseSerie(id: string, extra = 1) {
+    setHandelser((current) =>
+      current.map((h) => (h.id === id ? utokaSerie(h, extra) : h)),
+    );
+  }
+
+  function taBortMoteISerie(id: string, nummer: number, titel: string) {
+    if (!window.confirm(`Ta bort ${titel} ur serien?`)) return;
+    setHandelser((current) =>
+      current.map((h) => (h.id === id ? taBortSerieMote(h, nummer) : h)),
+    );
   }
 
   function markeraKlar(id: string, tillfalle?: { ar: number; datumIso: string }) {
@@ -204,32 +245,40 @@ export function ArshjulModul() {
       return;
     }
 
-    if (h.typ === "intervall" && tillfalle?.ar != null) {
-      const datum = tillfalle.datumIso.slice(0, 10);
-      const klarDatum = [
-        ...new Set([...(h.klarDatum ?? []), datum]),
-      ].sort();
+    const valt =
+      tillfalle ??
+      (h.typ === "serie"
+        ? nastaOppnaSerieTillfalle(h)
+        : undefined);
+    if (!valt?.datumIso) {
+      if (h.typ === "manatlig" || h.typ === "arlig" || h.typ === "serie") return;
+      uppdateraHandelse(id, { klar: true });
+      return;
+    }
+
+    const datum = valt.datumIso.slice(0, 10);
+    const klarDatum = [...new Set([...(h.klarDatum ?? []), datum])].sort();
+    if (h.typ === "intervall") {
       uppdateraHandelse(id, {
-        senastKlarAr: tillfalle.ar,
+        senastKlarAr: valt.ar,
         klarDatum,
         klar: false,
       });
       return;
     }
 
-    // Månads- / årsvisa serier: bocka bara av det valda tillfället.
-    if (tillfalle?.datumIso) {
-      const datum = tillfalle.datumIso.slice(0, 10);
-      const klarDatum = [
-        ...new Set([...(h.klarDatum ?? []), datum]),
-      ].sort();
-      uppdateraHandelse(id, { klarDatum, klar: false });
+    uppdateraHandelse(id, { klarDatum, klar: false });
+  }
+
+  function vaxlaKlarTillfalle(
+    id: string,
+    tillfalle: { ar: number; datumIso: string; arKlar: boolean },
+  ) {
+    if (tillfalle.arKlar) {
+      avmarkeraKlar(id, tillfalle.datumIso);
       return;
     }
-
-    // Fallback (t.ex. påminnelselista utan datum) — bocka inte hela serien.
-    if (h.typ === "manatlig" || h.typ === "arlig") return;
-    uppdateraHandelse(id, { klar: true });
+    markeraKlar(id, { ar: tillfalle.ar, datumIso: tillfalle.datumIso });
   }
 
   function avmarkeraKlar(id: string, datumIso: string) {
@@ -291,11 +340,26 @@ export function ArshjulModul() {
     }
 
     if (!form.titel.trim()) return;
+    const original = redigeraId
+      ? handelser.find((h) => h.id === redigeraId)
+      : undefined;
+    const startAndrat =
+      original?.serieStartDatum !== form.serieStartDatum;
+    const intervallAndrat =
+      original?.serieIntervallVarje !== form.serieIntervallVarje ||
+      original?.serieIntervallEnhet !== form.serieIntervallEnhet;
     const sparad = normaliseraHandelse({
       ...form,
       titel: form.titel.trim(),
       id: redigeraId ?? form.id ?? skapaHandelseId(),
+      serieDatum:
+        form.typ === "serie" && original && !startAndrat && !intervallAndrat
+          ? original.serieDatum
+          : undefined,
     });
+    if (sparad.typ === "serie") {
+      sparad.serieDatum = byggSerieTillfallen(sparad).map((t) => t.datumIso);
+    }
     if (redigeraId) {
       setHandelser((current) =>
         current.map((h) => (h.id === redigeraId ? sparad : h)),
@@ -356,7 +420,7 @@ export function ArshjulModul() {
     }
     setHandelser(efter);
     setImportMeddelande(
-      `${antal} standardhändelser tillagda (styrelsemöte, OVK, sotning, energi, radon m.fl.).`,
+      `${antal} standardhändelser tillagda (möteskedja, styrelsemöte, OVK, sotning m.fl.).`,
     );
   }
 
@@ -416,11 +480,11 @@ export function ArshjulModul() {
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Styrelsemöten, byggmöten, OVK, sotning, energideklaration och
-          radonmätning — med månads- eller årsintervall. OVK kan ha två parallella
-          intervall: bostäder vart 3 eller 6 år och verksamhet/butiker vart 3:e år
-          — med egna startår i tidslinjen. Energideklaration och liknande kan ligga
-          som påminnelse i början av året tills tidpunkt bestäms.
+          Planen räcker {ARSHJUL_PLANERING_AR} år framåt. Standardkategorier lägger
+          in möteskedjan som en händelse per steg (projektering → upphandling →
+          startmöte → byggmöte → entreprenadbesiktning → garantibesiktning) med
+          intervall, antal och numrerade möten — inte lösa dubbletter. Markera
+          det aktuella mötet som klart, utöka serien när byggtiden blir längre.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -477,9 +541,9 @@ export function ArshjulModul() {
             Årshjulet är tomt
           </p>
           <p className="mt-1 text-sm text-foreground">
-            Börja med standardkategorier (möten, OVK, sotning m.m.) — sedan kan
-            ni lägga till egna påminnelser eller importera från underhållsplan
-            och projekt.
+            Börja med standardkategorier (möteskedja, OVK, sotning m.m.) — sedan
+            kan ni lägga till egna påminnelser eller importera från
+            underhållsplan och projekt.
           </p>
           <button
             type="button"
@@ -545,11 +609,18 @@ export function ArshjulModul() {
                 value={form.kategori}
                 onChange={(e) => {
                   const kategori = e.target.value as ArshjulKategori;
-                  const next = { ...form, kategori };
+                  let next = { ...form, kategori };
                   if (kategori === "ovk" && next.typ === "intervall") {
                     initOvkDualOmBehov();
                     next.titel = "OVK";
                     next.utanFastDatum = true;
+                  }
+                  if (MOTESKEDJA_KATEGORIER.includes(kategori) && !redigeraId) {
+                    next = {
+                      ...next,
+                      ...defaultSerieFalt(kategori),
+                      kategori,
+                    };
                   }
                   setForm(next);
                 }}
@@ -568,17 +639,29 @@ export function ArshjulModul() {
                 value={form.typ}
                 onChange={(e) => {
                   const typ = e.target.value as ArshjulHandelseTyp;
-                  const next = { ...form, typ };
+                  let next = { ...form, typ };
                   if (next.kategori === "ovk" && typ === "intervall") {
                     initOvkDualOmBehov();
                     next.titel = "OVK";
                     next.utanFastDatum = true;
+                  }
+                  if (typ === "serie") {
+                    next = {
+                      ...next,
+                      serieAntal: next.serieAntal ?? 1,
+                      serieIntervallVarje: next.serieIntervallVarje ?? 2,
+                      serieIntervallEnhet: next.serieIntervallEnhet ?? "vecka",
+                      serieStartDatum:
+                        next.serieStartDatum ??
+                        new Date().toISOString().slice(0, 10),
+                    };
                   }
                   setForm(next);
                 }}
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 <option value="engang">Engång (datum)</option>
+                <option value="serie">Möteserie (intervall + antal)</option>
                 <option value="manatlig">Varje månad</option>
                 <option value="arlig">Årligen (samma månad)</option>
                 <option value="intervall">Intervall (t.ex. vart 6:e år)</option>
@@ -596,6 +679,77 @@ export function ArshjulModul() {
                   className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                 />
               </label>
+            )}
+
+            {form.typ === "serie" && (
+              <>
+                <label className="block">
+                  <span className="text-sm font-medium">Första mötet</span>
+                  <input
+                    type="date"
+                    required
+                    value={form.serieStartDatum ?? ""}
+                    onChange={(e) =>
+                      setForm({ ...form, serieStartDatum: e.target.value })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium">Antal möten</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={form.serieAntal ?? 1}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        serieAntal: Math.max(1, Number(e.target.value) || 1),
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                  <span className="mt-1 block text-xs text-muted">
+                    Mötena numreras (t.ex. Byggmöte 1, 2, …). Kan utökas senare.
+                  </span>
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium">Intervall</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={52}
+                    value={form.serieIntervallVarje ?? 1}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        serieIntervallVarje: Math.max(
+                          1,
+                          Number(e.target.value) || 1,
+                        ),
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium">Enhet</span>
+                  <select
+                    value={form.serieIntervallEnhet ?? "vecka"}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        serieIntervallEnhet: e.target.value as SerieIntervallEnhet,
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="vecka">Vecka</option>
+                    <option value="manad">Månad</option>
+                  </select>
+                </label>
+              </>
             )}
 
             {(form.typ === "arlig" ||
@@ -642,6 +796,7 @@ export function ArshjulModul() {
 
             {(form.typ === "arlig" ||
               form.typ === "manatlig" ||
+              form.typ === "serie" ||
               (form.typ === "intervall" && !form.utanFastDatum)) && (
               <>
                 <label className="block">
@@ -662,7 +817,11 @@ export function ArshjulModul() {
                     }}
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   >
-                    <option value="">Fast dag i månaden i stället</option>
+                    <option value="">
+                      {form.typ === "serie"
+                        ? "Ingen fast veckodag"
+                        : "Fast dag i månaden i stället"}
+                    </option>
                     {([1, 2, 3, 4, 5, 6, 7] as Veckodag[]).map((vd) => (
                       <option key={vd} value={vd}>
                         {veckodagsnamn[vd]}
@@ -670,7 +829,7 @@ export function ArshjulModul() {
                     ))}
                   </select>
                 </label>
-                {form.veckodag ? (
+                {form.typ === "serie" ? null : form.veckodag ? (
                   <label className="block">
                     <span className="text-sm font-medium">Vilken i månaden</span>
                     <select
@@ -917,7 +1076,9 @@ export function ArshjulModul() {
               </div>
             )}
 
-            {(form.typ === "manatlig" || form.typ === "arlig") && (
+            {(form.typ === "manatlig" ||
+              form.typ === "arlig" ||
+              form.typ === "serie") && (
               <fieldset className="sm:col-span-2">
                 <legend className="text-sm font-medium">
                   Hoppa över månader (t.ex. sommar)
@@ -1015,7 +1176,10 @@ export function ArshjulModul() {
                 onChange={(e) => setValtAr(Number(e.target.value))}
                 className="ml-2 rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
               >
-                {Array.from({ length: 21 }, (_, i) => innevarandeAr - 2 + i).map((ar) => (
+                {Array.from(
+                  { length: ARSHJUL_PLANERING_AR + 3 },
+                  (_, i) => innevarandeAr - 2 + i,
+                ).map((ar) => (
                   <option key={ar} value={ar}>
                     {ar}
                   </option>
@@ -1100,7 +1264,8 @@ export function ArshjulModul() {
             <div className="mb-4 text-center">
               <p className="text-3xl font-bold text-primary-dark">{valtAr}</p>
               <p className="text-sm text-muted">
-                Årshjul — {tillfallenAr.length} händelser detta år
+                Årshjul — {tillfallenAr.length} tillfällen detta år · planeras{" "}
+                {ARSHJUL_PLANERING_AR} år framåt
               </p>
             </div>
             <div
@@ -1132,33 +1297,139 @@ export function ArshjulModul() {
             </div>
           </div>
 
-          <ul className="space-y-2">
-            {handelser.map((h) => (
-              <li
-                key={h.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              >
-                <span className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}>
-                  {kategoriEtiketter[h.kategori]}
-                </span>
-                <span className="min-w-0 flex-1 font-medium">{h.titel}</span>
-                <span className="text-xs text-muted">{beskrivIntervall(h)}</span>
-                <button
-                  type="button"
-                  onClick={() => startaRedigera(h)}
-                  className="text-xs text-primary-dark hover:underline"
+          <ul className="space-y-3">
+            {handelser.map((h) => {
+              const serie = arSerieHandelse(h);
+              const moten = serie ? byggSerieTillfallen(h) : [];
+              const nasta = serie ? nastaOppnaSerieTillfalle(h) : null;
+              const senastKlar = serie ? senastKlaraSerieTillfalle(h) : null;
+              return (
+                <li
+                  key={h.id}
+                  className="rounded-xl border border-border bg-white px-3 py-3 text-sm sm:px-4"
                 >
-                  Redigera
-                </button>
-                <button
-                  type="button"
-                  onClick={() => taBortHandelse(h.id)}
-                  className="text-xs text-muted hover:text-red-700"
-                >
-                  Ta bort
-                </button>
-              </li>
-            ))}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-xs ${kategoriFarger[h.kategori]}`}
+                        >
+                          {kategoriEtiketter[h.kategori]}
+                        </span>
+                        <span className="font-medium">{h.titel}</span>
+                      </div>
+                      <p className="text-xs text-muted">{beskrivIntervall(h)}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startaRedigera(h)}
+                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-primary-dark hover:border-primary/50"
+                      >
+                        Redigera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => taBortHandelse(h.id)}
+                        className={TA_BORT_KLASS}
+                      >
+                        Ta bort händelse
+                      </button>
+                    </div>
+                  </div>
+
+                  {serie && (
+                    <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
+                      {moten.length === 0 ? (
+                        <p className="text-xs text-muted">
+                          Inga möten i serien ännu.
+                        </p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {moten.map((t) => (
+                            <li
+                              key={`${h.id}-${t.serieNummer}`}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#f7f9f8] px-2.5 py-1.5"
+                            >
+                              <span
+                                className={`min-w-0 flex-1 ${t.arKlar ? "text-muted line-through" : "text-foreground"}`}
+                              >
+                                {t.titel}
+                                <span className="ml-2 text-xs text-muted no-underline">
+                                  {formatDatumKort(t.datumIso)}
+                                </span>
+                              </span>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    vaxlaKlarTillfalle(h.id, {
+                                      ar: t.ar,
+                                      datumIso: t.datumIso,
+                                      arKlar: t.arKlar,
+                                    })
+                                  }
+                                  className="rounded-lg border border-border bg-white px-2 py-1 text-xs font-medium text-primary-dark hover:border-primary/50"
+                                >
+                                  {t.arKlar ? "Ångra" : "Markera klar"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    taBortMoteISerie(
+                                      h.id,
+                                      t.serieNummer ?? 0,
+                                      t.titel,
+                                    )
+                                  }
+                                  className={TA_BORT_KLASS}
+                                >
+                                  Ta bort möte
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {nasta && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              markeraKlar(h.id, {
+                                ar: nasta.ar,
+                                datumIso: nasta.datumIso,
+                              })
+                            }
+                            className="brf-knapp-neutral px-3 py-1.5 text-xs"
+                          >
+                            Markera klar — {nasta.titel}
+                          </button>
+                        )}
+                        {!nasta && senastKlar && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              avmarkeraKlar(h.id, senastKlar.datumIso)
+                            }
+                            className="brf-knapp-neutral px-3 py-1.5 text-xs"
+                          >
+                            Ångra {senastKlar.titel}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => utokaHandelseSerie(h.id, 1)}
+                          className="rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                        >
+                          Utöka med ett möte
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -1170,11 +1441,14 @@ export function ArshjulModul() {
             <input
               type="number"
               min={innevarandeAr}
-              max={innevarandeAr + 50}
+              max={innevarandeAr + ARSHJUL_PLANERING_AR}
               value={tidslinjeSlutAr}
               onChange={(e) => setTidslinjeSlutAr(Number(e.target.value))}
               className="ml-2 w-24 rounded-lg border border-border px-2 py-1 text-sm"
             />
+            <span className="ml-2 text-xs font-normal text-muted">
+              Standard {ARSHJUL_PLANERING_AR} år
+            </span>
           </label>
           <div className="space-y-4">
             {perArTidslinje.map(([ar, poster]) => (

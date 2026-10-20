@@ -2,8 +2,12 @@ import { foreningStorageKey } from "@/lib/foreningStorage";
 
 export type ArshjulKategori =
   | "styrelsemote"
-  | "garantbesiktning"
+  | "projekteringsmote"
+  | "upphandlingsmote"
+  | "startmote"
   | "byggmote"
+  | "besiktningEntreprenad"
+  | "garantbesiktning"
   | "ovk"
   | "sotning"
   | "energideklaration"
@@ -16,12 +20,16 @@ export type ArshjulKategori =
   | "medlemmar"
   | "ovrigt";
 
-/** engang = ett datum · arlig = samma månad varje år · manatlig = varje månad · intervall = vart N:e år */
+/** engang = ett datum · arlig = samma månad varje år · manatlig = varje månad · intervall = vart N:e år · serie = numrerade möten med intervall + antal */
 export type ArshjulHandelseTyp =
   | "engang"
   | "arlig"
   | "manatlig"
-  | "intervall";
+  | "intervall"
+  | "serie";
+
+/** Hur ofta möten i en serie återkommer. */
+export type SerieIntervallEnhet = "vecka" | "manad";
 
 /** 1 = måndag … 7 = söndag (svensk vecka). */
 export type Veckodag = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -45,6 +53,15 @@ export type ArshjulHandelse = {
   /** Intervall — första planerade år och år mellan tillfällen. */
   startAr?: number;
   intervallAr?: number;
+  /** Serie — antal möten (Byggmöte 1, 2, …). Kan utökas senare. */
+  serieAntal?: number;
+  /** Serie — vart N:e vecka/månad. */
+  serieIntervallVarje?: number;
+  serieIntervallEnhet?: SerieIntervallEnhet;
+  /** Serie — datum för första mötet (YYYY-MM-DD). */
+  serieStartDatum?: string;
+  /** Serie — sparade datum om serien har utökats eller ett möte tagits bort. */
+  serieDatum?: string[];
   /** Senast markerad som genomförd (kalenderår) — nästa tillfälle räknas därifrån. */
   senastKlarAr?: number;
   /** Avklarade enskilda tillfällen (YYYY-MM-DD) — gäller månads-/årsvisa serier. */
@@ -79,6 +96,8 @@ export type ArshjulTillfalle = {
   arKlar: boolean;
   /** Planerat år utan fast kalenderdatum — tidpunkt bestäms under året. */
   planerasUnderAr?: boolean;
+  /** Ordningsnummer i en möteserie (Byggmöte 1, 2, …). */
+  serieNummer?: number;
 };
 
 export type ArshjulPaminnelse = {
@@ -100,6 +119,9 @@ export function arshjulStorageKey(): string {
 
 export const STANDARD_PAMINNELSE_DAGAR = [365, 180, 90, 30, 14, 7];
 
+/** Hur långt fram årshjulet planerar (tidslinje, årsväljare, intervallhändelser). */
+export const ARSHJUL_PLANERING_AR = 50;
+
 /** Föreslaget intervall för sotning i BRF med eldstäder (kan vara 1–4 år beroende på eldstad). */
 export const SOTNING_FORESLAGET_INTERVALL_AR = 3;
 
@@ -109,8 +131,12 @@ export const OVK_INTERVALL_VERKSAMHET_AR = 3;
 
 export const kategoriEtiketter: Record<ArshjulKategori, string> = {
   styrelsemote: "Styrelsemöte",
-  garantbesiktning: "Garantbesiktning",
+  projekteringsmote: "Projekteringsmöte",
+  upphandlingsmote: "Upphandlingsmöte",
+  startmote: "Startmöte",
   byggmote: "Byggmöte",
+  besiktningEntreprenad: "Besiktning entreprenad",
+  garantbesiktning: "Garantibesiktning (2-årsbesiktning)",
   ovk: "OVK-besiktning",
   sotning: "Sotning",
   energideklaration: "Energideklaration",
@@ -126,8 +152,12 @@ export const kategoriEtiketter: Record<ArshjulKategori, string> = {
 
 export const kategoriFarger: Record<ArshjulKategori, string> = {
   styrelsemote: "bg-indigo-100 text-indigo-950 border-indigo-200",
-  garantbesiktning: "bg-orange-100 text-orange-950 border-orange-200",
+  projekteringsmote: "bg-blue-100 text-blue-950 border-blue-200",
+  upphandlingsmote: "bg-violet-100 text-violet-950 border-violet-200",
+  startmote: "bg-sky-100 text-sky-950 border-sky-200",
   byggmote: "bg-cyan-100 text-cyan-950 border-cyan-200",
+  besiktningEntreprenad: "bg-teal-100 text-teal-950 border-teal-200",
+  garantbesiktning: "bg-orange-100 text-orange-950 border-orange-200",
   ovk: "bg-teal-100 text-teal-950 border-teal-200",
   sotning: "bg-stone-200 text-stone-950 border-stone-300",
   energideklaration: "bg-lime-100 text-lime-950 border-lime-200",
@@ -140,6 +170,16 @@ export const kategoriFarger: Record<ArshjulKategori, string> = {
   medlemmar: "bg-rose-100 text-rose-950 border-rose-200",
   ovrigt: "bg-stone-100 text-stone-900 border-stone-200",
 };
+
+/** Möteskedjan i projekt — en händelse per steg, med inre numrerad möteslista. */
+export const MOTESKEDJA_KATEGORIER: ArshjulKategori[] = [
+  "projekteringsmote",
+  "upphandlingsmote",
+  "startmote",
+  "byggmote",
+  "besiktningEntreprenad",
+  "garantbesiktning",
+];
 
 export const manadsnamn = [
   "Januari",
@@ -179,8 +219,16 @@ function arGiltigKategori(k: string): k is ArshjulKategori {
 
 function arGiltigTyp(t: string): t is ArshjulHandelseTyp {
   return (
-    t === "engang" || t === "arlig" || t === "manatlig" || t === "intervall"
+    t === "engang" ||
+    t === "arlig" ||
+    t === "manatlig" ||
+    t === "intervall" ||
+    t === "serie"
   );
+}
+
+function arGiltigSerieEnhet(e: string | undefined): e is SerieIntervallEnhet {
+  return e === "vecka" || e === "manad";
 }
 
 export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
@@ -212,15 +260,23 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
       ? (raw.veckodag as Veckodag)
       : undefined;
 
+  const serieDatum = Array.isArray(raw.serieDatum)
+    ? raw.serieDatum.filter(
+        (d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}/.test(d),
+      ).map((d) => d.slice(0, 10))
+    : undefined;
+
+  const typ = arGiltigTyp(raw.typ) ? raw.typ : "engang";
+
   return {
     ...raw,
     titel: raw.titel?.trim() ?? "Utan titel",
     beskrivning: raw.beskrivning?.trim() ?? "",
     kategori: arGiltigKategori(raw.kategori) ? raw.kategori : "ovrigt",
-    typ: arGiltigTyp(raw.typ) ? raw.typ : "engang",
+    typ,
     paminnelseDagar,
     // Serier bockas per tillfälle via klarDatum — gammal serie-klar nollställs.
-    klar: arGiltigTyp(raw.typ) && raw.typ !== "engang" ? false : Boolean(raw.klar),
+    klar: typ !== "engang" ? false : Boolean(raw.klar),
     klarDatum:
       klarDatum && klarDatum.length > 0 ? klarDatum : undefined,
     manad:
@@ -233,6 +289,30 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
         : undefined,
     intervallAr:
       raw.intervallAr != null && raw.intervallAr >= 1 ? raw.intervallAr : undefined,
+    serieAntal:
+      raw.serieAntal != null && raw.serieAntal >= 0
+        ? Math.min(200, Math.floor(raw.serieAntal))
+        : typ === "serie"
+          ? 1
+          : undefined,
+    serieIntervallVarje:
+      raw.serieIntervallVarje != null && raw.serieIntervallVarje >= 1
+        ? Math.min(52, Math.floor(raw.serieIntervallVarje))
+        : typ === "serie"
+          ? 1
+          : undefined,
+    serieIntervallEnhet: arGiltigSerieEnhet(raw.serieIntervallEnhet)
+      ? raw.serieIntervallEnhet
+      : typ === "serie"
+        ? "vecka"
+        : undefined,
+    serieStartDatum:
+      typeof raw.serieStartDatum === "string" &&
+      /^\d{4}-\d{2}-\d{2}/.test(raw.serieStartDatum)
+        ? raw.serieStartDatum.slice(0, 10)
+        : undefined,
+    serieDatum:
+      serieDatum && serieDatum.length > 0 ? serieDatum : undefined,
     veckodag,
     veckodagOrdinal:
       raw.veckodagOrdinal != null && raw.veckodagOrdinal >= 1 && raw.veckodagOrdinal <= 5
@@ -314,6 +394,189 @@ export function tillfalleArKlar(h: ArshjulHandelse, datumIso: string): boolean {
   return Boolean(h.klarDatum?.some((d) => d.slice(0, 10) === nyckel));
 }
 
+export function arSerieHandelse(h: ArshjulHandelse): boolean {
+  return h.typ === "serie";
+}
+
+function idagIso(): string {
+  const d = new Date();
+  return datumIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
+function plusDagarIso(iso: string, dagar: number): string {
+  const d = parseDatum(iso);
+  if (!d) return iso;
+  d.setDate(d.getDate() + dagar);
+  return datumIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
+function plusManaderIso(iso: string, manader: number): string {
+  const d = parseDatum(iso);
+  if (!d) return iso;
+  d.setMonth(d.getMonth() + manader);
+  return datumIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
+function nastaVeckodagPaEllerEfter(iso: string, veckodag: Veckodag): string {
+  const d = parseDatum(iso);
+  if (!d) return iso;
+  const nu = jsTillSvenskVeckodag(d.getDay());
+  const delta = (veckodag - nu + 7) % 7;
+  d.setDate(d.getDate() + delta);
+  return datumIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+
+function serieSteg(
+  iso: string,
+  varje: number,
+  enhet: SerieIntervallEnhet,
+): string {
+  return enhet === "vecka"
+    ? plusDagarIso(iso, varje * 7)
+    : plusManaderIso(iso, varje);
+}
+
+function hoppaExkluderadeSerieDatum(
+  iso: string,
+  h: ArshjulHandelse,
+  varje: number,
+  enhet: SerieIntervallEnhet,
+): string {
+  let current = iso;
+  for (let i = 0; i < 48; i++) {
+    const manad = Number(current.slice(5, 7));
+    if (!manadArExkluderad(h, manad)) return current;
+    current = serieSteg(current, varje, enhet);
+  }
+  return current;
+}
+
+export function moteNamn(basTitel: string, nummer: number): string {
+  const bas = basTitel.trim() || "Möte";
+  return `${bas} ${nummer}`;
+}
+
+export function serieIntervallText(h: ArshjulHandelse): string {
+  const varje = h.serieIntervallVarje ?? 1;
+  const enhet = h.serieIntervallEnhet === "manad" ? "månad" : "vecka";
+  if (varje === 1) return `Varje ${enhet}`;
+  return `Var ${varje}:e ${enhet}`;
+}
+
+/** Alla möten i en serie, numrerade i ordning. */
+export function byggSerieTillfallen(h: ArshjulHandelse): ArshjulTillfalle[] {
+  if (h.typ !== "serie") return [];
+  const antal = Math.max(0, h.serieAntal ?? 0);
+  if (antal === 0) return [];
+
+  const varje = Math.max(1, h.serieIntervallVarje ?? 1);
+  const enhet: SerieIntervallEnhet =
+    h.serieIntervallEnhet === "manad" ? "manad" : "vecka";
+
+  let datumLista: string[] = [];
+  if (h.serieDatum && h.serieDatum.length > 0) {
+    datumLista = h.serieDatum.map((d) => d.slice(0, 10));
+    while (datumLista.length < antal) {
+      const last = datumLista[datumLista.length - 1] ?? idagIso();
+      const nasta = hoppaExkluderadeSerieDatum(
+        serieSteg(last, varje, enhet),
+        h,
+        varje,
+        enhet,
+      );
+      datumLista.push(nasta);
+    }
+    datumLista = datumLista.slice(0, antal);
+  } else {
+    let cursor = (h.serieStartDatum ?? h.datum ?? idagIso()).slice(0, 10);
+    if (h.veckodag) {
+      cursor = nastaVeckodagPaEllerEfter(cursor, h.veckodag);
+    }
+    cursor = hoppaExkluderadeSerieDatum(cursor, h, varje, enhet);
+    for (let i = 0; i < antal; i++) {
+      if (i > 0) {
+        cursor = hoppaExkluderadeSerieDatum(
+          serieSteg(cursor, varje, enhet),
+          h,
+          varje,
+          enhet,
+        );
+      }
+      datumLista.push(cursor);
+    }
+  }
+
+  return datumLista.map((iso, i) => {
+    const nummer = i + 1;
+    const d = parseDatum(iso);
+    const ar = d ? d.getFullYear() : Number(iso.slice(0, 4));
+    const manad = d ? d.getMonth() + 1 : Number(iso.slice(5, 7));
+    const dag = d ? d.getDate() : Number(iso.slice(8, 10));
+    return {
+      handelseId: h.id,
+      titel: moteNamn(h.titel, nummer),
+      kategori: h.kategori,
+      ar: Number.isFinite(ar) ? ar : new Date().getFullYear(),
+      manad: Number.isFinite(manad) && manad >= 1 ? manad : 1,
+      dag: Number.isFinite(dag) && dag >= 1 ? dag : 1,
+      datumIso: iso,
+      beskrivning: h.beskrivning,
+      arManatlig: false,
+      arKlar: tillfalleArKlar(h, iso),
+      serieNummer: nummer,
+    };
+  });
+}
+
+export function nastaOppnaSerieTillfalle(
+  h: ArshjulHandelse,
+): ArshjulTillfalle | null {
+  return byggSerieTillfallen(h).find((t) => !t.arKlar) ?? null;
+}
+
+export function senastKlaraSerieTillfalle(
+  h: ArshjulHandelse,
+): ArshjulTillfalle | null {
+  const klara = byggSerieTillfallen(h).filter((t) => t.arKlar);
+  return klara[klara.length - 1] ?? null;
+}
+
+export function utokaSerie(
+  h: ArshjulHandelse,
+  extra = 1,
+): ArshjulHandelse {
+  const tillagg = Math.max(1, Math.min(50, Math.floor(extra)));
+  return normaliseraHandelse({
+    ...h,
+    typ: "serie",
+    serieAntal: (h.serieAntal ?? byggSerieTillfallen(h).length) + tillagg,
+    serieDatum: byggSerieTillfallen(
+      normaliseraHandelse({
+        ...h,
+        typ: "serie",
+        serieAntal: (h.serieAntal ?? 0) + tillagg,
+      }),
+    ).map((t) => t.datumIso),
+  });
+}
+
+export function taBortSerieMote(
+  h: ArshjulHandelse,
+  nummer: number,
+): ArshjulHandelse {
+  const kvar = byggSerieTillfallen(h).filter((t) => t.serieNummer !== nummer);
+  const datum = kvar.map((t) => t.datumIso);
+  const klarNycklar = new Set(datum);
+  return normaliseraHandelse({
+    ...h,
+    typ: "serie",
+    serieAntal: datum.length,
+    serieDatum: datum,
+    serieStartDatum: datum[0] ?? h.serieStartDatum,
+    klarDatum: (h.klarDatum ?? []).filter((d) => klarNycklar.has(d.slice(0, 10))),
+  });
+}
+
 export function nastaIntervallAr(h: ArshjulHandelse): number | null {
   if (h.typ !== "intervall" || !h.intervallAr || h.intervallAr < 1) return null;
   const bas = h.senastKlarAr ?? h.startAr;
@@ -361,6 +624,15 @@ export function expanderaTillfallen(
   for (const h of handelser) {
     // Helt avklarad engångshändelse visas inte igen.
     if (h.typ === "engang" && h.klar) continue;
+
+    if (h.typ === "serie") {
+      for (const t of byggSerieTillfallen(h)) {
+        if (t.ar >= franAr && t.ar <= tillAr && !manadArExkluderad(h, t.manad)) {
+          lista.push(t);
+        }
+      }
+      continue;
+    }
 
     if (h.typ === "engang" && h.datum) {
       const d = parseDatum(h.datum.slice(0, 10));
@@ -452,7 +724,7 @@ export function hamtaPaminnelser(
         titel: h.titel,
         kategori: h.kategori,
         dagarKvar,
-        rubrik: `${h.titel} — försenad`,
+        rubrik: `${t.titel} — försenad`,
         text: t.planerasUnderAr
           ? h.beskrivning ||
             `Planerades under ${t.ar} — bocka av när utfört eller sätt nytt år.`
@@ -474,8 +746,8 @@ export function hamtaPaminnelser(
           dagarKvar,
         rubrik:
           dagarKvar === 0
-            ? `${h.titel} — idag`
-            : `${h.titel} — om ${dagarKvar} dagar`,
+            ? `${t.titel} — idag`
+            : `${t.titel} — om ${dagarKvar} dagar`,
           text: t.planerasUnderAr
             ? h.beskrivning ||
               `Planerat under ${t.ar} — bestäm exakt tidpunkt (ev. upphandling) under året.`
@@ -518,8 +790,50 @@ export function skapaTomHandelse(overrides?: Partial<ArshjulHandelse>): ArshjulH
 
 const innevarandeAr = () => new Date().getFullYear();
 
+function skapaSerieMall(opts: {
+  id: string;
+  titel: string;
+  beskrivning: string;
+  kategori: ArshjulKategori;
+  antal: number;
+  varje: number;
+  enhet: SerieIntervallEnhet;
+  startIso: string;
+  veckodag?: Veckodag;
+  paminnelseDagar?: number[];
+}): ArshjulHandelse {
+  const mall = normaliseraHandelse({
+    id: opts.id,
+    titel: opts.titel,
+    beskrivning: opts.beskrivning,
+    kategori: opts.kategori,
+    typ: "serie",
+    serieAntal: opts.antal,
+    serieIntervallVarje: opts.varje,
+    serieIntervallEnhet: opts.enhet,
+    serieStartDatum: opts.startIso,
+    veckodag: opts.veckodag,
+    paminnelseDagar: opts.paminnelseDagar ?? [14, 7, 1],
+    klar: false,
+    skapad: "standard",
+    externKalla: "manuell",
+  });
+  return normaliseraHandelse({
+    ...mall,
+    serieDatum: byggSerieTillfallen(mall).map((t) => t.datumIso),
+  });
+}
+
 /** Standardhändelser för årshjulet — läggs in som mall / kan fyllas på. */
 export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse[] {
+  const start = idagIso();
+  const projekteringStart = plusDagarIso(start, 14);
+  const upphandlingStart = plusDagarIso(start, 56);
+  const startmoteStart = plusDagarIso(start, 112);
+  const byggStart = plusDagarIso(start, 126);
+  const besiktningStart = plusDagarIso(byggStart, 6 * 28 + 14);
+  const garantStart = plusManaderIso(besiktningStart, 24);
+
   return [
     normaliseraHandelse({
       id: "std-styrelsemote",
@@ -530,39 +844,86 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       typ: "manatlig",
       veckodag: 2,
       veckodagOrdinal: 2,
+      startAr: basAr,
       exkluderaManader: [...SOMMAR_EXKLUDERADE_MANADER],
       paminnelseDagar: [14, 7, 1],
       klar: false,
       skapad: "standard",
       externKalla: "manuell",
     }),
-    normaliseraHandelse({
+    skapaSerieMall({
+      id: "std-projektering",
+      titel: "Projekteringsmöte",
+      beskrivning:
+        "Första steget i möteskedjan. Utöka antalet om projekteringen behöver fler möten.",
+      kategori: "projekteringsmote",
+      antal: 2,
+      varje: 2,
+      enhet: "vecka",
+      startIso: projekteringStart,
+      veckodag: 2,
+    }),
+    skapaSerieMall({
+      id: "std-upphandling",
+      titel: "Upphandlingsmöte",
+      beskrivning:
+        "Upphandling efter projektering. Utöka serien om anbudsrundan behöver fler möten.",
+      kategori: "upphandlingsmote",
+      antal: 2,
+      varje: 2,
+      enhet: "vecka",
+      startIso: upphandlingStart,
+      veckodag: 2,
+    }),
+    skapaSerieMall({
+      id: "std-startmote",
+      titel: "Startmöte",
+      beskrivning:
+        "Startmöte innan produktion. Lägg till fler i samma händelse om det behövs.",
+      kategori: "startmote",
+      antal: 1,
+      varje: 2,
+      enhet: "vecka",
+      startIso: startmoteStart,
+      veckodag: 4,
+    }),
+    skapaSerieMall({
       id: "std-byggmote",
       titel: "Byggmöte",
       beskrivning:
-        "Bygg- / entreprenadmöte under pågående projekt. Justera eller ta bort månader utan projekt.",
+        "Byggmöten under entreprenaden — numrerade i ordning. Utöka antalet när byggtiden blir längre.",
       kategori: "byggmote",
-      typ: "manatlig",
+      antal: 6,
+      varje: 4,
+      enhet: "vecka",
+      startIso: byggStart,
       veckodag: 4,
-      veckodagOrdinal: 1,
-      exkluderaManader: [...SOMMAR_EXKLUDERADE_MANADER],
       paminnelseDagar: [7, 1],
-      klar: false,
-      skapad: "standard",
-      externKalla: "manuell",
     }),
-    normaliseraHandelse({
-      id: "std-garant",
-      titel: "Garantbesiktning",
+    skapaSerieMall({
+      id: "std-besiktning-entreprenad",
+      titel: "Besiktning entreprenad",
       beskrivning:
-        "Lägg in konkret datum när garantitiden närmar sig (eller importera från projekt).",
+        "Slutbesiktning av entreprenaden. Utöka om ni har delbesiktningar.",
+      kategori: "besiktningEntreprenad",
+      antal: 1,
+      varje: 2,
+      enhet: "vecka",
+      startIso: besiktningStart,
+      veckodag: 2,
+      paminnelseDagar: [30, 14, 7],
+    }),
+    skapaSerieMall({
+      id: "std-garant",
+      titel: "Garantibesiktning (2-årsbesiktning)",
+      beskrivning:
+        "Garantibesiktning två år efter entreprenadbesiktning. Justera datumet när slutbesiktningen är klardatum.",
       kategori: "garantbesiktning",
-      typ: "engang",
-      datum: `${basAr + 2}-09-15`,
+      antal: 1,
+      varje: 1,
+      enhet: "manad",
+      startIso: garantStart,
       paminnelseDagar: [180, 90, 30, 14],
-      klar: false,
-      skapad: "standard",
-      externKalla: "manuell",
     }),
     normaliseraHandelse({
       id: "std-ovk-bostad",
@@ -671,11 +1032,76 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
   ];
 }
 
+/**
+ * Flyttar gammal månadsvis byggmötesmall och gammal garant-etikett
+ * till möteserie, utan att duplicera händelser.
+ */
+export function migreraArshjulHandelser(
+  lista: ArshjulHandelse[],
+): ArshjulHandelse[] {
+  const mallar = new Map(skapaStandardHandelser().map((h) => [h.id, h]));
+  return lista.map((h) => {
+    const mall = mallar.get(h.id);
+    if (h.id === "std-byggmote" && h.typ === "manatlig" && mall) {
+      return normaliseraHandelse({
+        ...mall,
+        id: h.id,
+        klarDatum: h.klarDatum,
+        paminnelseDagar: h.paminnelseDagar,
+      });
+    }
+    if (h.id === "std-garant" && h.typ === "engang" && mall) {
+      return normaliseraHandelse({
+        ...mall,
+        id: h.id,
+        klarDatum: h.klarDatum,
+        serieStartDatum: h.datum ?? mall.serieStartDatum,
+        paminnelseDagar: h.paminnelseDagar,
+      });
+    }
+    if (h.titel === "Garantbesiktning") {
+      return normaliseraHandelse({
+        ...h,
+        titel: "Garantibesiktning (2-årsbesiktning)",
+      });
+    }
+    return h;
+  });
+}
+
 /** Lägger till saknade standardhändelser (matchar på id). */
 export function fyllPaStandardHandelser(
   befintliga: ArshjulHandelse[],
 ): ArshjulHandelse[] {
-  const ids = new Set(befintliga.map((h) => h.id));
+  const migrerade = migreraArshjulHandelser(befintliga);
+  const ids = new Set(migrerade.map((h) => h.id));
   const tillagg = skapaStandardHandelser().filter((h) => !ids.has(h.id));
-  return [...befintliga, ...tillagg];
+  return [...migrerade, ...tillagg];
+}
+
+/** Förval när styrelsen väljer en möteskedje-kategori i formuläret. */
+export function defaultSerieFalt(
+  kategori: ArshjulKategori,
+): Partial<ArshjulHandelse> {
+  const mall = skapaStandardHandelser().find((h) => h.kategori === kategori);
+  if (mall?.typ === "serie") {
+    return {
+      typ: "serie",
+      titel: mall.titel,
+      beskrivning: mall.beskrivning,
+      serieAntal: mall.serieAntal,
+      serieIntervallVarje: mall.serieIntervallVarje,
+      serieIntervallEnhet: mall.serieIntervallEnhet,
+      serieStartDatum: mall.serieStartDatum,
+      veckodag: mall.veckodag,
+      paminnelseDagar: mall.paminnelseDagar,
+    };
+  }
+  return {
+    typ: "serie",
+    serieAntal: 1,
+    serieIntervallVarje: 2,
+    serieIntervallEnhet: "vecka",
+    serieStartDatum: idagIso(),
+  };
 }

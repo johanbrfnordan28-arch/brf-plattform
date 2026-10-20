@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import {
   FORENING_AKTIV_EVENT,
   hamtaAktivForeningsNamn,
+  INGEN_AKTIV_FORENING_ETIKETT,
 } from "@/lib/forening-registry";
 
 /**
@@ -18,10 +19,14 @@ function subscribeNamn(onStoreChange: () => void) {
   return () => window.removeEventListener(FORENING_AKTIV_EVENT, onStoreChange);
 }
 
+function lasKlientNamn(): string {
+  return hamtaAktivForeningsNamn().trim() || INGEN_AKTIV_FORENING_ETIKETT;
+}
+
 export function useAktivForeningsNamn(): string {
   return useSyncExternalStore(
     subscribeNamn,
-    hamtaAktivForeningsNamn,
+    lasKlientNamn,
     () => FORENINGS_NAMN_PLACEHOLDER,
   );
 }

@@ -17,7 +17,7 @@ export default function ForeningArshjulPage() {
     <ModulePage
       title="Årshjul"
       icon="📅"
-      intro="Styrelsemöten, byggmöten, garantbesiktning, OVK, sotning, energideklaration och radon — med månads- eller årsintervall. Hoppa över sommaren när ni inte har möten."
+      intro="Styrelsemöten, möteskedja från projektering till garantibesiktning, OVK, sotning, energideklaration och radon — med 50 års framförhållning. Möten i en serie numreras och kan utökas, utan lösa dubbletter i listan."
     >
       <ContentSection title="Styrelsens årshjul" plain>
         <ArshjulModul />

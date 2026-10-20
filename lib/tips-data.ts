@@ -144,8 +144,8 @@ export const tips: Record<string, TipsPunkt[]> = {
   arshjul: [
     {
       ikon: "📅",
-      titel: "Planera hela styrelseåret",
-      text: "Lägg in styrelsemöten, stämma, OVK, besiktningar och deklarationer för hela kommande året — slippa missa viktiga deadlines.",
+      titel: "Planera 50 år framåt",
+      text: "Lägg in styrelsemöten, stämma, OVK och möteskedjan — planen räcker 50 år framåt så nästa styrelse tar över samma tidslinje.",
     },
     {
       ikon: "🔔",
@@ -154,8 +154,8 @@ export const tips: Record<string, TipsPunkt[]> = {
     },
     {
       ikon: "🔄",
-      titel: "Återkommande händelser",
-      text: "Märk en händelse som återkommande och den dyker automatiskt upp nästa år vid samma period.",
+      titel: "Möteserie istället för dubbletter",
+      text: "Byggmöten och liknande ligger som en händelse med intervall och antal (Byggmöte 1, 2, …). Utöka serien när projektet blir längre.",
     },
   ],
 
