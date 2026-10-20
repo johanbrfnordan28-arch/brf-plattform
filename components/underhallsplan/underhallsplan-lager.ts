@@ -43,6 +43,8 @@ export type UnderhallsplanLagratState = {
   komponenterSaved: boolean;
   besiktningarSaved: boolean;
   activeComponents: string[];
+  /** Komponenter som föreningen tagit bort permanent. Syns inte i planen förrän de läggs till igen. */
+  borttagnaKomponenter?: string[];
   komponentDetaljer: Record<string, KomponentDetaljData>;
   besiktningar: Besiktning[];
   /** Valfritt — äldre sparade planer saknar fältet. */
@@ -93,6 +95,9 @@ function uppgraderaUnderhallsplanState(
     komponenterSaved: parsed.komponenterSaved ?? false,
     besiktningarSaved: parsed.besiktningarSaved ?? false,
     activeComponents: parsed.activeComponents,
+    borttagnaKomponenter: Array.isArray(parsed.borttagnaKomponenter)
+      ? parsed.borttagnaKomponenter.filter((n) => typeof n === "string" && n.trim())
+      : [],
     komponentDetaljer: parsed.komponentDetaljer ?? {},
     besiktningar: parsed.besiktningar ?? [],
     samfallighetsavgift: parsed.samfallighetsavgift,
@@ -144,6 +149,7 @@ export function tomtUnderhallsplanState(
     komponenterSaved: false,
     besiktningarSaved: false,
     activeComponents: [],
+    borttagnaKomponenter: [],
     komponentDetaljer: {},
     besiktningar: [],
     renoveringarLista: [],

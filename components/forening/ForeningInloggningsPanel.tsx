@@ -36,6 +36,46 @@ type Statistik = {
   unikaEposter7Dagar: number;
 };
 
+type HistorikSpann = "10" | "vecka" | "manad";
+
+const HISTORIK_SPANN_KEY = "brf-inloggningshistorik-spann";
+
+function lasHistorikSpann(): HistorikSpann {
+  if (typeof window === "undefined") return "10";
+  try {
+    const raw = localStorage.getItem(HISTORIK_SPANN_KEY);
+    if (raw === "vecka" || raw === "manad" || raw === "10") return raw;
+  } catch {
+    /* ignore */
+  }
+  return "10";
+}
+
+function sparaHistorikSpann(spann: HistorikSpann): void {
+  try {
+    localStorage.setItem(HISTORIK_SPANN_KEY, spann);
+  } catch {
+    /* ignore */
+  }
+}
+
+function startAvVecka(nu: Date): Date {
+  const start = new Date(nu);
+  const dagarSedanMandag = (start.getDay() + 6) % 7;
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - dagarSedanMandag);
+  return start;
+}
+
+function historikInomSpann(tidpunkt: string, spann: HistorikSpann, nu = new Date()): boolean {
+  if (spann === "10") return true;
+  const tid = new Date(tidpunkt).getTime();
+  if (Number.isNaN(tid)) return false;
+  if (spann === "vecka") return tid >= startAvVecka(nu).getTime();
+  const manadStart = new Date(nu.getFullYear(), nu.getMonth(), 1);
+  return tid >= manadStart.getTime();
+}
+
 function formatTid(iso: string | null): string {
   if (!iso) return "Aldrig";
   try {
@@ -60,6 +100,7 @@ export function ForeningInloggningsPanel() {
   const [losenMeddelande, setLosenMeddelande] = useState<string | null>(null);
   const [fel, setFel] = useState<string | null>(null);
   const [lokalLage, setLokalLage] = useState(false);
+  const [historikSpann, setHistorikSpann] = useState<HistorikSpann>("10");
 
   const ladda = useCallback(async () => {
     const id = lasAktivForeningId();
@@ -214,11 +255,20 @@ export function ForeningInloggningsPanel() {
   }, []);
 
   useEffect(() => {
+    setHistorikSpann(lasHistorikSpann());
+  }, []);
+
+  useEffect(() => {
     void ladda();
     const onBytt = () => void ladda();
     window.addEventListener(FORENING_AKTIV_EVENT, onBytt);
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, onBytt);
   }, [ladda]);
+
+  const synligHistorik =
+    historikSpann === "10"
+      ? historik.slice(0, 10)
+      : historik.filter((h) => historikInomSpann(h.tidpunkt, historikSpann));
 
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6">
@@ -349,11 +399,29 @@ export function ForeningInloggningsPanel() {
 
       {historik.length > 0 ? (
         <div className="mt-6">
-          <h4 className="text-sm font-semibold text-foreground">
-            När någon loggat in
-          </h4>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-foreground">
+              När någon loggat in
+            </h4>
+            <label className="flex items-center gap-2 text-xs text-muted">
+              Visa
+              <select
+                value={historikSpann}
+                onChange={(e) => {
+                  const nasta = e.target.value as HistorikSpann;
+                  setHistorikSpann(nasta);
+                  sparaHistorikSpann(nasta);
+                }}
+                className="rounded-lg border border-border bg-white px-2 py-1 text-sm text-foreground"
+              >
+                <option value="10">Senaste 10</option>
+                <option value="vecka">Denna vecka</option>
+                <option value="manad">Denna månad</option>
+              </select>
+            </label>
+          </div>
           <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto text-sm">
-            {historik.slice(0, 40).map((h) => (
+            {synligHistorik.map((h) => (
               <li
                 key={h.id}
                 className="flex flex-wrap gap-2 border-b border-border/40 py-1.5 text-muted"
@@ -368,6 +436,11 @@ export function ForeningInloggningsPanel() {
               </li>
             ))}
           </ul>
+          {synligHistorik.length === 0 ? (
+            <p className="mt-2 text-sm text-muted">
+              Inga inloggningar i den valda perioden.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

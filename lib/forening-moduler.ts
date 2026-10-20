@@ -80,9 +80,10 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     id: "entreprenorer",
     title: "Entreprenörer",
     description:
-      "Egna kontakter och rekommenderade entreprenörer — sök, lägg till och ta bort.",
+      "Egna entreprenörer med de uppgifter ni behöver — och mejl till Styrelse-Navet om ni vill fråga om en entreprenör.",
     path: "/entreprenorer",
     icon: "🏗️",
+    visaPaHubb: false,
   },
   {
     id: "uppgifter",
@@ -112,7 +113,7 @@ export const FORENING_MODULER: ForeningModulDef[] = [
 
 export const SNABBVAG_ANTAL = 4;
 
-/** Moduler som visas som kort på föreningshubben (inte Föreningsuppgifter). */
+/** Moduler som visas som kort på föreningshubben. Entreprenörer och föreningsuppgifter ligger i menyn. */
 export function hubbModuler(): ForeningModulDef[] {
   return FORENING_MODULER.filter((m) => m.visaPaHubb !== false);
 }

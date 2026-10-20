@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FORENING_AKTIV_EVENT,
+  finnForeningMedNamn,
   markeraPendingAktivForening,
   sattAktivForeningId,
   type ForeningProfil,
@@ -281,6 +282,11 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   }
 
   useEffect(() => {
+    const q = searchParams.get("q")?.trim();
+    if (q) setSok(normaliseraBrfSoktext(q));
+  }, [searchParams]);
+
+  useEffect(() => {
     const lokala = ladda();
     void synkaFranServer(lokala);
     setHydrated(true);
@@ -335,10 +341,15 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     };
   }, [hydrated, sok, lage, vantarPaSok]);
 
-  const filtrerade = useMemo(
-    () => filtreraForeningarPaSok(sammanslagnaForeningar, sok),
-    [sammanslagnaForeningar, sok],
-  );
+  const filtrerade = useMemo(() => {
+    const traffar = filtreraForeningarPaSok(sammanslagnaForeningar, sok);
+    if (traffar.length > 0) return traffar;
+    const exakt = finnForeningMedNamn(sok);
+    if (!exakt) return traffar;
+    if (lage === "kund" && !arKundForening(exakt)) return traffar;
+    if (lage !== "kund" && arKundForening(exakt)) return traffar;
+    return [exakt];
+  }, [sammanslagnaForeningar, sok, lage]);
   const arKundLage = lage === "kund";
   const kvarAttSkriva = Math.max(
     0,

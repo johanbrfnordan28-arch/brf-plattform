@@ -5,7 +5,13 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
-import { arAktivKundForening, TECKNA_AVTAL_PATH } from "@/lib/forening-kund";
+import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
+import {
+  arAktivKundForening,
+  KUND_LOGIN_PATH,
+  TECKNA_AVTAL_PATH,
+  TEST_LOGIN_PATH,
+} from "@/lib/forening-kund";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { dagarKvarAvProvoperiod } from "@/lib/forening-avtal";
 import {
@@ -19,13 +25,12 @@ const nav = [
   {
     href: "/forening#moduler",
     label: "Moduler",
-    framed: true,
     aktivPa: (p: string) => p === "/forening",
   },
   {
-    href: "/forening/rondering#manadssignering-schema",
-    label: "Rondering",
-    aktivPa: (p: string) => p.startsWith("/forening/rondering"),
+    href: "/forening/entreprenorer",
+    label: "Entreprenörer",
+    aktivPa: (p: string) => p.startsWith("/forening/entreprenorer"),
   },
   {
     href: "/forening/guider",
@@ -55,6 +60,7 @@ export function ForeningHeader() {
   const pathname = usePathname();
   const foreningsNamn = useAktivForeningsNamn();
   const [arKund, setArKund] = useState(false);
+  const [inloggad, setInloggad] = useState(false);
   const [visaTecknaAvtal, setVisaTecknaAvtal] = useState(false);
   const [dagarKvar, setDagarKvar] = useState<number | null>(null);
   const visatNamn = foreningsNamn.trim() || "Föreningsportal";
@@ -69,6 +75,7 @@ export function ForeningHeader() {
       const kund = arAktivKundForening();
       const profil = lasForeningProfil(id);
       setArKund(kund);
+      setInloggad(arInloggadPaEgenForening());
       setVisaTecknaAvtal(arEgenTestForening(id) && !kund);
       setDagarKvar(
         !kund && profil
@@ -101,27 +108,14 @@ export function ForeningHeader() {
         >
           {nav.map((item) => {
             const aktiv = item.aktivPa(pathname);
-            if (item.framed) {
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    aktiv
-                      ? "border-primary bg-[#eef6f0] text-primary-dark"
-                      : "border-primary/45 bg-white text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            }
             return (
               <Link
                 key={item.label}
                 href={item.href}
-                className={`transition-colors hover:text-primary-dark ${
-                  aktiv ? "font-semibold text-primary-dark" : ""
+                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  aktiv
+                    ? "border-primary bg-[#eef6f0] text-primary-dark"
+                    : "border-primary/45 bg-white text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
                 }`}
               >
                 {item.label}
@@ -147,7 +141,16 @@ export function ForeningHeader() {
           >
             {arKund ? "Kund" : testperiodEtikett(dagarKvar)}
           </span>
-          <LoggaUtKnapp />
+          {inloggad ? (
+            <LoggaUtKnapp />
+          ) : (
+            <Link
+              href={arKund ? KUND_LOGIN_PATH : TEST_LOGIN_PATH}
+              className="inline-flex h-9 items-center whitespace-nowrap rounded-lg bg-primary px-3.5 text-sm font-semibold text-white hover:bg-primary-dark"
+            >
+              Logga in
+            </Link>
+          )}
         </div>
       </div>
     </header>

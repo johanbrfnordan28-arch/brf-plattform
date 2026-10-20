@@ -29,8 +29,8 @@ export function ForeningPlanLagePanel({
       <p className="mt-2 text-sm leading-relaxed text-foreground">
         Styrelsen bygger och ändrar <strong>er egen</strong> plan här. Öppna
         grundmallen när ni vill se den centrala mallen — den kan ni inte ändra,
-        bara titta på. I steg 3 importerar ni saknade delar och tar bort det som
-        inte är aktuellt för er fastighet, så planen blir mer överskådlig.
+        bara titta på. I steg 3 tar ni bort komponenter som inte finns i
+        fastigheten och lägger till dem som saknas, så planen blir överskådlig.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">

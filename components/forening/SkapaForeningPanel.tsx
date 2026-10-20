@@ -17,6 +17,7 @@ import {
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
+import { TEST_LOGIN_PATH } from "@/lib/forening-kund";
 import {
   MAX_LAGENHETER_VID_SKAPANDE,
   parseAntalLagenheter,
@@ -43,6 +44,10 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
   const [antalLagenheter, setAntalLagenheter] = useState("");
   const [antalVaningar, setAntalVaningar] = useState("");
   const [fel, setFel] = useState<string | null>(null);
+  const [redanSkapadNamn, setRedanSkapadNamn] = useState<string | null>(null);
+  const [losenSkickas, setLosenSkickas] = useState(false);
+  const [losenSkickad, setLosenSkickad] = useState<string | null>(null);
+  const [nyttLosenord, setNyttLosenord] = useState<string | null>(null);
   const [skapar, setSkapar] = useState(false);
   const [skapatNamn, setSkapatNamn] = useState<string | null>(null);
   const [losenInfo, setLosenInfo] = useState<{
@@ -77,6 +82,9 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
 
   async function korSkapa(trimmatNamn: string) {
     setFel(null);
+    setRedanSkapadNamn(null);
+    setLosenSkickad(null);
+    setNyttLosenord(null);
     setSkapatNamn(null);
     setLosenInfo(null);
     setSkapar(true);
@@ -122,7 +130,13 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
         }
       }, 4000);
     } catch (e) {
-      setFel(e instanceof Error ? e.message : "Kunde inte skapa föreningen.");
+      const text = e instanceof Error ? e.message : "Kunde inte skapa föreningen.";
+      if (/finns redan/i.test(text)) {
+        setRedanSkapadNamn(trimmatNamn);
+        setFel(null);
+      } else {
+        setFel(text);
+      }
       setSkapar(false);
     }
   }
@@ -559,6 +573,86 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
             .
           </span>
         </label>
+
+        {redanSkapadNamn ? (
+          <div
+            className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+            role="status"
+          >
+            <p className="font-semibold">
+              {redanSkapadNamn} är redan skapad
+            </p>
+            <p className="mt-1">
+              Logga in på den föreningen. Om lösenordet saknas skickar vi ett
+              nytt till {skapareEpost.trim() || "e-posten ni angav"}.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href={`${TEST_LOGIN_PATH}?q=${encodeURIComponent(redanSkapadNamn)}`}
+                className="brf-knapp-gron px-4 py-2 text-sm"
+              >
+                Logga in på {redanSkapadNamn}
+              </Link>
+              <button
+                type="button"
+                disabled={losenSkickas || !skapareEpost.includes("@")}
+                onClick={() => {
+                  void (async () => {
+                    setLosenSkickas(true);
+                    setLosenSkickad(null);
+                    setNyttLosenord(null);
+                    setFel(null);
+                    try {
+                      const res = await fetch("/api/auth/glomt-losenord", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          epost: skapareEpost.trim(),
+                          namn: skapareNamn.trim(),
+                          foreningsNamn: redanSkapadNamn,
+                        }),
+                      });
+                      const data = (await res.json()) as {
+                        fel?: string;
+                        meddelande?: string;
+                        tillfalligtLosenord?: string;
+                      };
+                      if (!res.ok) {
+                        setFel(data.fel || "Kunde inte skicka nytt lösenord.");
+                        return;
+                      }
+                      if (data.tillfalligtLosenord) {
+                        setNyttLosenord(data.tillfalligtLosenord);
+                      }
+                      setLosenSkickad(
+                        data.meddelande ||
+                          "Om kontot finns har ett nytt lösenord skickats till e-posten.",
+                      );
+                    } catch {
+                      setFel("Kunde inte nå servern för att skicka lösenord.");
+                    } finally {
+                      setLosenSkickas(false);
+                    }
+                  })();
+                }}
+                className="rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100 disabled:opacity-50"
+              >
+                {losenSkickas ? "Skickar …" : "Skicka nytt lösenord"}
+              </button>
+            </div>
+            {nyttLosenord ? (
+              <p className="mt-3">
+                Nytt lösenord:{" "}
+                <code className="rounded bg-white px-2 py-0.5 font-mono">
+                  {nyttLosenord}
+                </code>
+              </p>
+            ) : null}
+            {losenSkickad ? (
+              <p className="mt-2 text-primary-dark">{losenSkickad}</p>
+            ) : null}
+          </div>
+        ) : null}
 
         {fel && (
           <p

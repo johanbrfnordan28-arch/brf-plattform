@@ -9,7 +9,8 @@ export function EntreprenorVarningar() {
         <li>
           <span className="font-medium text-foreground">Kontrollera referenser.</span>{" "}
           Ta egna referenser från andra föreningar eller beställare innan ni
-          tecknar avtal — även om företaget finns i vårt rekommenderade register.
+          tecknar avtal. Föreningen ansvarar för uppdraget som entreprenören
+          anlitas för.
         </li>
         <li>
           <span className="font-medium text-foreground">Beställ korrekt.</span>{" "}

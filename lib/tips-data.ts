@@ -19,7 +19,7 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "📥",
       titel: "Lägg till och ta bort",
-      text: "I steg 3: aktivera det som ingår, ta bort det som inte hör till er fastighet, och lägg till egna komponenter vid behov. Håll bara kvar det som behövs — så blir planen överskådlig för nästa styrelse.",
+      text: "I steg 3 visas bara komponenterna i er plan. Ta bort det som inte finns i fastigheten, och lägg till en komponent när den behövs. Då blir planen överskådlig för nästa styrelse.",
     },
     {
       ikon: "📐",
@@ -109,12 +109,12 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "🏠",
       titel: "Er lista först",
-      text: "Spara entreprenörer ni litar på i er egen lista — med anteckning så nästa styrelse förstår varför. Ta bort dem som inte längre håller måttet.",
+      text: "Spara entreprenörer ni anlitar i er egen lista. Fyll på kontakt, uppdrag och egna uppgifter så nästa styrelse ser vad som gäller.",
     },
     {
-      ikon: "🔍",
-      titel: "Två sökvägar",
-      text: "Sök i er lista och separat i det centrala registret. Lägg till från registret med ett klick — men ta alltid egna referenser innan ni beställer.",
+      ikon: "✉️",
+      titel: "Fråga Styrelse-Navet",
+      text: "Behöver ni ett tips mejlar ni oss. Föreningen ansvarar för uppdraget. Vi har goda erfarenheter av dem vi tipsar om, och tar bort en entreprenör om en missnöjd förening inte får en godtagbar förklaring.",
     },
     {
       ikon: "📝",

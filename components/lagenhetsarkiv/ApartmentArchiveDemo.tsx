@@ -31,12 +31,14 @@ import {
   skapaLagenhetsarkivMedAntal,
   skapaTomtLagenhetsarkiv,
   sparaLagenhetsarkiv,
+  synkaLagenhetsarkivTillAntal,
   type LagenhetsarkivState,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
 import { ForeningSakerhetskopiaKompakt } from "@/components/forening/ForeningSakerhetskopiaKompakt";
 import {
   hamtaAntalLagenheterSynkat,
   hamtaSynkadForeningGrund,
+  skrivAntalLagenheterSynkat,
 } from "@/lib/forening-grund-synk";
 import {
   arGrundmallForening,
@@ -107,14 +109,32 @@ export function ApartmentArchiveDemo() {
   } | null>(null);
   const [bekraftarBorttagningLagenhetId, setBekraftarBorttagningLagenhetId] =
     useState<number | null>(null);
+  const [oppenRenoveringLagenhetId, setOppenRenoveringLagenhetId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     const sparad =
       lasLagenhetsarkiv() ?? forsokMigreraLegacyLagenhetsarkiv();
     let state: LagenhetsarkivState;
-    if (sparad) {
+    const foreningId = lasAktivForeningId();
+    if (sparad && !arGrundmallForening(foreningId)) {
+      const profil = lasForeningProfil(foreningId);
+      const antal = hamtaAntalLagenheterSynkat(profil);
+      const adress = profil
+        ? hamtaSynkadForeningGrund(profil).adresser.map((a) => a.trim()).find(Boolean)
+        : undefined;
+      if (antal > 0 && sparad.apartments.length !== antal) {
+        state = synkaLagenhetsarkivTillAntal(antal, { foreningId, adress });
+        if (state.apartments.length !== antal) {
+          skrivAntalLagenheterSynkat(state.apartments.length, foreningId);
+        }
+      } else {
+        state = sparad;
+      }
+    } else if (sparad) {
       state = sparad;
-    } else if (arGrundmallForening(lasAktivForeningId())) {
+    } else if (arGrundmallForening(foreningId)) {
       state = skapaGrundmallDemoArkiv();
     } else {
       const profil = lasForeningProfil(lasAktivForeningId());
@@ -125,6 +145,7 @@ export function ApartmentArchiveDemo() {
         antal > 0
           ? skapaLagenhetsarkivMedAntal(antal, { adress })
           : skapaTomtLagenhetsarkiv();
+      sparaLagenhetsarkiv(state, foreningId);
     }
     setApartments(state.apartments);
     setNextApartmentNumber(state.nextApartmentNumber);
@@ -202,7 +223,7 @@ export function ApartmentArchiveDemo() {
       .filter((mall) => !apartment.folders.some((f) => f.mallId === mall.id));
   }
 
-  if (!hydrated || apartments.length === 0) {
+  if (!hydrated) {
     return (
       <div className="rounded-3xl border border-border bg-surface p-8 text-center text-sm text-muted">
         Laddar lägenhetsarkiv…
@@ -251,18 +272,19 @@ export function ApartmentArchiveDemo() {
       folders: [],
     };
 
-    setApartments((current) => [...current, apartment]);
+    const nasta = [...apartments, apartment];
+    setApartments(nasta);
     setOppenLagenhetsId(id);
     setLagenhetSok(apartment.lagenhetsnummer);
     setNextApartmentNumber((current) => current + 1);
+    skrivAntalLagenheterSynkat(nasta.length);
   }
 
   function deleteApartment(id: number) {
-    if (apartments.length === 1) return;
-
     const remaining = apartments.filter((apartment) => apartment.id !== id);
     setApartments(remaining);
     setNextApartmentNumber(hamtaNastaLagenhetsnummer(remaining));
+    skrivAntalLagenheterSynkat(remaining.length);
 
     if (oppenLagenhetsId === id) {
       setOppenLagenhetsId(null);
@@ -599,8 +621,10 @@ export function ApartmentArchiveDemo() {
               Lägenhetsregister
             </p>
             <p className="mt-1 text-sm text-muted">
-              Sök bland skapade lägenheter i rullgardinen. Öppna en lägenhet för
-              grunduppgifter, renoveringsmappar och signerade överenskommelser.
+              {apartments.length}{" "}
+              {apartments.length === 1 ? "lägenhet" : "lägenheter"}, samma antal
+              som i grunduppgifterna.
+              Lägg till eller ta bort här så uppdateras antalet där också.
             </p>
           </div>
           <button
@@ -629,7 +653,12 @@ export function ApartmentArchiveDemo() {
       </div>
 
       <div className="space-y-4 p-5 sm:p-6">
-        {visadeLagenheter.length === 0 ? (
+        {apartments.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-muted">
+            Inga lägenheter i registret. Antalet följer grunduppgifterna — lägg
+            till den första med «Skapa lägenhet».
+          </p>
+        ) : visadeLagenheter.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-muted">
             Ingen lägenhet matchar sökningen. Rensa fältet eller sök på nummer
             eller adress.
@@ -766,12 +795,31 @@ export function ApartmentArchiveDemo() {
                   </div>
 
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-                      Renoveringsarkiv
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      Mappar och dokument för {etikett}.
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
+                          Renoveringsarkiv
+                        </p>
+                        <p className="mt-1 text-sm text-muted">
+                          {apartment.folders.length > 0
+                            ? `${apartment.folders.length} renovering${apartment.folders.length > 1 ? "ar" : ""} för ${etikett}`
+                            : `Inga renoveringar för ${etikett} ännu`}
+                        </p>
+                      </div>
+                      <OppnaStangKnapp
+                        oppen={oppenRenoveringLagenhetId === apartment.id}
+                        onClick={() =>
+                          setOppenRenoveringLagenhetId((current) =>
+                            current === apartment.id ? null : apartment.id,
+                          )
+                        }
+                        ariaLabel={
+                          oppenRenoveringLagenhetId === apartment.id
+                            ? `Stäng renoveringar för ${etikett}`
+                            : `Öppna renoveringar för ${etikett}`
+                        }
+                      />
+                    </div>
 
                     <div className="mt-5 rounded-2xl border border-border p-4">
             <h4 className="font-semibold text-foreground">Byt lägenhetsnummer</h4>
@@ -837,6 +885,8 @@ export function ApartmentArchiveDemo() {
             )}
           </div>
 
+          {oppenRenoveringLagenhetId === apartment.id && (
+          <div>
           <div className="mt-6 rounded-2xl border border-primary/25 bg-[#fafcfa] p-4">
             <h4 className="font-semibold text-foreground">
               Ny renoveringsmapp
@@ -1077,8 +1127,11 @@ export function ApartmentArchiveDemo() {
               ))
             )}
           </div>
+          </div>
+          )}
+                  </div>
 
-                  {apartments.length > 1 && (
+                  {apartments.length > 0 && (
                     <div className="border-t border-border pt-5">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
                         Administration
@@ -1130,7 +1183,6 @@ export function ApartmentArchiveDemo() {
                       )}
                     </div>
                   )}
-                  </div>
                 </div>
               )}
             </article>

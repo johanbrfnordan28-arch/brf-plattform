@@ -5,10 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
 import { HeaderMobilMeny } from "@/components/HeaderMobilMeny";
 import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
-import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
+import { FORENING_AKTIV_EVENT, lasAktivForeningId } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { MEDLEM_FELANMALAN_PATH } from "@/lib/forening-medlem";
-import { KUND_LOGIN_PATH } from "@/lib/forening-kund";
+import { arAktivKundForening, KUND_LOGIN_PATH, TEST_LOGIN_PATH } from "@/lib/forening-kund";
 
 const nav = [
   { href: "#moduler", label: "Moduler" },
@@ -19,6 +19,14 @@ const nav = [
 
 const knappBas =
   "h-9 items-center whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold";
+
+const loggaInKlass = `${knappBas} inline-flex bg-primary text-white hover:bg-primary-dark`;
+
+function loggaInHref(): string {
+  return arAktivKundForening(lasAktivForeningId())
+    ? KUND_LOGIN_PATH
+    : TEST_LOGIN_PATH;
+}
 
 export function Header() {
   const [inloggad, setInloggad] = useState<boolean | null>(null);
@@ -75,15 +83,12 @@ export function Header() {
             <LoggaUtKnapp />
           ) : inloggad === false ? (
             <>
-              <Link
-                href={KUND_LOGIN_PATH}
-                className={`${knappBas} inline-flex border border-border bg-white text-foreground hover:border-primary/50`}
-              >
+              <Link href={loggaInHref()} className={loggaInKlass}>
                 Logga in
               </Link>
               <Link
                 href={PROVA_GRATIS_PATH}
-                className={`${knappBas} hidden bg-primary text-white hover:bg-primary-dark sm:inline-flex`}
+                className={`${knappBas} hidden border border-border bg-white text-foreground hover:border-primary/50 sm:inline-flex`}
               >
                 Pröva gratis
               </Link>

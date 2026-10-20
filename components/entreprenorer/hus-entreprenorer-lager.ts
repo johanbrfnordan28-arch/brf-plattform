@@ -1,6 +1,12 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
+export type HusEntreprenorUppgift = {
+  id: string;
+  rubrik: string;
+  text: string;
+};
+
 export type HusEntreprenor = {
   id: string;
   namn: string;
@@ -10,12 +16,29 @@ export type HusEntreprenor = {
   /** T.ex. «Känner huset sedan stambytet 2018». */
   anteckning: string;
   tillagdTidpunkt: string;
+  organisationsnummer?: string;
+  kontaktperson?: string;
+  adress?: string;
+  webbplats?: string;
+  /** Uppdrag föreningen anlitat entreprenören för. */
+  uppdrag?: string;
+  /** Fria uppgifter föreningen själv lagt till. */
+  extraUppgifter?: HusEntreprenorUppgift[];
 };
 
 export type HusEntreprenorerState = {
   version: 1;
   poster: HusEntreprenor[];
 };
+
+function normaliseraHusEntreprenor(raw: HusEntreprenor): HusEntreprenor {
+  const extra = Array.isArray(raw.extraUppgifter)
+    ? raw.extraUppgifter.filter(
+        (u) => u && typeof u.rubrik === "string" && typeof u.text === "string",
+      )
+    : [];
+  return { ...raw, extraUppgifter: extra };
+}
 
 const STORAGE_KEY_BASE = "brf-hus-entreprenorer";
 export const HUS_ENTREPR_EVENT = "brf-hus-entreprenorer-uppdaterad";
@@ -30,7 +53,9 @@ export function lasHusEntreprenorerState(): HusEntreprenorerState {
     const parsed = JSON.parse(raw) as Partial<HusEntreprenorerState>;
     return {
       version: 1,
-      poster: Array.isArray(parsed.poster) ? parsed.poster : [],
+      poster: Array.isArray(parsed.poster)
+        ? parsed.poster.map(normaliseraHusEntreprenor)
+        : [],
     };
   } catch {
     return { version: 1, poster: [] };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ApartmentArchiveDemo } from "@/components/lagenhetsarkiv/ApartmentArchiveDemo";
 import { RenoveringsAnmalan } from "@/components/medlemmar/RenoveringsAnmalan";
+import { OppnaStangSektion } from "@/components/OppnaStangSektion";
 import { ContentSection } from "@/components/ContentSection";
 import { ModuleBackLink } from "@/components/ModuleBackLink";
 import { ModulePage } from "@/components/ModulePage";
@@ -46,22 +47,13 @@ export default function ForeningMedlemmarPage() {
         </article>
       </section>
 
-      <section id="renoveringar" className="scroll-mt-24">
-        <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-foreground">Renoveringar</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
-            Välj vilken renovering medlemmen planerar — då byggs en checklista med
-            grundkrav och tillägg per typ. Grundkraven omfattar bland annat att ventiler
-            ska vara täckta och att byggdamm inte sprids till grannlägenheter eller
-            föreningens ventilationssystem. När alla punkter är godkända kan medlemmen
-            få klartecken att påbörja.
-          </p>
-
-          <div className="mt-8">
-            <RenoveringsAnmalan />
-          </div>
-        </article>
-      </section>
+      <OppnaStangSektion
+        id="renoveringar"
+        titel="Renoveringar"
+        intro="Välj vilken renovering medlemmen planerar — då byggs en checklista med grundkrav och tillägg per typ. Grundkraven omfattar bland annat att ventiler ska vara täckta och att byggdamm inte sprids till grannlägenheter eller föreningens ventilationssystem. När alla punkter är godkända kan medlemmen få klartecken att påbörja."
+      >
+        <RenoveringsAnmalan />
+      </OppnaStangSektion>
 
       <div className="mt-4">
         <ModuleBackLink />

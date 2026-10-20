@@ -972,7 +972,7 @@ export function skapaNyForening(
   const befintlig = finnForeningMedNamn(trimmat);
   if (befintlig) {
     throw new Error(
-      `Föreningen «${befintlig.namn}» finns redan. Välj den i listan uppe till höger i stället för att skapa en ny.`,
+      `Föreningen «${befintlig.namn}» finns redan.`,
     );
   }
 

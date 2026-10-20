@@ -24,6 +24,7 @@ import { RenoveringDelFormular } from "@/components/underhallsplan/RenoveringDel
 import { formateraBalkongRenoveringMeta } from "@/components/underhallsplan/BalkongRenoveringFalt";
 import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkonger";
 import { RenoveringshistorikKomponentTräd } from "@/components/underhallsplan/RenoveringshistorikKomponentTräd";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { RenoveringYtaAiSektion } from "@/components/underhallsplan/RenoveringYtaAiSektion";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 import {
@@ -119,6 +120,7 @@ export function Renoveringshistorik({
   const [form, setForm] = useState(emptyForm);
   const [filterKomponent, setFilterKomponent] = useState<string>("alla");
   const [listRedigerarId, setListRedigerarId] = useState<string | null>(null);
+  const [oppenRenoveringId, setOppenRenoveringId] = useState<string | null>(null);
   const [listDelForm, setListDelForm] = useState(tomRenoveringDelForm);
   const [listNastaArInputs, setListNastaArInputs] = useState<
     Record<string, string>
@@ -481,7 +483,21 @@ export function Renoveringshistorik({
                         {item.titel}
                       </h3>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <OppnaStangKnapp
+                        oppen={oppenRenoveringId === item.id}
+                        storlek="sm"
+                        onClick={() =>
+                          setOppenRenoveringId((current) =>
+                            current === item.id ? null : item.id,
+                          )
+                        }
+                        ariaLabel={
+                          oppenRenoveringId === item.id
+                            ? `Stäng renoveringen ${item.titel}`
+                            : `Öppna renoveringen ${item.titel}`
+                        }
+                      />
                       {onOpenKomponent && (
                         <button
                           type="button"
@@ -497,11 +513,14 @@ export function Renoveringshistorik({
                       )}
                       <button
                         type="button"
-                        onClick={() =>
-                          listRedigerarId === item.id
-                            ? avbrytListRedigera()
-                            : öppnaListRedigera(item)
-                        }
+                        onClick={() => {
+                          if (listRedigerarId === item.id) {
+                            avbrytListRedigera();
+                            return;
+                          }
+                          setOppenRenoveringId(item.id);
+                          öppnaListRedigera(item);
+                        }}
                         className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary/40"
                       >
                         {listRedigerarId === item.id ? "Stäng" : "Redigera"}
@@ -515,7 +534,7 @@ export function Renoveringshistorik({
                       </button>
                     </div>
                   </div>
-                  {listRedigerarId === item.id && (
+                  {oppenRenoveringId === item.id && listRedigerarId === item.id && (
                     <div className="mt-4">
                       <RenoveringDelFormular
                         rubrik={`Redigera — ${item.komponent}${item.del ? ` / ${item.del}` : ""}`}
@@ -560,7 +579,7 @@ export function Renoveringshistorik({
                       />
                     </div>
                   )}
-                  {listRedigerarId !== item.id && (
+                  {oppenRenoveringId === item.id && listRedigerarId !== item.id && (
                     <>
                       <p className="mt-2 text-sm text-muted">{item.omfattning}</p>
                       {balkongMeta && (
@@ -580,6 +599,8 @@ export function Renoveringshistorik({
                         )}
                     </>
                   )}
+                  {oppenRenoveringId === item.id && (
+                  <>
                   <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
                     <div>
                       <dt className="text-muted">Kostnad</dt>
@@ -635,7 +656,9 @@ export function Renoveringshistorik({
                       </ul>
                     </div>
                   )}
-                  {listRedigerarId !== item.id && planerade.length > 0 && (
+                  </>
+                  )}
+                  {oppenRenoveringId === item.id && listRedigerarId !== item.id && planerade.length > 0 && (
                     <div className="mt-3 rounded-lg border border-[#e2f0e6] bg-[#eef6f0]/50 px-3 py-2.5">
                       <p className="text-xs font-semibold text-primary-dark">
                         {planerade.length === 1

@@ -14,7 +14,9 @@ import {
 import { synkaLagenhetsarkivTillAntal } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
 import {
   arGrundmallForening,
+  lasAktivForeningId,
   lasForeningProfil,
+  sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
 import { planNamnFranKontakt, styrelseKontaktFranProfil } from "@/lib/styrelse-kontakt";
@@ -113,10 +115,35 @@ export function appliceraGrundFormPaPlan(
  * Sparar till underhållsplanen (skapar planen om den saknas) och speglar
  * lägenhetsantalet till lägenhetsregistret. Returnerar första adressen.
  */
+/** Speglar lägenhetsregistrets antal till föreningens profil och underhållsplan. */
+export function skrivAntalLagenheterSynkat(
+  antal: number,
+  foreningId?: string,
+): void {
+  const id = foreningId ?? lasAktivForeningId();
+  if (!id || arGrundmallForening(id)) return;
+  const text = String(Math.max(0, Math.floor(antal)));
+  const profil = lasForeningProfil(id);
+  if (profil && profil.antalLagenheter !== text) {
+    sparaForeningProfil({ ...profil, antalLagenheter: text }, { tyst: true });
+  }
+  const plan = lasUnderhallsplanState(id);
+  if (plan && plan.grund.antalLagenheter !== text) {
+    sparaUnderhallsplanState(
+      {
+        ...plan,
+        grund: { ...plan.grund, antalLagenheter: text },
+        sparad: new Date().toISOString(),
+      },
+      id,
+    );
+  }
+}
+
 export function synkaGrundFormTillUnderhallsplan(
   profil: ForeningProfil,
   form: ForeningGrundForm,
-): { forstaAdress: string } {
+): { forstaAdress: string; antalLagenheter: string } {
   const kontakt = styrelseKontaktFranProfil(profil);
   const planNamn = planNamnFranKontakt(kontakt);
   const plan =
@@ -139,11 +166,16 @@ export function synkaGrundFormTillUnderhallsplan(
   const forstaAdress =
     grund.adresser.map((a) => a.trim()).find(Boolean) ?? "";
   const antal = parseHeltalFranText(form.antalLagenheter);
-  if (antal > 0) {
-    synkaLagenhetsarkivTillAntal(antal, {
-      foreningId: profil.id,
-      adress: forstaAdress,
-    });
+  const arkiv =
+    antal > 0
+      ? synkaLagenhetsarkivTillAntal(antal, {
+          foreningId: profil.id,
+          adress: forstaAdress,
+        })
+      : null;
+  const verkligtAntal = arkiv ? String(arkiv.apartments.length) : form.antalLagenheter.trim();
+  if (arkiv && verkligtAntal !== form.antalLagenheter.trim()) {
+    skrivAntalLagenheterSynkat(arkiv.apartments.length, profil.id);
   }
-  return { forstaAdress };
+  return { forstaAdress, antalLagenheter: verkligtAntal };
 }

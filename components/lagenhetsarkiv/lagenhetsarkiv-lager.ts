@@ -1,4 +1,5 @@
 import {
+  hamtaNastaLagenhetsnummer,
   lagenhetsBasSidor,
   skapaLagenhetsDokumentId,
   skapaRenoveringsMapp,
@@ -147,14 +148,11 @@ export function skapaLagenhetsarkivMedAntal(
     MAX_LAGENHETER_I_REGISTER,
     Math.max(0, Math.floor(antal)),
   );
-  const apartments: ApartmentFolder[] =
-    n > 0
-      ? Array.from({ length: n }, (_, i) =>
-          skapaTomLagenhet(i + 1, String(1001 + i), opts?.adress),
-        )
-      : [skapaTomLagenhet(1, "1001", opts?.adress)];
+  const apartments: ApartmentFolder[] = Array.from({ length: n }, (_, i) =>
+    skapaTomLagenhet(i + 1, String(1001 + i), opts?.adress),
+  );
   const sista = Number.parseInt(
-    apartments[apartments.length - 1]?.lagenhetsnummer ?? "1001",
+    apartments[apartments.length - 1]?.lagenhetsnummer ?? "1000",
     10,
   );
   return {
@@ -170,7 +168,7 @@ export function skapaTomtLagenhetsarkiv(): LagenhetsarkivState {
 function normaliseraState(raw: unknown): LagenhetsarkivState | null {
   if (!raw || typeof raw !== "object") return null;
   const data = raw as Partial<LagenhetsarkivState>;
-  if (!Array.isArray(data.apartments) || data.apartments.length === 0) return null;
+  if (!Array.isArray(data.apartments)) return null;
   const nextApartmentNumber =
     typeof data.nextApartmentNumber === "number" && data.nextApartmentNumber > 0
       ? data.nextApartmentNumber
@@ -234,9 +232,41 @@ export function sparaLagenhetsarkiv(
   return result;
 }
 
+/** Lägenhet som bara är en tom plats — kan tas bort när antalet minskas. */
+export function lagenhetSaknarInnehall(apartment: ApartmentFolder): boolean {
+  if (apartment.folders.length > 0) return false;
+  if (apartment.ombyggnadsavtal) return false;
+  if ((apartment.ombyggnadsavtalHistorik?.length ?? 0) > 0) return false;
+  if ((apartment.eldstader?.length ?? 0) > 0) return false;
+  if (apartment.lagenhetsRum) return false;
+  if (apartment.flakt) return false;
+  if (apartment.matbevis) return false;
+  const text = [
+    apartment.vaning,
+    apartment.antalRum,
+    apartment.antalKok,
+    apartment.antalBadrum,
+    apartment.antalWC,
+    apartment.boyta,
+    apartment.biyta,
+    apartment.uppmattYta,
+    apartment.golvyta,
+    apartment.andelstal,
+    apartment.ritning,
+    apartment.balkong,
+    apartment.kallareForrad,
+    apartment.pPlats,
+    apartment.lagenhetNotering,
+  ];
+  if (text.some((falt) => falt?.trim())) return false;
+  if ((apartment.installationer?.length ?? 0) > 0) return false;
+  return true;
+}
+
 /**
- * Skapar saknade tomma lägenheter upp till angivet antal.
- * Tar aldrig bort befintliga lägenheter.
+ * Gör lägenhetsregistret lika långt som angivet antal.
+ * Tomma lägenheter läggs till eller tas bort. Lägenheter med uppgifter
+ * eller renoveringar lämnas kvar.
  */
 export function synkaLagenhetsarkivTillAntal(
   antal: number,
@@ -247,26 +277,52 @@ export function synkaLagenhetsarkivTillAntal(
     Math.max(0, Math.floor(antal)),
   );
   const befintlig = lasLagenhetsarkiv(opts?.foreningId);
-  if (!befintlig || befintlig.apartments.length === 0) {
-    const skapad = skapaLagenhetsarkivMedAntal(n || 1, { adress: opts?.adress });
+  if (!befintlig) {
+    const skapad = skapaLagenhetsarkivMedAntal(n, { adress: opts?.adress });
     sparaLagenhetsarkiv(skapad, opts?.foreningId);
     return skapad;
   }
-  if (n <= befintlig.apartments.length) return befintlig;
+  if (befintlig.apartments.length === n) return befintlig;
 
-  const maxId = Math.max(...befintlig.apartments.map((a) => a.id), 0);
-  const maxNr = Math.max(
-    ...befintlig.apartments.map((a) => Number.parseInt(a.lagenhetsnummer, 10) || 0),
-    1000,
-  );
-  const saknas = n - befintlig.apartments.length;
-  const tillagda = Array.from({ length: saknas }, (_, i) =>
-    skapaTomLagenhet(maxId + i + 1, String(maxNr + i + 1), opts?.adress),
-  );
-  const nastaNr = maxNr + saknas + 1;
+  if (befintlig.apartments.length < n) {
+    const maxId = Math.max(...befintlig.apartments.map((a) => a.id), 0);
+    const maxNr = Math.max(
+      ...befintlig.apartments.map(
+        (a) => Number.parseInt(a.lagenhetsnummer, 10) || 0,
+      ),
+      1000,
+    );
+    const saknas = n - befintlig.apartments.length;
+    const tillagda = Array.from({ length: saknas }, (_, i) =>
+      skapaTomLagenhet(maxId + i + 1, String(maxNr + i + 1), opts?.adress),
+    );
+    const uppdaterad: LagenhetsarkivState = {
+      apartments: [...befintlig.apartments, ...tillagda],
+      nextApartmentNumber: Math.max(
+        befintlig.nextApartmentNumber,
+        hamtaNastaLagenhetsnummer([...befintlig.apartments, ...tillagda]),
+      ),
+    };
+    sparaLagenhetsarkiv(uppdaterad, opts?.foreningId);
+    return uppdaterad;
+  }
+
+  const apartments = [...befintlig.apartments];
+  while (apartments.length > n) {
+    let index = -1;
+    for (let i = apartments.length - 1; i >= 0; i -= 1) {
+      if (lagenhetSaknarInnehall(apartments[i])) {
+        index = i;
+        break;
+      }
+    }
+    if (index < 0) break;
+    apartments.splice(index, 1);
+  }
+  if (apartments.length === befintlig.apartments.length) return befintlig;
   const uppdaterad: LagenhetsarkivState = {
-    apartments: [...befintlig.apartments, ...tillagda],
-    nextApartmentNumber: Math.max(befintlig.nextApartmentNumber, nastaNr),
+    apartments,
+    nextApartmentNumber: hamtaNastaLagenhetsnummer(apartments),
   };
   sparaLagenhetsarkiv(uppdaterad, opts?.foreningId);
   return uppdaterad;

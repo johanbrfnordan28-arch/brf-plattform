@@ -7,6 +7,10 @@ import {
   synkaGrundFormTillUnderhallsplan,
 } from "@/lib/forening-grund-synk";
 import {
+  LAGENHETSARKIV_EVENT,
+  lasLagenhetsarkiv,
+} from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
+import {
   arGrundmallForening,
   FORENING_AKTIV_EVENT,
   lasAktivForeningId,
@@ -95,6 +99,23 @@ export function ForeningGrunduppgifterPanel() {
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
   }, [ladda]);
+
+  useEffect(() => {
+    function synkaAntalFranArkiv() {
+      const id = lasAktivForeningId();
+      const arkiv = lasLagenhetsarkiv(id);
+      if (!arkiv) return;
+      const text = String(arkiv.apartments.length);
+      setForm((current) =>
+        current && current.antalLagenheter !== text
+          ? { ...current, antalLagenheter: text }
+          : current,
+      );
+    }
+    window.addEventListener(LAGENHETSARKIV_EVENT, synkaAntalFranArkiv);
+    return () =>
+      window.removeEventListener(LAGENHETSARKIV_EVENT, synkaAntalFranArkiv);
+  }, []);
 
   useEffect(() => {
     setSparad(false);
@@ -273,13 +294,16 @@ export function ForeningGrunduppgifterPanel() {
       const kontaktperson =
         forstaKontaktpersonFranStyrelse(ledamoter) || profil.kontaktperson;
 
-      const { forstaAdress } = synkaGrundFormTillUnderhallsplan(profil, {
-        adresser: form.adresser,
-        postnummer: form.postnummer,
-        ort: form.ort,
-        antalLagenheter: form.antalLagenheter,
-        antalVaningar: form.antalVaningar,
-      });
+      const { forstaAdress, antalLagenheter } = synkaGrundFormTillUnderhallsplan(
+        profil,
+        {
+          adresser: form.adresser,
+          postnummer: form.postnummer,
+          ort: form.ort,
+          antalLagenheter: form.antalLagenheter,
+          antalVaningar: form.antalVaningar,
+        },
+      );
 
       const uppdaterad: ForeningProfil = {
         ...profil,
@@ -289,7 +313,7 @@ export function ForeningGrunduppgifterPanel() {
         postadress: forstaAdress || profil.postadress,
         postnummer: form.postnummer.trim(),
         ort: form.ort.trim(),
-        antalLagenheter: form.antalLagenheter.trim(),
+        antalLagenheter,
         antalVaningar: form.antalVaningar.trim(),
         kontaktperson,
         styrelseledamoter:

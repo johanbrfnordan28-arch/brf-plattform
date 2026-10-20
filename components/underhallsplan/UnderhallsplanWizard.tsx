@@ -65,10 +65,7 @@ import {
   SAILOR_VARDERING_UNDERLAG,
 } from "@/lib/sailor-forening";
 import { byggSailorKomponentUtkast } from "@/lib/sailor-underhallsplan-utkast";
-import {
-  importeraSaknadeKomponenterFranGrundmall,
-  lasGrundmallUnderhallsplanState,
-} from "@/components/underhallsplan/importera-fran-grundmall";
+import { lasGrundmallUnderhallsplanState } from "@/components/underhallsplan/importera-fran-grundmall";
 import {
   appliceraImporteradeKomponentVarden,
   type ImporteradUnderhallsplanExcel,
@@ -134,8 +131,14 @@ import {
 import {
   fyllTomtGrundFranProfil,
   hamtaSynkadForeningGrund,
+  skrivAntalLagenheterSynkat,
   synkaGrundFormTillUnderhallsplan,
 } from "@/lib/forening-grund-synk";
+import {
+  LAGENHETSARKIV_EVENT,
+  lasLagenhetsarkiv,
+  synkaLagenhetsarkivTillAntal,
+} from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
 import { VerksamhetsLokalerPanel } from "@/components/underhallsplan/VerksamhetsLokalerPanel";
 import {
   besiktningarBehoverGrundSynk,
@@ -545,6 +548,8 @@ export function UnderhallsplanWizard() {
   const [activeComponents, setActiveComponents] = useState<string[]>(
     initialKomponentState.activeComponents,
   );
+  const [borttagnaKomponenter, setBorttagnaKomponenter] = useState<string[]>([]);
+  const [komponentAttLaggaTill, setKomponentAttLaggaTill] = useState("");
   const [komponentDetaljer, setKomponentDetaljer] = useState<
     Record<string, KomponentDetaljData>
   >(() => initialKomponentState.register);
@@ -585,8 +590,16 @@ export function UnderhallsplanWizard() {
     setRenoveringarSaved(state.renoveringarSaved);
     setKomponenterSaved(state.komponenterSaved);
     setBesiktningarSaved(state.besiktningarSaved);
-    setActiveComponents(state.activeComponents);
-    setKomponentDetaljer(state.komponentDetaljer);
+    const borttagna = state.borttagnaKomponenter ?? [];
+    const dolda = new Set(borttagna);
+    const aktiva = state.activeComponents.filter((namn) => !dolda.has(namn));
+    const detaljer: Record<string, KomponentDetaljData> = {};
+    for (const [namn, data] of Object.entries(state.komponentDetaljer)) {
+      if (!dolda.has(namn)) detaljer[namn] = data;
+    }
+    setActiveComponents(aktiva);
+    setBorttagnaKomponenter(borttagna);
+    setKomponentDetaljer(detaljer);
     setBesiktningar(state.besiktningar);
     setSamfallighetsavgift(normaliseraSamfallighetsavgift(state.samfallighetsavgift));
     setRenoveringarLista(state.renoveringarLista);
@@ -788,6 +801,7 @@ export function UnderhallsplanWizard() {
       komponenterSaved,
       besiktningarSaved,
       activeComponents,
+      borttagnaKomponenter,
       komponentDetaljer,
       besiktningar,
       samfallighetsavgift,
@@ -838,6 +852,7 @@ export function UnderhallsplanWizard() {
     komponenterSaved,
     besiktningarSaved,
     activeComponents,
+    borttagnaKomponenter,
     komponentDetaljer,
     besiktningar,
     samfallighetsavgift,
@@ -849,6 +864,23 @@ export function UnderhallsplanWizard() {
     planNotering,
     varderingsUnderlag,
   ]);
+
+  useEffect(() => {
+    function synkaAntalFranArkiv() {
+      if (planLage === "grundmall") return;
+      const arkiv = lasLagenhetsarkiv(lasAktivForeningId());
+      if (!arkiv) return;
+      const text = String(arkiv.apartments.length);
+      setGrund((current) =>
+        current.antalLagenheter === text
+          ? current
+          : { ...current, antalLagenheter: text },
+      );
+    }
+    window.addEventListener(LAGENHETSARKIV_EVENT, synkaAntalFranArkiv);
+    return () =>
+      window.removeEventListener(LAGENHETSARKIV_EVENT, synkaAntalFranArkiv);
+  }, [planLage]);
 
   useEffect(() => {
     if (!laddatFranLager || !harOsparadeAndringar) return;
@@ -863,10 +895,20 @@ export function UnderhallsplanWizard() {
   function appliceraKomponentSynk(
     active: string[],
     register: Record<string, KomponentDetaljData>,
+    borttagna: string[] = borttagnaKomponenter,
   ) {
-    const synced = synkaUnderhallsplanState(active, register);
-    setActiveComponents(synced.activeComponents);
-    setKomponentDetaljer(synced.register);
+    const dolda = new Set(borttagna);
+    const synced = synkaUnderhallsplanState(
+      active.filter((namn) => !dolda.has(namn)),
+      register,
+    );
+    const aktiva = synced.activeComponents.filter((namn) => !dolda.has(namn));
+    const kvar: Record<string, KomponentDetaljData> = {};
+    for (const namn of aktiva) {
+      if (synced.register[namn]) kvar[namn] = synced.register[namn];
+    }
+    setActiveComponents(aktiva);
+    setKomponentDetaljer(kvar);
   }
 
   function laddaTestplan(id: TestplanId) {
@@ -961,7 +1003,8 @@ export function UnderhallsplanWizard() {
     setRenoveringarSaved(false);
     setKomponenterSaved(false);
     setBesiktningarSaved(false);
-    appliceraKomponentSynk(allaForeslagnaKomponenter, {});
+    setBorttagnaKomponenter([]);
+    appliceraKomponentSynk(allaForeslagnaKomponenter, {}, []);
     setBesiktningar(skapaStandardBesiktningar());
     setKrPerKvmAr(defaultKrPerKvmAr);
     setPlanNamn(kontakt ? planNamnFranKontakt(kontakt) : null);
@@ -1005,7 +1048,8 @@ export function UnderhallsplanWizard() {
       setRenoveringarSaved(false);
       setKomponenterSaved(false);
       setBesiktningarSaved(false);
-      appliceraKomponentSynk(allaForeslagnaKomponenter, {});
+      setBorttagnaKomponenter([]);
+      appliceraKomponentSynk(allaForeslagnaKomponenter, {}, []);
       setBesiktningar(skapaStandardBesiktningar());
       setSamfallighetsavgift(skapaStandardSamfallighetsavgift());
       setKrPerKvmAr(defaultKrPerKvmAr);
@@ -1053,8 +1097,18 @@ export function UnderhallsplanWizard() {
 
   function saveGrund(event: React.FormEvent) {
     event.preventDefault();
-    const grundNorm = normaliseraGrund(grund);
-    const lgh = hamtaAntalLagenheterFranGrund(grundNorm);
+    let grundNorm = normaliseraGrund(grund);
+    const foreningId = lasAktivForeningId();
+    let lgh = hamtaAntalLagenheterFranGrund(grundNorm);
+    if (!arGrundmallForening(foreningId) && lgh > 0) {
+      const adress = grundNorm.adresser.map((a) => a.trim()).find(Boolean);
+      const arkiv = synkaLagenhetsarkivTillAntal(lgh, { foreningId, adress });
+      lgh = arkiv.apartments.length;
+      if (grundNorm.antalLagenheter !== String(lgh)) {
+        grundNorm = { ...grundNorm, antalLagenheter: String(lgh) };
+      }
+      skrivAntalLagenheterSynkat(lgh, foreningId);
+    }
     const nyaDetaljer = synkaRegisterMedAntalLagenheter(lgh, komponentDetaljer);
     const nyaBesiktningar = synkaBesiktningarMedGrund(
       besiktningar,
@@ -1107,7 +1161,7 @@ export function UnderhallsplanWizard() {
     if (!renoveringarSaved) return;
     if (
       !window.confirm(
-        `Ta bort «${name}» från er plan? Tillfällen och priser för komponenten raderas i denna förenings plan. Grundmallen påverkas inte.`,
+        `Ta bort «${name}» permanent från denna förenings plan? Komponenten försvinner ur listan tills ni lägger till den igen. Grundmallen påverkas inte.`,
       )
     ) {
       return;
@@ -1115,30 +1169,31 @@ export function UnderhallsplanWizard() {
     setKomponenterSaved(false);
     setBesiktningarSaved(false);
     const next = activeComponents.filter((item) => item !== name);
+    const borttagna = arGrundmallForening()
+      ? borttagnaKomponenter
+      : borttagnaKomponenter.includes(name)
+        ? borttagnaKomponenter
+        : [...borttagnaKomponenter, name];
+    setBorttagnaKomponenter(borttagna);
     const { [name]: _bort, ...rest } = komponentDetaljer;
-    appliceraKomponentSynk(next, rest);
+    appliceraKomponentSynk(next, rest, borttagna);
     if (senastTillagdKomponent === name) {
       setSenastTillagdKomponent(next[0] ?? null);
     }
   }
 
-  function importeraFranGrundmall() {
-    if (!renoveringarSaved || arGrundmallForening()) return;
-    if (planLage === "grundmall") return;
-    const foreningId = lasAktivForeningId();
-    const { activeComponents: next, komponentDetaljer: detaljer, resultat } =
-      importeraSaknadeKomponenterFranGrundmall(
-        activeComponents,
-        komponentDetaljer,
-        foreningId,
-      );
-    if (resultat.tillagdaKomponenter.length > 0) {
-      setKomponenterSaved(false);
-      setBesiktningarSaved(false);
-      appliceraKomponentSynk(next, detaljer);
-      setSenastTillagdKomponent(resultat.tillagdaKomponenter[0] ?? null);
-    }
-    window.alert(resultat.meddelande);
+  function laggaTillKomponent(name: string) {
+    const namn = name.trim();
+    if (!renoveringarSaved || !namn) return;
+    if (activeComponents.includes(namn)) return;
+    setKomponenterSaved(false);
+    setBesiktningarSaved(false);
+    const borttagna = borttagnaKomponenter.filter((item) => item !== namn);
+    setBorttagnaKomponenter(borttagna);
+    appliceraKomponentSynk([...activeComponents, namn], komponentDetaljer, borttagna);
+    setSenastTillagdKomponent(namn);
+    setCustomComponent("");
+    setKomponentAttLaggaTill("");
   }
 
   function justeraTillfalleKostnad(
@@ -1210,14 +1265,7 @@ export function UnderhallsplanWizard() {
   }
 
   function addCustomComponent() {
-    const trimmed = customComponent.trim();
-    if (!trimmed || !renoveringarSaved || activeComponents.includes(trimmed)) return;
-    setKomponenterSaved(false);
-    setBesiktningarSaved(false);
-    const next = [...activeComponents, trimmed];
-    appliceraKomponentSynk(next, komponentDetaljer);
-    setSenastTillagdKomponent(trimmed);
-    setCustomComponent("");
+    laggaTillKomponent(customComponent);
   }
 
   function uppdateraKomponentDetalj(namn: string, data: KomponentDetaljData) {
@@ -1229,7 +1277,10 @@ export function UnderhallsplanWizard() {
   function saveRenoveringar() {
     if (!grundSaved) return;
     const franHistorik = komponenterFranRenoveringar(renoveringarLista);
-    const active = [...new Set([...activeComponents, ...franHistorik])];
+    const dolda = new Set(borttagnaKomponenter);
+    const active = [...new Set([...activeComponents, ...franHistorik])].filter(
+      (namn) => !dolda.has(namn),
+    );
     const synced = synkaUnderhallsplanState(active, komponentDetaljer);
     const registerMedHistorik = appliceraRenoveringarPaKomponentregister(
       renoveringarLista,
@@ -1275,6 +1326,14 @@ export function UnderhallsplanWizard() {
   const antalLagenheter = hamtaAntalLagenheterFranGrund(grundNorm);
   const skrivskyddad = planLage === "grundmall" && !arGrundmallForening();
   const arCentralGrundmall = arGrundmallForening();
+  const komponenterAttLaggaTill = [
+    ...foreslagnaKomponenter.filter((namn) => !activeComponents.includes(namn)),
+    ...borttagnaKomponenter.filter(
+      (namn) =>
+        !activeComponents.includes(namn) &&
+        !(foreslagnaKomponenter as readonly string[]).includes(namn),
+    ),
+  ];
 
   const autoAvsattning = useMemo(() => {
     if (!laddatFranLager || avsattningsYtaM2 <= 0 || planLangdAr <= 0) {
@@ -1492,15 +1551,15 @@ export function UnderhallsplanWizard() {
             <>
               Ni arbetar i den centrala grunden. Ändringar här ska bara göras av
               er centralt. Föreningar får egen plan och kan öppna grundmallen
-              skrivskyddat samt importera saknade delar — deras sparade plan
-              skrivs inte över automatiskt.
+              skrivskyddat. Föreningen lägger själv till komponenter i sin plan —
+              den sparade planen skrivs inte över automatiskt.
             </>
           ) : (
             <>
               Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan —
               anpassad för just er fastighet. Öppna grundmallen för att se den
-              centrala mallen. I steg 3 importerar ni saknade delar och tar bort
-              det som inte är aktuellt, så planen blir mer överskådlig.
+              centrala mallen. I steg 3 tar ni bort komponenter som inte finns
+              i fastigheten och lägger till dem som saknas.
             </>
           )}
         </p>
@@ -1781,8 +1840,10 @@ export function UnderhallsplanWizard() {
         <Renoveringshistorik
           unlocked={grundSaved}
           activeComponents={activeComponents}
-          foreslagnaKomponenter={allaForeslagnaKomponenter}
-          onToggleKomponent={toggleKomponentAktiv}
+          foreslagnaKomponenter={
+            arCentralGrundmall ? allaForeslagnaKomponenter : activeComponents
+          }
+          onToggleKomponent={arCentralGrundmall ? toggleKomponentAktiv : undefined}
           planStartAr={planStartAr}
           planLangdAr={planLangdAr}
           planKostnader={planKostnader}
@@ -1836,10 +1897,10 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Anpassa planen för er fastighet: aktivera det som ingår, ta bort
-              delar som inte är aktuella och lägg till egna komponenter vid
-              behov. Då blir planen överskådlig — även för nästa styrelse.
-              Uppdateringar i grundmallen skriver inte över det ni redan sparat.
+              Planen visar bara de komponenter som finns i er fastighet. Ta bort
+              det som saknas, och lägg till en komponent när den behövs. Då
+              blir listan överskådlig för både en liten och en stor förening.
+              Grundmallen påverkas inte.
             </>
           )}
         </p>
@@ -1851,23 +1912,18 @@ export function UnderhallsplanWizard() {
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-4">
               <li>
-                <strong className="text-foreground">Aktiv / Inaktiv</strong> —
-                döljer eller visar komponenten i planen. Sparade tillfällen och
-                priser behålls när ni sätter den inaktiv.
+                <strong className="text-foreground">Ta bort</strong> — tar bort
+                komponenten permanent från denna förenings plan. Den syns inte
+                längre. Grundmallen ändras inte.
               </li>
               <li>
-                <strong className="text-foreground">Ta bort</strong> — raderar
-                komponenten och dess tillfällen från er plan (går inte att ångra
-                utan att lägga in på nytt).
+                <strong className="text-foreground">Lägg till komponent</strong> —
+                välj en standardkomponent som saknas i fastigheten, eller skriv
+                en egen (t.ex. solceller).
               </li>
               <li>
-                <strong className="text-foreground">Lägg till egen</strong> —
-                skapa huvudkomponent som saknas i listan (t.ex. solceller).
-              </li>
-              <li>
-                Inne i varje aktiv komponent: lägg till eller ta bort
-                underkomponenter och underhållstillfällen så registret speglar
-                just er fastighet.
+                Inne i varje komponent: lägg till eller ta bort underkomponenter
+                och underhållstillfällen så registret speglar just er fastighet.
               </li>
             </ul>
           </div>
@@ -1886,7 +1942,11 @@ export function UnderhallsplanWizard() {
         {renoveringarSaved && (
           <div className="mt-4">
             <KommandeUnderhallSammanfattning
-              komponentDetaljer={komponentDetaljer}
+              komponentDetaljer={Object.fromEntries(
+                activeComponents
+                  .filter((namn) => komponentDetaljer[namn])
+                  .map((namn) => [namn, komponentDetaljer[namn]]),
+              )}
               planStartAr={planStartAr}
               planLangdAr={planLangdAr}
             />
@@ -1902,25 +1962,45 @@ export function UnderhallsplanWizard() {
         <div
           className={`mt-6 space-y-2 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
         >
-          {foreslagnaKomponenter.map((name) => {
-            const isActive = activeComponents.includes(name);
-            return (
-              <div
-                key={name}
-                className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleComponent(name)}
-                  className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-primary bg-[#e2f0e6] text-primary-dark"
-                      : "border-border bg-background text-foreground hover:border-primary/50"
-                  }`}
+          {arCentralGrundmall
+            ? foreslagnaKomponenter.map((name) => {
+                const isActive = activeComponents.includes(name);
+                return (
+                  <div
+                    key={name}
+                    className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleComponent(name)}
+                      className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+                        isActive
+                          ? "border-primary bg-[#e2f0e6] text-primary-dark"
+                          : "border-border bg-background text-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {isActive ? "✓ Aktiv" : "Inaktiv"} · {name}
+                    </button>
+                    {isActive && (
+                      <button
+                        type="button"
+                        onClick={() => taBortKomponent(name)}
+                        className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+                      >
+                        Ta bort
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            : activeComponents.map((name) => (
+                <div
+                  key={name}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
                 >
-                  {isActive ? "✓ Aktiv" : "Inaktiv"} · {name}
-                </button>
-                {isActive && (
+                  <span className="rounded-full border border-primary bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
+                    {name}
+                  </span>
                   <button
                     type="button"
                     onClick={() => taBortKomponent(name)}
@@ -1928,29 +2008,36 @@ export function UnderhallsplanWizard() {
                   >
                     Ta bort
                   </button>
-                )}
-              </div>
-            );
-          })}
-          {activeComponents
-            .filter((n) => !(foreslagnaKomponenter as readonly string[]).includes(n))
-            .map((name) => (
-              <div
-                key={name}
-                className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
-              >
-                <span className="rounded-full border border-primary bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
-                  ✓ Aktiv · {name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => taBortKomponent(name)}
-                  className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+                </div>
+              ))}
+          {arCentralGrundmall &&
+            activeComponents
+              .filter(
+                (namn) =>
+                  !(foreslagnaKomponenter as readonly string[]).includes(namn),
+              )
+              .map((name) => (
+                <div
+                  key={name}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
                 >
-                  Ta bort
-                </button>
-              </div>
-            ))}
+                  <span className="rounded-full border border-primary bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
+                    ✓ Aktiv · {name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => taBortKomponent(name)}
+                    className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+              ))}
+          {!arCentralGrundmall && activeComponents.length === 0 && (
+            <p className="rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
+              Inga komponenter i planen. Lägg till de delar som finns i fastigheten.
+            </p>
+          )}
         </div>
 
         {!arCentralGrundmall && !skrivskyddad && (
@@ -1958,18 +2045,31 @@ export function UnderhallsplanWizard() {
             className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
           >
             <p className="text-xs text-muted">
-              Centrala uppdateringar görs i grundmallen. Här hämtar ni in
-              komponenter som saknas — och tar bort det som inte är aktuellt för
-              er fastighet (knappen «Ta bort» på varje del ovan). Befintliga
-              priser och tillfällen behålls vid import.
+              Lägg till en komponent som finns i fastigheten men saknas i planen.
+              Borttagna standardkomponenter finns kvar här, bara för denna förening.
             </p>
-            <button
-              type="button"
-              onClick={importeraFranGrundmall}
-              className="mt-2 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-            >
-              Importera saknade från grundmall
-            </button>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <select
+                value={komponentAttLaggaTill}
+                onChange={(event) => setKomponentAttLaggaTill(event.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option value="">Välj komponent</option>
+                {komponenterAttLaggaTill.map((namn) => (
+                  <option key={namn} value={namn}>
+                    {namn}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => laggaTillKomponent(komponentAttLaggaTill)}
+                disabled={!komponentAttLaggaTill}
+                className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6] disabled:opacity-50"
+              >
+                Lägg till komponent
+              </button>
+            </div>
           </div>
         )}
 
@@ -1987,7 +2087,7 @@ export function UnderhallsplanWizard() {
             onClick={addCustomComponent}
             className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
           >
-            Lägg till
+            Lägg till egen komponent
           </button>
         </div>
 

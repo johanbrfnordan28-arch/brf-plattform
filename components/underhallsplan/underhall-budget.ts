@@ -225,13 +225,14 @@ export function samlaAllaUnderhallAtgarder(
   planKostnader?: PlanKostnaderNormaliserade,
 ): UnderhallAtgard[] {
   const fordelningKontext: RenoveringFordelningKontext = { komponentDetaljer };
+  const aktiva = new Set(activeComponents);
   const franHistorik = genereraAtgarderFranHistorik(
     renoveringar,
     planStartAr,
     planLangdAr,
     planKostnader,
     fordelningKontext,
-  );
+  ).filter((atgard) => aktiva.has(atgard.komponent));
 
   let franRegister = samlaUnderhallAtgarder(
     activeComponents,

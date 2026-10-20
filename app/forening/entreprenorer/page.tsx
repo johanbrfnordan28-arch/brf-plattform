@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ContentSection } from "@/components/ContentSection";
-import { EntreprenorerRegister } from "@/components/entreprenorer/EntreprenorerRegister";
 import { EntreprenorVarningar } from "@/components/entreprenorer/EntreprenorVarningar";
+import { FragaOmEntreprenorPanel } from "@/components/entreprenorer/FragaOmEntreprenorPanel";
 import { HusEntreprenorLista } from "@/components/entreprenorer/HusEntreprenorLista";
 import { ModulePage } from "@/components/ModulePage";
 import { TipsPanel } from "@/components/TipsPanel";
@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     ...(await foreningModulMetadata("Entreprenörer")),
     description:
-      "Egna rekommenderade entreprenörer och centralt register — sök, lägg till och ta bort.",
+      "Egna entreprenörer med de uppgifter föreningen behöver, och mejl till Styrelse-Navet om ni vill fråga om en entreprenör.",
   };
 }
 
@@ -21,20 +21,15 @@ export default function ForeningEntreprenorerPage() {
     <ModulePage
       title="Entreprenörer"
       icon="🏗️"
-      intro="Samla rekommenderade entreprenörer i er egen lista, och sök bland företag vi rekommenderar centralt. Kontrollera alltid referenser och beställ skriftligt innan ni anlitar någon."
+      intro="Spara entreprenörer som föreningen anlitar, med de uppgifter ni behöver. Vill ni fråga Styrelse-Navet om en entreprenör mejlar ni oss. Föreningen ansvarar för uppdraget."
     >
       <TipsPanel tips={tips.entreprenorer} />
       <EntreprenorVarningar />
-      <ContentSection title="Er lista — sök och hantera" plain>
+      <ContentSection title="Er lista" plain>
         <HusEntreprenorLista />
       </ContentSection>
-      <ContentSection title="Rekommenderade entreprenörer (centralt)" plain>
-        <EntreprenorerRegister
-          visaVarningar={false}
-          kanLaggTillIHusLista
-          sokRubrik="Sök i det centrala registret"
-          sokIngress="Företag vi har referenser på. Lägg till i er lista om ni vill spara dem hos er — ta fortfarande egna referenser innan ni beställer."
-        />
+      <ContentSection title="Fråga Styrelse-Navet" plain>
+        <FragaOmEntreprenorPanel />
       </ContentSection>
     </ModulePage>
   );
