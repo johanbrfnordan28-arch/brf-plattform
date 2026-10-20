@@ -11,7 +11,6 @@ import {
   type AvtalsPart,
 } from "@/lib/forening-avtal";
 import { formateraBankIdSignatur, type BankIdSignatur } from "@/lib/bankid-signering";
-import { AvtalsForetradareLista } from "@/components/forening/AvtalsForetradareLista";
 import { SvenskAdressBlock } from "@/components/forening/SvenskAdressBlock";
 import { LEVERANTOR } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
@@ -160,16 +159,45 @@ export function ForeningAvtalsdokument({
                 Faktura: {part.fakturaEpost.trim()}
               </p>
             ) : null}
-            {(part.foretradare?.some((p) => p.namn.trim()) ?? false) ? (
-              <div className="mt-4 border-t border-border pt-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                  Företrädare som tecknar / beställer
-                </p>
-                <div className="mt-2">
-                  <AvtalsForetradareLista personer={part.foretradare ?? []} />
-                </div>
-              </div>
-            ) : null}
+            <div className="mt-4 border-t border-border pt-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                Två personer som tecknar avtalet
+              </p>
+              <ul className="mt-2 space-y-2">
+                {[0, 1].map((index) => {
+                  const person = part.foretradare?.[index];
+                  const saknas = !person?.namn?.trim();
+                  return (
+                    <li
+                      key={index}
+                      className={
+                        saknas
+                          ? "rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5"
+                          : undefined
+                      }
+                    >
+                      {saknas ? (
+                        <p className="text-sm text-amber-950">
+                          Person {index + 1} — en person saknas
+                        </p>
+                      ) : (
+                        <>
+                          <p className="font-medium text-foreground">
+                            {person?.namn.trim()}
+                          </p>
+                          {person?.roll?.trim() ? (
+                            <p className="text-xs text-muted">{person.roll.trim()}</p>
+                          ) : null}
+                          {person?.epost?.trim() ? (
+                            <p className="text-xs text-muted">{person.epost.trim()}</p>
+                          ) : null}
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -212,6 +240,9 @@ export function ForeningAvtalsdokument({
             ) : signerat.namn ? (
               <p className="mt-1 text-muted">{signerat.namn}</p>
             ) : null}
+            <p className="mt-2 text-muted">
+              Det signerade avtalet är sparat i portalen.
+            </p>
           </div>
         ) : (
           <p className="text-xs text-muted">

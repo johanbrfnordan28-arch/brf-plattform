@@ -42,7 +42,12 @@ import {
 /**
  * Godkänn ettårsavtal — kräver BankID-signering.
  */
-export function ForeningAvtalPanel() {
+export function ForeningAvtalPanel({
+  doljDokument = false,
+}: {
+  /** Sidan visar redan kundavtalet högre upp. */
+  doljDokument?: boolean;
+} = {}) {
   const [profil, setProfil] = useState<ForeningProfil | null>(null);
   const [redo, setRedo] = useState(false);
   const [bekraftat, setBekraftat] = useState(false);
@@ -108,17 +113,22 @@ export function ForeningAvtalPanel() {
           >
             Öppna kundinloggning
           </Link>
+          <p className="mt-3 text-sm text-primary-dark">
+            Det signerade avtalet är sparat i portalen.
+          </p>
         </div>
 
-        <ForeningAvtalsdokument
-          part={avtalsPartFranProfil(profil)}
-          skapadTidpunkt={profil.skapadTidpunkt}
-          signerat={{
-            namn: profil.avtalBankidNamn,
-            tidpunkt: profil.avtalBankidTidpunkt || profil.avtalGodkantTidpunkt,
-            signaturer: profil.avtalBankidSignaturer,
-          }}
-        />
+        {!doljDokument && (
+          <ForeningAvtalsdokument
+            part={avtalsPartFranProfil(profil)}
+            skapadTidpunkt={profil.skapadTidpunkt}
+            signerat={{
+              namn: profil.avtalBankidNamn,
+              tidpunkt: profil.avtalBankidTidpunkt || profil.avtalGodkantTidpunkt,
+              signaturer: profil.avtalBankidSignaturer,
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -219,12 +229,17 @@ export function ForeningAvtalPanel() {
         )}
       </div>
 
-        <ForeningAvtalsdokument
-          part={avtalsPartFranProfil(profil)}
-          skapadTidpunkt={profil.skapadTidpunkt}
-        />
+        {!doljDokument && (
+          <ForeningAvtalsdokument
+            part={avtalsPartFranProfil(profil)}
+            skapadTidpunkt={profil.skapadTidpunkt}
+          />
+        )}
 
-      <div className="rounded-xl border border-border bg-white p-5 shadow-sm sm:p-6">
+      <div
+        id="signera"
+        className="scroll-mt-24 rounded-xl border border-border bg-white p-5 shadow-sm sm:p-6"
+      >
         <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
           <input
             type="checkbox"
