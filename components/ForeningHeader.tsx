@@ -148,7 +148,7 @@ export function ForeningHeader() {
               href={arKund ? KUND_LOGIN_PATH : TEST_LOGIN_PATH}
               className="inline-flex h-9 items-center whitespace-nowrap rounded-lg bg-primary px-3.5 text-sm font-semibold text-white hover:bg-primary-dark"
             >
-              Logga in
+              {arKund ? "Logga in" : "Logga in på testförening"}
             </Link>
           )}
         </div>

@@ -8,7 +8,7 @@ import {
   lasAktivForeningId,
 } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { SkapaEllerTestinloggning } from "@/components/forening/SkapaEllerTestinloggning";
 
 /**
  * Visar skapa-formulär på /forening när ingen egen förening är aktiv ännu.
@@ -47,7 +47,7 @@ export function SkapaForeningPaForeningssidan() {
           .
         </p>
         <div className="mt-6">
-          <SkapaForeningPanel />
+          <SkapaEllerTestinloggning />
         </div>
       </div>
     </div>

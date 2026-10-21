@@ -515,112 +515,11 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
 
   return (
     <div className="mx-auto max-w-lg space-y-5 px-4">
-      <section
-        ref={inloggningRef}
-        className="scroll-mt-32 rounded-2xl border-2 border-primary/30 bg-white p-5 shadow-sm"
-      >
-        {lastForening ? (
-          <div
-            className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-950"
-            role="alert"
-          >
-            <p>
-              <strong>{lastForening.namn}</strong> öppnas bara för styrelsen. Logga
-              in med e-post och lösenord eller BankID nedan.
-            </p>
-            <p className="mt-1">
-              Bor du i föreningen?{" "}
-              <Link
-                href={byggMedlemFelanmalanLank(lastForening.id)}
-                className="font-medium underline hover:no-underline"
-              >
-                Gör en felanmälan
-              </Link>
-              .
-            </p>
-          </div>
-        ) : null}
-        <h2 className="text-base font-bold text-foreground">
-          Logga in med e-post och lösenord
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Lösenordet skickades när föreningen skapades. På ny enhet eller
-          webbläsare: logga in här med e-post och lösenord — då hämtas er
-          förening från servern.{" "}
-          <Link
-            href="/konto/glomt-losenord"
-            className="font-medium text-primary-dark underline hover:no-underline"
-          >
-            Glömt lösenord?
-          </Link>
-          . När du är inloggad byter du lösenord under{" "}
-          <strong className="font-medium text-foreground">Konto</strong>.
-        </p>
-        <form onSubmit={loggaInMedKonto} className="mt-4 space-y-3">
-          <label className="block text-sm">
-            <span className="font-medium text-foreground">E-post</span>
-            <input
-              type="email"
-              value={epost}
-              onChange={(e) => setEpost(e.target.value)}
-              autoComplete="username"
-              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-              required
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="font-medium text-foreground">Lösenord</span>
-            <input
-              type="password"
-              value={losenord}
-              onChange={(e) => setLosenord(e.target.value)}
-              autoComplete="current-password"
-              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-              required
-            />
-          </label>
-          {kontoFel ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
-              {kontoFel}
-            </p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={kontoLaddar}
-            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
-          >
-            {kontoLaddar ? "Loggar in …" : "Logga in"}
-          </button>
-        </form>
-        {bankidKopplaMeddelande ? (
-          <p className="mt-3 rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
-            {bankidKopplaMeddelande}
-          </p>
-        ) : null}
-        {bankidFel ? (
-          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
-            {bankidFel}
-          </p>
-        ) : null}
-        <div className="mt-4 border-t border-border pt-4">
-          <p className="text-sm font-medium text-foreground">Logga in med BankID</p>
-          <p className="mt-1 text-xs text-muted">
-            Testmiljö via Idura — kräver databas och att BankID kopplats till ert konto (första gången: e-post + lösenord direkt efter).
-          </p>
-          <a
-            href={bankidStartUrl}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border-2 border-primary/40 bg-white px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
-          >
-            Identifiera med BankID
-          </a>
-        </div>
-      </section>
-
       <section>
         <p className="mb-1 text-center text-sm font-medium text-foreground">
           {arKundLage
-            ? "Eller öppna via föreningsnamn"
-            : "Eller öppna demoförening / sparad förening"}
+            ? "Sök er förening"
+            : "Sök er testförening"}
         </p>
         <p className="mb-4 text-center text-sm text-muted">
           {arKundLage ? (
@@ -681,7 +580,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
               ? "Söker på servern …"
               : filtrerade.length === 0
                 ? endastEgna || arKundLage
-                  ? "Ingen träff — kontrollera stavningen eller logga in med e-post ovan"
+                  ? "Ingen träff — kontrollera stavningen eller logga in med e-post nedan"
                   : "Ingen demoförening matchar — skapade föreningar hämtas från servern vid träff"
                 : filtrerade.length === 1
                   ? "Träff — logga in på er förening"
@@ -792,6 +691,107 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
             )
           )}
         </ul>
+      </section>
+
+      <section
+        ref={inloggningRef}
+        className="scroll-mt-32 rounded-2xl border-2 border-primary/30 bg-white p-5 shadow-sm"
+      >
+        {lastForening ? (
+          <div
+            className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-950"
+            role="alert"
+          >
+            <p>
+              <strong>{lastForening.namn}</strong> öppnas bara för styrelsen. Logga
+              in med e-post och lösenord eller BankID nedan.
+            </p>
+            <p className="mt-1">
+              Bor du i föreningen?{" "}
+              <Link
+                href={byggMedlemFelanmalanLank(lastForening.id)}
+                className="font-medium underline hover:no-underline"
+              >
+                Gör en felanmälan
+              </Link>
+              .
+            </p>
+          </div>
+        ) : null}
+        <h2 className="text-base font-bold text-foreground">
+          Logga in med e-post och lösenord
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Lösenordet skickades när föreningen skapades. På ny enhet eller
+          webbläsare: logga in här med e-post och lösenord — då hämtas er
+          förening från servern.{" "}
+          <Link
+            href="/konto/glomt-losenord"
+            className="font-medium text-primary-dark underline hover:no-underline"
+          >
+            Glömt lösenord?
+          </Link>
+          . När du är inloggad byter du lösenord under{" "}
+          <strong className="font-medium text-foreground">Konto</strong>.
+        </p>
+        <form onSubmit={loggaInMedKonto} className="mt-4 space-y-3">
+          <label className="block text-sm">
+            <span className="font-medium text-foreground">E-post</span>
+            <input
+              type="email"
+              value={epost}
+              onChange={(e) => setEpost(e.target.value)}
+              autoComplete="username"
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+              required
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-medium text-foreground">Lösenord</span>
+            <input
+              type="password"
+              value={losenord}
+              onChange={(e) => setLosenord(e.target.value)}
+              autoComplete="current-password"
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
+              required
+            />
+          </label>
+          {kontoFel ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+              {kontoFel}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={kontoLaddar}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
+          >
+            {kontoLaddar ? "Loggar in …" : "Logga in"}
+          </button>
+        </form>
+        {bankidKopplaMeddelande ? (
+          <p className="mt-3 rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-sm text-primary-dark">
+            {bankidKopplaMeddelande}
+          </p>
+        ) : null}
+        {bankidFel ? (
+          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+            {bankidFel}
+          </p>
+        ) : null}
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="text-sm font-medium text-foreground">Logga in med BankID</p>
+          <p className="mt-1 text-xs text-muted">
+            Testmiljö via Idura — kräver databas och att BankID kopplats till ert konto (första gången: e-post + lösenord direkt efter).
+          </p>
+          <a
+            href={bankidStartUrl}
+            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border-2 border-primary/40 bg-white px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-[#eef6f0]"
+          >
+            Identifiera med BankID
+          </a>
+        </div>
       </section>
 
       <div className="rounded-2xl border border-border bg-white p-4">

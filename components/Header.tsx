@@ -5,10 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
 import { HeaderMobilMeny } from "@/components/HeaderMobilMeny";
 import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
-import { FORENING_AKTIV_EVENT, lasAktivForeningId } from "@/lib/forening-registry";
+import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { MEDLEM_FELANMALAN_PATH } from "@/lib/forening-medlem";
-import { arAktivKundForening, KUND_LOGIN_PATH, TEST_LOGIN_PATH } from "@/lib/forening-kund";
+import { antalEgnaTestForeningar } from "@/lib/forening-inloggning";
+import { KUND_LOGIN_PATH, TEST_LOGIN_PATH } from "@/lib/forening-kund";
 
 const nav = [
   { href: "#moduler", label: "Moduler" },
@@ -20,19 +21,16 @@ const nav = [
 const knappBas =
   "h-9 items-center whitespace-nowrap rounded-lg px-3.5 text-sm font-semibold";
 
-const loggaInKlass = `${knappBas} inline-flex bg-primary text-white hover:bg-primary-dark`;
-
-function loggaInHref(): string {
-  return arAktivKundForening(lasAktivForeningId())
-    ? KUND_LOGIN_PATH
-    : TEST_LOGIN_PATH;
-}
+const loggaInKlass = `${knappBas} inline-flex border border-primary/45 bg-white text-primary-dark hover:border-primary hover:bg-[#eef6f0]`;
+const skapaKlass = `${knappBas} inline-flex bg-primary text-white hover:bg-primary-dark`;
 
 export function Header() {
   const [inloggad, setInloggad] = useState<boolean | null>(null);
+  const [harSkapadTest, setHarSkapadTest] = useState<boolean | null>(null);
 
   const ladda = useCallback(() => {
     setInloggad(arInloggadPaEgenForening());
+    setHarSkapadTest(antalEgnaTestForeningar() > 0);
   }, []);
 
   useEffect(() => {
@@ -44,7 +42,14 @@ export function Header() {
   const mobilLankar =
     inloggad === true
       ? nav
-      : [...nav, { href: PROVA_GRATIS_PATH, label: "Pröva gratis 30 dagar" }];
+      : [
+          ...nav,
+          ...(harSkapadTest === false
+            ? [{ href: PROVA_GRATIS_PATH, label: "Skapa förening" }]
+            : []),
+          { href: TEST_LOGIN_PATH, label: "Logga in på testförening" },
+          { href: KUND_LOGIN_PATH, label: "Logga in" },
+        ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
@@ -83,14 +88,27 @@ export function Header() {
             <LoggaUtKnapp />
           ) : inloggad === false ? (
             <>
-              <Link href={loggaInHref()} className={loggaInKlass}>
-                Logga in
-              </Link>
+              {harSkapadTest === false && (
+                <Link
+                  href={PROVA_GRATIS_PATH}
+                  className={`${skapaKlass} hidden sm:inline-flex`}
+                >
+                  Skapa förening
+                </Link>
+              )}
               <Link
-                href={PROVA_GRATIS_PATH}
-                className={`${knappBas} hidden border border-border bg-white text-foreground hover:border-primary/50 sm:inline-flex`}
+                href={TEST_LOGIN_PATH}
+                className={
+                  harSkapadTest
+                    ? skapaKlass
+                    : `${loggaInKlass} hidden sm:inline-flex`
+                }
               >
-                Pröva gratis
+                <span className="sm:hidden">Testförening</span>
+                <span className="hidden sm:inline">Logga in på testförening</span>
+              </Link>
+              <Link href={KUND_LOGIN_PATH} className={loggaInKlass}>
+                Logga in
               </Link>
             </>
           ) : (

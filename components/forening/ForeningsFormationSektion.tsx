@@ -4,7 +4,7 @@ import {
   InformationsFilmSpelare,
   type InformationsFilmScen,
 } from "@/components/InformationsFilmSpelare";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { SkapaEllerTestinloggning } from "@/components/forening/SkapaEllerTestinloggning";
 import { BRF_NAVET_NAMN, STYRELSEFLOW_NAMN } from "@/lib/forening-konstanter";
 
 const formationScener: InformationsFilmScen[] = [
@@ -132,7 +132,7 @@ export function ForeningsFormationSektion() {
           <p className="mb-4 text-center text-sm text-muted">
             Redo? Fyll i namnet, signera med BankID och er föreningssida skapas direkt.
           </p>
-          <SkapaForeningPanel kompakt />
+          <SkapaEllerTestinloggning kompakt />
         </div>
       </div>
     </section>

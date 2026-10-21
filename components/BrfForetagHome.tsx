@@ -5,7 +5,8 @@ import { ForeningHeroEtikett } from "@/components/forening/ForeningHeroEtikett";
 import { ForeningHubbRubrik } from "@/components/forening/ForeningHubbRubrik";
 import { ForeningSnabbvagar } from "@/components/forening/ForeningSnabbvagar";
 import { ForeningValkommenRand } from "@/components/forening/ForeningValkommenRand";
-import { SkapaForeningPanel } from "@/components/forening/SkapaForeningPanel";
+import { SkapaEllerTestinloggning } from "@/components/forening/SkapaEllerTestinloggning";
+import { TestforeningStartKnappar } from "@/components/forening/TestforeningStartKnappar";
 import { ForeningPrisPanel } from "@/components/pris/ForeningPrisPanel";
 import { PublikPrisInfo } from "@/components/pris/PublikPrisInfo";
 import { PersonalInloggningFot } from "@/components/plattform/PersonalInloggningFot";
@@ -16,7 +17,6 @@ import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { MejlaLankStartRuta } from "@/components/styrelsemassa/MejlaLankStartRuta";
 import { InbjudanHuvudsidaInnehall } from "@/components/inbjudan/InbjudanHuvudsidaInnehall";
 import { HUVUDSIDA_MASSA_QUERY } from "@/lib/massa-lank";
-import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 
 type BrfForetagHomeProps = {
   mode: "public" | "forening";
@@ -185,12 +185,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
               </>
             ) : (
               <>
-                <Link
-                  href={PROVA_GRATIS_PATH}
-                  className="brf-knapp-gron px-7 py-3.5 text-base"
-                >
-                  Börja gratis i 30 dagar
-                </Link>
+                <TestforeningStartKnappar variant="hero" />
                 <Link
                   href="/upphandling"
                   className="rounded-lg border-2 border-primary bg-white px-7 py-3.5 text-base font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0]"
@@ -582,7 +577,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                   slås ihop överallt — era ifyllda uppgifter behålls.
                 </p>
               </div>
-              <SkapaForeningPanel kompakt />
+              <SkapaEllerTestinloggning kompakt />
             </div>
           </section>
 
@@ -616,12 +611,9 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     kostnad. Ingen kortuppgift krävs i demo — ni ser hur
                     plattformen passar er förening.
                   </p>
-                  <Link
-                    href={PROVA_GRATIS_PATH}
-                    className="brf-knapp-gron mt-6 self-start px-5 py-2.5 text-sm"
-                  >
-                    Vi vill pröva gratis i 30 dagar
-                  </Link>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <TestforeningStartKnappar variant="pris" />
+                  </div>
                 </div>
                 <div className="flex h-full min-h-[18rem] flex-col rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
                   <PublikPrisInfo />
@@ -654,9 +646,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
                     Logga in till er förening
                   </h3>
                   <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
-                    Har styrelsen redan skapat er förening? Logga in för att
-                    fortsätta arbeta med underhållsplan, årshjul och övriga
-                    moduler.
+                    Logga in gäller föreningar som har tecknat avtal. Testperioden
+                    har en egen inloggning bredvid skapa förening.
                   </p>
                   <Link
                     href="/kund-login"

@@ -321,7 +321,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
           href="/styrelse-login"
           className="mt-3 block text-sm font-medium text-primary-dark hover:underline"
         >
-          Eller öppna inloggning
+          Logga in på testförening
         </Link>
       </div>
     );
@@ -677,13 +677,21 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={skapar}
-          className="brf-knapp-gron px-6 py-3 text-base shadow-sm disabled:opacity-50"
-        >
-          {skapar ? "Skapar …" : "Skapa förening"}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={skapar}
+            className="brf-knapp-gron px-6 py-3 text-base shadow-sm disabled:opacity-50"
+          >
+            {skapar ? "Skapar …" : "Skapa förening"}
+          </button>
+          <Link
+            href={TEST_LOGIN_PATH}
+            className="inline-flex items-center rounded-lg border border-primary/45 bg-white px-5 py-3 text-sm font-semibold text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
+          >
+            Logga in på testförening
+          </Link>
+        </div>
       </form>
     </div>
   );
