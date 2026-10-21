@@ -30,7 +30,7 @@ function byggForeningScener(hubbNamn: string): InformationsFilmScen[] {
   return [
     {
       titel: `Välkommen till ${hubbNamn}`,
-      text: "Här arbetar styrelsen i samma portal som medlemmarna ser — upphandling, underhållsplan, dokument och rondering på ett ställe.",
+      text: "Här arbetar styrelsen. Boende loggar inte in — de felanmäler på en egen sida, utan att se ärenden eller övriga moduler.",
     },
     {
       titel: "Modul för modul",

@@ -11,6 +11,7 @@ import { ForeningUppgifterGate } from "@/components/forening/ForeningUppgifterGa
 import { ForeningVillkorGate } from "@/components/forening/ForeningVillkorGate";
 import { TecknaAvtalBaner } from "@/components/forening/TecknaAvtalBaner";
 import { Header } from "@/components/Header";
+import { MedlemHeader } from "@/components/MedlemHeader";
 import { usePathname } from "next/navigation";
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   const isSigneringOnly = pathname.startsWith("/signering");
   const isForeningAktivera = pathname === "/forening/aktivera";
   const isForening = pathname.startsWith("/forening");
+  const isMedlem = pathname === "/medlem" || pathname.startsWith("/medlem/");
 
   if (isSigneringOnly) {
     return <>{children}</>;
@@ -46,6 +48,16 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <ForeningDataScope>{children}</ForeningDataScope>
           <Footer />
         </ForeningInloggningsGrind>
+      </>
+    );
+  }
+
+  if (isMedlem) {
+    return (
+      <>
+        <MedlemHeader />
+        {children}
+        <Footer />
       </>
     );
   }

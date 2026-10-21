@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { skapaLokalFelanmalan } from "@/lib/felanmalan/felanmalan-lokal";
 import { INTEGRITETSPOLICY_PATH } from "@/lib/juridik";
 import {
   FELANMALAN_ORSAK,
@@ -29,7 +30,10 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
   const [boendeEjHemma, setBoendeEjHemma] = useState(false);
   const [laddar, setLaddar] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
-  const [klart, setKlart] = useState<{ arendeNummer: string } | null>(null);
+  const [klart, setKlart] = useState<{
+    arendeNummer: string;
+    lokal: boolean;
+  } | null>(null);
 
   async function skicka(e: React.FormEvent) {
     e.preventDefault();
@@ -61,13 +65,47 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
         fel?: string;
         arende?: { arendeNummer: string };
       };
-      if (!res.ok || !data.arende) {
-        setFel(data.fel || "Kunde inte skicka felanmälan.");
+      if (res.ok && data.arende) {
+        setKlart({ arendeNummer: data.arende.arendeNummer, lokal: false });
         return;
       }
-      setKlart({ arendeNummer: data.arende.arendeNummer });
+      if (res.status === 503) {
+        const lokal = skapaLokalFelanmalan({
+          foreningId,
+          rubrik,
+          beskrivning,
+          medlemNamn,
+          medlemEpost,
+          medlemTelefon,
+          lagenhetsnummer,
+          prioritet,
+          orsak,
+          debiteringKan,
+          debiteringAnteckning,
+          nyckelPlats,
+          boendeEjHemma,
+        });
+        setKlart({ arendeNummer: lokal.arendeNummer, lokal: true });
+        return;
+      }
+      setFel(data.fel || "Kunde inte skicka felanmälan.");
     } catch {
-      setFel("Kunde inte nå servern.");
+      const lokal = skapaLokalFelanmalan({
+        foreningId,
+        rubrik,
+        beskrivning,
+        medlemNamn,
+        medlemEpost,
+        medlemTelefon,
+        lagenhetsnummer,
+        prioritet,
+        orsak,
+        debiteringKan,
+        debiteringAnteckning,
+        nyckelPlats,
+        boendeEjHemma,
+      });
+      setKlart({ arendeNummer: lokal.arendeNummer, lokal: true });
     } finally {
       setLaddar(false);
     }
@@ -80,8 +118,9 @@ export function MedlemFelanmalanForm({ foreningId }: Props) {
         <p className="mt-2 text-sm text-muted">
           Ärendenummer:{" "}
           <strong className="text-foreground">{klart.arendeNummer}</strong>.
-          Förvaltaren har fått mejl och återkommer. Spara numret om ni behöver
-          följa upp.
+          {klart.lokal
+            ? "Ärendet är sparat i den här webbläsaren så styrelsen kan se det här. På den publicerade sidan sparas det i databasen och mejlas till förvaltaren."
+            : "Förvaltaren har fått mejl och återkommer. Spara numret om ni behöver följa upp."}
         </p>
       </div>
     );

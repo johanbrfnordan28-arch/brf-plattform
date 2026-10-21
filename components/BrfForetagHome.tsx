@@ -413,7 +413,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
           </h2>
           <p className="mt-2 text-muted">
             {isForening
-              ? "Välj en modul för att arbeta i er förenings miljö. Snabbvägarna visar de fyra översta — ni kan flytta om och byta."
+              ? "Öppna en modul och arbeta. Snabbvägarna ovan är de fyra ni valt."
               : "Från årshjul och lägenhetsarkiv till underhåll, upphandling och juridik. Klicka på en modul för att läsa om funktionerna — skapa er förening när ni är redo."}
           </p>
         </div>
@@ -424,7 +424,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </div>
       </section>
 
-      <UnderhallsplanReklam lage={isForening ? "forening" : "public"} />
+      {!isForening && <UnderhallsplanReklam lage="public" />}
 
       {!isForening ? (
         <section
@@ -498,41 +498,7 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
             </div>
           </div>
         </section>
-      ) : (
-        <section
-          id="upphandlingar"
-          className="border-y border-border bg-surface/60"
-        >
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-            <div className="mb-10 max-w-2xl">
-              <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-                Upphandlingar
-              </h2>
-              <p className="mt-2 text-muted">
-                Förbered underlag i modulen. Publicering och anbudshantering
-                sker via Styrelse-Navet — inkomna anbud syns inte här och
-                anbudsgivare ser inte varandra.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-dashed border-primary/40 bg-[#e8f3ec]/50 p-6 sm:p-8">
-              <h3 className="font-semibold text-primary-dark">
-                Öppna upphandlingsmodulen
-              </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Skapa beskrivning och underlag. När ni är redo publicerar ni via
-                oss — entreprenörer bjuds in och anbud hanteras manuellt utanför
-                föreningsvyn.
-              </p>
-              <Link
-                href={`${base}/upphandling`}
-                className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-              >
-                Gå till upphandling
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
+      ) : null}
 
       {!isForening ? (
         <>
@@ -686,20 +652,8 @@ export function BrfForetagHome({ mode }: BrfForetagHomeProps) {
         </>
       ) : (
         <>
-          <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-                <p className="text-sm font-semibold text-primary-dark">
-                  Er förening
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-foreground">
-                  Rondering som styrelsen kan följa upp
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Schema, checklistor och signering samlat så att utebliven
-                  rondering eller städning blir svårare att missa.
-                </p>
-              </div>
+          <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <div className="max-w-xl">
               <div className="rounded-2xl border border-border bg-[#e8f3ec] p-6 sm:p-8">
                 <p className="text-sm font-semibold text-primary-dark">
                   Pris & avtal

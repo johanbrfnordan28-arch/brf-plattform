@@ -19,6 +19,10 @@ import {
 } from "@/lib/felanmalan/felanmalan-typer";
 import Link from "next/link";
 import { byggMedlemFelanmalanLank } from "@/lib/forening-medlem";
+import {
+  listaLokalFelanmalan,
+  sparaLokalFelanmalan,
+} from "@/lib/felanmalan/felanmalan-lokal";
 
 function formatDatum(iso: string): string {
   try {
@@ -41,6 +45,7 @@ export function FelanmalanModul() {
   const [kommentar, setKommentar] = useState("");
   const [vidareEpost, setVidareEpost] = useState("");
   const [sparar, setSparar] = useState(false);
+  const [lokalKopia, setLokalKopia] = useState(false);
 
   const vald = arenden.find((a) => a.id === valdId) ?? null;
 
@@ -61,6 +66,13 @@ export function FelanmalanModul() {
         arenden?: FelanmalanArendeDto[];
       };
       if (!res.ok) {
+        if (res.status === 503) {
+          setLokalKopia(true);
+          setArenden(listaLokalFelanmalan(foreningId));
+          setFel(null);
+          return;
+        }
+        setLokalKopia(false);
         if (res.status === 403 || res.status === 401) {
           setFel(
             "För att se och hantera inkomna ärenden: logga in med e-post och lösenord (styrelse-login). Medlemsformuläret ovan fungerar utan inloggning.",
@@ -71,6 +83,7 @@ export function FelanmalanModul() {
         setArenden([]);
         return;
       }
+      setLokalKopia(false);
       setArenden(data.arenden ?? []);
     } catch {
       setFel("Kunde inte nå servern.");
@@ -87,6 +100,22 @@ export function FelanmalanModul() {
     if (!foreningId || !vald) return;
     setSparar(true);
     setFel(null);
+    if (lokalKopia) {
+      const nu = new Date().toISOString();
+      const nasta: FelanmalanArendeDto = {
+        ...vald,
+        ...patch,
+        uppdateradTidpunkt: nu,
+      } as FelanmalanArendeDto;
+      const lista = listaLokalFelanmalan(foreningId).map((a) =>
+        a.id === vald.id ? nasta : a,
+      );
+      sparaLokalFelanmalan(foreningId, lista);
+      setArenden(lista);
+      setKommentar("");
+      setSparar(false);
+      return;
+    }
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -143,6 +172,8 @@ export function FelanmalanModul() {
           </Link>
           <Link
             href="/medlem"
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-lg border border-primary/40 px-3 py-2 text-xs font-medium text-primary-dark hover:bg-white"
           >
             Allmän medlemsportal
@@ -164,8 +195,9 @@ export function FelanmalanModul() {
           </button>
         </div>
         <p className="mt-1 text-sm text-muted">
-          Prioritera, tilldela entreprenör eller fastighetsskötare och spara
-          historik. Mejl vidare skickas till angiven adress.
+          {lokalKopia
+            ? "Databasen svarar inte här. Listan är de felanmälningar som sparats i den här webbläsaren."
+            : "Prioritera, tilldela entreprenör eller fastighetsskötare och spara historik. Mejl vidare skickas till angiven adress."}
         </p>
 
         {fel ? (

@@ -6,8 +6,11 @@ import { useHubbNamn } from "@/components/forening/useHubbNamn";
 
 export function ModuleBackLink() {
   const pathname = usePathname();
+  const isMedlem = pathname === "/medlem" || pathname.startsWith("/medlem/");
   const isForening = pathname.startsWith("/forening");
   const hubbNamn = useHubbNamn();
+
+  if (isMedlem) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">

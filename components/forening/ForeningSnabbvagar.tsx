@@ -63,7 +63,7 @@ export function ForeningSnabbvagar() {
               Vanliga verktyg för styrelsen
             </h2>
             <p className="mt-2 text-muted">
-              Samma moduler som i listan nedan — standard är de fyra översta.
+              De fyra verktyg ni använder oftast. Övriga moduler ligger under.
               Flytta om ordningen eller byt ut mot andra moduler.
             </p>
           </div>

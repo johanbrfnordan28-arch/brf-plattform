@@ -14,6 +14,7 @@ import {
 export function Footer() {
   const pathname = usePathname();
   const isForening = pathname.startsWith("/forening");
+  const isMedlem = pathname === "/medlem" || pathname.startsWith("/medlem/");
   const foreningsNamn = useAktivForeningsNamn();
   const kontakt = useStyrelseKontakt();
   const brand = isForening ? foreningsNamn : "Styrelse-Navet";
@@ -25,9 +26,11 @@ export function Footer() {
           <div>
             <p className="font-semibold text-foreground">{brand}</p>
             <p className="mt-1 max-w-md text-sm text-muted">
-              {isForening
-                ? "Er förenings sida — kopierad grundmall som anpassas med dokument, moduler och historik."
-                : "Grundmall för styrelser — upphandling, underhåll, offert och mer på ett ställe."}
+              {isMedlem
+                ? "Boende anmäler fel här. Sidan kräver ingen inloggning och öppnar inte styrelsens plattform."
+                : isForening
+                  ? "Er förenings sida — kopierad grundmall som anpassas med dokument, moduler och historik."
+                  : "Grundmall för styrelser — upphandling, underhåll, offert och mer på ett ställe."}
             </p>
           </div>
           <div className="flex flex-col items-start gap-2">
@@ -52,17 +55,17 @@ export function Footer() {
                 {PLATTFORM_STOD_EPOST}
               </a>
             </p>
-            {!isForening ? (
+            {!isForening && !isMedlem ? (
               <KontaktEpostLista
                 nycklar={["support", "info", "offert"]}
                 className="mt-1"
               />
-            ) : (
+            ) : isForening ? (
               <KontaktEpostLista
                 nycklar={["support", "offert"]}
                 className="mt-1"
               />
-            )}
+            ) : null}
             {isForening && (
               <Link
                 href="/"
@@ -71,7 +74,7 @@ export function Footer() {
                 Styrelse-Navets huvudsida
               </Link>
             )}
-            {!isForening && (
+            {!isForening && !isMedlem && (
               <Link
                 href="/offert"
                 className="text-sm font-medium text-primary-dark hover:underline"
@@ -97,7 +100,7 @@ export function Footer() {
           >
             Villkor
           </Link>
-          {!isForening ? (
+          {!isForening && !isMedlem ? (
             <>
               {" · "}
               <Link

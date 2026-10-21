@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { MedlemFelanmalanForm } from "@/components/felanmalan/MedlemFelanmalanForm";
@@ -14,7 +13,6 @@ import {
 } from "@/lib/forening-inloggning";
 import { sokForeningarForMedlem } from "@/lib/forening-sok-klient";
 import { listaForeningar, type ForeningProfil } from "@/lib/forening-registry";
-import { TEST_LOGIN_PATH } from "@/lib/forening-kund";
 
 function MedlemFelanmalanPortalInre() {
   const searchParams = useSearchParams();
@@ -163,17 +161,7 @@ function MedlemFelanmalanPortalInre() {
       </ul>
 
       <p className="border-t border-border pt-4 text-xs text-muted">
-        Styrelse eller förvaltare?{" "}
-        <Link
-          href={TEST_LOGIN_PATH}
-          className="font-medium text-primary-dark underline hover:no-underline"
-        >
-          Logga in till testperiod
-        </Link>
-        {" · "}
-        <Link href="/kund-login" className="font-medium text-primary-dark underline hover:no-underline">
-          Logga in som kund
-        </Link>
+        Boende loggar inte in. Styrelsen ser ärendet inne i föreningen.
       </p>
     </div>
   );
