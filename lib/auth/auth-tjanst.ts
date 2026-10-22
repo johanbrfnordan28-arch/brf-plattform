@@ -560,6 +560,48 @@ export async function loggaInStyrelseMedPersonnummerNyckel(opts: {
   };
 }
 
+/** Inloggning för personal efter verifierad Idura/BankID. */
+export async function loggaInPlattformMedPersonnummerNyckel(opts: {
+  personnummerNyckel: string;
+  ip?: string;
+  userAgent?: string;
+}): Promise<{ token: string }> {
+  const konto = await prisma.konto.findFirst({
+    where: {
+      personnummerNyckel: opts.personnummerNyckel,
+      aktiv: true,
+    },
+  });
+  if (!konto) throw new Error("BANKID_KOPPLA");
+  if (konto.typ !== "PLATTFORM") {
+    throw new Error(
+      "Detta BankID är kopplat till en förening, inte till personal.",
+    );
+  }
+
+  await prisma.konto.update({
+    where: { id: konto.id },
+    data: { senasteInloggning: new Date() },
+  });
+  await loggaInloggning({
+    kontoId: konto.id,
+    epost: konto.epost,
+    typ: "PLATTFORM",
+    lyckad: true,
+    ip: opts.ip,
+    userAgent: opts.userAgent,
+  });
+
+  const session: Omit<SessionPayload, "exp"> = {
+    kontoId: konto.id,
+    epost: konto.epost,
+    namn: konto.namn,
+    typ: "PLATTFORM",
+    foreningId: null,
+  };
+  return { token: skapaSessionToken(session) };
+}
+
 /** Kopplar BankID till konto efter lyckad e-postinloggning (engångs pending-cookie). */
 export async function kopplaPersonnummerTillKonto(opts: {
   kontoId: string;
@@ -687,6 +729,8 @@ export type PlattformAnvandareRad = {
   senasteInloggning: string | null;
   skapadTidpunkt: string;
   arAllowlist: boolean;
+  /** Sant när personnumret från BankID är knutet till kontot. Själva nyckeln lämnas inte ut. */
+  bankidKopplad: boolean;
 };
 
 export async function listaPlattformAnvandare(): Promise<PlattformAnvandareRad[]> {
@@ -702,6 +746,7 @@ export async function listaPlattformAnvandare(): Promise<PlattformAnvandareRad[]
     senasteInloggning: k.senasteInloggning?.toISOString() ?? null,
     skapadTidpunkt: k.skapadTidpunkt.toISOString(),
     arAllowlist: arPlattformAdminEpost(k.epost),
+    bankidKopplad: Boolean(k.personnummerNyckel),
   }));
 }
 
@@ -741,6 +786,7 @@ export async function skapaPlattformAnvandare(opts: {
       senasteInloggning: uppdaterad.senasteInloggning?.toISOString() ?? null,
       skapadTidpunkt: uppdaterad.skapadTidpunkt.toISOString(),
       arAllowlist: arPlattformAdminEpost(uppdaterad.epost),
+      bankidKopplad: Boolean(uppdaterad.personnummerNyckel),
     };
   }
 
@@ -765,6 +811,7 @@ export async function skapaPlattformAnvandare(opts: {
     senasteInloggning: null,
     skapadTidpunkt: skapad.skapadTidpunkt.toISOString(),
     arAllowlist: arPlattformAdminEpost(skapad.epost),
+    bankidKopplad: false,
   };
 }
 
@@ -812,6 +859,7 @@ export async function uppdateraPlattformAnvandare(opts: {
     senasteInloggning: uppdaterad.senasteInloggning?.toISOString() ?? null,
     skapadTidpunkt: uppdaterad.skapadTidpunkt.toISOString(),
     arAllowlist: arPlattformAdminEpost(uppdaterad.epost),
+    bankidKopplad: Boolean(uppdaterad.personnummerNyckel),
   };
 }
 

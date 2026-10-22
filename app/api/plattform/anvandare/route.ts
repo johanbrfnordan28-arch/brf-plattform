@@ -36,6 +36,7 @@ export async function GET() {
         senasteInloggning: null,
         skapadTidpunkt: new Date().toISOString(),
         arAllowlist: true,
+        bankidKopplad: false,
       };
     });
     return NextResponse.json({ anvandare, demoLage: true });

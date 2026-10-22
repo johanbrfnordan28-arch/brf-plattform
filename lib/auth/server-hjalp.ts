@@ -87,7 +87,7 @@ export async function sakraPlattformAdminKonton(
             `E-post: ${epostNyckel}`,
             `Kod: ${losenord}`,
             "",
-            "Logga in med e-post och kod. BankID kommer snart.",
+            "Logga in med e-post och kod, eller med BankID. Första gången med BankID loggar ni in med koden direkt efteråt, så att BankID kopplas till kontot.",
             "Byt kod/lösenord efter inloggning. Kontot syns inte för styrelser.",
           ].join("\n"),
         });

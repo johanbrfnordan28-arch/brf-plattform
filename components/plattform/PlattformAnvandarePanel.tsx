@@ -10,6 +10,7 @@ type Anvandare = {
   senasteInloggning: string | null;
   skapadTidpunkt: string;
   arAllowlist: boolean;
+  bankidKopplad?: boolean;
 };
 
 function formatTid(iso: string | null): string {
@@ -145,8 +146,9 @@ export function PlattformAnvandarePanel() {
       <p className="mt-1 text-sm text-muted">
         Lägg till kollegor och sätt kod/lösenord. Seif
         (s.alamerison@sveabygg.se) skapas automatiskt vid personalinloggning med
-        lösenord Seif2026. BankID kommer snart — tills dess loggar ni in med
-        e-post och kod.
+        lösenord Seif2026. BankID finns på personalinloggningen. Första gången
+        loggar ni in med e-post och kod direkt efter BankID, så att det kopplas
+        till kontot. Listan visar om kopplingen är gjord.
       </p>
 
       {fel ? (
@@ -215,6 +217,7 @@ export function PlattformAnvandarePanel() {
             <tr>
               <th className="py-2 pr-3">Namn / e-post</th>
               <th className="py-2 pr-3">Status</th>
+              <th className="py-2 pr-3">BankID</th>
               <th className="py-2 pr-3">Senaste inloggning</th>
               <th className="py-2">Åtgärder</th>
             </tr>
@@ -245,6 +248,13 @@ export function PlattformAnvandarePanel() {
                     <span className="text-primary-dark">Aktiv</span>
                   ) : (
                     <span className="text-amber-800">Inaktiv</span>
+                  )}
+                </td>
+                <td className="py-3 pr-3">
+                  {rad.bankidKopplad ? (
+                    <span className="text-primary-dark">Kopplad</span>
+                  ) : (
+                    <span className="text-muted">Inte kopplad</span>
                   )}
                 </td>
                 <td className="py-3 pr-3 whitespace-nowrap text-muted">
@@ -309,14 +319,14 @@ export function PlattformAnvandarePanel() {
             ))}
             {!laddar && anvandare.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-4 text-muted">
+                <td colSpan={5} className="py-4 text-muted">
                   Inga personalanvändare ännu.
                 </td>
               </tr>
             ) : null}
             {laddar ? (
               <tr>
-                <td colSpan={4} className="py-4 text-muted">
+                <td colSpan={5} className="py-4 text-muted">
                   Laddar …
                 </td>
               </tr>

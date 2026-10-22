@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { loggaInStyrelseMedPersonnummerNyckel } from "@/lib/auth/auth-tjanst";
+import {
+  loggaInPlattformMedPersonnummerNyckel,
+  loggaInStyrelseMedPersonnummerNyckel,
+} from "@/lib/auth/auth-tjanst";
+import { PLATTFORM_LOGIN_PATH, PLATTFORM_START_PATH } from "@/lib/auth/projekt-admin";
 import {
   hamtaIduraRedirectUri,
   iduraArKonfigurerad,
@@ -84,6 +88,28 @@ export async function GET(req: Request) {
     await rensaIduraOAuthCookies();
 
     const meta = hamtaRequestMeta(req);
+    if (loginSida === PLATTFORM_LOGIN_PATH) {
+      try {
+        const resultat = await loggaInPlattformMedPersonnummerNyckel({
+          personnummerNyckel: pending.personnummerNyckel,
+          ...meta,
+        });
+        await skrivSessionCookie(resultat.token);
+        const mal =
+          returnTo === "/auth/idura/klar" ? PLATTFORM_START_PATH : returnTo;
+        return NextResponse.redirect(new URL(mal, url.origin));
+      } catch (e) {
+        if (e instanceof Error && e.message === "BANKID_KOPPLA") {
+          await sparaIduraPendingPersonnummer(pending);
+          const koppla = new URL(loginSida, url.origin);
+          koppla.searchParams.set("bankid", "koppla");
+          if (pending.namn) koppla.searchParams.set("namn", pending.namn);
+          return NextResponse.redirect(koppla);
+        }
+        throw e;
+      }
+    }
+
     try {
       const resultat = await loggaInStyrelseMedPersonnummerNyckel({
         personnummerNyckel: pending.personnummerNyckel,

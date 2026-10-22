@@ -46,7 +46,7 @@ export function skapaIduraNonce(): string {
   return randomBytes(24).toString("base64url");
 }
 
-const LOGIN_SIDOR = ["/styrelse-login", "/kund-login"] as const;
+const LOGIN_SIDOR = ["/styrelse-login", "/kund-login", "/plattform-login"] as const;
 export type IduraLoginSida = (typeof LOGIN_SIDOR)[number];
 
 /** Inloggningssidan BankID startades från — dit skickas fel och kopplingssteg tillbaka. */
