@@ -37,6 +37,7 @@ export function TecknaAvtalSida() {
   const [undertecknare, setUndertecknare] = useState<AvtalsUndertecknareVal[]>(
     [],
   );
+  const [bekraftat, setBekraftat] = useState(false);
   const laddadForening = useRef("");
 
   const ladda = useCallback(() => {
@@ -133,10 +134,17 @@ export function TecknaAvtalSida() {
           ledamoter={profil.styrelseledamoter}
           personer={undertecknare}
           onChange={andraUndertecknare}
+          bekraftat={bekraftat}
+          onBekraftatChange={setBekraftat}
         />
       )}
 
-      <ForeningAvtalPanel doljDokument={Boolean(egen && profil)} />
+      {!(egen && profil && !kund) && (
+        <ForeningAvtalPanel
+          doljDokument={Boolean(egen && profil)}
+          doljPris={Boolean(egen && profil)}
+        />
+      )}
 
       {egen && profil && (
         <ForeningFakturaUppgifter profil={profil} onSparad={setProfil} />

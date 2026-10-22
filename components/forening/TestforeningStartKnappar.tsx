@@ -43,7 +43,7 @@ export function TestforeningStartKnappar({ variant }: { variant: Variant }) {
         </Link>
       )}
       <Link href={TEST_LOGIN_PATH} className={loginKlass}>
-        Logga in på testförening
+        Pröva på förening
       </Link>
     </>
   );

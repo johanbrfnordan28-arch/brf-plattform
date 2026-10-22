@@ -14,6 +14,7 @@ import {
 } from "@/lib/forening-kund";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { dagarKvarAvProvoperiod } from "@/lib/forening-avtal";
+import { FORENING_MODULER } from "@/lib/forening-moduler";
 import {
   FORENING_AKTIV_EVENT,
   GRUNDMALL_NAMN,
@@ -49,6 +50,23 @@ const nav = [
   },
 ];
 
+const navKnapp =
+  "rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors";
+const navAktiv =
+  "border-primary bg-primary text-white shadow-[0_0_0_3px_rgba(90,154,110,0.35)]";
+const navVilande =
+  "border-transparent bg-white/70 text-muted hover:border-primary/40 hover:bg-[#eef6f0] hover:text-primary-dark";
+
+/** Modul som inte redan finns som egen menyknapp. */
+function arbetsModul(pathname: string) {
+  const traff = FORENING_MODULER.find((modul) => {
+    const full = `/forening${modul.path}`;
+    return pathname === full || pathname.startsWith(`${full}/`);
+  });
+  if (!traff || traff.visaPaHubb === false || traff.id === "guider") return null;
+  return traff;
+}
+
 function testperiodEtikett(dagarKvar: number | null): string {
   if (dagarKvar == null) return "Testperiod";
   if (dagarKvar <= 0) return "0 dagar kvar";
@@ -63,6 +81,7 @@ export function ForeningHeader() {
   const [inloggad, setInloggad] = useState(false);
   const [visaTecknaAvtal, setVisaTecknaAvtal] = useState(false);
   const [dagarKvar, setDagarKvar] = useState<number | null>(null);
+  const aktivModul = arbetsModul(pathname);
   const visatNamn = foreningsNamn.trim() || "Föreningsportal";
   const initial =
     visatNamn === GRUNDMALL_NAMN
@@ -90,7 +109,8 @@ export function ForeningHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="flex items-center justify-between gap-4 py-3">
         <Link href="/forening" className="flex min-w-0 shrink-0 items-center gap-2">
           <span
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white"
@@ -102,27 +122,6 @@ export function ForeningHeader() {
             {visatNamn}
           </span>
         </Link>
-        <nav
-          className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm font-medium text-muted sm:gap-x-4"
-          aria-label="Föreningsmeny"
-        >
-          {nav.map((item) => {
-            const aktiv = item.aktivPa(pathname);
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                  aktiv
-                    ? "border-primary bg-[#eef6f0] text-primary-dark"
-                    : "border-primary/45 bg-white text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {visaTecknaAvtal && (
             <Link
@@ -146,12 +145,55 @@ export function ForeningHeader() {
           ) : (
             <Link
               href={arKund ? KUND_LOGIN_PATH : TEST_LOGIN_PATH}
-              className="inline-flex h-9 items-center whitespace-nowrap rounded-lg bg-primary px-3.5 text-sm font-semibold text-white hover:bg-primary-dark"
+              className="inline-flex h-9 items-center whitespace-nowrap rounded-lg border border-primary/45 bg-white px-3.5 text-sm font-semibold text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
             >
-              {arKund ? "Logga in" : "Logga in på testförening"}
+              {arKund ? "Logga in" : "Pröva på förening"}
             </Link>
           )}
         </div>
+      </div>
+      <nav
+        className="flex flex-wrap items-center gap-2 pb-3"
+        aria-label="Föreningsmeny"
+      >
+        {nav.map((item) => {
+          const aktiv = item.aktivPa(pathname);
+          return (
+            <span key={item.label} className="contents">
+              <Link
+                href={item.href}
+                aria-current={aktiv ? "page" : undefined}
+                className={`${navKnapp} ${aktiv ? navAktiv : navVilande}`}
+                style={
+                  aktiv
+                    ? {
+                        backgroundColor: "var(--primary)",
+                        color: "#fff",
+                        boxShadow: "0 0 0 3px rgba(90, 154, 110, 0.35)",
+                      }
+                    : undefined
+                }
+              >
+                {item.label}
+              </Link>
+              {item.label === "Moduler" && aktivModul ? (
+                <Link
+                  href={`/forening${aktivModul.path}`}
+                  aria-current="page"
+                  className={`${navKnapp} ${navAktiv}`}
+                  style={{
+                    backgroundColor: "var(--primary)",
+                    color: "#fff",
+                    boxShadow: "0 0 0 3px rgba(90, 154, 110, 0.35)",
+                  }}
+                >
+                  {aktivModul.title}
+                </Link>
+              ) : null}
+            </span>
+          );
+        })}
+      </nav>
       </div>
     </header>
   );

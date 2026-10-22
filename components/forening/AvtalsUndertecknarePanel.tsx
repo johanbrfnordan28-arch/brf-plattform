@@ -8,6 +8,12 @@ import {
   undertecknareSaknas,
   type AvtalsUndertecknareVal,
 } from "@/lib/avtal-undertecknare-val";
+import {
+  AVTAL_LANGD_AR,
+  AVTAL_UPPSAGNING_MANADER,
+  PROVOPERIODE_DAGAR,
+} from "@/lib/forening-avtal";
+import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 
 type Props = {
@@ -16,6 +22,9 @@ type Props = {
   ledamoter: StyrelseLedamot[];
   personer: AvtalsUndertecknareVal[];
   onChange: (personer: AvtalsUndertecknareVal[]) => void;
+  /** Bekräftelse som tidigare låg i en egen ruta längre ner. */
+  bekraftat?: boolean;
+  onBekraftatChange?: (checked: boolean) => void;
 };
 
 function mejlAdressOk(epost: string): boolean {
@@ -49,6 +58,8 @@ export function AvtalsUndertecknarePanel({
   ledamoter,
   personer,
   onChange,
+  bekraftat = false,
+  onBekraftatChange,
 }: Props) {
   const [skickar, setSkickar] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -92,6 +103,10 @@ export function AvtalsUndertecknarePanel({
     const utanMejl = personer.filter(
       (p) => !undertecknareSaknas(p) && !mejlAdressOk(p.epost),
     );
+    if (onBekraftatChange && !bekraftat) {
+      setFel("Bekräfta att ni är behöriga att teckna avtalet.");
+      return;
+    }
     if (saknade > 0 || personer.some((p) => !mejlAdressOk(p.epost))) {
       setFel(
         saknade > 0
@@ -102,7 +117,7 @@ export function AvtalsUndertecknarePanel({
     }
     setSkickar(true);
     try {
-      const lank = `${window.location.origin}/forening/teckna-avtal#signera`;
+      const lank = `${window.location.origin}/forening/uppgifter#signera`;
       for (const person of personer) {
         await registreraOverenskommelseMejl({
           till: person.epost.trim(),
@@ -140,6 +155,26 @@ export function AvtalsUndertecknarePanel({
         mejladressen. Mejlet innehåller avtalet och en länk där personen
         signerar med BankID.
       </p>
+      {onBekraftatChange ? (
+        <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={bekraftat}
+            onChange={(e) => {
+              onBekraftatChange(e.target.checked);
+              setFel(null);
+            }}
+            className="mt-1"
+          />
+          <span>
+            Jag är behörig att teckna avtal för <strong>{foreningsNamn}</strong>{" "}
+            och godkänner villkoren i avtalet ovan (prövoperiod{" "}
+            {PROVOPERIODE_DAGAR} dagar, därefter årsavtal {AVTAL_LANGD_AR} år,
+            uppsägningstid {AVTAL_UPPSAGNING_MANADER} månader,{" "}
+            {ARSAVTAL_RABATT_PROCENT}&nbsp;% årsrabatt och KPI-justering).
+          </span>
+        </label>
+      ) : null}
       {saknade > 0 && (
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           {saknade === 1
@@ -252,7 +287,7 @@ export function AvtalsUndertecknarePanel({
       <button
         type="button"
         onClick={() => void skickaMejl()}
-        disabled={skickar}
+        disabled={skickar || (Boolean(onBekraftatChange) && !bekraftat)}
         className="brf-knapp-gron mt-4 px-5 py-2.5 text-sm disabled:opacity-50"
       >
         {skickar ? "Skickar mejl…" : "Skicka mejl med avtal för BankID-signering"}

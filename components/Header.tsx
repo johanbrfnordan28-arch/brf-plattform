@@ -47,7 +47,7 @@ export function Header() {
           ...(harSkapadTest === false
             ? [{ href: PROVA_GRATIS_PATH, label: "Skapa förening" }]
             : []),
-          { href: TEST_LOGIN_PATH, label: "Logga in på testförening" },
+          { href: TEST_LOGIN_PATH, label: "Pröva på förening" },
           { href: KUND_LOGIN_PATH, label: "Logga in" },
         ];
 
@@ -104,8 +104,7 @@ export function Header() {
                     : `${loggaInKlass} hidden sm:inline-flex`
                 }
               >
-                <span className="sm:hidden">Testförening</span>
-                <span className="hidden sm:inline">Logga in på testförening</span>
+                Pröva på förening
               </Link>
               <Link href={KUND_LOGIN_PATH} className={loggaInKlass}>
                 Logga in

@@ -33,17 +33,17 @@ export function SkapaEllerTestinloggning({
     return (
       <div className={`brf-panel-gron ${kompakt ? "p-5" : "p-6 sm:p-8"}`}>
         <h2 className="text-lg font-bold text-foreground sm:text-xl">
-          Logga in på testföreningen
+          Pröva på föreningen
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Föreningen är skapad. Logga in för att fortsätta provperioden. Knappen
-          Logga in i menyn är för föreningar som har tecknat avtal.
+          Föreningen är skapad. Öppna den för att fortsätta provperioden.
+          Knappen Logga in i menyn är för föreningar som har tecknat avtal.
         </p>
         <Link
           href={TEST_LOGIN_PATH}
           className="brf-knapp-gron mt-5 inline-flex px-6 py-3 text-base"
         >
-          Logga in på testförening
+          Pröva på förening
         </Link>
         <button
           type="button"

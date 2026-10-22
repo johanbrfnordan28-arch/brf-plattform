@@ -321,7 +321,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
           href="/styrelse-login"
           className="mt-3 block text-sm font-medium text-primary-dark hover:underline"
         >
-          Logga in på testförening
+          Pröva på förening
         </Link>
       </div>
     );
@@ -689,7 +689,7 @@ export function SkapaForeningPanel({ kompakt = false }: Props) {
             href={TEST_LOGIN_PATH}
             className="inline-flex items-center rounded-lg border border-primary/45 bg-white px-5 py-3 text-sm font-semibold text-primary-dark hover:border-primary hover:bg-[#eef6f0]"
           >
-            Logga in på testförening
+            Pröva på förening
           </Link>
         </div>
       </form>
