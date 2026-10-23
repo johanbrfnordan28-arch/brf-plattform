@@ -48,7 +48,7 @@ export async function exporteraPerson(epostRaw: string) {
     where: { epostNyckel: epost },
     include: { medlemskap: { include: { forening: true } } },
   });
-  const [inloggningar, leads, felanmalan, mejl] = await Promise.all([
+  const [inloggningar, leads, felanmalan, mejl, offerter] = await Promise.all([
     prisma.inloggningsHistorik.findMany({
       where: { OR: [{ epost: { equals: epost, mode: "insensitive" } }, ...(konto ? [{ kontoId: konto.id }] : [])] },
       orderBy: { tidpunkt: "asc" },
@@ -59,6 +59,7 @@ export async function exporteraPerson(epostRaw: string) {
       include: { forening: { select: { namn: true } } },
     }),
     prisma.mejlOutbox.findMany({ where: { till: { equals: epost, mode: "insensitive" } } }),
+    prisma.offertForfragan.findMany({ where: { epost } }),
   ]);
 
   return {
@@ -88,6 +89,7 @@ export async function exporteraPerson(epostRaw: string) {
       ...arende,
     })),
     skickadeMejl: mejl,
+    offertforfragningar: offerter,
   };
 }
 
@@ -97,6 +99,7 @@ export type RaderaPersonResultat = {
   intresseanmalningar: number;
   felanmalningarAnonymiserade: number;
   mejl: number;
+  offertforfragningar: number;
 };
 
 /**
@@ -145,12 +148,14 @@ export async function raderaPerson(
       data: { medlemNamn: ANONYM_NAMN, medlemEpost: "", medlemTelefon: "" },
     });
     const mejl = await tx.mejlOutbox.deleteMany({ where: { till: { equals: epost, mode: "insensitive" } } });
+    const offerter = await tx.offertForfragan.deleteMany({ where: { epost } });
     return {
       kontoRaderat: Boolean(konto),
       inloggningar: inloggningar.count,
       intresseanmalningar: leads.count,
       felanmalningarAnonymiserade: felanmalan.count,
       mejl: mejl.count,
+      offertforfragningar: offerter.count,
     };
   });
 }

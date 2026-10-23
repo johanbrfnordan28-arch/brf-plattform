@@ -36,7 +36,7 @@ export function PlattformGdprPanel() {
       }
       const r = data.resultat;
       setMeddelande(
-        `Klart. Konto ${r.kontoRaderat ? "raderat" : "fanns inte"}, ${r.inloggningar} inloggningar, ${r.intresseanmalningar} intresseanmälningar och ${r.mejl} mejl raderade, ${r.felanmalningarAnonymiserade} felanmälningar anonymiserade.`,
+        `Klart. Konto ${r.kontoRaderat ? "raderat" : "fanns inte"}, ${r.inloggningar} inloggningar, ${r.intresseanmalningar} intresseanmälningar, ${r.offertforfragningar} offertförfrågningar och ${r.mejl} mejl raderade, ${r.felanmalningarAnonymiserade} felanmälningar anonymiserade.`,
       );
       setBekrafta("");
     } catch {
@@ -54,7 +54,7 @@ export function PlattformGdprPanel() {
       <p className="mt-1 text-sm text-muted">
         När någon begär ut eller vill få sina uppgifter raderade. Sök på
         e-postadressen. Exporten innehåller konto, styrelseuppdrag,
-        inloggningshistorik, intresseanmälningar, felanmälningar och skickade
+        inloggningshistorik, intresseanmälningar, offertförfrågningar, felanmälningar och skickade
         mejl. Gäller begäran en hel förening använder ni «Exportera data» i
         föreningslistan ovan.
       </p>
@@ -95,7 +95,7 @@ export function PlattformGdprPanel() {
       <div className="mt-5 rounded-xl border border-red-200 bg-red-50/60 p-4">
         <p className="text-sm font-semibold text-red-950">Radera personen</p>
         <p className="mt-1 text-xs text-red-900">
-          Raderar konto, inloggningshistorik, intresseanmälningar och mejl.
+          Raderar konto, inloggningshistorik, intresseanmälningar, offertförfrågningar och mejl.
           Felanmälningar tillhör föreningen och anonymiseras i stället. Gäller
           det en boende bör begäran normalt komma via föreningen. Går inte att
           ångra.
