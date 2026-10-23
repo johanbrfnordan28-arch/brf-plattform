@@ -124,13 +124,26 @@ ${INLINE_AKTIVERA_BODY}
 `.trim();
 }
 
+/**
+ * JSON som ska ligga i en script-tagg. `<` måste bli \\u003c, annars kan
+ * ett namn som innehåller `</script>` avsluta taggen och köra egen kod.
+ */
+function inbaddadJsStrang(value: string): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 /** Inline-skript på /forening när ny=1 — sparar profil innan React hydrerar. */
 export function genereraForeningBootstrapInlineScript(
   foreningId: string,
   namn: string,
 ): string {
-  const id = JSON.stringify(foreningId);
-  const namnJson = JSON.stringify(namn);
+  const id = inbaddadJsStrang(foreningId);
+  const namnJson = inbaddadJsStrang(namn);
   return `
 (function () {
   try {

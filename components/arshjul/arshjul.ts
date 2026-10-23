@@ -80,6 +80,28 @@ export type ArshjulHandelse = {
   skapad: string;
   externKalla?: "underhallsplan" | "projekt" | "manuell";
   externId?: string;
+  /** Senast anlitad leverantör eller entreprenör. */
+  leverantor?: string;
+  /** Saker som ska hanteras, en rad per punkt. */
+  attHantera?: string[];
+  /** Dagordningar och liknande, sparade i webbläsaren. */
+  bilagor?: ArshjulBilaga[];
+  /** Förberett för senare BankID-godkännande. Ingen signering sker här. */
+  bankid?: ArshjulBankidForberedelse;
+};
+
+export type ArshjulBilaga = {
+  id: string;
+  filnamn: string;
+  /** Data-URL för små filer. */
+  dataUrl: string;
+};
+
+export type ArshjulBankidForberedelse = {
+  namn: string;
+  epost: string;
+  /** Punkten är markerad så att den kan godkännas med BankID senare. */
+  forberedd: boolean;
 };
 
 export type ArshjulTillfalle = {
@@ -135,7 +157,7 @@ export const kategoriEtiketter: Record<ArshjulKategori, string> = {
   upphandlingsmote: "Upphandlingsmöte",
   startmote: "Startmöte",
   byggmote: "Byggmöte",
-  besiktningEntreprenad: "Besiktning entreprenad",
+  besiktningEntreprenad: "Slutbesiktning",
   garantbesiktning: "Garantibesiktning (2-årsbesiktning)",
   ovk: "OVK-besiktning",
   sotning: "Sotning",
@@ -180,6 +202,22 @@ export const MOTESKEDJA_KATEGORIER: ArshjulKategori[] = [
   "besiktningEntreprenad",
   "garantbesiktning",
 ];
+
+/** Möteskedjan sist, i ordning från projektering till garantibesiktning. */
+export function sorteraHandelser(lista: ArshjulHandelse[]): ArshjulHandelse[] {
+  return lista
+    .map((h, index) => ({ h, index }))
+    .sort((a, b) => {
+      const ai = MOTESKEDJA_KATEGORIER.indexOf(a.h.kategori);
+      const bi = MOTESKEDJA_KATEGORIER.indexOf(b.h.kategori);
+      const aSist = ai >= 0;
+      const bSist = bi >= 0;
+      if (aSist !== bSist) return aSist ? 1 : -1;
+      if (aSist && bSist && ai !== bi) return ai - bi;
+      return a.index - b.index;
+    })
+    .map((rad) => rad.h);
+}
 
 export const manadsnamn = [
   "Januari",
@@ -325,7 +363,53 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
         ? exkluderaManader
         : undefined,
     utanFastDatum: Boolean(raw.utanFastDatum),
+    leverantor: raw.leverantor?.trim() || undefined,
+    attHantera: rensaAttHantera(raw.attHantera),
+    bilagor: rensaBilagor(raw.bilagor),
+    bankid: rensaBankid(raw.bankid),
   };
+}
+
+function rensaAttHantera(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rader = value
+    .filter((rad): rad is string => typeof rad === "string")
+    .map((rad) => rad.trim())
+    .filter(Boolean)
+    .slice(0, 40);
+  return rader.length > 0 ? rader : undefined;
+}
+
+function rensaBilagor(value: unknown): ArshjulBilaga[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const bilagor = value
+    .map((rad) => {
+      if (!rad || typeof rad !== "object") return null;
+      const post = rad as Partial<ArshjulBilaga>;
+      const dataUrl =
+        typeof post.dataUrl === "string" && post.dataUrl.startsWith("data:")
+          ? post.dataUrl.slice(0, 400_000)
+          : "";
+      const filnamn =
+        typeof post.filnamn === "string" ? post.filnamn.trim().slice(0, 180) : "";
+      const id = typeof post.id === "string" ? post.id.slice(0, 40) : "";
+      if (!id || !filnamn || !dataUrl) return null;
+      return { id, filnamn, dataUrl };
+    })
+    .filter((rad): rad is ArshjulBilaga => rad !== null)
+    .slice(0, 6);
+  return bilagor.length > 0 ? bilagor : undefined;
+}
+
+function rensaBankid(
+  value: ArshjulBankidForberedelse | undefined,
+): ArshjulBankidForberedelse | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const namn = typeof value.namn === "string" ? value.namn.trim().slice(0, 120) : "";
+  const epost =
+    typeof value.epost === "string" ? value.epost.trim().slice(0, 160) : "";
+  if (!namn && !epost && !value.forberedd) return undefined;
+  return { namn, epost, forberedd: Boolean(value.forberedd) };
 }
 
 function parseDatum(iso: string): Date | null {
@@ -851,80 +935,6 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       skapad: "standard",
       externKalla: "manuell",
     }),
-    skapaSerieMall({
-      id: "std-projektering",
-      titel: "Projekteringsmöte",
-      beskrivning:
-        "Första steget i möteskedjan. Utöka antalet om projekteringen behöver fler möten.",
-      kategori: "projekteringsmote",
-      antal: 2,
-      varje: 2,
-      enhet: "vecka",
-      startIso: projekteringStart,
-      veckodag: 2,
-    }),
-    skapaSerieMall({
-      id: "std-upphandling",
-      titel: "Upphandlingsmöte",
-      beskrivning:
-        "Upphandling efter projektering. Utöka serien om anbudsrundan behöver fler möten.",
-      kategori: "upphandlingsmote",
-      antal: 2,
-      varje: 2,
-      enhet: "vecka",
-      startIso: upphandlingStart,
-      veckodag: 2,
-    }),
-    skapaSerieMall({
-      id: "std-startmote",
-      titel: "Startmöte",
-      beskrivning:
-        "Startmöte innan produktion. Lägg till fler i samma händelse om det behövs.",
-      kategori: "startmote",
-      antal: 1,
-      varje: 2,
-      enhet: "vecka",
-      startIso: startmoteStart,
-      veckodag: 4,
-    }),
-    skapaSerieMall({
-      id: "std-byggmote",
-      titel: "Byggmöte",
-      beskrivning:
-        "Byggmöten under entreprenaden — numrerade i ordning. Utöka antalet när byggtiden blir längre.",
-      kategori: "byggmote",
-      antal: 6,
-      varje: 4,
-      enhet: "vecka",
-      startIso: byggStart,
-      veckodag: 4,
-      paminnelseDagar: [7, 1],
-    }),
-    skapaSerieMall({
-      id: "std-besiktning-entreprenad",
-      titel: "Besiktning entreprenad",
-      beskrivning:
-        "Slutbesiktning av entreprenaden. Utöka om ni har delbesiktningar.",
-      kategori: "besiktningEntreprenad",
-      antal: 1,
-      varje: 2,
-      enhet: "vecka",
-      startIso: besiktningStart,
-      veckodag: 2,
-      paminnelseDagar: [30, 14, 7],
-    }),
-    skapaSerieMall({
-      id: "std-garant",
-      titel: "Garantibesiktning (2-årsbesiktning)",
-      beskrivning:
-        "Garantibesiktning två år efter entreprenadbesiktning. Justera datumet när slutbesiktningen är klardatum.",
-      kategori: "garantbesiktning",
-      antal: 1,
-      varje: 1,
-      enhet: "manad",
-      startIso: garantStart,
-      paminnelseDagar: [180, 90, 30, 14],
-    }),
     normaliseraHandelse({
       id: "std-ovk-bostad",
       titel: "OVK — bostäder",
@@ -1029,6 +1039,80 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       skapad: "standard",
       externKalla: "manuell",
     }),
+    skapaSerieMall({
+      id: "std-projektering",
+      titel: "Projekteringsmöte",
+      beskrivning:
+        "Första steget i möteskedjan. Utöka antalet om projekteringen behöver fler möten.",
+      kategori: "projekteringsmote",
+      antal: 2,
+      varje: 2,
+      enhet: "vecka",
+      startIso: projekteringStart,
+      veckodag: 2,
+    }),
+    skapaSerieMall({
+      id: "std-upphandling",
+      titel: "Upphandlingsmöte",
+      beskrivning:
+        "Upphandling efter projektering. Utöka serien om anbudsrundan behöver fler möten.",
+      kategori: "upphandlingsmote",
+      antal: 2,
+      varje: 2,
+      enhet: "vecka",
+      startIso: upphandlingStart,
+      veckodag: 2,
+    }),
+    skapaSerieMall({
+      id: "std-startmote",
+      titel: "Startmöte",
+      beskrivning:
+        "Startmöte innan produktion. Lägg till fler i samma händelse om det behövs.",
+      kategori: "startmote",
+      antal: 1,
+      varje: 2,
+      enhet: "vecka",
+      startIso: startmoteStart,
+      veckodag: 4,
+    }),
+    skapaSerieMall({
+      id: "std-byggmote",
+      titel: "Byggmöte",
+      beskrivning:
+        "Byggmöten under entreprenaden — numrerade i ordning. Utöka antalet när byggtiden blir längre.",
+      kategori: "byggmote",
+      antal: 6,
+      varje: 4,
+      enhet: "vecka",
+      startIso: byggStart,
+      veckodag: 4,
+      paminnelseDagar: [7, 1],
+    }),
+    skapaSerieMall({
+      id: "std-besiktning-entreprenad",
+      titel: "Slutbesiktning",
+      beskrivning:
+        "Slutbesiktning av entreprenaden. Utöka om ni har delbesiktningar.",
+      kategori: "besiktningEntreprenad",
+      antal: 1,
+      varje: 2,
+      enhet: "vecka",
+      startIso: besiktningStart,
+      veckodag: 2,
+      paminnelseDagar: [30, 14, 7],
+    }),
+    skapaSerieMall({
+      id: "std-garant",
+      titel: "Garantibesiktning (2-årsbesiktning)",
+      beskrivning:
+        "Garantibesiktning två år efter slutbesiktningen. Justera datumet när slutbesiktningen är klardatum.",
+      kategori: "garantbesiktning",
+      antal: 1,
+      varje: 1,
+      enhet: "manad",
+      startIso: garantStart,
+      paminnelseDagar: [180, 90, 30, 14],
+    }),
   ];
 }
 
@@ -1065,6 +1149,12 @@ export function migreraArshjulHandelser(
         titel: "Garantibesiktning (2-årsbesiktning)",
       });
     }
+    if (
+      h.kategori === "besiktningEntreprenad" &&
+      h.titel === "Besiktning entreprenad"
+    ) {
+      return normaliseraHandelse({ ...h, titel: "Slutbesiktning" });
+    }
     return h;
   });
 }
@@ -1076,7 +1166,7 @@ export function fyllPaStandardHandelser(
   const migrerade = migreraArshjulHandelser(befintliga);
   const ids = new Set(migrerade.map((h) => h.id));
   const tillagg = skapaStandardHandelser().filter((h) => !ids.has(h.id));
-  return [...migrerade, ...tillagg];
+  return sorteraHandelser([...migrerade, ...tillagg]);
 }
 
 /** Förval när styrelsen väljer en möteskedje-kategori i formuläret. */

@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
-import { skickaMejl } from "@/lib/auth/mejl";
 import { harStyrelseBehorighet } from "@/lib/auth/styrelse-behorighet";
-import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
-import {
-  arFakturaUppgifterKlara,
-  byggFakturaMejl,
-  kvartalsperiod,
-  type ForeningFakturaUppgifter,
-} from "@/lib/forening-faktura";
-import { beraknaPris } from "@/lib/prislista";
+import { meddelaSigneratKundavtal } from "@/lib/forening-avtal-meddelande";
+import type { ForeningFakturaUppgifter } from "@/lib/forening-faktura";
 
-function lasFaktura(body: unknown): ForeningFakturaUppgifter | null {
-  if (!body || typeof body !== "object") return null;
-  const o = body as Partial<ForeningFakturaUppgifter>;
-  if (typeof o.epost !== "string") return null;
+function lasFaktura(body: unknown): ForeningFakturaUppgifter {
+  const o =
+    body && typeof body === "object"
+      ? (body as Partial<ForeningFakturaUppgifter>)
+      : {};
   return {
-    epost: o.epost.trim(),
+    epost: typeof o.epost === "string" ? o.epost.trim() : "",
     adress: typeof o.adress === "string" ? o.adress.trim() : "",
     postnummer: typeof o.postnummer === "string" ? o.postnummer.trim() : "",
     ort: typeof o.ort === "string" ? o.ort.trim() : "",
@@ -23,7 +17,27 @@ function lasFaktura(body: unknown): ForeningFakturaUppgifter | null {
   };
 }
 
-/** Skickar kvartalsfaktura till föreningens fakturamottagare. */
+function lasUndertecknare(
+  body: unknown,
+): { namn: string; epost: string }[] {
+  if (!Array.isArray(body)) return [];
+  return body
+    .map((rad) => {
+      if (!rad || typeof rad !== "object") return null;
+      const o = rad as { namn?: unknown; epost?: unknown };
+      const namn = typeof o.namn === "string" ? o.namn.trim() : "";
+      const epost = typeof o.epost === "string" ? o.epost.trim() : "";
+      if (!namn && !epost) return null;
+      return { namn, epost };
+    })
+    .filter((rad): rad is { namn: string; epost: string } => rad !== null)
+    .slice(0, 2);
+}
+
+/**
+ * Efter signerat avtal: fakturaunderlag till ekonomi och bekräftelse till personal.
+ * Föreningen ser inte den här åtgärden som en egen knapp.
+ */
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -40,54 +54,22 @@ export async function POST(
       organisationsnummer?: string;
       faktura?: unknown;
       antalLagenheter?: number;
+      undertecknare?: unknown;
     };
-    const faktura = lasFaktura(body.faktura);
-    if (!faktura || !arFakturaUppgifterKlara(faktura)) {
-      return NextResponse.json(
-        { fel: "Ange fakturaadress och e-post dit fakturan ska skickas." },
-        { status: 400 },
-      );
-    }
-    const antal = Number(body.antalLagenheter);
-    const pris = beraknaPris(antal);
-    if (!pris) {
-      return NextResponse.json(
-        {
-          fel:
-            antal > 100
-              ? "För mer än 100 lägenheter tar vi fram offert — kontakta oss."
-              : "Ange antal lägenheter i grunduppgifterna innan fakturan skickas.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const namn = body.foreningsNamn?.trim() || "Föreningen";
-    const period = kvartalsperiod();
-    const mejl = byggFakturaMejl({
-      foreningsNamn: namn,
+    const resultat = await meddelaSigneratKundavtal({
+      foreningsNamn: body.foreningsNamn?.trim() || "Föreningen",
       organisationsnummer: body.organisationsnummer?.trim() ?? "",
-      faktura,
-      pris,
-      periodEtikett: period.etikett,
+      faktura: lasFaktura(body.faktura),
+      antalLagenheter: Number(body.antalLagenheter) || 0,
+      undertecknare: lasUndertecknare(body.undertecknare),
     });
-    const resultat = await skickaMejl({
-      till: faktura.epost,
-      amne: mejl.amne,
-      brodtext: mejl.brodtext,
-    });
-
-    return NextResponse.json({
-      mejlVia: resultat.via,
-      meddelande: mejlSkickades(resultat.via)
-        ? `Fakturan för ${period.etikett} har skickats till ${faktura.epost}.`
-        : resultat.fel
-          ? `Fakturan sparades men mejlet levererades inte: ${resultat.fel}`
-          : `Fakturan sparades. Mejlet kunde inte skickas automatiskt till ${faktura.epost}.`,
-    });
+    if (!resultat.ok) {
+      return NextResponse.json({ fel: resultat.meddelande }, { status: 502 });
+    }
+    return NextResponse.json({ meddelande: resultat.meddelande });
   } catch (e) {
     return NextResponse.json(
-      { fel: e instanceof Error ? e.message : "Kunde inte skicka fakturan." },
+      { fel: e instanceof Error ? e.message : "Kunde inte skicka beskedet." },
       { status: 400 },
     );
   }

@@ -16,7 +16,6 @@ import {
   registreraKundAvtalSignatur,
 } from "@/lib/forening-kund";
 import {
-  arFakturaUppgifterKlara,
   fakturaFranProfil,
   hamtaAntalLagenheterForFaktura,
   skickaForeningFakturaKlient,
@@ -35,9 +34,18 @@ import {
   AVTAL_LANGD_AR,
   AVTAL_UPPSAGNING_MANADER,
   PROVOPERIODE_DAGAR,
+  byggAvtalsText,
   dagarKvarAvProvoperiod,
   formatAvtalsDatum,
 } from "@/lib/forening-avtal";
+import { sparaKundavtal } from "@/components/foreningsinformation/kundavtal-lager";
+import {
+  AVTAL_UNDERTECKNARE_ANTAL,
+  AVTAL_UNDERTECKNARE_EVENT,
+  lasAvtalsUndertecknare,
+  undertecknareSaknas,
+  type AvtalsUndertecknareVal,
+} from "@/lib/avtal-undertecknare-val";
 
 /**
  * Godkänn ettårsavtal — kräver BankID-signering.
@@ -56,17 +64,27 @@ export function ForeningAvtalPanel({
   const [bekraftat, setBekraftat] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [undertecknare, setUndertecknare] = useState<AvtalsUndertecknareVal[]>(
+    [],
+  );
 
   const ladda = useCallback(() => {
     const p = lasForeningProfil(lasAktivForeningId());
     setProfil(p);
+    setUndertecknare(
+      p ? lasAvtalsUndertecknare(p.id, p.styrelseledamoter) : [],
+    );
     setRedo(true);
   }, []);
 
   useEffect(() => {
     ladda();
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
-    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+    window.addEventListener(AVTAL_UNDERTECKNARE_EVENT, ladda);
+    return () => {
+      window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+      window.removeEventListener(AVTAL_UNDERTECKNARE_EVENT, ladda);
+    };
   }, [ladda]);
 
   if (!redo) {
@@ -138,6 +156,18 @@ export function ForeningAvtalPanel({
 
   const check = kanGodkannaAvtal(profil);
   const dagarKvar = dagarKvarAvProvoperiod(profil.skapadTidpunkt);
+  const valdaUndertecknare = undertecknare.filter(
+    (person) => !undertecknareSaknas(person),
+  );
+  const tvaSignatarer = valdaUndertecknare.length >= AVTAL_UNDERTECKNARE_ANTAL;
+  const avtalsPart = {
+    ...avtalsPartFranProfil(profil),
+    foretradare: valdaUndertecknare.map((person) => ({
+      namn: person.namn,
+      roll: person.roll,
+      epost: person.epost,
+    })),
+  };
 
   async function signeraMedBankId(
     signatur: Parameters<typeof registreraKundAvtalSignatur>[0],
@@ -167,26 +197,55 @@ export function ForeningAvtalPanel({
     });
     const data = (await res.json()) as { fel?: string };
     const klar = harTillrackligaBankIdSignaturer(uppdaterad.avtalBankidSignaturer);
+    if (klar) {
+      const personer = lasAvtalsUndertecknare(
+        uppdaterad.id,
+        uppdaterad.styrelseledamoter,
+      ).filter((person) => !undertecknareSaknas(person));
+      const part = {
+        ...avtalsPartFranProfil(uppdaterad),
+        foretradare: personer.map((person) => ({
+          namn: person.namn,
+          roll: person.roll,
+          epost: person.epost,
+        })),
+      };
+      sparaKundavtal({
+        foreningsNamn: uppdaterad.namn,
+        text: byggAvtalsText(part, {
+          statusrad: `Status: signerat med BankID ${formatAvtalsDatum(new Date().toISOString())}.`,
+        }),
+        status: "signerat",
+        undertecknare: personer.map((person) => ({
+          namn: person.namn,
+          epost: person.epost,
+        })),
+      });
+    }
     let status = res.ok
       ? klar
         ? "Avtalet är signerat med BankID av två personer och sparat."
         : `Signatur 1 av ${BANKID_KRAV_SIGNATURER} sparad. Nästa person ska signera med sitt personnummer.`
       : `Signerat lokalt. Server: ${data.fel || "kunde inte synkas"}`;
     if (klar) {
-      const faktura = fakturaFranProfil(uppdaterad);
-      const antal = hamtaAntalLagenheterForFaktura();
-      if (arFakturaUppgifterKlara(faktura) && antal > 0) {
-        const skickad = await skickaForeningFakturaKlient({
-          foreningId: uppdaterad.id,
-          foreningsNamn: uppdaterad.namn,
-          organisationsnummer: uppdaterad.organisationsnummer,
-          faktura,
-          antalLagenheter: antal,
-        });
-        status = skickad.ok
-          ? `${status} ${skickad.meddelande}`
-          : `${status} Fakturan kunde inte skickas: ${skickad.meddelande}`;
-      }
+      const personer = lasAvtalsUndertecknare(
+        uppdaterad.id,
+        uppdaterad.styrelseledamoter,
+      );
+      const skickad = await skickaForeningFakturaKlient({
+        foreningId: uppdaterad.id,
+        foreningsNamn: uppdaterad.namn,
+        organisationsnummer: uppdaterad.organisationsnummer,
+        faktura: fakturaFranProfil(uppdaterad),
+        antalLagenheter: hamtaAntalLagenheterForFaktura(),
+        undertecknare: personer.map((person) => ({
+          namn: person.namn,
+          epost: person.epost,
+        })),
+      });
+      status = skickad.ok
+        ? `${status} ${skickad.meddelande}`
+        : `${status} ${skickad.meddelande}`;
     }
     setServerStatus(status);
   }
@@ -196,7 +255,42 @@ export function ForeningAvtalPanel({
       id="signera"
       className="scroll-mt-24 rounded-xl border border-border bg-white p-5 shadow-sm sm:p-6"
     >
-      <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
+      <div className="rounded-lg border border-border bg-surface/50 px-3 py-3 text-sm">
+        <p className="font-medium text-foreground">
+          Styrelsen i avtalet ({valdaUndertecknare.length} av{" "}
+          {AVTAL_UNDERTECKNARE_ANTAL} signerar)
+        </p>
+        {profil.styrelseledamoter.some((ledamot) => ledamot.namn.trim()) ? (
+          <ul className="mt-2 space-y-1 text-foreground">
+            {profil.styrelseledamoter
+              .filter((ledamot) => ledamot.namn.trim())
+              .map((ledamot) => (
+                <li key={ledamot.id}>
+                  {ledamot.signerarAvtal ? "Signerar" : "Ingår i styrelsen"}
+                  {" · "}
+                  {ledamot.namn}
+                  {ledamot.roll.trim() ? ` · ${ledamot.roll}` : ""}
+                  {ledamot.epost.trim()
+                    ? ` · ${ledamot.epost}`
+                    : " · e-post saknas"}
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-muted">
+            Lägg in styrelsen under Styrelsens medlemmar ovan. Kryssa i två
+            personer som ska signera.
+          </p>
+        )}
+        {!tvaSignatarer &&
+          profil.styrelseledamoter.some((ledamot) => ledamot.namn.trim()) && (
+            <p className="mt-2 text-amber-950">
+              Kryssa i två personer i styrelsen som ska signera avtalet.
+            </p>
+          )}
+      </div>
+
+      <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm text-foreground">
         <input
           type="checkbox"
           checked={bekraftat}
@@ -246,14 +340,18 @@ export function ForeningAvtalPanel({
           part="kund"
           partEtikett="föreningen"
           signaturer={profil.avtalBankidSignaturer}
-          disabled={!check.ok || !bekraftat}
-          ledamoter={profil.styrelseledamoter}
+          disabled={!check.ok || !bekraftat || !tvaSignatarer}
+          ledamoter={profil.styrelseledamoter.filter((ledamot) =>
+            ledamot.namn.trim(),
+          )}
           disabledOrsak={
             !check.ok
               ? "Komplettera saknade grunduppgifter under Föreningsuppgifter."
-              : !bekraftat
-                ? "Bekräfta avtalsvillkoren ovan innan BankID öppnas."
-                : undefined
+              : !tvaSignatarer
+                ? "Kryssa i två personer i styrelsen som ska signera avtalet."
+                : !bekraftat
+                  ? "Bekräfta avtalsvillkoren ovan innan BankID öppnas."
+                  : undefined
           }
           onSignera={signeraMedBankId}
         />
@@ -291,7 +389,7 @@ export function ForeningAvtalPanel({
 
       {!doljDokument && (
         <ForeningAvtalsdokument
-          part={avtalsPartFranProfil(profil)}
+          part={avtalsPart}
           skapadTidpunkt={profil.skapadTidpunkt}
         />
       )}

@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
+import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
+import {
+  KUNDAVTAL_EVENT,
+  lasSparatKundavtal,
+  type SparatKundavtal,
+} from "@/components/foreningsinformation/kundavtal-lager";
 import { NyckelKvittenserPanel } from "@/components/foreningsinformation/NyckelKvittenserPanel";
 import {
   antalUtlamnadeNycklar,
@@ -54,7 +60,7 @@ function initialState(): Record<string, HuvudmappState> {
     foreningsHuvudmappar.map((huvud) => [
       huvud.id,
       {
-        öppen: huvud.id === "styrelse-stadgar",
+        öppen: false,
         undermappar: Object.fromEntries(
           undermappNoderForHuvud(huvud).map((nod) => [
             nod.path,
@@ -74,6 +80,7 @@ export function ForeningsinformationBibliotek() {
   const [sotningProtokollAntal, setSotningProtokollAntal] = useState(0);
   const [nyckelKvittenserAntal, setNyckelKvittenserAntal] = useState(0);
   const [utlamnadeNycklarAntal, setUtlamnadeNycklarAntal] = useState(0);
+  const [kundavtalAntal, setKundavtalAntal] = useState(0);
 
   const onSotningProtokollAntal = useCallback((antal: number) => {
     setSotningProtokollAntal(antal);
@@ -93,6 +100,15 @@ export function ForeningsinformationBibliotek() {
     return () => window.removeEventListener("nyckel-kvittenser-uppdaterad", onCustom);
   }, []);
 
+  useEffect(() => {
+    function lasAvtal() {
+      setKundavtalAntal(lasSparatKundavtal() ? 1 : 0);
+    }
+    lasAvtal();
+    window.addEventListener(KUNDAVTAL_EVENT, lasAvtal);
+    return () => window.removeEventListener(KUNDAVTAL_EVENT, lasAvtal);
+  }, []);
+
   const totaltDokument = useMemo(
     () =>
       allaUndermappNycklar().reduce((sum, key) => {
@@ -102,8 +118,8 @@ export function ForeningsinformationBibliotek() {
         return (
           sum + (huvudmappar[huvudId]?.undermappar[underPath]?.dokument.length ?? 0)
         );
-      }, 0) + sotningProtokollAntal,
-    [huvudmappar, sotningProtokollAntal],
+      }, 0) + sotningProtokollAntal + kundavtalAntal,
+    [huvudmappar, sotningProtokollAntal, kundavtalAntal],
   );
 
   function toggleHuvudmapp(huvudId: string) {
@@ -183,7 +199,11 @@ export function ForeningsinformationBibliotek() {
       (sum, u) => sum + u.dokument.length,
       0,
     );
-    return huvudId === "ventilation" ? summa + sotningProtokollAntal : summa;
+    const medKundavtal =
+      huvudId === "styrelse-stadgar" ? summa + kundavtalAntal : summa;
+    return huvudId === "ventilation"
+      ? medKundavtal + sotningProtokollAntal
+      : medKundavtal;
   }
 
   return (
@@ -376,6 +396,17 @@ function UndermappRad({
   const ärGrupp = barn.length > 0;
   const ärDynamisk = Boolean(under.dynamiskaUndermappar);
   const ärNyckelKvittenser = Boolean(under.nyckelKvittenser);
+  const [kundavtal, setKundavtal] = useState<SparatKundavtal | null>(null);
+
+  useEffect(() => {
+    if (under.id !== "avtal") return;
+    function las() {
+      setKundavtal(lasSparatKundavtal());
+    }
+    las();
+    window.addEventListener(KUNDAVTAL_EVENT, las);
+    return () => window.removeEventListener(KUNDAVTAL_EVENT, las);
+  }, [under.id]);
 
   const antalDokumentGrupp = ärNyckelKvittenser
     ? nyckelKvittenserAntal
@@ -388,7 +419,7 @@ function UndermappRad({
               child.dynamiskaUndermappar ? sum + sotningProtokollAntal : sum,
             0,
           )
-        : state.dokument.length;
+        : state.dokument.length + (under.id === "avtal" && kundavtal ? 1 : 0);
 
   const paddingVänster = nested > 0 ? { paddingLeft: `${nested * 0.75 + 0.5}rem` } : undefined;
 
@@ -482,8 +513,11 @@ function UndermappRad({
             </ul>
           ) : (
             <>
-              {state.dokument.length > 0 ? (
+              {state.dokument.length > 0 || (under.id === "avtal" && kundavtal) ? (
                 <ul className="mt-3 space-y-2">
+                  {under.id === "avtal" && kundavtal ? (
+                    <KundavtalRad avtal={kundavtal} />
+                  ) : null}
                   {state.dokument.map((doc) => (
                     <li
                       key={doc.id}
@@ -536,6 +570,40 @@ function UndermappRad({
           )}
         </div>
       )}
+    </li>
+  );
+}
+
+function KundavtalRad({ avtal }: { avtal: SparatKundavtal }) {
+  const datum = avtal.uppdaterad
+    ? new Date(avtal.uppdaterad).toLocaleDateString("sv-SE")
+    : "";
+  const mejl = avtal.undertecknare
+    .map((p) => p.epost)
+    .filter(Boolean)
+    .join(" och ");
+
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-[#f7fbf8] px-3 py-2">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">
+          Kundavtal {avtal.foreningsNamn}
+        </p>
+        <p className="text-xs text-muted">
+          {avtal.status === "signerat" ? "Signerat med BankID" : "Utkast"}
+          {datum ? ` · ${datum}` : ""}
+          {mejl ? ` · mejlat till ${mejl}` : ""}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() =>
+          oppnaTextSomPdf(`Kundavtal ${avtal.foreningsNamn}`, avtal.text)
+        }
+        className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary-dark"
+      >
+        Öppna som PDF
+      </button>
     </li>
   );
 }

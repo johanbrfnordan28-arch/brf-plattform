@@ -1,17 +1,22 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import {
   AVTAL_KPI_TEXT,
   AVTAL_LANGD_AR,
   AVTAL_UPPSAGNING_MANADER,
   PROVOPERIODE_DAGAR,
   byggAvtalsSektioner,
+  byggAvtalsText,
   dagarKvarAvProvoperiod,
   formatAvtalsDatum,
   type AvtalsPart,
 } from "@/lib/forening-avtal";
 import { formateraBankIdSignatur, type BankIdSignatur } from "@/lib/bankid-signering";
 import { SvenskAdressBlock } from "@/components/forening/SvenskAdressBlock";
+import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
+import { sparaKundavtal } from "@/components/foreningsinformation/kundavtal-lager";
 import { LEVERANTOR } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
 import { KONTAKT_EPOST } from "@/lib/kontakt-epost";
@@ -36,7 +41,42 @@ export function ForeningAvtalsdokument({
   skapadTidpunkt,
   signerat,
 }: Props) {
+  const [sparatMeddelande, setSparatMeddelande] = useState<string | null>(null);
   const sektioner = byggAvtalsSektioner(part);
+  const avtalText = byggAvtalsText(part, {
+    statusrad: signerat?.tidpunkt
+      ? `Status: signerat med BankID ${formatAvtalsDatum(signerat.tidpunkt)}.`
+      : "Status: utkast — väntar på BankID-signering av två företrädare.",
+  });
+  const undertecknare = (part.foretradare ?? [])
+    .filter((p) => p.namn.trim() || p.epost?.trim())
+    .map((p) => ({ namn: p.namn, epost: p.epost?.trim() ?? "" }));
+
+  function oppnaPdf() {
+    const ok = oppnaTextSomPdf(
+      `Kundavtal ${part.foreningsNamn.trim() || "föreningen"}`,
+      avtalText,
+    );
+    if (!ok) {
+      setSparatMeddelande(
+        "Webbläsaren blockerade det nya fönstret. Tillåt popup och öppna avtalet igen.",
+      );
+    }
+  }
+
+  function sparaAvtalet() {
+    sparaKundavtal({
+      foreningsNamn: part.foreningsNamn,
+      text: avtalText,
+      status: signerat?.tidpunkt ? "signerat" : "utkast",
+      undertecknare,
+    });
+    setSparatMeddelande(
+      signerat?.tidpunkt
+        ? "Det signerade avtalet ligger i Styrning och Dokument, under Styrelse Arkiv → Avtal."
+        : "Avtalet är sparat som utkast i Styrning och Dokument, under Styrelse Arkiv → Avtal.",
+    );
+  }
   const dagarKvar =
     skapadTidpunkt && !signerat
       ? dagarKvarAvProvoperiod(skapadTidpunkt)
@@ -223,6 +263,40 @@ export function ForeningAvtalsdokument({
           </p>
         </aside>
 
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={oppnaPdf}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+          >
+            Öppna avtalet som PDF
+          </button>
+          <button
+            type="button"
+            onClick={sparaAvtalet}
+            className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+          >
+            Spara i Styrning och Dokument
+          </button>
+        </div>
+        {sparatMeddelande ? (
+          <p className="text-sm text-primary-dark" role="status">
+            {sparatMeddelande}{" "}
+            <Link
+              href="/forening/foreningsinformation"
+              className="font-medium underline"
+            >
+              Öppna biblioteket
+            </Link>
+          </p>
+        ) : (
+          <p className="text-xs text-muted">
+            PDF:en öppnas i ett nytt fönster. Välj ”Spara som PDF” i
+            utskriften. Samma text mejlas till undertecknarna och sparas under
+            Styrelse Arkiv → Avtal.
+          </p>
+        )}
+
         {signerat?.tidpunkt ? (
           <div className="rounded-lg border border-primary/30 bg-white px-3 py-2 text-sm text-foreground">
             <p>
@@ -241,7 +315,8 @@ export function ForeningAvtalsdokument({
               <p className="mt-1 text-muted">{signerat.namn}</p>
             ) : null}
             <p className="mt-2 text-muted">
-              Det signerade avtalet är sparat i portalen.
+              Det signerade avtalet ligger i Styrning och Dokument, under
+              Styrelse Arkiv → Avtal.
             </p>
           </div>
         ) : (

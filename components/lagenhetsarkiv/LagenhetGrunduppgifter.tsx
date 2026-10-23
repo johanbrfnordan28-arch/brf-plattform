@@ -282,7 +282,7 @@ export function LagenhetsarkivSammanstallning({
 }: {
   apartments: ApartmentFolder[];
 }) {
-  const [oppen, setOppen] = useState(true);
+  const [oppen, setOppen] = useState(false);
 
   if (apartments.length === 0) return null;
 

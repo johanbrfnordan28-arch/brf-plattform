@@ -402,6 +402,159 @@ export function sorteraLagenheter(
   });
 }
 
+export const ADRESS_EJ_ANGIVEN = "Adress ej angiven";
+export const VANING_EJ_ANGIVEN = "Våning ej angiven";
+
+export function lagenhetAdressGrupp(apartment: ApartmentFolder): string {
+  return apartment.adress?.trim() || ADRESS_EJ_ANGIVEN;
+}
+
+export function lagenhetVaningGrupp(apartment: ApartmentFolder): string {
+  return apartment.vaning?.trim() || VANING_EJ_ANGIVEN;
+}
+
+function vaningRang(vaning: string): number {
+  if (vaning === VANING_EJ_ANGIVEN) return 10_000;
+  const text = vaning.trim().toLowerCase();
+  if (
+    text === "bv" ||
+    text === "bottenvåning" ||
+    text === "bottenvaning" ||
+    text === "entré" ||
+    text === "entre"
+  ) {
+    return -1;
+  }
+  if (text.startsWith("vind")) return 9_000;
+  const tal = Number.parseInt(text, 10);
+  if (Number.isFinite(tal) && String(tal) === text) return tal;
+  return 5_000;
+}
+
+export function jamforVaning(a: string, b: string): number {
+  const diff = vaningRang(a) - vaningRang(b);
+  if (diff !== 0) return diff;
+  return a.localeCompare(b, "sv");
+}
+
+export function unikaGrupper(
+  values: string[],
+  jamfor: (a: string, b: string) => number = (a, b) => a.localeCompare(b, "sv"),
+): string[] {
+  return [...new Set(values)].sort(jamfor);
+}
+
+function adressHarVaningsindelning(lista: ApartmentFolder[]): boolean {
+  return lista.some((a) => lagenhetVaningGrupp(a) !== VANING_EJ_ANGIVEN);
+}
+
+export type LagenhetVisningsNod =
+  | {
+      typ: "grupp";
+      nyckel: string;
+      rubrik: string;
+      antal: number;
+      niva: number;
+    }
+  | { typ: "lagenhet"; apartment: ApartmentFolder; niva: number };
+
+/** Nycklar för adress- och våningsgrupper när alla lägenheter ska kunna öppnas. */
+export function nycklarForOppnaAlla(apartments: ApartmentFolder[]): string[] {
+  const nycklar: string[] = [];
+  for (const adress of unikaGrupper(apartments.map(lagenhetAdressGrupp))) {
+    const iAdress = apartments.filter((a) => lagenhetAdressGrupp(a) === adress);
+    const adressNyckel = `adress:${encodeURIComponent(adress)}`;
+    nycklar.push(adressNyckel);
+    if (!adressHarVaningsindelning(iAdress)) continue;
+    for (const vaning of unikaGrupper(
+      iAdress.map(lagenhetVaningGrupp),
+      jamforVaning,
+    )) {
+      nycklar.push(`${adressNyckel}|vaning:${encodeURIComponent(vaning)}`);
+    }
+  }
+  return nycklar;
+}
+
+/**
+ * Lägenheter visas inte alla på en gång. Välj en adress, ett våningsplan
+ * eller alla — bara öppnade grupper tar med sina lägenheter.
+ */
+export function byggLagenhetsVisning(
+  apartments: ApartmentFolder[],
+  omfattning: string,
+  oppna: ReadonlySet<string>,
+): LagenhetVisningsNod[] {
+  const sorterade = sorteraLagenheter(apartments);
+  if (!omfattning) return [];
+
+  if (omfattning.startsWith("vaning:")) {
+    const vaning = decodeURIComponent(omfattning.slice("vaning:".length));
+    const lista = sorterade.filter((a) => lagenhetVaningGrupp(a) === vaning);
+    const noder: LagenhetVisningsNod[] = [
+      {
+        typ: "grupp",
+        nyckel: omfattning,
+        rubrik: vaning === VANING_EJ_ANGIVEN ? vaning : `Våning ${vaning}`,
+        antal: lista.length,
+        niva: 0,
+      },
+    ];
+    if (oppna.has(omfattning)) {
+      for (const apartment of lista) {
+        noder.push({ typ: "lagenhet", apartment, niva: 1 });
+      }
+    }
+    return noder;
+  }
+
+  const adresser =
+    omfattning === "alla"
+      ? unikaGrupper(sorterade.map(lagenhetAdressGrupp))
+      : omfattning.startsWith("adress:")
+        ? [decodeURIComponent(omfattning.slice("adress:".length))]
+        : [];
+
+  const noder: LagenhetVisningsNod[] = [];
+  for (const adress of adresser) {
+    const iAdress = sorterade.filter((a) => lagenhetAdressGrupp(a) === adress);
+    const adressNyckel = `adress:${encodeURIComponent(adress)}`;
+    noder.push({
+      typ: "grupp",
+      nyckel: adressNyckel,
+      rubrik: adress,
+      antal: iAdress.length,
+      niva: 0,
+    });
+    if (!oppna.has(adressNyckel)) continue;
+    if (adressHarVaningsindelning(iAdress)) {
+      for (const vaning of unikaGrupper(
+        iAdress.map(lagenhetVaningGrupp),
+        jamforVaning,
+      )) {
+        const iVaning = iAdress.filter((a) => lagenhetVaningGrupp(a) === vaning);
+        const vaningNyckel = `${adressNyckel}|vaning:${encodeURIComponent(vaning)}`;
+        noder.push({
+          typ: "grupp",
+          nyckel: vaningNyckel,
+          rubrik: vaning === VANING_EJ_ANGIVEN ? vaning : `Våning ${vaning}`,
+          antal: iVaning.length,
+          niva: 1,
+        });
+        if (!oppna.has(vaningNyckel)) continue;
+        for (const apartment of iVaning) {
+          noder.push({ typ: "lagenhet", apartment, niva: 2 });
+        }
+      }
+      continue;
+    }
+    for (const apartment of iAdress) {
+      noder.push({ typ: "lagenhet", apartment, niva: 1 });
+    }
+  }
+  return noder;
+}
+
 export function filtreraLagenheter(
   apartments: ApartmentFolder[],
   sok: string,

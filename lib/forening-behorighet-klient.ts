@@ -24,6 +24,27 @@ export function arInloggadPaEgenForening(): boolean {
   return !arOppenForening(session.foreningId);
 }
 
+/**
+ * Menyn på huvudsidan. När databasen svarar gäller bara serverns session,
+ * så en gammal lokal session inte visar «Logga ut» för den som inte är inloggad.
+ */
+export async function arInloggadIMenyn(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/auth/session", { cache: "no-store" });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        inloggad?: boolean;
+        databas?: boolean;
+      };
+      if (data.inloggad === true) return true;
+      if (data.databas === true) return false;
+    }
+  } catch {
+    /* nätverksfel: använd den lokala sessionen */
+  }
+  return arInloggadPaEgenForening();
+}
+
 /** Skapad eller inloggad i den här webbläsaren. */
 export function harLokalForeningBehorighet(foreningId: string): boolean {
   if (!foreningId) return false;

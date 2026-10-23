@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AvtalsUndertecknarePanel } from "@/components/forening/AvtalsUndertecknarePanel";
 import { ForeningAvtalPanel } from "@/components/forening/ForeningAvtalPanel";
 import { ForeningAvtalsdokument } from "@/components/forening/ForeningAvtalsdokument";
 import { ForeningFakturaUppgifter } from "@/components/forening/ForeningFakturaUppgifter";
 import {
+  AVTAL_UNDERTECKNARE_EVENT,
   lasAvtalsUndertecknare,
   sparaAvtalsUndertecknare,
   type AvtalsUndertecknareVal,
@@ -14,6 +15,7 @@ import { avtalsPartFranProfil } from "@/lib/forening-avtal-part";
 import { arEgenTestForening } from "@/lib/forening-inloggning";
 import { arKundForening } from "@/lib/forening-kund";
 import {
+  byggAvtalsText,
   dagarKvarAvProvoperiod,
   PROVOPERIODE_DAGAR,
 } from "@/lib/forening-avtal";
@@ -21,6 +23,7 @@ import {
   FORENING_AKTIV_EVENT,
   lasAktivForeningId,
   lasForeningProfil,
+  sparaForeningProfil,
   type ForeningProfil,
 } from "@/lib/forening-registry";
 
@@ -28,7 +31,7 @@ const INGAR_SOM_KUND = [
   "Alla moduler ni redan använder — underhållsplan, rondering, upphandling, årshjul, medlemmar och övrigt — fortsätter utan begränsning.",
   "Föreningen raderas inte efter prövoperioden.",
   "Styrelsen loggar in via «Logga in till er BRF» med samma uppgifter.",
-  "Två personer i styrelsen får mejl och signerar avtalet med BankID. Avtalet sparas i portalen.",
+  "Två personer i styrelsen får mejl med avtalet och signerar med BankID. Avtalet sparas i Styrning och Dokument.",
 ];
 
 export function TecknaAvtalSida() {
@@ -38,13 +41,11 @@ export function TecknaAvtalSida() {
     [],
   );
   const [bekraftat, setBekraftat] = useState(false);
-  const laddadForening = useRef("");
 
   const ladda = useCallback(() => {
     const nasta = lasForeningProfil(lasAktivForeningId());
     setProfil(nasta);
-    if (nasta && laddadForening.current !== nasta.id) {
-      laddadForening.current = nasta.id;
+    if (nasta) {
       setUndertecknare(
         lasAvtalsUndertecknare(nasta.id, nasta.styrelseledamoter),
       );
@@ -55,11 +56,27 @@ export function TecknaAvtalSida() {
   useEffect(() => {
     ladda();
     window.addEventListener(FORENING_AKTIV_EVENT, ladda);
-    return () => window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+    window.addEventListener(AVTAL_UNDERTECKNARE_EVENT, ladda);
+    return () => {
+      window.removeEventListener(FORENING_AKTIV_EVENT, ladda);
+      window.removeEventListener(AVTAL_UNDERTECKNARE_EVENT, ladda);
+    };
   }, [ladda]);
 
   function andraUndertecknare(personer: AvtalsUndertecknareVal[]) {
     if (!profil) return;
+    const ids = new Set(
+      personer.map((person) => person.ledamotId).filter(Boolean),
+    );
+    const uppdaterad: ForeningProfil = {
+      ...profil,
+      styrelseledamoter: profil.styrelseledamoter.map((ledamot) => ({
+        ...ledamot,
+        signerarAvtal: ids.has(ledamot.id),
+      })),
+    };
+    sparaForeningProfil(uppdaterad, { tyst: true });
+    setProfil(uppdaterad);
     setUndertecknare(personer);
     sparaAvtalsUndertecknare(profil.id, personer);
   }
@@ -96,7 +113,7 @@ export function TecknaAvtalSida() {
         <p className="mt-3 text-sm leading-relaxed text-foreground">
           Kundavtalet visar parterna. Två personer i styrelsen tecknar avtalet
           och får ett mejl med länk för att signera med BankID. Det signerade
-          avtalet sparas i portalen. Faktureringsuppgifterna fylls i längst ner.
+          avtalet sparas i Styrning och Dokument. Faktureringsuppgifterna fylls i längst ner. Styrelse-Navet skickar fakturan när avtalet är signerat.
           {dagarKvar != null && !kund
             ? ` Prövoperioden är ${PROVOPERIODE_DAGAR} dagar (${dagarKvar} dagar kvar).`
             : ""}
@@ -136,6 +153,14 @@ export function TecknaAvtalSida() {
           onChange={andraUndertecknare}
           bekraftat={bekraftat}
           onBekraftatChange={setBekraftat}
+          avtalText={
+            part
+              ? byggAvtalsText(part, {
+                  statusrad:
+                    "Status: utkast — väntar på BankID-signering av två företrädare.",
+                })
+              : ""
+          }
         />
       )}
 

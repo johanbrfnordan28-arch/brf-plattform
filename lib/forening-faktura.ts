@@ -1,10 +1,10 @@
 /**
  * Fakturauppgifter vid teckna avtal — enda fält som inte kommer från
- * grunduppgifterna. Underlaget mejlas till fakturamottagaren.
+ * grunduppgifterna. Underlaget mejlas till Styrelse-Navets ekonomi när
+ * avtalet är signerat, inte från föreningens sida.
  */
 
 import { hamtaAntalLagenheterSynkat } from "@/lib/forening-grund-synk";
-import { mejlSkickades } from "@/lib/auth/mejl-konfiguration";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import { LEVERANTOR, leverantorPostadress } from "@/lib/leverantor";
 import {
@@ -104,6 +104,7 @@ export async function skickaForeningFakturaKlient(opts: {
   organisationsnummer: string;
   faktura: ForeningFakturaUppgifter;
   antalLagenheter: number;
+  undertecknare?: { namn: string; epost: string }[];
 }): Promise<{ ok: boolean; meddelande: string }> {
   const access = hamtaServerAccessNyckel(opts.foreningId);
   const headers: Record<string, string> = {
@@ -119,23 +120,23 @@ export async function skickaForeningFakturaKlient(opts: {
       organisationsnummer: opts.organisationsnummer,
       faktura: opts.faktura,
       antalLagenheter: opts.antalLagenheter,
+      undertecknare: opts.undertecknare ?? [],
     }),
   });
   const data = (await res.json()) as {
     fel?: string;
     meddelande?: string;
-    mejlVia?: string;
   };
   if (!res.ok) {
-    return { ok: false, meddelande: data.fel || "Kunde inte skicka fakturan." };
+    return {
+      ok: false,
+      meddelande: data.fel || "Beskedet till Styrelse-Navet kunde inte skickas.",
+    };
   }
-  const skickad = mejlSkickades(data.mejlVia || "");
   return {
     ok: true,
     meddelande:
       data.meddelande ||
-      (skickad
-        ? `Fakturan har skickats till ${opts.faktura.epost}.`
-        : `Fakturan sparades. Mejlet kunde inte levereras automatiskt — kontrollera adressen ${opts.faktura.epost}.`),
+      "Styrelse-Navet har fått besked om avtalet och sköter fakturan.",
   };
 }

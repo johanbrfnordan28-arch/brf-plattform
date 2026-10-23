@@ -5,7 +5,11 @@ import type { ForeningProfil } from "@/lib/forening-registry";
 export function avtalsForetradareFranProfil(
   profil: ForeningProfil,
 ): AvtalsForetradare[] {
-  const ledamoter = profil.styrelseledamoter
+  const markerade = profil.styrelseledamoter.filter(
+    (l) => l.signerarAvtal && l.namn.trim(),
+  );
+  const kalla = markerade.length > 0 ? markerade : profil.styrelseledamoter;
+  const ledamoter = kalla
     .filter((l) => l.namn.trim())
     .map((l) => ({
       namn: l.namn.trim(),

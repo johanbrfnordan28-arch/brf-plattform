@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   hamtaSynkadForeningGrund,
   synkaGrundFormTillUnderhallsplan,
@@ -31,6 +31,11 @@ import {
   maskeraPersonnummer,
   personnummerFelmeddelande,
 } from "@/lib/personnummer-format";
+import {
+  AVTAL_UNDERTECKNARE_ANTAL,
+  lasAvtalsUndertecknare,
+  synkaAvtalsUndertecknareFranLedamoter,
+} from "@/lib/avtal-undertecknare-val";
 
 function lasAktivProfil(): ForeningProfil | null {
   repareraForeningRegistry();
@@ -64,7 +69,8 @@ function formFranProfil(profil: ForeningProfil): FormState {
     ort: synkad.ort,
     antalLagenheter: synkad.antalLagenheter,
     antalVaningar: synkad.antalVaningar,
-    styrelseledamoter:
+    styrelseledamoter: ledamoterMedSigneringskryss(
+      profil.id,
       profil.styrelseledamoter.length > 0
         ? profil.styrelseledamoter
         : profil.kontaktperson.trim()
@@ -75,7 +81,25 @@ function formFranProfil(profil: ForeningProfil): FormState {
               }),
             ]
           : [skapaTomStyrelseLedamot({ roll: "Ordförande" })],
+    ),
   };
+}
+
+function ledamoterMedSigneringskryss(
+  foreningId: string,
+  ledamoter: StyrelseLedamot[],
+): StyrelseLedamot[] {
+  if (ledamoter.some((ledamot) => ledamot.signerarAvtal)) return ledamoter;
+  const ids = new Set(
+    lasAvtalsUndertecknare(foreningId, ledamoter)
+      .map((person) => person.ledamotId)
+      .filter(Boolean),
+  );
+  if (ids.size === 0) return ledamoter;
+  return ledamoter.map((ledamot) => ({
+    ...ledamot,
+    signerarAvtal: ids.has(ledamot.id),
+  }));
 }
 
 export function ForeningGrunduppgifterPanel() {
@@ -86,6 +110,8 @@ export function ForeningGrunduppgifterPanel() {
   const [sparFel, setSparFel] = useState<string | null>(null);
   const [bankidPagarId, setBankidPagarId] = useState<string | null>(null);
   const [bankidPnr, setBankidPnr] = useState<Record<string, string>>({});
+  const formJustNu = useRef(form);
+  formJustNu.current = form;
 
   const ladda = useCallback(() => {
     const p = lasAktivProfil();
@@ -169,20 +195,52 @@ export function ForeningGrunduppgifterPanel() {
     setSparad(false);
   }
 
+  function sparaInskrivenStyrelse() {
+    const aktuell = formJustNu.current;
+    if (!aktuell) return;
+    skrivStyrelse(aktuell.styrelseledamoter);
+  }
+
+  function skrivStyrelse(ledamoter: StyrelseLedamot[]) {
+    if (!profil) return;
+    const uppdaterad: ForeningProfil = { ...profil, styrelseledamoter: ledamoter };
+    sparaForeningProfil(uppdaterad, { tyst: true });
+    setProfil(uppdaterad);
+    synkaAvtalsUndertecknareFranLedamoter(profil.id, ledamoter);
+  }
+
   function uppdateraLedamot(
     id: string,
-    patch: Partial<Pick<StyrelseLedamot, "namn" | "roll" | "epost">>,
+    patch: Partial<Pick<StyrelseLedamot, "namn" | "roll" | "epost" | "personnummer">>,
   ) {
     setForm((current) => {
       if (!current) return current;
-      return {
+      const next = {
         ...current,
         styrelseledamoter: current.styrelseledamoter.map((l) =>
           l.id === id ? { ...l, ...patch } : l,
         ),
       };
+      formJustNu.current = next;
+      return next;
     });
     setSparad(false);
+  }
+
+  function toggleSignerarAvtal(id: string) {
+    if (!form) return;
+    const ledamot = form.styrelseledamoter.find((l) => l.id === id);
+    if (!ledamot?.namn.trim()) return;
+    const valda = form.styrelseledamoter.filter(
+      (l) => l.signerarAvtal && l.namn.trim(),
+    ).length;
+    if (!ledamot.signerarAvtal && valda >= AVTAL_UNDERTECKNARE_ANTAL) return;
+    const styrelseledamoter = form.styrelseledamoter.map((l) =>
+      l.id === id ? { ...l, signerarAvtal: !l.signerarAvtal } : l,
+    );
+    setForm({ ...form, styrelseledamoter });
+    setSparad(false);
+    skrivStyrelse(styrelseledamoter);
   }
 
   function laggTillLedamot() {
@@ -203,16 +261,13 @@ export function ForeningGrunduppgifterPanel() {
   }
 
   function taBortLedamot(id: string) {
-    setForm((current) => {
-      if (!current) return current;
-      const kvar = current.styrelseledamoter.filter((l) => l.id !== id);
-      return {
-        ...current,
-        styrelseledamoter:
-          kvar.length > 0 ? kvar : [skapaTomStyrelseLedamot({ roll: "Ordförande" })],
-      };
-    });
+    if (!form) return;
+    const kvar = form.styrelseledamoter.filter((l) => l.id !== id);
+    const styrelseledamoter =
+      kvar.length > 0 ? kvar : [skapaTomStyrelseLedamot({ roll: "Ordförande" })];
+    setForm({ ...form, styrelseledamoter });
     setSparad(false);
+    skrivStyrelse(styrelseledamoter);
   }
 
   function kopplaBankId(id: string) {
@@ -222,7 +277,7 @@ export function ForeningGrunduppgifterPanel() {
       setSparFel("Ange ledamotens namn innan BankID kopplas.");
       return;
     }
-    const pnr = bankidPnr[id] ?? "";
+    const pnr = ledamot.personnummer || bankidPnr[id] || "";
     const pnrFel = personnummerFelmeddelande(pnr);
     if (pnrFel) {
       setSparFel(pnrFel);
@@ -324,6 +379,7 @@ export function ForeningGrunduppgifterPanel() {
       };
 
       sparaForeningProfil(uppdaterad);
+      synkaAvtalsUndertecknareFranLedamoter(uppdaterad.id, uppdaterad.styrelseledamoter);
       setProfil(uppdaterad);
       setForm(formFranProfil(uppdaterad));
       setSparad(true);
@@ -339,6 +395,9 @@ export function ForeningGrunduppgifterPanel() {
   }
 
   const kopplade = form.styrelseledamoter.filter((l) => l.bankidKopplad).length;
+  const signerare = form.styrelseledamoter.filter(
+    (l) => l.signerarAvtal && l.namn.trim(),
+  ).length;
 
   return (
     <div
@@ -526,8 +585,10 @@ export function ForeningGrunduppgifterPanel() {
           </div>
           <p className="mt-1 text-xs text-muted">
             Upp till {MAX_STYRELSE_LEDAMOTER} personer med namngiven roll
-            (ordförande, sekreterare, förvaltare, projektledare m.fl.). Varje
-            person kan ha e-post för inloggning. Plattformsadmin syns aldrig här.
+            (ordförande, sekreterare, förvaltare, projektledare m.fl.). Kryssa i
+            två personer som ska signera kundavtalet — de läggs till under
+            Signera avtal. Varje person kan ha e-post för inloggning.
+            Plattformsadmin syns aldrig här.
           </p>
           <ul className="mt-3 space-y-3">
             {form.styrelseledamoter.map((ledamot) => (
@@ -544,6 +605,7 @@ export function ForeningGrunduppgifterPanel() {
                       onChange={(e) =>
                         uppdateraLedamot(ledamot.id, { namn: e.target.value })
                       }
+                      onBlur={sparaInskrivenStyrelse}
                       placeholder="För- och efternamn"
                       className="mt-1 w-full rounded-lg border border-border px-3 py-2"
                     />
@@ -556,6 +618,7 @@ export function ForeningGrunduppgifterPanel() {
                       onChange={(e) =>
                         uppdateraLedamot(ledamot.id, { epost: e.target.value })
                       }
+                      onBlur={sparaInskrivenStyrelse}
                       placeholder="namn@exempel.se"
                       className="mt-1 w-full rounded-lg border border-border px-3 py-2"
                     />
@@ -567,6 +630,7 @@ export function ForeningGrunduppgifterPanel() {
                       onChange={(e) =>
                         uppdateraLedamot(ledamot.id, { roll: e.target.value })
                       }
+                      onBlur={sparaInskrivenStyrelse}
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
                     >
                       {STYRELSE_ROLLER.map((roll) => (
@@ -580,6 +644,28 @@ export function ForeningGrunduppgifterPanel() {
                         <option value={ledamot.roll}>{ledamot.roll}</option>
                       ) : null}
                     </select>
+                  </label>
+                  <label className="block text-sm">
+                    <span className="font-medium text-foreground">
+                      Personnummer
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={ledamot.personnummer}
+                      onChange={(e) =>
+                        uppdateraLedamot(ledamot.id, {
+                          personnummer: e.target.value,
+                        })
+                      }
+                      onBlur={sparaInskrivenStyrelse}
+                      placeholder="ÅÅÅÅMMDD-XXXX"
+                      autoComplete="off"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+                    />
+                    <span className="mt-1 block text-xs text-muted">
+                      Följer med när personen väljs vid signering.
+                    </span>
                   </label>
                   <div className="flex flex-col justify-end gap-2 sm:items-end">
                     {ledamot.bankidKopplad ? (
@@ -600,19 +686,6 @@ export function ForeningGrunduppgifterPanel() {
                       </>
                     ) : (
                       <>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={bankidPnr[ledamot.id] ?? ""}
-                          onChange={(e) =>
-                            setBankidPnr((nu) => ({
-                              ...nu,
-                              [ledamot.id]: e.target.value,
-                            }))
-                          }
-                          placeholder="Personnummer ÅÅÅÅMMDD-XXXX"
-                          className="w-full rounded-lg border border-border px-3 py-2 text-xs"
-                        />
                         <button
                           type="button"
                           disabled={bankidPagarId === ledamot.id}
@@ -636,6 +709,28 @@ export function ForeningGrunduppgifterPanel() {
                     ) : null}
                   </div>
                 </div>
+                <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={ledamot.signerarAvtal}
+                    disabled={
+                      !ledamot.namn.trim() ||
+                      (!ledamot.signerarAvtal &&
+                        signerare >= AVTAL_UNDERTECKNARE_ANTAL)
+                    }
+                    onChange={() => toggleSignerarAvtal(ledamot.id)}
+                  />
+                  <span>
+                    Signerar avtalet
+                    {!ledamot.namn.trim()
+                      ? " — ange namn först"
+                      : !ledamot.signerarAvtal &&
+                          signerare >= AVTAL_UNDERTECKNARE_ANTAL
+                        ? " — två personer är redan valda"
+                        : ""}
+                  </span>
+                </label>
               </li>
             ))}
           </ul>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
-import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
+import { arInloggadIMenyn } from "@/lib/forening-behorighet-klient";
 import {
   arAktivKundForening,
   KUND_LOGIN_PATH,
@@ -94,7 +94,7 @@ export function ForeningHeader() {
       const kund = arAktivKundForening();
       const profil = lasForeningProfil(id);
       setArKund(kund);
-      setInloggad(arInloggadPaEgenForening());
+      void arInloggadIMenyn().then(setInloggad);
       setVisaTecknaAvtal(arEgenTestForening(id) && !kund);
       setDagarKvar(
         !kund && profil

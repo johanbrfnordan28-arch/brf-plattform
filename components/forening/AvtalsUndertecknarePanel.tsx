@@ -4,6 +4,7 @@ import { useState } from "react";
 import { registreraOverenskommelseMejl } from "@/components/lagenhetsarkiv/overenskommelse-mejl";
 import {
   AVTAL_UNDERTECKNARE_ANTAL,
+  tomAvtalsUndertecknare,
   undertecknareFranLedamot,
   undertecknareSaknas,
   type AvtalsUndertecknareVal,
@@ -14,6 +15,7 @@ import {
   PROVOPERIODE_DAGAR,
 } from "@/lib/forening-avtal";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
+import { sparaKundavtal } from "@/components/foreningsinformation/kundavtal-lager";
 import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 
 type Props = {
@@ -25,6 +27,8 @@ type Props = {
   /** Bekräftelse som tidigare låg i en egen ruta längre ner. */
   bekraftat?: boolean;
   onBekraftatChange?: (checked: boolean) => void;
+  /** Hela avtalstexten — läggs i mejlet och sparas i biblioteket. */
+  avtalText?: string;
 };
 
 function mejlAdressOk(epost: string): boolean {
@@ -35,6 +39,7 @@ function byggBrodtext(opts: {
   namn: string;
   foreningsNamn: string;
   lank: string;
+  avtalText: string;
 }): string {
   const halsning = opts.namn.trim() ? `Hej ${opts.namn.trim()},` : "Hej,";
   return [
@@ -42,11 +47,16 @@ function byggBrodtext(opts: {
     "",
     `${opts.foreningsNamn} ska teckna kundavtal med Styrelse-Navet.`,
     "Du är en av två personer i styrelsen som tecknar avtalet.",
+    "Avtalet följer i det här mejlet. Mejladressen används för att nå den som ska signera.",
     "",
-    "Öppna länken, läs avtalet och signera med BankID:",
+    "Öppna avtalet som PDF och signera med BankID:",
     opts.lank,
     "",
-    "När båda personerna har signerat sparas avtalet i föreningens portal.",
+    "—— Avtalet ——",
+    "",
+    opts.avtalText.trim(),
+    "",
+    "När båda personerna har signerat sparas avtalet i Styrning och Dokument, under Styrelse Arkiv → Avtal.",
     "",
     "Vänliga hälsningar",
     "Styrelse-Navet",
@@ -60,41 +70,33 @@ export function AvtalsUndertecknarePanel({
   onChange,
   bekraftat = false,
   onBekraftatChange,
+  avtalText = "",
 }: Props) {
   const [skickar, setSkickar] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [fel, setFel] = useState<string | null>(null);
   const namngivna = ledamoter.filter((l) => l.namn.trim());
-  const saknade = personer.filter(undertecknareSaknas).length;
+  const valda = personer.filter((person) => !undertecknareSaknas(person));
+  const saknade = AVTAL_UNDERTECKNARE_ANTAL - valda.length;
 
-  function uppdatera(index: number, nasta: AvtalsUndertecknareVal) {
-    onChange(personer.map((rad, i) => (i === index ? nasta : rad)));
-    setStatus(null);
-    setFel(null);
+  function arVald(ledamotId: string): boolean {
+    return valda.some((person) => person.ledamotId === ledamotId);
   }
 
-  function valjLedamot(index: number, ledamotId: string) {
-    if (!ledamotId) {
-      uppdatera(index, {
-        ledamotId: "",
-        namn: "",
-        roll: "",
-        epost: "",
-      });
-      return;
-    }
-    if (ledamotId === "annan") {
-      uppdatera(index, {
-        ledamotId: "",
-        namn: personer[index]?.namn ?? "",
-        roll: personer[index]?.roll ?? "",
-        epost: personer[index]?.epost ?? "",
-      });
-      return;
-    }
-    const ledamot = namngivna.find((l) => l.id === ledamotId);
+  function toggleLedamot(ledamotId: string) {
+    const ledamot = namngivna.find((rad) => rad.id === ledamotId);
     if (!ledamot) return;
-    uppdatera(index, undertecknareFranLedamot(ledamot));
+    const redan = arVald(ledamotId);
+    if (!redan && valda.length >= AVTAL_UNDERTECKNARE_ANTAL) return;
+    const nasta = redan
+      ? valda.filter((person) => person.ledamotId !== ledamotId)
+      : [...valda, undertecknareFranLedamot(ledamot)];
+    while (nasta.length < AVTAL_UNDERTECKNARE_ANTAL) {
+      nasta.push(tomAvtalsUndertecknare());
+    }
+    onChange(nasta.slice(0, AVTAL_UNDERTECKNARE_ANTAL));
+    setStatus(null);
+    setFel(null);
   }
 
   async function skickaMejl() {
@@ -115,9 +117,13 @@ export function AvtalsUndertecknarePanel({
       );
       return;
     }
+    if (!avtalText.trim()) {
+      setFel("Avtalstexten saknas och kan inte mejlas.");
+      return;
+    }
     setSkickar(true);
     try {
-      const lank = `${window.location.origin}/forening/uppgifter#signera`;
+      const lank = `${window.location.origin}/forening/teckna-avtal`;
       for (const person of personer) {
         await registreraOverenskommelseMejl({
           till: person.epost.trim(),
@@ -126,13 +132,23 @@ export function AvtalsUndertecknarePanel({
             namn: person.namn,
             foreningsNamn,
             lank,
+            avtalText,
           }),
         });
       }
+      sparaKundavtal({
+        foreningsNamn,
+        text: avtalText,
+        status: "utkast",
+        undertecknare: personer.map((p) => ({
+          namn: p.namn,
+          epost: p.epost.trim(),
+        })),
+      });
       setStatus(
-        `Mejlet med avtalet och länken för BankID-signering är skickat till ${personer
+        `Mejlet med avtalet är skickat till ${personer
           .map((p) => p.epost.trim())
-          .join(" och ")}. När båda har signerat sparas avtalet i portalen.`,
+          .join(" och ")}. Samma avtal är sparat under Styrning och Dokument → Styrelse Arkiv → Avtal.`,
       );
     } catch (e) {
       setFel(e instanceof Error ? e.message : "Mejlet kunde inte skickas.");
@@ -150,10 +166,9 @@ export function AvtalsUndertecknarePanel({
         Styrelsens undertecknare
       </h3>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Avtalet tecknas alltid av två personer. De två första i styrelsen är
-        förvalda. Byt person om någon annan ska signera, och fyll i
-        mejladressen. Mejlet innehåller avtalet och en länk där personen
-        signerar med BankID.
+        Avtalet tecknas av två personer i styrelsen. Kryssa i dem här, eller
+        under Föreningsuppgifter. Mejladress krävs för båda — avtalet skickas
+        dit, och samma text sparas under Styrning och Dokument.
       </p>
       {onBekraftatChange ? (
         <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm text-foreground">
@@ -175,101 +190,58 @@ export function AvtalsUndertecknarePanel({
           </span>
         </label>
       ) : null}
-      {saknade > 0 && (
+      {namngivna.length === 0 && (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Lägg in styrelsen under Föreningsuppgifter. Personerna dyker upp här
+          och kan kryssas i.
+        </p>
+      )}
+      {saknade > 0 && namngivna.length > 0 && (
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           {saknade === 1
-            ? "En person saknas. Välj någon från styrelsen eller fyll i namn och e-post."
-            : "Båda personerna saknas. Välj två från styrelsen eller fyll i namn och e-post."}
+            ? "En person saknas. Kryssa i en till i styrelsen."
+            : "Kryssa i två personer i styrelsen som ska signera."}
         </p>
       )}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {personer.slice(0, AVTAL_UNDERTECKNARE_ANTAL).map((person, index) => {
-          const saknas = undertecknareSaknas(person);
-          const upptagen = new Set(
-            personer
-              .filter((_, i) => i !== index)
-              .map((p) => p.ledamotId)
-              .filter(Boolean),
-          );
+      <ul className="mt-4 space-y-2">
+        {namngivna.map((ledamot) => {
+          const vald = arVald(ledamot.id);
+          const mejlSaknas = !mejlAdressOk(ledamot.epost);
           return (
-            <div
-              key={index}
-              className={`rounded-xl border p-4 ${
-                saknas
-                  ? "border-amber-300 bg-amber-50"
-                  : "border-border bg-surface/40"
-              }`}
-            >
-              <p className="text-sm font-semibold text-foreground">
-                Person {index + 1}
-                {saknas ? " — en person saknas" : ""}
-              </p>
-              <label className="mt-3 block text-sm">
-                <span className="font-medium text-foreground">
-                  Välj från styrelsen
+            <li key={ledamot.id}>
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
+                  vald
+                    ? "border-primary/40 bg-[#eef6f0]"
+                    : "border-border bg-white"
+                } ${!vald && valda.length >= AVTAL_UNDERTECKNARE_ANTAL ? "cursor-not-allowed opacity-60" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={vald}
+                  disabled={!vald && valda.length >= AVTAL_UNDERTECKNARE_ANTAL}
+                  onChange={() => toggleLedamot(ledamot.id)}
+                />
+                <span>
+                  <span className="font-medium text-foreground">
+                    {ledamot.namn}
+                  </span>
+                  {ledamot.roll.trim() ? (
+                    <span className="text-muted"> · {ledamot.roll}</span>
+                  ) : null}
+                  <span className="mt-0.5 block text-xs text-muted">
+                    {mejlSaknas
+                      ? "E-post saknas — fyll i den under Föreningsuppgifter."
+                      : `Avtalet mejlas till ${ledamot.epost.trim()}`}
+                  </span>
                 </span>
-                <select
-                  value={person.ledamotId}
-                  onChange={(e) => valjLedamot(index, e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                >
-                  <option value="">
-                    {saknas ? "Välj person" : "Annan person"}
-                  </option>
-                  {namngivna.map((l) => (
-                    <option
-                      key={l.id}
-                      value={l.id}
-                      disabled={upptagen.has(l.id)}
-                    >
-                      {l.namn}
-                      {l.roll.trim() ? ` · ${l.roll}` : ""}
-                    </option>
-                  ))}
-                </select>
               </label>
-              <label className="mt-3 block text-sm">
-                <span className="font-medium text-foreground">Namn</span>
-                <input
-                  value={person.namn}
-                  onChange={(e) =>
-                    uppdatera(index, {
-                      ...person,
-                      ledamotId: "",
-                      namn: e.target.value,
-                    })
-                  }
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="mt-3 block text-sm">
-                <span className="font-medium text-foreground">Funktion</span>
-                <input
-                  value={person.roll}
-                  onChange={(e) =>
-                    uppdatera(index, { ...person, roll: e.target.value })
-                  }
-                  placeholder="t.ex. Ordförande"
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="mt-3 block text-sm">
-                <span className="font-medium text-foreground">E-post</span>
-                <input
-                  type="email"
-                  value={person.epost}
-                  onChange={(e) =>
-                    uppdatera(index, { ...person, epost: e.target.value })
-                  }
-                  placeholder="namn@forening.se"
-                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-              </label>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {fel && (
         <p

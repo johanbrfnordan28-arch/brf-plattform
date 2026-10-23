@@ -20,7 +20,7 @@ export default function ForeningMedlemmarPage() {
     <ModulePage
       title="Medlemmar & lägenhetsarkiv"
       icon="👥"
-      intro="Börja i lägenhetsarkivet högst upp — öppna en lägenhet, fyll i uppgifter och spara. Renoveringar och överenskommelser hanteras under samma modul."
+      intro="Öppna lägenhetsarkivet med den gröna plusknappen. Välj sedan en adress, ett våningsplan eller alla lägenheter. Renoveringar och överenskommelser hanteras under samma modul."
     >
       <ContentSection title="Så fungerar modulen">
         <p>
@@ -32,20 +32,13 @@ export default function ForeningMedlemmarPage() {
         </p>
       </ContentSection>
 
-      <section id="lagenhetsarkiv" className="scroll-mt-24">
-        <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-foreground">Lägenhetsarkiv</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
-            Sök lägenhet i rullgardinen ovanför listan — särskilt när det finns
-            många. Per lägenhet syns år och typ av renovering. Flera mappar kan
-            läggas till. Signerade överenskommelser ligger i respektive mapp.
-          </p>
-
-          <div className="mt-8">
-            <ApartmentArchiveDemo />
-          </div>
-        </article>
-      </section>
+      <OppnaStangSektion
+        id="lagenhetsarkiv"
+        titel="Lägenhetsarkiv"
+        intro="Arkivet är hopfällt. Öppna det här, och välj sedan en adress, ett våningsplan eller alla lägenheter. Varje grupp öppnas med den gröna knappen och fälls ihop med den röda. Sök i rullgardinen när du letar efter en viss lägenhet."
+      >
+        <ApartmentArchiveDemo />
+      </OppnaStangSektion>
 
       <OppnaStangSektion
         id="renoveringar"

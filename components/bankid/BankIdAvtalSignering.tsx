@@ -45,10 +45,28 @@ export function BankIdAvtalSignering({
   onSignera,
 }: Props) {
   const [namn, setNamn] = useState("");
+  const [epost, setEpost] = useState("");
   const [personnummer, setPersonnummer] = useState("");
+  const [valdLedamotId, setValdLedamotId] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [steg, setSteg] = useState<"idle" | "pagar">("idle");
   const klart = harTillrackligaBankIdSignaturer(signaturer);
+  const namngivna = (ledamoter ?? []).filter((ledamot) => ledamot.namn.trim());
+
+  function valjLedamot(id: string) {
+    setValdLedamotId(id);
+    setFel(null);
+    const ledamot = namngivna.find((rad) => rad.id === id);
+    if (!ledamot) {
+      setNamn("");
+      setEpost("");
+      setPersonnummer("");
+      return;
+    }
+    setNamn(ledamot.namn.trim());
+    setEpost(ledamot.epost.trim());
+    setPersonnummer(ledamot.personnummer.trim());
+  }
 
   async function signera() {
     setFel(null);
@@ -85,7 +103,9 @@ export function BankIdAvtalSignering({
         personnummer.trim(),
       );
       setNamn("");
+      setEpost("");
       setPersonnummer("");
+      setValdLedamotId("");
     } catch (e) {
       setFel(e instanceof Error ? e.message : "Signering misslyckades.");
     } finally {
@@ -129,30 +149,54 @@ export function BankIdAvtalSignering({
             </p>
           )}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm">
-              <span className="font-medium text-foreground">Namn</span>
-              <input
-                type="text"
-                list="avtal-styrelse-namn"
-                value={namn}
-                onChange={(e) => setNamn(e.target.value)}
-                disabled={disabled || steg === "pagar"}
-                placeholder="Välj från styrelsen eller skriv namn"
-                autoComplete="name"
-                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
-              />
-              {ledamoter && ledamoter.some((l) => l.namn.trim()) ? (
-                <datalist id="avtal-styrelse-namn">
-                  {ledamoter
-                    .filter((l) => l.namn.trim())
-                    .map((l) => (
-                      <option key={l.id} value={l.namn}>
-                        {l.roll}
-                      </option>
-                    ))}
-                </datalist>
-              ) : null}
-            </label>
+            {namngivna.length > 0 ? (
+              <label className="block text-sm sm:col-span-2">
+                <span className="font-medium text-foreground">
+                  Välj person från föreningsuppgifter
+                </span>
+                <select
+                  value={valdLedamotId}
+                  onChange={(e) => valjLedamot(e.target.value)}
+                  disabled={disabled || steg === "pagar"}
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+                >
+                  <option value="">Välj person</option>
+                  {namngivna.map((ledamot) => (
+                    <option key={ledamot.id} value={ledamot.id}>
+                      {ledamot.namn}
+                      {ledamot.roll.trim() ? ` · ${ledamot.roll}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label className="block text-sm">
+                <span className="font-medium text-foreground">Namn</span>
+                <input
+                  type="text"
+                  value={namn}
+                  onChange={(e) => setNamn(e.target.value)}
+                  disabled={disabled || steg === "pagar"}
+                  placeholder="Namn på den som signerar"
+                  autoComplete="name"
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+                />
+              </label>
+            )}
+            {namngivna.length > 0 && (
+              <label className="block text-sm">
+                <span className="font-medium text-foreground">E-post</span>
+                <input
+                  type="email"
+                  value={epost}
+                  onChange={(e) => setEpost(e.target.value)}
+                  disabled={disabled || steg === "pagar"}
+                  placeholder="Hämtas från föreningsuppgifter"
+                  autoComplete="email"
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+                />
+              </label>
+            )}
             <label className="block text-sm">
               <span className="font-medium text-foreground">
                 Personnummer på den som ska signera
@@ -163,12 +207,22 @@ export function BankIdAvtalSignering({
                 value={personnummer}
                 onChange={(e) => setPersonnummer(e.target.value)}
                 disabled={disabled || steg === "pagar"}
-                placeholder="ÅÅÅÅMMDD-XXXX"
+                placeholder="Hämtas från föreningsuppgifter"
                 autoComplete="off"
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
               />
             </label>
           </div>
+          {valdLedamotId && !epost.trim() && (
+            <p className="mt-2 text-xs text-amber-950">
+              E-post saknas på personen i föreningsuppgifter.
+            </p>
+          )}
+          {valdLedamotId && !personnummer.trim() && (
+            <p className="mt-2 text-xs text-amber-950">
+              Personnummer saknas på personen i föreningsuppgifter.
+            </p>
+          )}
           {fel && (
             <p
               className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"

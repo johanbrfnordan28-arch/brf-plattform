@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
 import { HeaderMobilMeny } from "@/components/HeaderMobilMeny";
-import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
+import { arInloggadIMenyn } from "@/lib/forening-behorighet-klient";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
 import { MEDLEM_FELANMALAN_PATH } from "@/lib/forening-medlem";
@@ -29,8 +29,8 @@ export function Header() {
   const [harSkapadTest, setHarSkapadTest] = useState<boolean | null>(null);
 
   const ladda = useCallback(() => {
-    setInloggad(arInloggadPaEgenForening());
     setHarSkapadTest(antalEgnaTestForeningar() > 0);
+    void arInloggadIMenyn().then(setInloggad);
   }, []);
 
   useEffect(() => {

@@ -6,7 +6,14 @@ export const KONTAKT_EPOST = {
   info: "info@styrelse-navet.se",
   support: "support@styrelse-navet.se",
   offert: "offert@styrelse-navet.se",
+  ekonomi: "ekonomi@styrelse-navet.se",
 } as const;
+
+/** Personal som får veta när en förening tecknat avtal. Ekonomimottagaren får fakturaunderlaget. */
+export const AVTAL_BEKRAFTELSE_EPOST = [
+  KONTAKT_EPOST.johan,
+  KONTAKT_EPOST.seif,
+] as const;
 
 export type KontaktEpostNyckel = keyof typeof KONTAKT_EPOST;
 
@@ -16,6 +23,7 @@ export const KONTAKT_EPOST_ETIKETTER: Record<KontaktEpostNyckel, string> = {
   info: "Allmän info",
   support: "Support",
   offert: "Offert",
+  ekonomi: "Ekonomi",
 };
 
 /** Kontaktpersoner kunden kan välja på offertformuläret. */

@@ -11,6 +11,7 @@ import {
   expanderaTillfallen,
   formatDatumKort,
   fyllPaStandardHandelser,
+  sorteraHandelser,
   hamtaPaminnelser,
   kategoriEtiketter,
   kategoriFarger,
@@ -48,6 +49,7 @@ import {
   skapaDefaultOvkDual,
   type OvkDualConfig,
 } from "@/components/arshjul/arshjul-ovk";
+import { ArshjulHandelseDetalj } from "@/components/arshjul/ArshjulHandelseDetalj";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 type Vy = "arshjul" | "tidslinje" | "paminnelser";
@@ -128,7 +130,17 @@ export function ArshjulModul() {
     skapaDefaultOvkDual(innevarandeAr),
   );
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
+  const [oppenHandelseId, setOppenHandelseId] = useState<string | null>(null);
   const skipFirstSave = useRef(true);
+  const formRef = useRef<HTMLDetailsElement>(null);
+
+  function sparaHandelseDetalj(id: string, patch: Partial<ArshjulHandelse>) {
+    setHandelser((current) =>
+      current.map((h) =>
+        h.id === id ? normaliseraHandelse({ ...h, ...patch }) : h,
+      ),
+    );
+  }
 
   useEffect(() => {
     // Ny förening startar med tomt årshjul — standardmall läggs in via knappen.
@@ -145,6 +157,11 @@ export function ArshjulModul() {
     }
     sparaHandelser(handelser);
   }, [handelser, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !skapaOppen || !redigeraId) return;
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [hydrated, skapaOppen, redigeraId]);
 
   const tillfallenAr = useMemo(
     () => expanderaTillfallen(handelser, valtAr, valtAr),
@@ -184,14 +201,9 @@ export function ArshjulModul() {
     return [...map.entries()].sort(([a], [b]) => a - b);
   }, [tillfallenTidslinje]);
 
-  const innevarandeArsKvar = useMemo(
-    () => tillfallenAr.filter((t) => !t.arKlar),
-    [tillfallenAr],
-  );
-
-  const innevarandeArsKlara = useMemo(
-    () => tillfallenAr.filter((t) => t.arKlar),
-    [tillfallenAr],
+  const handelserIOrdning = useMemo(
+    () => sorteraHandelser(handelser),
+    [handelser],
   );
 
   const arOvkDualForm = form.kategori === "ovk" && form.typ === "intervall";
@@ -433,7 +445,6 @@ export function ArshjulModul() {
   }
 
   function TillfalleChip({ t }: { t: ArshjulTillfalle }) {
-    const h = handelser.find((x) => x.id === t.handelseId);
     return (
       <div
         className={`rounded-lg border px-2 py-1.5 text-xs ${kategoriFarger[t.kategori]} ${
@@ -450,24 +461,6 @@ export function ArshjulModul() {
             {t.dag} {manadsnamn[t.manad - 1]?.slice(0, 3)}
           </p>
         ) : null}
-        {h && t.arKlar && (
-          <button
-            type="button"
-            onClick={() => avmarkeraKlar(h.id, t.datumIso)}
-            className="mt-1 underline-offset-2 hover:underline"
-          >
-            Ångra avklarad
-          </button>
-        )}
-        {h && !t.arKlar && (
-          <button
-            type="button"
-            onClick={() => markeraKlar(h.id, { ar: t.ar, datumIso: t.datumIso })}
-            className="mt-1 underline-offset-2 hover:underline"
-          >
-            Markera klar
-          </button>
-        )}
       </div>
     );
   }
@@ -483,8 +476,10 @@ export function ArshjulModul() {
           Planen räcker {ARSHJUL_PLANERING_AR} år framåt. Standardkategorier lägger
           in möteskedjan som en händelse per steg (projektering → upphandling →
           startmöte → byggmöte → entreprenadbesiktning → garantibesiktning) med
-          intervall, antal och numrerade möten — inte lösa dubbletter. Markera
-          det aktuella mötet som klart, utöka serien när byggtiden blir längre.
+          intervall, antal och numrerade möten — inte lösa dubbletter. Öppna en
+          kategori för att skriva in senaste leverantör, saker som ska hanteras
+          och ladda upp dagordning. Markera det aktuella mötet som klart, utöka
+          serien när byggtiden blir längre.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -561,11 +556,18 @@ export function ArshjulModul() {
       )}
 
       <details
-        className="rounded-2xl border border-primary/40 bg-[#eef6f0]"
-        open={skapaOppen || undefined}
-        onToggle={(e) => setSkapaOppen((e.target as HTMLDetailsElement).open)}
+        ref={formRef}
+        className="scroll-mt-28 rounded-2xl border border-primary/40 bg-[#eef6f0]"
+        open={skapaOppen}
       >
-        <summary className="cursor-pointer list-none px-5 py-4 [&::-webkit-details-marker]:hidden">
+        <summary
+          className="cursor-pointer list-none px-5 py-4 [&::-webkit-details-marker]:hidden"
+          onClick={(e) => {
+            e.preventDefault();
+            if (skapaOppen) stangForm();
+            else setSkapaOppen(true);
+          }}
+        >
           <span className="font-semibold text-primary-dark">
             {redigeraId ? "Redigera händelse" : "+ Lägg till påminnelse / händelse"}
           </span>
@@ -1188,117 +1190,8 @@ export function ArshjulModul() {
             </label>
           </div>
 
-          {valtAr === innevarandeAr && tillfallenAr.length > 0 && (
-            <section className="rounded-2xl border border-primary/30 bg-white p-4 sm:p-5">
-              <h3 className="text-base font-semibold text-foreground">
-                Bocka av {innevarandeAr}
-              </h3>
-              <p className="mt-1 text-sm text-muted">
-                Händelser detta år — markera när de är genomförda. Planering utan
-                fast datum (t.ex. energideklaration) kan bockas av när åtgärden är
-                klar.
-              </p>
-              {innevarandeArsKvar.length > 0 ? (
-                <ul className="mt-4 space-y-2">
-                  {innevarandeArsKvar.map((t) => (
-                    <li
-                      key={`kvar-${t.handelseId}-${t.datumIso}`}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-[#f7f9f8] px-3 py-2 text-sm"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground">{t.titel}</p>
-                        <p className="text-xs text-muted">
-                          {t.planerasUnderAr
-                            ? `Planeras under ${t.ar}`
-                            : formatDatumKort(t.datumIso)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          markeraKlar(t.handelseId, {
-                            ar: t.ar,
-                            datumIso: t.datumIso,
-                          })
-                        }
-                        className="brf-knapp-neutral px-3 py-1.5 text-xs"
-                      >
-                        Markera klar
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-4 text-sm text-primary-dark">
-                  Alla händelser för {innevarandeAr} är avbockade.
-                </p>
-              )}
-              {innevarandeArsKlara.length > 0 && (
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-sm font-medium text-muted">
-                    Klara ({innevarandeArsKlara.length})
-                  </summary>
-                  <ul className="mt-2 space-y-1">
-                    {innevarandeArsKlara.map((t) => (
-                      <li
-                        key={`klar-${t.handelseId}-${t.datumIso}`}
-                        className="flex items-center justify-between gap-2 text-sm text-muted"
-                      >
-                        <span className="line-through">{t.titel}</span>
-                        <button
-                          type="button"
-                          onClick={() => avmarkeraKlar(t.handelseId, t.datumIso)}
-                          className="text-xs underline"
-                        >
-                          Ångra
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </section>
-          )}
-
-          <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/50 p-4 sm:p-6">
-            <div className="mb-4 text-center">
-              <p className="text-3xl font-bold text-primary-dark">{valtAr}</p>
-              <p className="text-sm text-muted">
-                Årshjul — {tillfallenAr.length} tillfällen detta år · planeras{" "}
-                {ARSHJUL_PLANERING_AR} år framåt
-              </p>
-            </div>
-            <div
-              className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4"
-              aria-label={`Årshjul ${valtAr}`}
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((manad) => {
-                const poster = perManad.get(manad) ?? [];
-                return (
-                  <div
-                    key={manad}
-                    className="flex min-h-[6rem] flex-col rounded-xl border border-border bg-white p-2.5 shadow-sm"
-                  >
-                    <p className="text-xs font-bold text-foreground">
-                      {manadsnamn[manad - 1]}
-                    </p>
-                    <div className="mt-1.5 flex flex-1 flex-col gap-1 overflow-y-auto">
-                      {poster.length === 0 ? (
-                        <span className="text-[10px] text-muted/50">Inget inlagt</span>
-                      ) : (
-                        poster.map((t) => (
-                          <TillfalleChip key={`${t.handelseId}-${t.datumIso}`} t={t} />
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           <ul className="space-y-3">
-            {handelser.map((h) => {
+            {handelserIOrdning.map((h) => {
               const serie = arSerieHandelse(h);
               const moten = serie ? byggSerieTillfallen(h) : [];
               const nasta = serie ? nastaOppnaSerieTillfalle(h) : null;
@@ -1319,8 +1212,33 @@ export function ArshjulModul() {
                         <span className="font-medium">{h.titel}</span>
                       </div>
                       <p className="text-xs text-muted">{beskrivIntervall(h)}</p>
+                      {h.leverantor?.trim() ? (
+                        <p className="text-xs text-foreground">
+                          Senast anlitad: {h.leverantor.trim()}
+                        </p>
+                      ) : null}
+                      {(h.attHantera?.length ?? 0) > 0 ? (
+                        <p className="text-xs text-muted">
+                          {h.attHantera?.length} saker att hantera
+                        </p>
+                      ) : null}
+                      {h.bankid?.forberedd ? (
+                        <p className="text-xs text-primary-dark">
+                          Förberedd för BankID-godkännande
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOppenHandelseId((id) => (id === h.id ? null : h.id))
+                        }
+                        className="rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
+                        aria-expanded={oppenHandelseId === h.id}
+                      >
+                        {oppenHandelseId === h.id ? "Stäng" : "Öppna"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => startaRedigera(h)}
@@ -1337,6 +1255,13 @@ export function ArshjulModul() {
                       </button>
                     </div>
                   </div>
+
+                  {oppenHandelseId === h.id && (
+                    <ArshjulHandelseDetalj
+                      handelse={h}
+                      onSpara={(patch) => sparaHandelseDetalj(h.id, patch)}
+                    />
+                  )}
 
                   {serie && (
                     <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
@@ -1431,6 +1356,43 @@ export function ArshjulModul() {
               );
             })}
           </ul>
+
+          <div className="rounded-2xl border-2 border-primary/30 bg-[#eef6f0]/50 p-4 sm:p-6">
+            <div className="mb-4 text-center">
+              <p className="text-3xl font-bold text-primary-dark">{valtAr}</p>
+              <p className="text-sm text-muted">
+                Årshjul — {tillfallenAr.length} tillfällen detta år · planeras{" "}
+                {ARSHJUL_PLANERING_AR} år framåt
+              </p>
+            </div>
+            <div
+              className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4"
+              aria-label={`Årshjul ${valtAr}`}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((manad) => {
+                const poster = perManad.get(manad) ?? [];
+                return (
+                  <div
+                    key={manad}
+                    className="flex min-h-[6rem] flex-col rounded-xl border border-border bg-white p-2.5 shadow-sm"
+                  >
+                    <p className="text-xs font-bold text-foreground">
+                      {manadsnamn[manad - 1]}
+                    </p>
+                    <div className="mt-1.5 flex flex-1 flex-col gap-1 overflow-y-auto">
+                      {poster.length === 0 ? (
+                        <span className="text-[10px] text-muted/50">Inget inlagt</span>
+                      ) : (
+                        poster.map((t) => (
+                          <TillfalleChip key={`${t.handelseId}-${t.datumIso}`} t={t} />
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

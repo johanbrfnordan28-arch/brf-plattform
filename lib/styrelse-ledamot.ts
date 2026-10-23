@@ -7,14 +7,18 @@ export type StyrelseLedamot = {
   roll: string;
   /** Inloggningsmejl — syns endast för styrelsen, aldrig plattformsadmin. */
   epost: string;
+  /** Används när personen väljs vid BankID-signering. */
+  personnummer: string;
   bankidKopplad: boolean;
   /** ISO-tidpunkt när BankID kopplades (tom om ej kopplad). */
   bankidKoppladTidpunkt: string;
   /** Maskerat personnummer som BankID kopplades mot. */
   personnummerMaskerat: string;
+  /** Kryssas i under föreningsuppgifter. Högst två personer signerar kundavtalet. */
+  signerarAvtal: boolean;
 };
 
-export const MAX_STYRELSE_LEDAMOTER = 10;
+export const MAX_STYRELSE_LEDAMOTER = 8;
 
 export const STYRELSE_ROLLER = [
   "Ordförande",
@@ -45,6 +49,8 @@ export function skapaTomStyrelseLedamot(
     namn: typeof delvis?.namn === "string" ? delvis.namn : "",
     roll: typeof delvis?.roll === "string" ? delvis.roll : "Ledamot",
     epost: typeof delvis?.epost === "string" ? delvis.epost : "",
+    personnummer:
+      typeof delvis?.personnummer === "string" ? delvis.personnummer : "",
     bankidKopplad: Boolean(delvis?.bankidKopplad),
     bankidKoppladTidpunkt:
       typeof delvis?.bankidKoppladTidpunkt === "string"
@@ -54,6 +60,7 @@ export function skapaTomStyrelseLedamot(
       typeof delvis?.personnummerMaskerat === "string"
         ? delvis.personnummerMaskerat
         : "",
+    signerarAvtal: Boolean(delvis?.signerarAvtal),
   };
 }
 
@@ -68,6 +75,8 @@ export function normaliseraStyrelseLedamoter(raw: unknown): StyrelseLedamot[] {
         namn: typeof rad.namn === "string" ? rad.namn : "",
         roll: typeof rad.roll === "string" ? rad.roll : "Ledamot",
         epost: typeof rad.epost === "string" ? rad.epost : "",
+        personnummer:
+          typeof rad.personnummer === "string" ? rad.personnummer : "",
         bankidKopplad: Boolean(rad.bankidKopplad),
         bankidKoppladTidpunkt:
           typeof rad.bankidKoppladTidpunkt === "string"
@@ -77,6 +86,7 @@ export function normaliseraStyrelseLedamoter(raw: unknown): StyrelseLedamot[] {
           typeof rad.personnummerMaskerat === "string"
             ? rad.personnummerMaskerat
             : "",
+        signerarAvtal: Boolean(rad.signerarAvtal),
       }),
     );
 }

@@ -207,6 +207,36 @@ export function byggAvtalsSektioner(part: AvtalsPart): AvtalsSektion[] {
   ];
 }
 
+/** Avtalstext som kan mejlas, skrivas ut som PDF och sparas i biblioteket. */
+export function byggAvtalsText(
+  part: AvtalsPart,
+  extra?: { statusrad?: string },
+): string {
+  const namn = part.foreningsNamn.trim() || "Föreningen";
+  const rader: string[] = [
+    "KUNDAVTAL",
+    "Styrelse-Navet",
+    "",
+    `Förening: ${namn}`,
+    part.organisationsnummer?.trim()
+      ? `Organisationsnummer: ${part.organisationsnummer.trim()}`
+      : "",
+    extra?.statusrad?.trim() ?? "",
+    "",
+  ];
+  for (const sektion of byggAvtalsSektioner(part)) {
+    rader.push(sektion.rubrik);
+    for (const punkt of sektion.punkter) {
+      rader.push(punkt);
+      rader.push("");
+    }
+  }
+  rader.push(
+    "Avtalet mejlas till de två företrädare som ska signera. Mejladress krävs för båda.",
+  );
+  return rader.filter((rad) => rad !== undefined).join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
 export function avtalsVillkorKortMedProvoperiod(): string[] {
   return [
     `Prövoperiod ${PROVOPERIODE_DAGAR} dagar — ingen uppsägningstid`,

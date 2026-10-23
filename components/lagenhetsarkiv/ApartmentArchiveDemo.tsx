@@ -5,8 +5,15 @@ import {
   appliceraLagenhetsnummerByte,
   bytLagenhetsnummer,
   bytRenoveringsMappMall,
+  byggLagenhetsVisning,
   filtreraLagenheter,
   formatLagenhetEtikett,
+  lagenhetAdressGrupp,
+  lagenhetVaningGrupp,
+  nycklarForOppnaAlla,
+  unikaGrupper,
+  jamforVaning,
+  VANING_EJ_ANGIVEN,
   hamtaNastaLagenhetsnummer,
   lagenhetsBasSidor,
   renoveringsMappOversiktEtikett,
@@ -88,6 +95,8 @@ export function ApartmentArchiveDemo() {
   const [apartments, setApartments] = useState<ApartmentFolder[]>([]);
   const [oppenLagenhetsId, setOppenLagenhetsId] = useState<number | null>(null);
   const [lagenhetSok, setLagenhetSok] = useState("");
+  const [omfattning, setOmfattning] = useState("");
+  const [oppnaGrupper, setOppnaGrupper] = useState<string[]>([]);
   const [nextApartmentNumber, setNextApartmentNumber] = useState(1002);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
@@ -211,6 +220,27 @@ export function ApartmentArchiveDemo() {
     [apartments, lagenhetSok],
   );
 
+  const adressVal = useMemo(
+    () => unikaGrupper(apartments.map(lagenhetAdressGrupp)),
+    [apartments],
+  );
+
+  const vaningVal = useMemo(
+    () => unikaGrupper(apartments.map(lagenhetVaningGrupp), jamforVaning),
+    [apartments],
+  );
+
+  const visningsNoder = useMemo(() => {
+    if (lagenhetSok.trim()) {
+      return visadeLagenheter.map((apartment) => ({
+        typ: "lagenhet" as const,
+        apartment,
+        niva: 0,
+      }));
+    }
+    return byggLagenhetsVisning(apartments, omfattning, new Set(oppnaGrupper));
+  }, [apartments, lagenhetSok, visadeLagenheter, omfattning, oppnaGrupper]);
+
   const valdMallObj = useMemo(
     () => hamtaRenoveringsMall(valdMall),
     [valdMall],
@@ -251,6 +281,23 @@ export function ApartmentArchiveDemo() {
         .getElementById(`lagenhet-kort-${id}`)
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 60);
+  }
+
+  function valjOmfattning(value: string) {
+    setOmfattning(value);
+    if (value.startsWith("adress:") || value.startsWith("vaning:")) {
+      setOppnaGrupper([value]);
+      return;
+    }
+    setOppnaGrupper([]);
+  }
+
+  function vaxlaGrupp(nyckel: string) {
+    setOppnaGrupper((current) =>
+      current.includes(nyckel)
+        ? current.filter((k) => k !== nyckel)
+        : [...current, nyckel],
+    );
   }
 
   function vaxlaOppenLagenhet(id: number) {
@@ -664,7 +711,103 @@ export function ApartmentArchiveDemo() {
             eller adress.
           </p>
         ) : null}
-        {visadeLagenheter.map((apartment) => {
+        {apartments.length > 0 && !lagenhetSok.trim() && (
+          <div className="rounded-2xl border border-border bg-[#f7f9f8] p-4">
+            <label className="block text-sm font-medium text-foreground">
+              Öppna lägenheter
+              <select
+                value={omfattning}
+                onChange={(e) => valjOmfattning(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              >
+                <option value="">Välj adress, våningsplan eller alla</option>
+                <optgroup label="Adress">
+                  {adressVal.map((adress) => (
+                    <option
+                      key={adress}
+                      value={`adress:${encodeURIComponent(adress)}`}
+                    >
+                      {adress} (
+                      {
+                        apartments.filter((a) => lagenhetAdressGrupp(a) === adress)
+                          .length
+                      }
+                      )
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Våningsplan">
+                  {vaningVal.map((vaning) => (
+                    <option
+                      key={vaning}
+                      value={`vaning:${encodeURIComponent(vaning)}`}
+                    >
+                      {vaning === VANING_EJ_ANGIVEN ? vaning : `Våning ${vaning}`}{" "}
+                      (
+                      {
+                        apartments.filter((a) => lagenhetVaningGrupp(a) === vaning)
+                          .length
+                      }
+                      )
+                    </option>
+                  ))}
+                </optgroup>
+                <option value="alla">
+                  Alla lägenheter ({apartments.length})
+                </option>
+              </select>
+            </label>
+            <p className="mt-2 text-xs text-muted">
+              Lägenheterna är hopfällda. Välj en adress eller ett våningsplan,
+              eller alla, och öppna gruppen med den gröna knappen.
+            </p>
+            {omfattning === "alla" && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOppnaGrupper(nycklarForOppnaAlla(apartments))}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
+                >
+                  Öppna alla
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOppnaGrupper([])}
+                  className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-muted hover:border-primary/40"
+                >
+                  Fäll ihop alla
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {visningsNoder.map((nod) => {
+          if (nod.typ === "grupp") {
+            const oppenGrupp = oppnaGrupper.includes(nod.nyckel);
+            return (
+              <div
+                key={nod.nyckel}
+                className={`flex items-center justify-between gap-3 rounded-xl border border-border bg-white px-4 py-3 ${
+                  nod.niva > 0 ? "ml-4 sm:ml-8" : ""
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground">{nod.rubrik}</p>
+                  <p className="text-xs text-muted">
+                    {nod.antal} {nod.antal === 1 ? "lägenhet" : "lägenheter"}
+                  </p>
+                </div>
+                <OppnaStangKnapp
+                  oppen={oppenGrupp}
+                  onClick={() => vaxlaGrupp(nod.nyckel)}
+                  ariaLabel={
+                    oppenGrupp ? `Stäng ${nod.rubrik}` : `Öppna ${nod.rubrik}`
+                  }
+                />
+              </div>
+            );
+          }
+          const apartment = nod.apartment;
           const oppen = apartment.id === oppenLagenhetsId;
           const foreslagnaMallar = hamtaForeslagnaMallar(apartment);
           const etikett = formatLagenhetEtikett(apartment.lagenhetsnummer);
@@ -681,7 +824,9 @@ export function ApartmentArchiveDemo() {
             <article
               key={apartment.id}
               id={`lagenhet-kort-${apartment.id}`}
-              className="scroll-mt-24 rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20"
+              className={`scroll-mt-24 rounded-2xl border-2 border-border bg-white transition-shadow hover:border-primary/20 ${
+                nod.niva > 1 ? "ml-8 sm:ml-14" : nod.niva > 0 ? "ml-4 sm:ml-8" : ""
+              }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3 p-4">
                 <div className="min-w-0 flex-1">
@@ -693,6 +838,9 @@ export function ApartmentArchiveDemo() {
                         }`
                       : "Inga renoveringsmappar"}
                     {apartment.adress ? ` · ${apartment.adress}` : ""}
+                    {apartment.vaning?.trim()
+                      ? ` · vån ${apartment.vaning.trim()}`
+                      : ""}
                   </p>
                   {renoveringsOversikt.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
