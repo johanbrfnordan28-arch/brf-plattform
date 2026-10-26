@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import {
   ARSHJUL_PLANERING_AR,
@@ -131,6 +131,7 @@ export function ArshjulModul() {
   );
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
   const [oppenHandelseId, setOppenHandelseId] = useState<string | null>(null);
+  const [visarFlerMotenId, setVisarFlerMotenId] = useState<string | null>(null);
   const skipFirstSave = useRef(true);
   const formRef = useRef<HTMLDetailsElement>(null);
 
@@ -432,7 +433,7 @@ export function ArshjulModul() {
     }
     setHandelser(efter);
     setImportMeddelande(
-      `${antal} standardhändelser tillagda (möteskedja, styrelsemöte, OVK, sotning m.fl.).`,
+      `${antal} kategorier tillagda. Varje del börjar med ett möte — lägg till fler när de behövs, så listan hålls kort.`,
     );
   }
 
@@ -473,13 +474,11 @@ export function ArshjulModul() {
     <div className="space-y-6">
       <div className="max-w-3xl space-y-2">
         <p className="text-sm leading-relaxed text-muted">
-          Planen räcker {ARSHJUL_PLANERING_AR} år framåt. Standardkategorier lägger
-          in möteskedjan som en händelse per steg (projektering → upphandling →
-          startmöte → byggmöte → entreprenadbesiktning → garantibesiktning) med
-          intervall, antal och numrerade möten — inte lösa dubbletter. Öppna en
-          kategori för att skriva in senaste leverantör, saker som ska hanteras
-          och ladda upp dagordning. Markera det aktuella mötet som klart, utöka
-          serien när byggtiden blir längre.
+          Planen räcker {ARSHJUL_PLANERING_AR} år framåt. Standardkategorierna
+          börjar med ett möte per del, så listan inte fylls med hela året på en
+          gång. Lägg till fler möten i samma del när de behövs. Styrelsemöten
+          har tre delar: ordinarie möte, konstituerande möte och överlämning
+          till ny styrelse.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -536,9 +535,9 @@ export function ArshjulModul() {
             Årshjulet är tomt
           </p>
           <p className="mt-1 text-sm text-foreground">
-            Börja med standardkategorier (möteskedja, OVK, sotning m.m.) — sedan
-            kan ni lägga till egna påminnelser eller importera från
-            underhållsplan och projekt.
+            Börja med standardkategorier. Varje del får ett möte — styrelsemöte,
+            konstituerande möte, överlämning, stämma, OVK och möteskedjan. Fler
+            möten lägger ni till i den del som behöver dem.
           </p>
           <button
             type="button"
@@ -713,7 +712,7 @@ export function ArshjulModul() {
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
                   <span className="mt-1 block text-xs text-muted">
-                    Mötena numreras (t.ex. Byggmöte 1, 2, …). Kan utökas senare.
+                    Börjar med ett möte. Fler läggs till i kategorin efteråt.
                   </span>
                 </label>
                 <label className="block">
@@ -1191,14 +1190,22 @@ export function ArshjulModul() {
           </div>
 
           <ul className="space-y-3">
-            {handelserIOrdning.map((h) => {
+            {handelserIOrdning.map((h, index) => {
               const serie = arSerieHandelse(h);
               const moten = serie ? byggSerieTillfallen(h) : [];
               const nasta = serie ? nastaOppnaSerieTillfalle(h) : null;
               const senastKlar = serie ? senastKlaraSerieTillfalle(h) : null;
+              const visaStyrelseRubrik =
+                h.kategori === "styrelsemote" &&
+                handelserIOrdning[index - 1]?.kategori !== "styrelsemote";
               return (
+                <Fragment key={h.id}>
+                  {visaStyrelseRubrik && (
+                    <li className="list-none px-1 pt-1 text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                      Styrelsemöten
+                    </li>
+                  )}
                 <li
-                  key={h.id}
                   className="rounded-xl border border-border bg-white px-3 py-3 text-sm sm:px-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1267,11 +1274,16 @@ export function ArshjulModul() {
                     <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
                       {moten.length === 0 ? (
                         <p className="text-xs text-muted">
-                          Inga möten i serien ännu.
+                          Inga möten i kategorin ännu.
                         </p>
                       ) : (
                         <ul className="space-y-1.5">
-                          {moten.map((t) => (
+                          {(visarFlerMotenId === h.id
+                            ? moten
+                            : [nasta ?? senastKlar ?? moten[0]]
+                          )
+                            .filter((t): t is ArshjulTillfalle => t != null)
+                            .map((t) => (
                             <li
                               key={`${h.id}-${t.serieNummer}`}
                               className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#f7f9f8] px-2.5 py-1.5"
@@ -1317,42 +1329,37 @@ export function ArshjulModul() {
                         </ul>
                       )}
                       <div className="flex flex-wrap items-center gap-2 pt-1">
-                        {nasta && (
+                        {moten.length > 1 && (
                           <button
                             type="button"
                             onClick={() =>
-                              markeraKlar(h.id, {
-                                ar: nasta.ar,
-                                datumIso: nasta.datumIso,
-                              })
+                              setVisarFlerMotenId((id) =>
+                                id === h.id ? null : h.id,
+                              )
                             }
-                            className="brf-knapp-neutral px-3 py-1.5 text-xs"
+                            className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/40"
+                            aria-expanded={visarFlerMotenId === h.id}
                           >
-                            Markera klar — {nasta.titel}
-                          </button>
-                        )}
-                        {!nasta && senastKlar && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              avmarkeraKlar(h.id, senastKlar.datumIso)
-                            }
-                            className="brf-knapp-neutral px-3 py-1.5 text-xs"
-                          >
-                            Ångra {senastKlar.titel}
+                            {visarFlerMotenId === h.id
+                              ? "Visa bara aktuellt möte"
+                              : `Visa övriga möten (${moten.length - 1})`}
                           </button>
                         )}
                         <button
                           type="button"
-                          onClick={() => utokaHandelseSerie(h.id, 1)}
+                          onClick={() => {
+                            utokaHandelseSerie(h.id, 1);
+                            setVisarFlerMotenId(h.id);
+                          }}
                           className="rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
                         >
-                          Utöka med ett möte
+                          Lägg till möte
                         </button>
                       </div>
                     </div>
                   )}
                 </li>
+                </Fragment>
               );
             })}
           </ul>

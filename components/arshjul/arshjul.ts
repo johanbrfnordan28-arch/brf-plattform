@@ -203,8 +203,15 @@ export const MOTESKEDJA_KATEGORIER: ArshjulKategori[] = [
   "garantbesiktning",
 ];
 
-/** Möteskedjan sist, i ordning från projektering till garantibesiktning. */
+/** Möteskedjan sist, i ordning från projektering till garantibesiktning. Styrelsemöten hålls ihop först. */
 export function sorteraHandelser(lista: ArshjulHandelse[]): ArshjulHandelse[] {
+  const styrelseOrdning = (h: ArshjulHandelse): number => {
+    if (h.id === "std-styrelsemote") return 0;
+    if (h.id === "std-konstituerande") return 1;
+    if (h.id === "std-overlamning") return 2;
+    if (h.kategori === "styrelsemote") return 3;
+    return 10;
+  };
   return lista
     .map((h, index) => ({ h, index }))
     .sort((a, b) => {
@@ -214,6 +221,9 @@ export function sorteraHandelser(lista: ArshjulHandelse[]): ArshjulHandelse[] {
       const bSist = bi >= 0;
       if (aSist !== bSist) return aSist ? 1 : -1;
       if (aSist && bSist && ai !== bi) return ai - bi;
+      const sa = styrelseOrdning(a.h);
+      const sb = styrelseOrdning(b.h);
+      if (sa !== sb) return sa - sb;
       return a.index - b.index;
     })
     .map((rad) => rad.h);
@@ -520,17 +530,63 @@ function serieSteg(
     : plusManaderIso(iso, varje);
 }
 
-function hoppaExkluderadeSerieDatum(
+/** Nästa månads N:e veckodag, t.ex. andra tisdagen. */
+function nastaManadsVeckodag(
   iso: string,
-  h: ArshjulHandelse,
+  veckodag: Veckodag,
+  ordinal: number,
   varje: number,
-  enhet: SerieIntervallEnhet,
 ): string {
+  const d = parseDatum(iso);
+  if (!d) return iso;
+  let ar = d.getFullYear();
+  let manad = d.getMonth() + 1 + varje;
+  while (manad > 12) {
+    manad -= 12;
+    ar += 1;
+  }
+  return (
+    datumForVeckodagIManad(ar, manad, veckodag, ordinal)?.datumIso ??
+    plusManaderIso(iso, varje)
+  );
+}
+
+function nastaSerieDatum(iso: string, h: ArshjulHandelse): string {
+  const varje = Math.max(1, h.serieIntervallVarje ?? 1);
+  const enhet: SerieIntervallEnhet =
+    h.serieIntervallEnhet === "manad" ? "manad" : "vecka";
+  if (enhet === "manad" && h.veckodag) {
+    return nastaManadsVeckodag(iso, h.veckodag, h.veckodagOrdinal ?? 1, varje);
+  }
+  return serieSteg(iso, varje, enhet);
+}
+
+function forstaVeckodagManadPaEllerEfter(
+  iso: string,
+  veckodag: Veckodag,
+  ordinal: number,
+): string {
+  const startAr = Number(iso.slice(0, 4));
+  const startManad = Number(iso.slice(5, 7));
+  for (let i = 0; i < 18; i++) {
+    let manad = startManad + i;
+    let ar = startAr;
+    while (manad > 12) {
+      manad -= 12;
+      ar += 1;
+    }
+    const traff = datumForVeckodagIManad(ar, manad, veckodag, ordinal);
+    if (traff && traff.datumIso >= iso) return traff.datumIso;
+  }
+  return iso;
+}
+
+function hoppaExkluderadeSerieDatum(iso: string, h: ArshjulHandelse): string {
   let current = iso;
   for (let i = 0; i < 48; i++) {
     const manad = Number(current.slice(5, 7));
     if (!manadArExkluderad(h, manad)) return current;
-    current = serieSteg(current, varje, enhet);
+    current = nastaSerieDatum(current, h);
   }
   return current;
 }
@@ -542,6 +598,7 @@ export function moteNamn(basTitel: string, nummer: number): string {
 
 export function serieIntervallText(h: ArshjulHandelse): string {
   const varje = h.serieIntervallVarje ?? 1;
+  if (h.serieIntervallEnhet === "manad" && varje === 12) return "Varje år";
   const enhet = h.serieIntervallEnhet === "manad" ? "månad" : "vecka";
   if (varje === 1) return `Varje ${enhet}`;
   return `Var ${varje}:e ${enhet}`;
@@ -553,7 +610,6 @@ export function byggSerieTillfallen(h: ArshjulHandelse): ArshjulTillfalle[] {
   const antal = Math.max(0, h.serieAntal ?? 0);
   if (antal === 0) return [];
 
-  const varje = Math.max(1, h.serieIntervallVarje ?? 1);
   const enhet: SerieIntervallEnhet =
     h.serieIntervallEnhet === "manad" ? "manad" : "vecka";
 
@@ -562,29 +618,26 @@ export function byggSerieTillfallen(h: ArshjulHandelse): ArshjulTillfalle[] {
     datumLista = h.serieDatum.map((d) => d.slice(0, 10));
     while (datumLista.length < antal) {
       const last = datumLista[datumLista.length - 1] ?? idagIso();
-      const nasta = hoppaExkluderadeSerieDatum(
-        serieSteg(last, varje, enhet),
-        h,
-        varje,
-        enhet,
+      datumLista.push(
+        hoppaExkluderadeSerieDatum(nastaSerieDatum(last, h), h),
       );
-      datumLista.push(nasta);
     }
     datumLista = datumLista.slice(0, antal);
   } else {
     let cursor = (h.serieStartDatum ?? h.datum ?? idagIso()).slice(0, 10);
-    if (h.veckodag) {
+    if (h.veckodag && enhet === "manad") {
+      cursor = forstaVeckodagManadPaEllerEfter(
+        cursor,
+        h.veckodag,
+        h.veckodagOrdinal ?? 1,
+      );
+    } else if (h.veckodag) {
       cursor = nastaVeckodagPaEllerEfter(cursor, h.veckodag);
     }
-    cursor = hoppaExkluderadeSerieDatum(cursor, h, varje, enhet);
+    cursor = hoppaExkluderadeSerieDatum(cursor, h);
     for (let i = 0; i < antal; i++) {
       if (i > 0) {
-        cursor = hoppaExkluderadeSerieDatum(
-          serieSteg(cursor, varje, enhet),
-          h,
-          varje,
-          enhet,
-        );
+        cursor = hoppaExkluderadeSerieDatum(nastaSerieDatum(cursor, h), h);
       }
       datumLista.push(cursor);
     }
@@ -884,6 +937,8 @@ function skapaSerieMall(opts: {
   enhet: SerieIntervallEnhet;
   startIso: string;
   veckodag?: Veckodag;
+  veckodagOrdinal?: number;
+  exkluderaManader?: number[];
   paminnelseDagar?: number[];
 }): ArshjulHandelse {
   const mall = normaliseraHandelse({
@@ -897,6 +952,8 @@ function skapaSerieMall(opts: {
     serieIntervallEnhet: opts.enhet,
     serieStartDatum: opts.startIso,
     veckodag: opts.veckodag,
+    veckodagOrdinal: opts.veckodagOrdinal,
+    exkluderaManader: opts.exkluderaManader,
     paminnelseDagar: opts.paminnelseDagar ?? [14, 7, 1],
     klar: false,
     skapad: "standard",
@@ -918,22 +975,55 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
   const besiktningStart = plusDagarIso(byggStart, 6 * 28 + 14);
   const garantStart = plusManaderIso(besiktningStart, 24);
 
+  const idag = idagIso();
+  const overlamningIAr = datumIso(basAr, 4, 8);
+  const overlamning =
+    overlamningIAr >= idag ? overlamningIAr : datumIso(basAr + 1, 4, 8);
+  const konstituerandeIAr = datumIso(basAr, 4, 22);
+  const konstituerande =
+    konstituerandeIAr >= idag
+      ? konstituerandeIAr
+      : datumIso(basAr + 1, 4, 22);
+
   return [
-    normaliseraHandelse({
+    skapaSerieMall({
       id: "std-styrelsemote",
       titel: "Styrelsemöte",
       beskrivning:
-        "Ordinarie styrelsemöte — andra tisdagen varje månad. Uppehåll juli–augusti.",
+        "Ordinarie styrelsemöte, andra tisdagen. Börjar med ett möte — lägg till fler efter hand. Uppehåll juli–augusti.",
       kategori: "styrelsemote",
-      typ: "manatlig",
+      antal: 1,
+      varje: 1,
+      enhet: "manad",
+      startIso: idag,
       veckodag: 2,
       veckodagOrdinal: 2,
-      startAr: basAr,
       exkluderaManader: [...SOMMAR_EXKLUDERADE_MANADER],
       paminnelseDagar: [14, 7, 1],
-      klar: false,
-      skapad: "standard",
-      externKalla: "manuell",
+    }),
+    skapaSerieMall({
+      id: "std-konstituerande",
+      titel: "Konstituerande möte",
+      beskrivning:
+        "Första styrelsemötet efter årsstämman. Styrelsen fördelar uppdrag: ordförande, kassör, sekreterare och firmatecknare. Lägg till nästa års möte när det behövs.",
+      kategori: "styrelsemote",
+      antal: 1,
+      varje: 12,
+      enhet: "manad",
+      startIso: konstituerande,
+      paminnelseDagar: [30, 14, 7],
+    }),
+    skapaSerieMall({
+      id: "std-overlamning",
+      titel: "Överlämning till ny styrelse",
+      beskrivning:
+        "Avgående styrelse lämnar över handlingar, bank, avtal och pågående ärenden till den nya styrelsen. Lägg till nästa överlämning när styrelsen byts.",
+      kategori: "styrelsemote",
+      antal: 1,
+      varje: 12,
+      enhet: "manad",
+      startIso: overlamning,
+      paminnelseDagar: [30, 14, 7],
     }),
     normaliseraHandelse({
       id: "std-ovk-bostad",
@@ -1043,9 +1133,9 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-projektering",
       titel: "Projekteringsmöte",
       beskrivning:
-        "Första steget i möteskedjan. Utöka antalet om projekteringen behöver fler möten.",
+        "Första steget i möteskedjan. Börjar med ett möte — lägg till fler om projekteringen behöver det.",
       kategori: "projekteringsmote",
-      antal: 2,
+      antal: 1,
       varje: 2,
       enhet: "vecka",
       startIso: projekteringStart,
@@ -1055,9 +1145,9 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-upphandling",
       titel: "Upphandlingsmöte",
       beskrivning:
-        "Upphandling efter projektering. Utöka serien om anbudsrundan behöver fler möten.",
+        "Upphandling efter projektering. Börjar med ett möte — lägg till fler om anbudsrundan behöver det.",
       kategori: "upphandlingsmote",
-      antal: 2,
+      antal: 1,
       varje: 2,
       enhet: "vecka",
       startIso: upphandlingStart,
@@ -1079,9 +1169,9 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-byggmote",
       titel: "Byggmöte",
       beskrivning:
-        "Byggmöten under entreprenaden — numrerade i ordning. Utöka antalet när byggtiden blir längre.",
+        "Byggmöte under entreprenaden. Börjar med ett möte — lägg till fler när byggtiden behöver det.",
       kategori: "byggmote",
-      antal: 6,
+      antal: 1,
       varje: 4,
       enhet: "vecka",
       startIso: byggStart,
@@ -1116,6 +1206,26 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
   ];
 }
 
+/** Tidigare standardmall öppnade flera möten. De kortas till ett om inget är avklarat. */
+const GAMMAL_STANDARD_SERIE_ANTAL: Record<string, number> = {
+  "std-projektering": 2,
+  "std-upphandling": 2,
+  "std-byggmote": 6,
+};
+
+function ettMoteOmGammalStandard(h: ArshjulHandelse): ArshjulHandelse {
+  const gammaltAntal = GAMMAL_STANDARD_SERIE_ANTAL[h.id];
+  if (gammaltAntal == null || h.typ !== "serie") return h;
+  if ((h.klarDatum?.length ?? 0) > 0) return h;
+  if (h.serieAntal !== gammaltAntal) return h;
+  const forsta = h.serieDatum?.[0] ?? h.serieStartDatum;
+  return normaliseraHandelse({
+    ...h,
+    serieAntal: 1,
+    serieDatum: forsta ? [forsta.slice(0, 10)] : undefined,
+  });
+}
+
 /**
  * Flyttar gammal månadsvis byggmötesmall och gammal garant-etikett
  * till möteserie, utan att duplicera händelser.
@@ -1126,6 +1236,14 @@ export function migreraArshjulHandelser(
   const mallar = new Map(skapaStandardHandelser().map((h) => [h.id, h]));
   return lista.map((h) => {
     const mall = mallar.get(h.id);
+    if (h.id === "std-styrelsemote" && h.typ === "manatlig" && mall) {
+      if ((h.klarDatum?.length ?? 0) > 0) return h;
+      return normaliseraHandelse({
+        ...mall,
+        id: h.id,
+        paminnelseDagar: h.paminnelseDagar,
+      });
+    }
     if (h.id === "std-byggmote" && h.typ === "manatlig" && mall) {
       return normaliseraHandelse({
         ...mall,
@@ -1143,19 +1261,19 @@ export function migreraArshjulHandelser(
         paminnelseDagar: h.paminnelseDagar,
       });
     }
+    let next = h;
     if (h.titel === "Garantbesiktning") {
-      return normaliseraHandelse({
+      next = normaliseraHandelse({
         ...h,
         titel: "Garantibesiktning (2-årsbesiktning)",
       });
-    }
-    if (
+    } else if (
       h.kategori === "besiktningEntreprenad" &&
       h.titel === "Besiktning entreprenad"
     ) {
-      return normaliseraHandelse({ ...h, titel: "Slutbesiktning" });
+      next = normaliseraHandelse({ ...h, titel: "Slutbesiktning" });
     }
-    return h;
+    return ettMoteOmGammalStandard(next);
   });
 }
 
