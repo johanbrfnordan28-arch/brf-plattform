@@ -603,6 +603,94 @@ export function sparaSigneringSchemaKonfig(konfig: SigneringSchemaKonfig): boole
   return ok;
 }
 
+const BESTAMT_SCHEMA_BASE = "brf-rondering-schema-bestamt";
+export const BESTAMT_SCHEMA_EVENT = "rondering-schema-bestamt";
+
+/** Fryst kopia av båda scheman — det som mejlas när styrelsen bestämt. */
+export type BestamtRonderingsSchema = {
+  bestamd: string;
+  punkter: Record<SigneringRoll, SigneringSchemaPunkt[]>;
+};
+
+function schemaFingeravtryck(punkter: SigneringSchemaPunkt[]): string {
+  return punkter
+    .map((p) =>
+      [p.id, p.etikett, p.beskrivning ?? "", p.grupp ?? ""].join("\u001f"),
+    )
+    .join("\u001e");
+}
+
+function normaliseraBestamdPunkt(raw: unknown): SigneringSchemaPunkt | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as SigneringSchemaPunkt;
+  if (typeof p.id !== "string" || typeof p.etikett !== "string") return null;
+  const etikett = p.etikett.trim();
+  if (!etikett) return null;
+  return {
+    id: p.id.trim(),
+    etikett,
+    beskrivning:
+      typeof p.beskrivning === "string" && p.beskrivning.trim()
+        ? p.beskrivning.trim()
+        : undefined,
+    grupp:
+      typeof p.grupp === "string" && p.grupp.trim() ? p.grupp.trim() : undefined,
+    egen: p.egen === true,
+  };
+}
+
+export function lasBestamtSchema(): BestamtRonderingsSchema | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(foreningStorageKey(BESTAMT_SCHEMA_BASE));
+    if (!raw) return null;
+    const data = JSON.parse(raw) as BestamtRonderingsSchema;
+    if (typeof data.bestamd !== "string" || !data.punkter) return null;
+    const las = (roll: SigneringRoll) =>
+      (Array.isArray(data.punkter[roll]) ? data.punkter[roll] : [])
+        .map(normaliseraBestamdPunkt)
+        .filter((p): p is SigneringSchemaPunkt => p != null);
+    return {
+      bestamd: data.bestamd,
+      punkter: {
+        fastighetsskotare: las("fastighetsskotare"),
+        stadning: las("stadning"),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Sparar de moment som är aktiva just nu, för båda rollerna. */
+export function bestamAktuelltSchema(): BestamtRonderingsSchema {
+  const schema: BestamtRonderingsSchema = {
+    bestamd: new Date().toISOString(),
+    punkter: {
+      fastighetsskotare: hamtaAktivaSchemaPunkter("fastighetsskotare"),
+      stadning: hamtaAktivaSchemaPunkter("stadning"),
+    },
+  };
+  safeSetLocalStorage(
+    foreningStorageKey(BESTAMT_SCHEMA_BASE),
+    JSON.stringify(schema),
+  );
+  window.dispatchEvent(new Event(BESTAMT_SCHEMA_EVENT));
+  return schema;
+}
+
+export function utkastSkiljerSigFranBestamt(
+  bestamt: BestamtRonderingsSchema | null,
+): boolean {
+  if (!bestamt) return false;
+  const roller: SigneringRoll[] = ["fastighetsskotare", "stadning"];
+  return roller.some(
+    (roll) =>
+      schemaFingeravtryck(hamtaAktivaSchemaPunkter(roll)) !==
+      schemaFingeravtryck(bestamt.punkter[roll]),
+  );
+}
+
 export function hamtaAllaSchemaPunkter(roll: SigneringRoll): SigneringSchemaPunkt[] {
   const konfig = lasSigneringSchemaKonfig();
   return listaSchemaPunkter(konfig, roll);

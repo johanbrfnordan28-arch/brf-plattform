@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SigneringRoll } from "@/components/rondering/signering";
 import { signeringRollInfo } from "@/components/rondering/signering";
+import { SchemaGranskaPanel } from "@/components/rondering/SchemaGranskaPanel";
 import { SigneringSchemaPunktLista } from "@/components/rondering/SigneringSchemaPunktLista";
 import {
   aterstallGrundmall,
@@ -132,6 +133,7 @@ export function SigneringSchemaKonfiguration() {
 
   return (
     <div id="manadssignering-schema" className="scroll-mt-24 space-y-4">
+      <SchemaGranskaPanel />
       <p className="text-sm leading-relaxed text-muted">
         <strong className="text-foreground">Steg 1 — föreningens schema:</strong>{" "}
         Lägg till och ta bort moment. Schemat är grunden för offert och det avtal
