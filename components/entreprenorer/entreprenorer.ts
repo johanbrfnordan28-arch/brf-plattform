@@ -87,6 +87,16 @@ export const entreprenorKategorier = [
   "VVS",
   "Fastighetsskötsel",
   "Byggservice",
+  "Arkitekt",
+  "Konstruktör",
+  "Besiktningsman",
+  "Projektledare",
+  "Areamätare",
+  "OVK",
+  "Energideklaration",
+  "Radonmätning",
+  "Hiss",
+  "Sotning",
 ] as const;
 
 export const demoEntreprenorer: Entreprenor[] = [
