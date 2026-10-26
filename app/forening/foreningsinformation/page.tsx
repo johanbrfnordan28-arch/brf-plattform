@@ -29,7 +29,12 @@ export default function ForeningForeningsinformationPage() {
           OVK och sotning under ventilation, service och undercentral mellan hiss
           och OVK, energideklaration och radon under tioårsbesiktningar —
           kompletterar uppgifterna i underhållsplanens besiktningar och budget.
-          Här sparar styrelsen protokoll och handlingar.
+          Här sparar styrelsen protokoll och handlingar.           Från OVK,
+          energideklaration och radon skapas upphandlingen. Hisservice,
+          reparation enligt felrapport och ny hiss skapas i hissmappen, med
+          anbudsformulär enligt ABT-06. Underlaget flyttas till
+          upphandlingsmodulen, och den signerade beställningen ligger kvar i
+          samma mapp.
         </p>
       </ContentSection>
     </ModulePage>

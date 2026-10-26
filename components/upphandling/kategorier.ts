@@ -6,6 +6,9 @@ export const entreprenadKategorier = [
   "Målning",
   "VVS",
   "Byggservice",
+  "Hiss service",
+  "Hissreparation",
+  "Ny hiss",
 ] as const;
 
 /** Konsulter och specialisttjänster — upphandlas ofta separat från entreprenaden. */
@@ -19,6 +22,8 @@ export const konsultKategorier = [
   "Brandkonsult",
   "Brandskydd",
   "Energideklaration",
+  "OVK",
+  "Radonmätning",
 ] as const;
 
 /** Löpande drift och förvaltning — separat från entreprenad och konsulter. */

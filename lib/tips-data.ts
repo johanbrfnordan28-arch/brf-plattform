@@ -55,7 +55,12 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "⚡",
       titel: "Förenklad upphandling",
-      text: "OVK, energideklaration och radonmätning hanteras under Förenklad upphandling — perfekt för obligatoriska kontroller utan fullständigt förfrågningsunderlag.",
+      text: "OVK, energideklaration och radonmätning upphandlas från Styrning och Dokument. Tidigare protokoll och föreningens uppgifter följer med i anbudsformuläret, som mejlas från upphandlingsmodulen.",
+    },
+    {
+      ikon: "🛗",
+      titel: "Hiss enligt ABT-06",
+      text: "Hisservice, reparation enligt felrapport och ny hiss skapas under Hiss i Styrning och Dokument. Id-bricka, maskinrum, serviceintervall, timpris, jour och bilkostnad följer med i anbudsformuläret.",
     },
     {
       ikon: "🔒",

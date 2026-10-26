@@ -16,6 +16,17 @@ import {
 } from "@/components/foreningsinformation/nyckel-kvittenser";
 import { UtlamnadeNycklarOversikt } from "@/components/foreningsinformation/UtlamnadeNycklarOversikt";
 import { SotningProtokollMappar } from "@/components/foreningsinformation/SotningProtokollMappar";
+import { BesiktningUpphandlingPanel } from "@/components/foreningsinformation/BesiktningUpphandlingPanel";
+import { HissUpphandlingPanel } from "@/components/foreningsinformation/HissUpphandlingPanel";
+import {
+  antalHissHandlingar,
+  HISS_UPPHANDLING_EVENT,
+} from "@/components/foreningsinformation/hiss-upphandling";
+import {
+  antalSparadeBesiktningHandlingar,
+  BESIKTNING_UPPHANDLING_EVENT,
+  besiktningTjanstForMapp,
+} from "@/components/foreningsinformation/besiktning-upphandling";
 import {
   allaUndermappNycklar,
   antalForeningsHuvudmappar,
@@ -81,6 +92,12 @@ export function ForeningsinformationBibliotek() {
   const [nyckelKvittenserAntal, setNyckelKvittenserAntal] = useState(0);
   const [utlamnadeNycklarAntal, setUtlamnadeNycklarAntal] = useState(0);
   const [kundavtalAntal, setKundavtalAntal] = useState(0);
+  const [besiktningPerMapp, setBesiktningPerMapp] = useState({
+    ovk: 0,
+    energideklaration: 0,
+    radon: 0,
+  });
+  const [hissAntal, setHissAntal] = useState(0);
 
   const onSotningProtokollAntal = useCallback((antal: number) => {
     setSotningProtokollAntal(antal);
@@ -109,6 +126,29 @@ export function ForeningsinformationBibliotek() {
     return () => window.removeEventListener(KUNDAVTAL_EVENT, lasAvtal);
   }, []);
 
+  useEffect(() => {
+    function lasBesiktning() {
+      setBesiktningPerMapp({
+        ovk: antalSparadeBesiktningHandlingar("ovk"),
+        energideklaration: antalSparadeBesiktningHandlingar("energideklaration"),
+        radon: antalSparadeBesiktningHandlingar("radon"),
+      });
+    }
+    lasBesiktning();
+    window.addEventListener(BESIKTNING_UPPHANDLING_EVENT, lasBesiktning);
+    return () =>
+      window.removeEventListener(BESIKTNING_UPPHANDLING_EVENT, lasBesiktning);
+  }, []);
+
+  useEffect(() => {
+    function lasHiss() {
+      setHissAntal(antalHissHandlingar());
+    }
+    lasHiss();
+    window.addEventListener(HISS_UPPHANDLING_EVENT, lasHiss);
+    return () => window.removeEventListener(HISS_UPPHANDLING_EVENT, lasHiss);
+  }, []);
+
   const totaltDokument = useMemo(
     () =>
       allaUndermappNycklar().reduce((sum, key) => {
@@ -118,8 +158,14 @@ export function ForeningsinformationBibliotek() {
         return (
           sum + (huvudmappar[huvudId]?.undermappar[underPath]?.dokument.length ?? 0)
         );
-      }, 0) + sotningProtokollAntal + kundavtalAntal,
-    [huvudmappar, sotningProtokollAntal, kundavtalAntal],
+      }, 0) +
+      sotningProtokollAntal +
+      kundavtalAntal +
+      besiktningPerMapp.ovk +
+      besiktningPerMapp.energideklaration +
+      besiktningPerMapp.radon +
+      hissAntal,
+    [huvudmappar, sotningProtokollAntal, kundavtalAntal, besiktningPerMapp, hissAntal],
   );
 
   function toggleHuvudmapp(huvudId: string) {
@@ -201,9 +247,20 @@ export function ForeningsinformationBibliotek() {
     );
     const medKundavtal =
       huvudId === "styrelse-stadgar" ? summa + kundavtalAntal : summa;
-    return huvudId === "ventilation"
-      ? medKundavtal + sotningProtokollAntal
-      : medKundavtal;
+    const medSotning =
+      huvudId === "ventilation" ? medKundavtal + sotningProtokollAntal : medKundavtal;
+    if (huvudId === "ventilation") {
+      return medSotning + besiktningPerMapp.ovk;
+    }
+    if (huvudId === "tioarskontroller") {
+      return (
+        medSotning +
+        besiktningPerMapp.energideklaration +
+        besiktningPerMapp.radon
+      );
+    }
+    if (huvudId === "besiktningar") return medSotning + hissAntal;
+    return medSotning;
   }
 
   return (
@@ -396,7 +453,32 @@ function UndermappRad({
   const ärGrupp = barn.length > 0;
   const ärDynamisk = Boolean(under.dynamiskaUndermappar);
   const ärNyckelKvittenser = Boolean(under.nyckelKvittenser);
+  const besiktning = besiktningTjanstForMapp(under.id);
+  const ärHiss = under.id === "hiss";
+  const [besiktningHandlingar, setBesiktningHandlingar] = useState(0);
+  const [hissHandlingarAntal, setHissHandlingarAntal] = useState(0);
   const [kundavtal, setKundavtal] = useState<SparatKundavtal | null>(null);
+
+  useEffect(() => {
+    if (!besiktning) return;
+    const id = besiktning.id;
+    function las() {
+      setBesiktningHandlingar(antalSparadeBesiktningHandlingar(id));
+    }
+    las();
+    window.addEventListener(BESIKTNING_UPPHANDLING_EVENT, las);
+    return () => window.removeEventListener(BESIKTNING_UPPHANDLING_EVENT, las);
+  }, [besiktning]);
+
+  useEffect(() => {
+    if (!ärHiss) return;
+    function las() {
+      setHissHandlingarAntal(antalHissHandlingar());
+    }
+    las();
+    window.addEventListener(HISS_UPPHANDLING_EVENT, las);
+    return () => window.removeEventListener(HISS_UPPHANDLING_EVENT, las);
+  }, [ärHiss]);
 
   useEffect(() => {
     if (under.id !== "avtal") return;
@@ -419,7 +501,10 @@ function UndermappRad({
               child.dynamiskaUndermappar ? sum + sotningProtokollAntal : sum,
             0,
           )
-        : state.dokument.length + (under.id === "avtal" && kundavtal ? 1 : 0);
+        : state.dokument.length +
+          (under.id === "avtal" && kundavtal ? 1 : 0) +
+          (besiktning ? besiktningHandlingar : 0) +
+          (ärHiss ? hissHandlingarAntal : 0);
 
   const paddingVänster = nested > 0 ? { paddingLeft: `${nested * 0.75 + 0.5}rem` } : undefined;
 
@@ -475,6 +560,15 @@ function UndermappRad({
       {state.öppen && (
         <div className="border-t border-border px-4 pb-4 pt-3">
           <p className="text-xs leading-relaxed text-muted">{under.vägledning}</p>
+
+          {besiktning && (
+            <BesiktningUpphandlingPanel
+              tjanstId={besiktning.id}
+              uppladdadeFilnamn={state.dokument.map((dokument) => dokument.filnamn)}
+            />
+          )}
+
+          {ärHiss && <HissUpphandlingPanel />}
 
           {ärNyckelKvittenser ? (
             <NyckelKvittenserPanel />

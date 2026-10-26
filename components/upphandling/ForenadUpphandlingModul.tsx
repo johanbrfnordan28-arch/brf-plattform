@@ -650,6 +650,13 @@ export function ForenadUpphandlingModul() {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm leading-relaxed text-muted">
+        Upphandling med tidigare protokoll, anbudsformulär och beställning skapas
+        i Styrning och Dokument, i mapparna OVK, energideklaration och radon.
+        När den är skapad ligger den under Konsulter och specialisttjänster, så
+        anbudsformuläret kan mejlas till anbudsgivare.
+      </p>
+
       {/* Fastighetsinformation */}
       {grund && <GrunduppgifterRad grund={grund} />}
 

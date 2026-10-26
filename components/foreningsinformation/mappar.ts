@@ -116,7 +116,7 @@ export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
         titel: "Hiss",
         beskrivning: "Hissbesiktning, service och reparationer.",
         vägledning:
-          "Om föreningen har hiss — välj rätt undermapp för protokoll, servicerapporter eller reparationsunderlag.",
+          "Om föreningen har hiss — välj rätt undermapp för protokoll, servicerapporter eller reparationsunderlag. Upphandling av service, reparation enligt felrapport och ny hiss skapas här. Bilder på id-bricka och hissmaskinrum, felrapport och materialfakturor sparas i mappen. Anbudsformuläret följer ABT-06.",
         barn: [
           {
             id: "besiktning",

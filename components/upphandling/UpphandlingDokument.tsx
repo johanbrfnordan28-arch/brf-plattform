@@ -41,6 +41,8 @@ import {
 } from "@/components/upphandling/upphandling-lager";
 import { publiceraTillNavet } from "@/components/upphandling/navet-upphandling-lager";
 import { DriftUpphandlingSchemaPanel } from "@/components/upphandling/DriftUpphandlingSchemaPanel";
+import { BesiktningAnbudMejlPanel } from "@/components/upphandling/BesiktningAnbudMejlPanel";
+import { HissAnbudMejlPanel } from "@/components/upphandling/HissAnbudMejlPanel";
 import {
   StyrelseBeslutSektion,
   StyrelseGodkannandeSektion,
@@ -510,7 +512,10 @@ function KategoriKort({
     : null;
 
   return (
-    <li className="rounded-xl border border-border bg-surface shadow-sm">
+    <li
+      id={`kategori-${kategoriKey}`}
+      className="scroll-mt-24 rounded-xl border border-border bg-surface shadow-sm"
+    >
       <button
         type="button"
         onClick={onToggle}
@@ -541,6 +546,8 @@ function KategoriKort({
       {state.öppen && (
         <div className="space-y-4 border-t border-border px-4 pb-5 pt-4 sm:px-5">
           <DriftUpphandlingSchemaPanel kategoriNamn={namn} />
+          <BesiktningAnbudMejlPanel kategoriNamn={namn} />
+          <HissAnbudMejlPanel kategoriNamn={namn} />
 
           {standardDokumentPlatser.map((plats) => (
             <DokumentRad
