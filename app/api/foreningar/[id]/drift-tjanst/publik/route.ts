@@ -78,6 +78,10 @@ export async function POST(
       part?: BankIdPart;
       metod?: "bankid" | "namn";
       genomfordaPunktIds?: string[];
+      personalNamn?: string[];
+      personalByte?: string;
+      anvanderUnderentreprenor?: boolean;
+      underentreprenorNamn?: string;
     };
     const token = body.token?.trim() ?? "";
     const atgard = body.atgard;
@@ -125,12 +129,22 @@ export async function POST(
     }
 
     if (atgard === "kvittera-uppdrag") {
+      const metod = body.metod === "namn" ? "namn" : "bankid";
+      const pnr = body.personnummer?.trim() ?? "";
       const resultat = kvitteraUppdragIState(state, token, {
         namn,
-        metod: body.metod === "namn" ? "namn" : "bankid",
+        metod,
         genomfordaPunktIds: Array.isArray(body.genomfordaPunktIds)
           ? body.genomfordaPunktIds
           : [],
+        personnummerMaskerat:
+          metod === "bankid" && arGiltigtPersonnummer(pnr)
+            ? maskeraPersonnummer(pnr)
+            : undefined,
+        personalNamn: Array.isArray(body.personalNamn) ? body.personalNamn : [],
+        personalByte: body.personalByte,
+        anvanderUnderentreprenor: Boolean(body.anvanderUnderentreprenor),
+        underentreprenorNamn: body.underentreprenorNamn,
       });
       if (!resultat.ok) {
         return NextResponse.json({ fel: resultat.fel }, { status: 400 });

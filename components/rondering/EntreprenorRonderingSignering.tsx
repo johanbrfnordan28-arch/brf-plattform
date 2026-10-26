@@ -39,6 +39,10 @@ export function EntreprenorRonderingSignering() {
   const [laddar, setLaddar] = useState(true);
   const [namn, setNamn] = useState("");
   const [personnummer, setPersonnummer] = useState("");
+  const [personalText, setPersonalText] = useState("");
+  const [personalByte, setPersonalByte] = useState("");
+  const [anvanderUnderentreprenor, setAnvanderUnderentreprenor] = useState(false);
+  const [underentreprenorNamn, setUnderentreprenorNamn] = useState("");
   const [genomfordaPunktIds, setGenomfordaPunktIds] = useState<string[]>([]);
   const [schemaFel, setSchemaFel] = useState<string | null>(null);
   const [bankidSteg, setBankidSteg] = useState<"idle" | "pagar" | "klar">("idle");
@@ -116,12 +120,20 @@ export function EntreprenorRonderingSignering() {
 
   async function fullfor(metod: "bankid" | "namn") {
     if (!uppdrag || !avtal || !namn.trim()) return;
+    const personalNamn = personalText
+      .split("\n")
+      .map((rad) => rad.trim())
+      .filter(Boolean);
     const lokal = kvitteraUppdragIState(lasDriftState(foreningId), token, {
       namn: namn.trim(),
       metod,
       genomfordaPunktIds,
       personnummerMaskerat:
         metod === "bankid" ? maskeraPersonnummer(personnummer) : undefined,
+      personalNamn,
+      personalByte,
+      anvanderUnderentreprenor,
+      underentreprenorNamn,
     });
     if (!lokal.ok) {
       setSchemaFel(lokal.fel);
@@ -136,6 +148,11 @@ export function EntreprenorRonderingSignering() {
       namn: namn.trim(),
       metod,
       genomfordaPunktIds,
+      personnummer: metod === "bankid" ? personnummer : undefined,
+      personalNamn,
+      personalByte,
+      anvanderUnderentreprenor,
+      underentreprenorNamn,
     });
     if ("fel" in remote && lokal.uppdrag.status !== "utfort") {
       setSchemaFel(remote.fel);
@@ -264,6 +281,70 @@ export function EntreprenorRonderingSignering() {
                 className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-foreground">
+                Personal på plats
+              </span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Ett namn per rad. Ange alla som ronderar eller städar den här
+                gången, även om någon bytts ut mot den som står i anbudet.
+              </span>
+              <textarea
+                required
+                rows={3}
+                value={personalText}
+                onChange={(event) => setPersonalText(event.target.value)}
+                placeholder={"Anna Andersson\nErik Eriksson"}
+                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-foreground">
+                Personalbyte
+              </span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Lämna tomt om samma personal som i anbudet är på plats.
+              </span>
+              <input
+                type="text"
+                value={personalByte}
+                onChange={(event) => setPersonalByte(event.target.value)}
+                placeholder="t.ex. Lisa slutar, Karin ersätter"
+                className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="mt-4 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={anvanderUnderentreprenor}
+                onChange={(event) =>
+                  setAnvanderUnderentreprenor(event.target.checked)
+                }
+                className="mt-1"
+              />
+              <span>
+                Underentreprenör används vid det här besöket
+                <span className="mt-0.5 block text-xs text-muted">
+                  Samma krav gäller som för den egna personalen. Namnet syns för
+                  föreningen.
+                </span>
+              </span>
+            </label>
+            {anvanderUnderentreprenor && (
+              <label className="mt-3 block">
+                <span className="text-sm font-medium text-foreground">
+                  Underentreprenör
+                </span>
+                <input
+                  type="text"
+                  required
+                  value={underentreprenorNamn}
+                  onChange={(event) => setUnderentreprenorNamn(event.target.value)}
+                  placeholder="Företagets namn"
+                  className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+              </label>
+            )}
             <label className="mt-4 block">
               <span className="text-sm font-medium text-foreground">
                 Personnummer på den som kvitterar med BankID

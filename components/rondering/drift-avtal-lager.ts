@@ -267,6 +267,10 @@ export async function skickaPublikDriftAtgard(opts: {
   part?: "foretag" | "forening";
   metod?: "bankid" | "namn";
   genomfordaPunktIds?: string[];
+  personalNamn?: string[];
+  personalByte?: string;
+  anvanderUnderentreprenor?: boolean;
+  underentreprenorNamn?: string;
 }): Promise<{ ok: true } | { fel: string }> {
   try {
     const res = await fetch(
@@ -282,6 +286,10 @@ export async function skickaPublikDriftAtgard(opts: {
           part: opts.part,
           metod: opts.metod,
           genomfordaPunktIds: opts.genomfordaPunktIds,
+          personalNamn: opts.personalNamn,
+          personalByte: opts.personalByte,
+          anvanderUnderentreprenor: opts.anvanderUnderentreprenor,
+          underentreprenorNamn: opts.underentreprenorNamn,
         }),
       },
     );

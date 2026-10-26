@@ -5,10 +5,9 @@ import {
   lasHusEntreprenorerState,
   type HusEntreprenor,
 } from "@/components/entreprenorer/hus-entreprenorer-lager";
-import {
-  genereraSchemaTextFranPunkter,
-  oppnaSchemaGranskningPdf,
-} from "@/components/rondering/exporteraSigneringSchema";
+import { oppnaSchemaGranskningPdf } from "@/components/rondering/exporteraSigneringSchema";
+import { genereraAnbudsformularText, skapaDriftUpphandlingar } from "@/components/rondering/skapa-drift-upphandling";
+import { hamtaAvtalssignerare } from "@/lib/styrelse-kontakt";
 import {
   BESTAMT_SCHEMA_EVENT,
   bestamAktuelltSchema,
@@ -17,14 +16,11 @@ import {
   utkastSkiljerSigFranBestamt,
   type BestamtRonderingsSchema,
 } from "@/components/rondering/signering-schema";
-import { signeringRollInfo, type SigneringRoll } from "@/components/rondering/signering";
 import {
   GRUNDMALL_NAMN,
   lasAktivForeningId,
   lasForeningProfil,
 } from "@/lib/forening-registry";
-
-const roller: SigneringRoll[] = ["fastighetsskotare", "stadning"];
 
 function giltigEpost(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -117,12 +113,12 @@ export function SchemaGranskaPanel() {
 
     const foreningsNamn = foreningsNamnNu();
     const text = [
-      `${foreningsNamn} har bestämt ronderingsschema för fastighetsskötare och städschema.`,
-      "Underlaget ska användas av entreprenören.",
+      `${foreningsNamn} bjuder in er att lämna anbud på städning och fastighetsskötsel.`,
+      "Anbudsformuläret, föreningens uppgifter och schemana följer med i det här mejlet.",
       "",
-      ...roller.map((roll) =>
-        genereraSchemaTextFranPunkter(roll, bestamt.punkter[roll]),
-      ),
+      genereraAnbudsformularText("Städning"),
+      "",
+      genereraAnbudsformularText("Fastighetsskötsel"),
     ].join("\n\n");
     const amne = `Schemaunderlag — ${foreningsNamn}`;
 
@@ -173,9 +169,16 @@ export function SchemaGranskaPanel() {
     <div className="rounded-xl border border-primary/30 bg-[#eef6f0] p-4 sm:p-5">
       <h3 className="text-base font-semibold text-primary-dark">Granska schema</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Öppna ronderingsschemat för fastighetsskötaren och städschemat som PDF.
-        Justera momenten längre ner. När styrelsen är nöjd bestäms schemat och
-        kan mejlas som underlag till entreprenörerna.
+        Öppna ronderingsschemat och städschemat som PDF och se om styrelsen är
+        nöjd. Justera momenten längre ner och bestäm schemat.         Därefter kan ni skapa upphandling. Underlaget, föreningens uppgifter
+        och anbudsformuläret flyttas till upphandlingsmodulen. Avtalet
+        undertecknas av{" "}
+        {hydrated
+          ? hamtaAvtalssignerare()
+              .map((person) => `${person.namn} (${person.roll})`)
+              .join(", ") || "den som anges under föreningens uppgifter"
+          : "den som anges under föreningens uppgifter"}
+        .
       </p>
       <p className="mt-2 text-xs text-muted">
         Fastighetsskötare: {utkast.fastighetsskotare.length} moment · Städ:{" "}
@@ -187,7 +190,7 @@ export function SchemaGranskaPanel() {
           onClick={granska}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Granska schema
+          Visa schema som PDF
         </button>
         <button
           type="button"
@@ -195,6 +198,20 @@ export function SchemaGranskaPanel() {
           className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-white"
         >
           Bestäm schema
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const resultat = skapaDriftUpphandlingar();
+            setStatus(
+              resultat.ok
+                ? `Upphandling skapad för städning och fastighetsskötsel. Underlaget ligger i upphandlingsmodulen.`
+                : resultat.fel,
+            );
+          }}
+          className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+        >
+          Skapa upphandling
         </button>
       </div>
       {pdfFel && (
@@ -266,12 +283,12 @@ export function SchemaGranskaPanel() {
             disabled={skickar}
             className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-60"
           >
-            {skickar ? "Skickar…" : "Mejla underlag"}
+            {skickar ? "Skickar…" : "Mejla anbudsformulär"}
           </button>
           <p className="mt-2 text-xs text-muted">
-            Mejlet innehåller det bestämda schemat för{" "}
-            {signeringRollInfo.fastighetsskotare.dokument.toLowerCase()} och{" "}
-            {signeringRollInfo.stadning.dokument.toLowerCase()}.
+            Mejlet innehåller anbudsformulär för städning och
+            fastighetsskötsel, med föreningens uppgifter och det bestämda
+            schemat.
           </p>
         </div>
       )}

@@ -100,9 +100,10 @@ export function DriftUppdragStyrelse() {
         Steg 3 — uppdrag och kvittens
       </p>
       <p className="text-sm leading-relaxed text-muted">
-        Skapa ett uppdrag per tillfälle (till exempel varje städning eller
-        rondering). Entreprenören bockar av schemat och kvitterar. Styrelsen ser
-        om tjänsten är utförd.
+        Entreprenören signerar avtalet först, därefter styrelsen. Avtalet sparas
+        här. Vid varje städning eller rondering signerar personalen med BankID
+        och anger vilka som är på plats, om någon bytts ut och om
+        underentreprenör används. Det syns i portalen.
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -193,17 +194,31 @@ export function DriftUppdragStyrelse() {
                     <p className="mt-1 text-sm text-muted">{u.anteckning}</p>
                   ) : null}
                   {utfort && (
-                    <p className="mt-1 text-sm text-foreground">
-                      {u.signeradNamn}
-                      {u.signeradPersonnummerMaskerat
-                        ? ` · ${u.signeradPersonnummerMaskerat}`
-                        : ""}{" "}
-                      ·{" "}
-                      {u.signeradTidpunkt
-                        ? new Date(u.signeradTidpunkt).toLocaleString("sv-SE")
-                        : ""}{" "}
-                      · {u.metod === "bankid" ? "BankID" : "Namnkvittens"}
-                    </p>
+                    <div className="mt-1 space-y-1 text-sm text-foreground">
+                      <p>
+                        {u.signeradNamn}
+                        {u.signeradPersonnummerMaskerat
+                          ? ` · ${u.signeradPersonnummerMaskerat}`
+                          : ""}{" "}
+                        ·{" "}
+                        {u.signeradTidpunkt
+                          ? new Date(u.signeradTidpunkt).toLocaleString("sv-SE")
+                          : ""}{" "}
+                        · {u.metod === "bankid" ? "BankID" : "Namnkvittens"}
+                      </p>
+                      {u.personalNamn && u.personalNamn.length > 0 && (
+                        <p>Personal: {u.personalNamn.join(", ")}</p>
+                      )}
+                      {u.personalByte ? (
+                        <p>Personalbyte: {u.personalByte}</p>
+                      ) : null}
+                      <p>
+                        Underentreprenör:{" "}
+                        {u.anvanderUnderentreprenor
+                          ? u.underentreprenorNamn || "Ja"
+                          : "Nej"}
+                      </p>
+                    </div>
                   )}
                 </div>
                 <span

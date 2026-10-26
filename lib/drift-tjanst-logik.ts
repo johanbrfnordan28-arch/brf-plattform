@@ -156,6 +156,10 @@ export function kvitteraUppdragIState(
     genomfordaPunktIds: string[];
     tidpunkt?: string;
     personnummerMaskerat?: string;
+    personalNamn?: string[];
+    personalByte?: string;
+    anvanderUnderentreprenor?: boolean;
+    underentreprenorNamn?: string;
   },
 ): { ok: true; state: DriftState; uppdrag: DriftUppdrag } | { ok: false; fel: string } {
   const uppdrag = hamtaUppdragViaToken(state, token);
@@ -172,6 +176,21 @@ export function kvitteraUppdragIState(
     return {
       ok: false,
       fel: "BankID-kvittens kräver personnummer på den som kvitterar.",
+    };
+  }
+  const personal = (opts.personalNamn ?? [])
+    .map((namn) => namn.trim())
+    .filter(Boolean);
+  if (personal.length === 0) {
+    return {
+      ok: false,
+      fel: "Ange namn på den personal som utför ronderingen eller städningen.",
+    };
+  }
+  if (opts.anvanderUnderentreprenor && !opts.underentreprenorNamn?.trim()) {
+    return {
+      ok: false,
+      fel: "Ange namn på underentreprenören.",
     };
   }
   const punktIds = avtal.schemaPunkter.map((p) => p.id);
@@ -193,6 +212,12 @@ export function kvitteraUppdragIState(
     signeradNamn: opts.namn.trim(),
     signeradTidpunkt: opts.tidpunkt ?? new Date().toISOString(),
     signeradPersonnummerMaskerat: opts.personnummerMaskerat,
+    personalNamn: personal,
+    personalByte: opts.personalByte?.trim() || undefined,
+    anvanderUnderentreprenor: Boolean(opts.anvanderUnderentreprenor),
+    underentreprenorNamn: opts.anvanderUnderentreprenor
+      ? opts.underentreprenorNamn?.trim()
+      : undefined,
   };
   return {
     ok: true,

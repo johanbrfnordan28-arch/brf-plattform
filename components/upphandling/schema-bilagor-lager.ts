@@ -21,6 +21,8 @@ export type SparadSchemaBilaga = {
   genereradTidpunkt: string;
   schemaText: string;
   villkorText: string;
+  /** Anbudsformulär som mejlas till inbjudna. */
+  anbudsformularText?: string;
 };
 
 export type SchemaBilagorLager = {
@@ -65,6 +67,7 @@ export function sparaSchemaBilaga(
   roll: SigneringRoll,
   schemaText: string,
   villkorText: string,
+  anbudsformularText?: string,
 ): SparadSchemaBilaga {
   const key = kategoriId(kategoriNamn);
   const bilaga: SparadSchemaBilaga = {
@@ -75,6 +78,7 @@ export function sparaSchemaBilaga(
     genereradTidpunkt: new Date().toISOString(),
     schemaText,
     villkorText,
+    anbudsformularText,
   };
   const lager = lasSchemaBilagorLager();
   lager.bilagor[key] = bilaga;

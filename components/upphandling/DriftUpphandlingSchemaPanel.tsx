@@ -8,6 +8,7 @@ import {
   type DriftUpphandlingsKategori,
 } from "@/components/rondering/drift-upphandling-koppling";
 import { genereraSchemaText } from "@/components/rondering/exporteraSigneringSchema";
+import { genereraAnbudsformularText } from "@/components/rondering/skapa-drift-upphandling";
 import { signeringRollInfo } from "@/components/rondering/signering";
 import {
   driftUpphandlingsVillkorPunkter,
@@ -52,7 +53,13 @@ export function DriftUpphandlingSchemaPanel({ kategoriNamn }: Props) {
   function uppdateraFranRondering() {
     const schemaText = genereraSchemaText(roll);
     const villkorText = genereraDriftUpphandlingsVillkorText();
-    sparaSchemaBilaga(kategori, roll, schemaText, villkorText);
+    sparaSchemaBilaga(
+      kategori,
+      roll,
+      schemaText,
+      villkorText,
+      genereraAnbudsformularText(kategori),
+    );
     setNotis(`${info.dokument} uppdaterat från rondering.`);
     setVersion((v) => v + 1);
   }
@@ -80,10 +87,19 @@ export function DriftUpphandlingSchemaPanel({ kategoriNamn }: Props) {
       </ul>
 
       {bilaga ? (
-        <p className="mt-3 text-sm text-primary-dark">
-          Bifogat: {bilaga.filnamn} (
-          {new Date(bilaga.genereradTidpunkt).toLocaleString("sv-SE")})
-        </p>
+        <div className="mt-3 space-y-2 text-sm text-primary-dark">
+          <p>
+            Bifogat: {bilaga.filnamn} (
+            {new Date(bilaga.genereradTidpunkt).toLocaleString("sv-SE")})
+          </p>
+          {bilaga.anbudsformularText && (
+            <p>
+              Anbudsformuläret ligger med underlaget och mejlas till dem som
+              bjuds in. Entreprenören signerar avtalet först, sedan styrelsen.
+              Avtalet sparas på plattformen.
+            </p>
+          )}
+        </div>
       ) : (
         <p className="mt-3 text-sm text-amber-800">
           Inga scheman sparade än — gå till rondering eller uppdatera här nedan.

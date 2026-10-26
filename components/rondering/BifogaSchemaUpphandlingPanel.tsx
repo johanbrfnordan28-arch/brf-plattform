@@ -9,17 +9,14 @@ import {
   type DriftUpphandlingsKategori,
 } from "@/components/rondering/drift-upphandling-koppling";
 import {
-  genereraSchemaText,
   kopieraTillUrklipp,
   laddaNedSchemaText,
   laddaNedTextfil,
 } from "@/components/rondering/exporteraSigneringSchema";
+import { skapaDriftUpphandling } from "@/components/rondering/skapa-drift-upphandling";
 import { signeringRollInfo } from "@/components/rondering/signering";
 import { genereraDriftUpphandlingsVillkorText } from "@/components/rondering/upphandlingsvillkor-drift";
-import {
-  hamtaSchemaBilaga,
-  sparaSchemaBilaga,
-} from "@/components/upphandling/schema-bilagor-lager";
+import { hamtaSchemaBilaga } from "@/components/upphandling/schema-bilagor-lager";
 
 export function BifogaSchemaUpphandlingPanel() {
   const [meddelande, setMeddelande] = useState<string | null>(null);
@@ -44,12 +41,11 @@ export function BifogaSchemaUpphandlingPanel() {
   void bilagaVersion;
 
   function bifogaTillUpphandling(kategori: DriftUpphandlingsKategori) {
-    const roll = schemaRollForDriftKategori(kategori);
-    const schemaText = genereraSchemaText(roll);
-    const villkorText = genereraDriftUpphandlingsVillkorText();
-    sparaSchemaBilaga(kategori, roll, schemaText, villkorText);
+    const resultat = skapaDriftUpphandling(kategori);
     setMeddelande(
-      `${signeringRollInfo[roll].dokument} och avtalsvillkor sparade till upphandling «${kategori}».`,
+      resultat.ok
+        ? `Upphandling skapad: ${resultat.titel}. Schema, villkor och anbudsformulär ligger i upphandlingsmodulen.`
+        : resultat.fel,
     );
     uppdatera();
   }
@@ -140,7 +136,7 @@ export function BifogaSchemaUpphandlingPanel() {
                   onClick={() => bifogaTillUpphandling(kategori)}
                   className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
                 >
-                  Bifoga till upphandling
+                  Skapa upphandling
                 </button>
               </div>
             </div>

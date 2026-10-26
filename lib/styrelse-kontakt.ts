@@ -54,6 +54,29 @@ export function arStyrelseKontaktKomplett(kontakt: StyrelseKontakt): boolean {
   );
 }
 
+/** De som ska skriva under avtal, från föreningens uppgifter. */
+export function hamtaAvtalssignerare(
+  foreningId?: string,
+): { namn: string; roll: string }[] {
+  if (typeof window === "undefined") return [];
+  const id = foreningId ?? lasAktivForeningId();
+  const profil = lasForeningProfil(id);
+  const markerade = (profil?.styrelseledamoter ?? []).filter(
+    (ledamot) => ledamot.signerarAvtal && ledamot.namn.trim(),
+  );
+  if (markerade.length > 0) {
+    return markerade.map((ledamot) => ({
+      namn: ledamot.namn.trim(),
+      roll: ledamot.roll.trim() || "Ledamot",
+    }));
+  }
+  const kontakt = hamtaStyrelseKontakt(id);
+  if (kontakt?.kontaktperson.trim()) {
+    return [{ namn: kontakt.kontaktperson.trim(), roll: "Kontaktperson" }];
+  }
+  return [];
+}
+
 export function formateraStyrelseKontaktBlock(
   kontakt: StyrelseKontakt | null,
 ): string {

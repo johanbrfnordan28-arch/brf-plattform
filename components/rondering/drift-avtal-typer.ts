@@ -48,6 +48,12 @@ export type DriftUppdrag = {
   signeradTidpunkt?: string;
   signeradNamn?: string;
   signeradPersonnummerMaskerat?: string;
+  /** Personal på plats vid besöket, ett namn per rad. */
+  personalNamn?: string[];
+  /** Om någon i personalen bytts ut mot den som står i anbudet. */
+  personalByte?: string;
+  anvanderUnderentreprenor?: boolean;
+  underentreprenorNamn?: string;
 };
 
 export type DriftState = {
