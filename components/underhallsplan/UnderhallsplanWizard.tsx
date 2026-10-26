@@ -1886,9 +1886,12 @@ export function UnderhallsplanWizard() {
       >
         <FastighetsdelarSteg
           activeComponents={activeComponents}
-          onToggle={(namn) =>
-            sattDelMedIPlan(namn, !activeComponents.includes(namn))
-          }
+          komponentDetaljer={komponentDetaljer}
+          grund={grundNorm}
+          onToggle={(namn) => sattDelMedIPlan(namn, false)}
+          onLaggTill={(namn) => sattDelMedIPlan(namn, true)}
+          onDetalj={uppdateraKomponentDetalj}
+          onGrundChange={(next) => setGrund(next)}
           onVidare={() => stangOchOppnaSteg("renoveringar")}
         />
       </StegPanel>

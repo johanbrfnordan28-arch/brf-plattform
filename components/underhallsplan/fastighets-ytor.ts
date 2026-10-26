@@ -8,13 +8,26 @@ export type FasadVaderstreckId = FonsterLageId;
 
 export const fasadVaderstreckLista = fonsterLageAlternativ;
 
+/** Ett hus har högst fyra fasader. Vanligast är gata och gård. */
+export const MAX_ANTAL_FASADER = 4;
+
+export const FASAD_STANDARD: FasadVaderstreckId[] = ["gata", "gard"];
+
+/** Sidor som kan väljas på huset: gata, gård och vid behov norr eller söder. */
+export const FASAD_VALBARA: { id: FasadVaderstreckId; etikett: string }[] = [
+  { id: "gata", etikett: "Gata" },
+  { id: "gard", etikett: "Gård" },
+  { id: "norr", etikett: "Norr" },
+  { id: "soder", etikett: "Söder" },
+];
+
 export type FastighetsHus = {
   id: string;
   husnummer: string;
   etikett: string;
   /**
-   * Vilka fasadytor/byggnadsdelar som finns på huset.
-   * Saknas eller tom → alla sidor (gata, gård, väderstreck) antas finnas.
+   * Vilka fasader som finns på huset.
+   * Saknas eller tom → gata och gård. Högst fyra sidor.
    */
   aktivaFasader?: Partial<Record<FasadVaderstreckId, boolean>>;
 };
@@ -146,6 +159,22 @@ export function synkaHusFranGrund(
   return normaliseraFastighetsYtor({ ...data, hus });
 }
 
+export function sattHusFasadKvm(
+  data: FastighetsYtorData,
+  husId: string,
+  vaderstreck: FasadVaderstreckId,
+  värde: string,
+): FastighetsYtorData {
+  const norm = normaliseraFastighetsYtor(data);
+  const fasadPerHus = norm.fasadPerHus.map((rad) =>
+    rad.husId === husId ? { ...rad, [vaderstreck]: värde } : rad,
+  );
+  if (!fasadPerHus.some((rad) => rad.husId === husId)) {
+    fasadPerHus.push({ ...skapaTomHusFasadYtor(husId), [vaderstreck]: värde });
+  }
+  return { ...norm, fasadPerHus };
+}
+
 export function hamtaHusFasadRad(
   data: FastighetsYtorData,
   husId: string,
@@ -170,13 +199,38 @@ export function summeraFasadKvm(data: FastighetsYtorData): number {
   }, 0);
 }
 
-/** Fasadytor som är markerade för huset (gata, gård, väderstreck). */
+/** Fasadytor som är markerade för huset. Tomt val betyder gata och gård. */
 export function hamtaAktivaFasaderForHus(hus: FastighetsHus): FasadVaderstreckId[] {
   const alla = fasadVaderstreckLista.map((l) => l.id);
   const val = hus.aktivaFasader;
-  if (!val || Object.keys(val).length === 0) return alla;
-  const aktiva = alla.filter((id) => val[id] !== false);
-  return aktiva.length > 0 ? aktiva : alla;
+  if (!val || Object.keys(val).length === 0) return [...FASAD_STANDARD];
+  const harUttryckligtVal = Object.values(val).some((v) => v === true);
+  const aktiva = harUttryckligtVal
+    ? alla.filter((id) => val[id] === true)
+    : alla.filter((id) => val[id] !== false);
+  return begransaFasader(aktiva);
+}
+
+function begransaFasader(ids: FasadVaderstreckId[]): FasadVaderstreckId[] {
+  const unika = [...new Set(ids)];
+  if (unika.length <= MAX_ANTAL_FASADER) return unika;
+  const forst = FASAD_STANDARD.filter((id) => unika.includes(id));
+  const resten = unika.filter((id) => !forst.includes(id));
+  return [...forst, ...resten].slice(0, MAX_ANTAL_FASADER);
+}
+
+export function fasadSidorForHus(
+  hus: FastighetsHus,
+): { id: FasadVaderstreckId; etikett: string; aktiv: boolean }[] {
+  const aktiva = new Set(hamtaAktivaFasaderForHus(hus));
+  const bas = FASAD_VALBARA.map((l) => ({
+    ...l,
+    aktiv: aktiva.has(l.id),
+  }));
+  const extra = fasadVaderstreckLista
+    .filter((l) => !FASAD_VALBARA.some((b) => b.id === l.id) && aktiva.has(l.id))
+    .map((l) => ({ ...l, aktiv: true }));
+  return [...bas, ...extra];
 }
 
 export function arFasadAktivForHus(
@@ -193,13 +247,21 @@ export function uppdateraHusAktivFasad(
   aktiv: boolean,
 ): FastighetsYtorData {
   const norm = normaliseraFastighetsYtor(data);
+  const husNu = norm.hus.find((h) => h.id === husId);
+  if (!husNu) return norm;
+  const nu = new Set(hamtaAktivaFasaderForHus(husNu));
+  if (aktiv) {
+    if (nu.has(fasad)) return norm;
+    if (nu.size >= MAX_ANTAL_FASADER) return norm;
+    nu.add(fasad);
+  } else {
+    nu.delete(fasad);
+  }
+  const aktivaFasader = Object.fromEntries(
+    fasadVaderstreckLista.map((l) => [l.id, nu.has(l.id)]),
+  ) as Record<FasadVaderstreckId, boolean>;
   const hus = norm.hus.map((h) =>
-    h.id === husId
-      ? {
-          ...h,
-          aktivaFasader: { ...h.aktivaFasader, [fasad]: aktiv },
-        }
-      : h,
+    h.id === husId ? { ...h, aktivaFasader } : h,
   );
   let fasadPerHus = norm.fasadPerHus;
   if (!aktiv) {

@@ -377,6 +377,11 @@ export type UnderkomponentRad = {
   /** Ansvarstid i år (branschvanligt ca 10). */
   underhallAnsvarAr?: string;
   underhallBesiktning?: UnderhallBesiktningStatus | "";
+  /**
+   * false = borttagen i fastighetens delar. Saknas = med i planen.
+   * Borttagna underdelar visas inte i senare steg.
+   */
+  medIPlan?: boolean;
   /** Planerat underhåll — kan fyllas i senare */
   underhallNastaAr?: string;
   underhallIntervallAr?: string;
@@ -2929,7 +2934,7 @@ export function formateraKomponentSammanfattning(
   }
 
   for (const rad of data.underkomponenter) {
-    if (!rad.aktiv) continue;
+    if (!rad.aktiv || rad.medIPlan === false) continue;
     const def = mall.underkomponenter.find((u) => u.id === rad.id);
     if (
       def?.detaljPanel === "fonster-lista" ||

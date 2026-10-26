@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  arFasadAktivForHus,
-  fasadVaderstreckLista,
+  fasadSidorForHus,
   hamtaAktivaFasaderForHus,
+  MAX_ANTAL_FASADER,
   normaliseraFastighetsYtor,
   uppdateraHusAktivFasad,
   type FastighetsHus,
@@ -37,21 +37,23 @@ function ByggnadFasadSidorRad({
         {aktiva.length === 1 ? "" : "er"} markerade
       </p>
       <p className="mt-0.5 text-[10px] text-muted">
-        Klicka för att lägga till eller ta bort fasadytor (används för m², fönster
-        och fasad i senare steg).
+        Högst {MAX_ANTAL_FASADER} fasader. Gata och gård räcker ofta. Lägg till
+        norr eller söder om den sidan finns.
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {fasadVaderstreckLista.map((l) => {
-          const aktiv = arFasadAktivForHus(hus, l.id);
+        {fasadSidorForHus(hus).map((l) => {
+          const full = !l.aktiv && aktiva.length >= MAX_ANTAL_FASADER;
           return (
             <button
               key={l.id}
               type="button"
+              disabled={full}
+              title={full ? `Högst ${MAX_ANTAL_FASADER} fasader` : undefined}
               onClick={() =>
-                onYtorChange(uppdateraHusAktivFasad(data, hus.id, l.id, !aktiv))
+                onYtorChange(uppdateraHusAktivFasad(data, hus.id, l.id, !l.aktiv))
               }
-              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                aktiv
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                l.aktiv
                   ? "border-primary bg-[#e2f0e6] text-primary-dark"
                   : "border-border bg-background text-muted hover:border-primary/40"
               }`}
@@ -99,12 +101,11 @@ export function GrundFasaderPanel({ grund: rawGrund, onChange }: GrundFasaderPan
         Fasader per byggnad
       </p>
       <p className="mt-1 text-xs text-muted">
-        När adresserna är på plats: välj vilka fasader varje byggnad har —{" "}
-        <strong className="font-medium text-foreground">
-          Gata, Gård och väderstreck (Norr, Söder, Öster, Väster)
-        </strong>
-        . Alla är valda från början — stäng av det som inte finns. Fasadyta i m²
-        fyller du i i blocket nedan («Fasad- och takytor»).
+        När adresserna är på plats: välj vilka fasader varje byggnad har. Ett hus
+        har högst fyra. Ofta räcker{" "}
+        <strong className="font-medium text-foreground">Gata och Gård</strong>.
+        Lägg till Norr eller Söder om den sidan finns. Ytan i m² fyller du i
+        nedan, och samma sidor syns i fastighetens delar.
       </p>
 
       <div className="mt-4 space-y-3">

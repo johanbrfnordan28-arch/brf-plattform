@@ -272,10 +272,24 @@ export function RenoveringshistorikKomponentTräd({
           const mall = hamtaKomponentMall(namn);
           const ärÖppen = öppenKomponent === namn;
           const antalKomp = renoveringar.filter((r) => r.komponent === namn).length;
-          const synligaUnderkomponenter = underkomponenterIRenoveringshistorik(
-            mall,
-            (ukId) => posterForDel(renoveringar, namn, ukId).length > 0,
-          );
+          const rader = komponentDetaljer?.[namn]?.underkomponenter ?? [];
+          const synligaUnderkomponenter = [
+            ...underkomponenterIRenoveringshistorik(
+              mall,
+              (ukId) => posterForDel(renoveringar, namn, ukId).length > 0,
+            ).filter((uk) => {
+              const rad = rader.find((r) => r.id === uk.id);
+              return rad?.medIPlan !== false;
+            }),
+            ...rader
+              .filter((r) => r.ärEgen && r.medIPlan !== false)
+              .map((r) => ({
+                id: r.id,
+                etikett: r.etikett,
+                defaultMåttenhet: r.måttenhet,
+                måttHint: "Egen del från fastighetens delar.",
+              })),
+          ];
 
           return (
             <KomponentAccordionRad

@@ -486,6 +486,7 @@ export function KomponentDetaljer({
         {visaUnderkomponentLista && (
         <UnderkomponentKortLista>
           {data.underkomponenter.map((rad, index) => {
+            if (rad.medIPlan === false) return null;
             const def = mall.underkomponenter.find((u) => u.id === rad.id);
             const foregaendeId = data.underkomponenter[index - 1]?.id;
             const foregaendeGrupp = foregaendeId
