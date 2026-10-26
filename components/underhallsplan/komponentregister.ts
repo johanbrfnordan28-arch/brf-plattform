@@ -571,6 +571,23 @@ export const foreslagnaKomponenter = [
   "Komplement byggnad och P-platser",
 ] as const;
 
+/**
+ * Standarddelar som inte är borttagna följer med i hela planen.
+ * Egna tillagda delar behålls. Borttagna kommer inte tillbaka förrän de läggs till.
+ */
+export function kompletteraAktivaFastighetsdelar(
+  aktiva: string[],
+  borttagna: string[],
+): string[] {
+  const dolda = new Set(borttagna);
+  const standard = new Set<string>(foreslagnaKomponenter);
+  const med = [
+    ...foreslagnaKomponenter.filter((namn) => !dolda.has(namn)),
+    ...aktiva.filter((namn) => !dolda.has(namn) && !standard.has(namn)),
+  ];
+  return [...new Set(med)];
+}
+
 export const GAMLA_GARAGE_CARPORT_NAMN = "Garage / carport";
 export const KOMPLEMENT_BYGGNAD_NAMN = "Komplement byggnad och P-platser";
 

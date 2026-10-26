@@ -19,14 +19,18 @@ export function FastighetsdelarSteg({
   onVidare,
 }: FastighetsdelarStegProps) {
   const [oppen, setOppen] = useState<string | null>("Tak");
+  const kandaDelar = new Set<string>(
+    fastighetsdelGrupper.flatMap((grupp) => grupp.komponenter),
+  );
+  const tillagdaDelar = activeComponents.filter((namn) => !kandaDelar.has(namn));
 
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted">
-        Välj fastighetens delar här. Utvändigt börjar med tak, gård och fasad.
-        Invändigt finns trapphus, källare, VVS och övriga system — det byggs
-        vidare. Delarna som är ikryssade följer med till utförda arbeten och
-        planerat underhåll.
+        Alla delar följer med genom hela planen: utförda arbeten, planerat
+        underhåll och summeringen. Ta bort det som inte finns på huset. Ju mer
+        planen anpassas, desto kortare blir den. En del som läggs till igen
+        följer med på samma sätt.
       </p>
       {fastighetsdelGrupper.map((grupp) => (
         <section key={grupp.id} className="space-y-2">
@@ -63,7 +67,7 @@ export function FastighetsdelarSteg({
                           {mall.underkomponenter.length === 1
                             ? "underdel"
                             : "underdelar"}
-                          {aktiv ? " · följer med nedåt" : ""}
+                          {aktiv ? " · med i hela planen" : " · borttagen från planen"}
                         </span>
                       </span>
                     </label>
@@ -105,6 +109,34 @@ export function FastighetsdelarSteg({
           </ul>
         </section>
       ))}
+      {tillagdaDelar.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">Tillagda delar</h3>
+          <ul className="space-y-2">
+            {tillagdaDelar.map((namn) => (
+              <li
+                key={namn}
+                className="rounded-xl border border-border bg-white px-3 py-3"
+              >
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked
+                    onChange={() => onToggle(namn)}
+                    className="mt-1"
+                  />
+                  <span>
+                    <span className="font-medium text-foreground">{namn}</span>
+                    <span className="mt-0.5 block text-xs text-muted">
+                      Egen del · med i hela planen
+                    </span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <button
         type="button"
         onClick={onVidare}

@@ -27,6 +27,7 @@ import {
 } from "@/components/underhallsplan/register-ytor";
 import {
   foreslagnaKomponenter,
+  kompletteraAktivaFastighetsdelar,
   synkaUnderhallsplanState,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
@@ -596,14 +597,23 @@ export function UnderhallsplanWizard() {
     setBesiktningarSaved(state.besiktningarSaved);
     const borttagna = state.borttagnaKomponenter ?? [];
     const dolda = new Set(borttagna);
-    const aktiva = state.activeComponents.filter((namn) => !dolda.has(namn));
+    const sparade = state.activeComponents.filter((namn) => !dolda.has(namn));
+    const foreningId = lasAktivForeningId();
+    const behallUrval =
+      Boolean(state.aktivTestplan) ||
+      arSailorForening(foreningId) ||
+      arGrundmallForening(foreningId);
+    const aktiva = behallUrval
+      ? sparade
+      : kompletteraAktivaFastighetsdelar(sparade, borttagna);
     const detaljer: Record<string, KomponentDetaljData> = {};
     for (const [namn, data] of Object.entries(state.komponentDetaljer)) {
       if (!dolda.has(namn)) detaljer[namn] = data;
     }
-    setActiveComponents(aktiva);
+    const synced = synkaUnderhallsplanState(aktiva, detaljer);
+    setActiveComponents(synced.activeComponents);
     setBorttagnaKomponenter(borttagna);
-    setKomponentDetaljer(detaljer);
+    setKomponentDetaljer(synced.register);
     setBesiktningar(state.besiktningar);
     setSamfallighetsavgift(normaliseraSamfallighetsavgift(state.samfallighetsavgift));
     setRenoveringarLista(state.renoveringarLista);
@@ -1142,6 +1152,39 @@ export function UnderhallsplanWizard() {
     markeraGrundinfoPaborjad();
   }
 
+  /** Tar med eller tar bort en del i hela planen. Borttagna kommer inte tillbaka av sig själva. */
+  function sattDelMedIPlan(name: string, med: boolean) {
+    if (!grundSaved) return;
+    const finns = activeComponents.includes(name);
+    if (med === finns) return;
+    setKomponenterSaved(false);
+    setBesiktningarSaved(false);
+    if (med) {
+      const nastaBorttagna = borttagnaKomponenter.filter((item) => item !== name);
+      setBorttagnaKomponenter(nastaBorttagna);
+      appliceraKomponentSynk(
+        [...activeComponents, name],
+        komponentDetaljer,
+        nastaBorttagna,
+      );
+      setSenastTillagdKomponent(name);
+      return;
+    }
+    const nastaBorttagna = borttagnaKomponenter.includes(name)
+      ? borttagnaKomponenter
+      : [...borttagnaKomponenter, name];
+    setBorttagnaKomponenter(nastaBorttagna);
+    const { [name]: _bort, ...rest } = komponentDetaljer;
+    appliceraKomponentSynk(
+      activeComponents.filter((item) => item !== name),
+      rest,
+      nastaBorttagna,
+    );
+    if (senastTillagdKomponent === name) {
+      setSenastTillagdKomponent(null);
+    }
+  }
+
   function toggleKomponentAktiv(name: string) {
     if (!grundSaved) return;
     setRenoveringarSaved(false);
@@ -1562,8 +1605,8 @@ export function UnderhallsplanWizard() {
             <>
               Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan —
               anpassad för just er fastighet. Öppna grundmallen för att se den
-              centrala mallen. I steg 2 väljer ni fastighetens delar. De följer
-              med till utförda arbeten och planerat underhåll.
+              centrala mallen. Alla fastighetens delar följer med genom planen.
+              Ta bort det som inte finns på huset, så blir planen mindre.
             </>
           )}
         </p>
@@ -1837,13 +1880,15 @@ export function UnderhallsplanWizard() {
         {...stegPanelNavProps("delar")}
         summary={
           activeComponents.length > 0
-            ? `${activeComponents.length} ${activeComponents.length === 1 ? "del vald" : "delar valda"} — de följer med till utförda arbeten och planerat underhåll.`
-            : "Välj tak, fasad, gård och övriga delar innan ni fyller i arbeten."
+            ? `${activeComponents.length} ${activeComponents.length === 1 ? "del" : "delar"} följer med genom hela planen.`
+            : "Inga delar kvar i planen. Lägg till det som finns på huset."
         }
       >
         <FastighetsdelarSteg
           activeComponents={activeComponents}
-          onToggle={toggleKomponentAktiv}
+          onToggle={(namn) =>
+            sattDelMedIPlan(namn, !activeComponents.includes(namn))
+          }
           onVidare={() => stangOchOppnaSteg("renoveringar")}
         />
       </StegPanel>
@@ -1937,13 +1982,13 @@ export function UnderhallsplanWizard() {
             <ul className="mt-2 list-disc space-y-1 pl-4">
               <li>
                 <strong className="text-foreground">Ta bort</strong> — tar bort
-                komponenten permanent från denna förenings plan. Den syns inte
-                längre. Grundmallen ändras inte.
+                komponenten från hela planen, från utförda arbeten till
+                summeringen. Den kan läggas till igen. Grundmallen ändras inte.
               </li>
               <li>
                 <strong className="text-foreground">Lägg till komponent</strong> —
-                välj en standardkomponent som saknas i fastigheten, eller skriv
-                en egen (t.ex. solceller).
+                en standarddel som tagits bort, eller en egen del (t.ex.
+                solceller), följer sedan med i hela planen.
               </li>
               <li>
                 Inne i varje komponent: lägg till eller ta bort underkomponenter
