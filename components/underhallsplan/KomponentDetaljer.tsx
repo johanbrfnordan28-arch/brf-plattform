@@ -349,6 +349,9 @@ export function KomponentDetaljer({
 
         {öppnaDeltyper && (
           <div className="mt-2 space-y-3 rounded-lg border border-border bg-white p-3">
+            {mall.deltypHjalp && (
+              <p className="text-xs leading-relaxed text-muted">{mall.deltypHjalp}</p>
+            )}
             {deltyper.length > 0 ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2">

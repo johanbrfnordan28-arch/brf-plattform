@@ -82,6 +82,11 @@ export function FastighetsdelarSteg({
                         {mall.deltypSektionTitel}:{" "}
                         {mall.deltyper.map((d) => d.etikett).join(", ")}
                       </p>
+                      {mall.deltypHjalp && (
+                        <p className="text-xs leading-relaxed text-muted">
+                          {mall.deltypHjalp}
+                        </p>
+                      )}
                       {[...grupper.entries()].map(([rubrik, delar]) => (
                         <div key={rubrik}>
                           <p className="text-xs font-semibold uppercase tracking-wide text-primary-dark">

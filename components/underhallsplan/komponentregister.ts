@@ -518,6 +518,8 @@ export type KomponentMall = {
   underkomponenter: UnderkomponentDefinition[];
   /** Standard true — sätt false om endast fördefinierade deltyper ska gälla */
   tillatEgenDeltyp?: boolean;
+  /** Visas vid materialvalet, t.ex. att flera takmaterial kan väljas. */
+  deltypHjalp?: string;
 };
 
 export const måttenhetEtiketter: Record<Måttenhet, { etikett: string; enhet: string }> = {
@@ -665,13 +667,47 @@ const komponentMallar: Record<string, KomponentMall> = {
   Tak: {
     namn: "Tak",
     deltypSektionTitel: "Takbeläggning / typ",
+    deltypHjalp:
+      "Flera material kan väljas om taket består av mer än en beläggning, till exempel tegel och bandlagd plåt.",
     deltyper: [
       { id: "tegel", etikett: "Tegel" },
       { id: "papp", etikett: "Papp" },
-      { id: "bandlaggd-plat", etikett: "Bandlagd plåt, målad" },
-      { id: "korrugerad-plat", etikett: "Korrugerad plåt, målad" },
-      { id: "bandlaggd-koppar", etikett: "Bandlagd koppar" },
-      { id: "korrugerad-koppar", etikett: "Korrugerad koppar" },
+      {
+        id: "korrugerad-plat",
+        etikett: "Korrugerad plåt, målad",
+        beskrivning:
+          "Alltid målad stålplåt, inte koppar. Infästning med spik eller skruv genom plåten. Kan ligga på bärläkt och ströläkt ovanpå takpappen. Underhåll: rengöring och ommålning.",
+      },
+      {
+        id: "bandlaggd-plat",
+        etikett: "Bandlagd plåt, målad",
+        beskrivning:
+          "Målad stålplåt på underlagspapp. Infästningen sitter dold under plåten. Underhåll: rengöring och ommålning.",
+      },
+      {
+        id: "bandlaggd-koppar",
+        etikett: "Bandlagd koppar",
+        beskrivning:
+          "Koppar på underlagspapp med dold infästning. Koppar får patina och målas inte. Underhåll: rengöring och kontroll.",
+      },
+      {
+        id: "bandlaggd-aluminium",
+        etikett: "Bandlagd aluminium",
+        beskrivning:
+          "Aluminium på underlagspapp med dold infästning. Lackerad aluminium kan rengöras och målas om. Obehandlad aluminium målas inte.",
+      },
+      {
+        id: "bandlaggd-zink",
+        etikett: "Bandlagd zink",
+        beskrivning:
+          "Zink på underlagspapp med dold infästning. Zink får patina och målas normalt inte. Underhåll: rengöring och kontroll.",
+      },
+      {
+        id: "bandlaggd-rostfritt",
+        etikett: "Bandlagd rostfritt stål",
+        beskrivning:
+          "Rostfritt stål på underlagspapp med dold infästning. Rostfritt målas inte. Underhåll: rengöring och kontroll.",
+      },
     ],
     underkomponenter: [
       {
@@ -680,7 +716,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         grupp: "Takbeläggning",
         defaultMåttenhet: "kvm",
         måttHint:
-          "Total takyta i m². Material väljs ovan: tegel, papp eller plåt. Plåt kan vara korrugerad eller bandlagd, i stålplåt eller koppar, och är vanligtvis målad.",
+          "Total takyta i m². Välj ett eller flera material ovan. Korrugerad plåt är alltid målad och fästs med spik eller skruv. Bandlagd plåt kan vara målad stålplåt, koppar, aluminium, zink eller rostfritt, med dold infästning på papp.",
       },
       {
         id: "takstegar",
@@ -2121,12 +2157,22 @@ export function synkaKomponentDetaljMedMall(
   const valdaDeltyperIn = tillatEgenDeltyp
     ? dataIn.valdaDeltyper
     : dataIn.valdaDeltyper.filter((id) => mallDeltypIds.has(id));
-  const valdaDeltyper =
+  const valdaDeltyperRå =
     mall.namn === "Ventilation"
       ? synkaLegacyVentilationDeltyper(valdaDeltyperIn).filter((id) =>
           mallDeltypIds.has(id),
         )
       : valdaDeltyperIn;
+  const valdaDeltyper =
+    mall.namn === "Tak"
+      ? [
+          ...new Set(
+            valdaDeltyperRå.flatMap((id) =>
+              id === "korrugerad-koppar" ? ["korrugerad-plat"] : [id],
+            ),
+          ),
+        ]
+      : valdaDeltyperRå;
 
   return {
     valdaDeltyper,
