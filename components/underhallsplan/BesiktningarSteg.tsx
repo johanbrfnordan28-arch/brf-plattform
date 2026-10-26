@@ -118,7 +118,7 @@ export function Besiktningar({
         Kommande besiktningar
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Senast utfört år och kostnad fylls i steg 2 (utförda arbeten). Här ställer du
+        Senast utfört år och kostnad fylls i steg 3 (utförda arbeten). Här ställer du
         in intervall, nästa planerade år och schablonpris — beloppet hamnar i årsbudgeten
         det år besiktningen ska utföras, uppräknat med index enligt steg 1 (utan
         upphandling och projektledning). Stäng av det som inte gäller er förening.
@@ -133,7 +133,7 @@ export function Besiktningar({
 
       {!unlocked && (
         <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-          Spara komponentregistret i steg 3 först, sedan aktiveras besiktningarna.
+          Spara planerat underhåll i steg 4 först, sedan aktiveras besiktningarna.
         </p>
       )}
 

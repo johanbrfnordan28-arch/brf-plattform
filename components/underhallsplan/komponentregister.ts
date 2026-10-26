@@ -334,8 +334,10 @@ export type UnderkomponentDefinition = {
   ytskiktGrupp?: YtskiktGruppId;
   /** Gäller lokal-inventar (cykelförråd, soprum) */
   lokalTyp?: LokalTypId;
-  /** Döljs i steg 2 (utförda arbeten) men finns kvar i komponentregistret / planering. */
+  /** Döljs i utförda arbeten men finns kvar i komponentregistret / planering. */
   doldIRenoveringshistorik?: boolean;
+  /** Visuell grupp, t.ex. Taksäkerhet under Tak. */
+  grupp?: string;
 };
 
 /** Besiktning efter utfört arbete på underkomponenten. */
@@ -524,6 +526,31 @@ export const måttenhetEtiketter: Record<Måttenhet, { etikett: string; enhet: s
   löpmeter: { etikett: "Löpmeter", enhet: "m" },
 };
 
+/** Utvändiga och invändiga huvuddelar — steg 2. Övriga steg läser samma lista. */
+export const fastighetsdelGrupper = [
+  {
+    id: "utvandigt",
+    titel: "Utvändigt",
+    komponenter: ["Tak", "Fasad", "Fönster", "Balkonger", "Mark och gård"],
+  },
+  {
+    id: "invandigt",
+    titel: "Invändigt",
+    komponenter: [
+      "Stomme",
+      "Trapphus",
+      "Källare",
+      "VVS",
+      "Värmecentral",
+      "Ventilation",
+      "Elcentral",
+      "Brandskydd",
+      "Styr och övervakning",
+      "Komplement byggnad och P-platser",
+    ],
+  },
+] as const;
+
 export const foreslagnaKomponenter = [
   "Stomme",
   "Fasad",
@@ -598,15 +625,17 @@ const komponentMallar: Record<string, KomponentMall> = {
       {
         id: "fasadmaterial",
         etikett: "Fasadmaterial",
+        grupp: "Fasadytor",
         defaultMåttenhet: "kvm",
         måttHint:
           "Material, planerad åtgärd (putsreparation, ommålning m.m.) och total fasadarea.",
         detaljPanel: "fasadmaterial-val",
       },
-      { id: "sockel", etikett: "Sockel", defaultMåttenhet: "löpmeter", måttHint: "Sockelns omfattning.", doldIRenoveringshistorik: true },
+      { id: "sockel", etikett: "Sockel", grupp: "Fasadytor", defaultMåttenhet: "löpmeter", måttHint: "Sockelns omfattning.", doldIRenoveringshistorik: true },
       {
         id: "dorrar",
         etikett: "Dörrar",
+        grupp: "Öppningar",
         defaultMåttenhet: "antal",
         måttHint: "Modulmått, material och antal — öppna för att registrera.",
         detaljPanel: "dorr-lista",
@@ -637,33 +666,66 @@ const komponentMallar: Record<string, KomponentMall> = {
     namn: "Tak",
     deltypSektionTitel: "Takbeläggning / typ",
     deltyper: [
-      { id: "bandlaggd-plat", etikett: "Bandlagd plåttak" },
-      { id: "korrugerad-plat", etikett: "Korrugerad plåt" },
       { id: "tegel", etikett: "Tegel" },
       { id: "papp", etikett: "Papp" },
+      { id: "bandlaggd-plat", etikett: "Bandlagd plåt, målad" },
+      { id: "korrugerad-plat", etikett: "Korrugerad plåt, målad" },
+      { id: "bandlaggd-koppar", etikett: "Bandlagd koppar" },
+      { id: "korrugerad-koppar", etikett: "Korrugerad koppar" },
     ],
     underkomponenter: [
       {
         id: "takyta",
         etikett: "Takytor (beläggning)",
+        grupp: "Takbeläggning",
         defaultMåttenhet: "kvm",
         måttHint:
-          "Total takyta i m² — kan mätas med Google Earth eller kartstöd i bildstöd (steg 5).",
+          "Total takyta i m². Material väljs ovan: tegel, papp eller plåt. Plåt kan vara korrugerad eller bandlagd, i stålplåt eller koppar, och är vanligtvis målad.",
       },
-      { id: "skorsten", etikett: "Skorstenar", defaultMåttenhet: "antal", måttHint: "Antal skorstenar." },
-      { id: "ventilationshuv", etikett: "Ventilationshuvor", defaultMåttenhet: "antal", måttHint: "Antal ventilationshuvor." },
-      { id: "takkupa", etikett: "Takkupor", defaultMåttenhet: "antal", måttHint: "Antal takkupor — eller kvm." },
+      {
+        id: "takstegar",
+        etikett: "Takstegar",
+        grupp: "Taksäkerhet",
+        defaultMåttenhet: "antal",
+        måttHint: "Antal takstegar.",
+      },
+      {
+        id: "takbryggor",
+        etikett: "Takbryggor",
+        grupp: "Taksäkerhet",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter takbrygga.",
+      },
+      {
+        id: "snoras-skydd",
+        etikett: "Snörasskydd",
+        grupp: "Taksäkerhet",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter snörasskydd.",
+      },
+      { id: "skorsten", etikett: "Skorstenar", grupp: "Takinstallationer", defaultMåttenhet: "antal", måttHint: "Antal skorstenar." },
+      { id: "ventilationshuv", etikett: "Ventilationshuvar", grupp: "Takinstallationer", defaultMåttenhet: "antal", måttHint: "Antal ventilationshuvar." },
+      {
+        id: "avluftning-avlopp",
+        etikett: "Avluftning avlopp",
+        grupp: "Takinstallationer",
+        defaultMåttenhet: "antal",
+        måttHint: "Antal avluftningar för avlopp genom taket.",
+      },
+      { id: "takkupa", etikett: "Takkupor", grupp: "Taköppningar", defaultMåttenhet: "antal", måttHint: "Antal takkupor — eller kvm." },
       {
         id: TAKFONSTER_UNDERKOMPONENT_ID,
         etikett: "Takfönster",
+        grupp: "Taköppningar",
         defaultMåttenhet: "antal",
         måttHint:
-          "Del 1 singelfönster och del 2 kombinationer (flera i rad). Prissätt per styck respektive per kombination.",
+          "Välj Velux-storlek och antal. Del 1 är singelfönster, del 2 är kombinationer med flera fönster i rad.",
         detaljPanel: "takfonster-lista",
       },
       {
         id: TAKTERRASS_UNDERKOMPONENT_ID,
         etikett: "Gemensam takterrass",
+        grupp: "Takterrasser",
         defaultMåttenhet: "kvm",
         måttHint:
           "Väggar, klinkergolv och sockel, tätskikt utomhus, golvbrunn och breddavlopp.",
@@ -672,6 +734,7 @@ const komponentMallar: Record<string, KomponentMall> = {
       {
         id: MEDLEMS_TAKTERRASS_UNDERKOMPONENT_ID,
         etikett: "Medlemstakterrass",
+        grupp: "Takterrasser",
         defaultMåttenhet: "kvm",
         måttHint:
           "Terrass som tillhör lägenhet — väggar, golv, tätskikt och avvattning. Ingen el.",
@@ -951,9 +1014,12 @@ const komponentMallar: Record<string, KomponentMall> = {
       { id: "gras", etikett: "Gräs / plantering" },
     ],
     underkomponenter: [
-      { id: "gard", etikett: "Gårdyta", defaultMåttenhet: "kvm", måttHint: "Total gårdyta." },
-      { id: "plantering", etikett: "Planteringar", defaultMåttenhet: "kvm", måttHint: "Yta plantering." },
-      { id: "ledning", etikett: "Ledningar i mark", defaultMåttenhet: "löpmeter", måttHint: "Längd ledningar." },
+      { id: "gard", etikett: "Gårdyta", grupp: "Ytor", defaultMåttenhet: "kvm", måttHint: "Total gårdyta." },
+      { id: "plantering", etikett: "Planteringar", grupp: "Ytor", defaultMåttenhet: "kvm", måttHint: "Yta plantering." },
+      { id: "lekplats", etikett: "Lekplats", grupp: "Gårdens delar", defaultMåttenhet: "antal", måttHint: "Antal lekplatser." },
+      { id: "staket", etikett: "Staket och grindar", grupp: "Gårdens delar", defaultMåttenhet: "löpmeter", måttHint: "Löpmeter staket och antal grindar i notering." },
+      { id: "gard-belysning", etikett: "Gårdsbelysning", grupp: "Gårdens delar", defaultMåttenhet: "antal", måttHint: "Antal armaturer på gården." },
+      { id: "ledning", etikett: "Ledningar i mark", grupp: "Mark", defaultMåttenhet: "löpmeter", måttHint: "Längd ledningar." },
     ],
   },
   "Komplement byggnad och P-platser": {

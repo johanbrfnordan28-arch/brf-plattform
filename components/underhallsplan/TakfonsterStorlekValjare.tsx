@@ -24,8 +24,8 @@ export function TakfonsterStorlekValjare({
   storlekId,
   breddMm,
   hojdMm,
-  etikett = "Storlek (yttre karm)",
-  hjalpText = "Mått för yttre karm enligt branschens vanliga takfönsterstorlekar.",
+  etikett = "Storlek (Velux, yttre karm)",
+  hjalpText = "Välj Velux-storlek och ange antal. Annat mått kan fyllas i manuellt.",
   onChange,
 }: TakfonsterStorlekValjareProps) {
   const selectVarde = takfonsterStorlekSelectVarde(storlekId);

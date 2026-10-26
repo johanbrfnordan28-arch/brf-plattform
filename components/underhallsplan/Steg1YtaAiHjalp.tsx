@@ -41,7 +41,7 @@ export function Steg1YtaAiHjalp({ grund, onGrundChange }: Steg1YtaAiHjalpProps) 
       </p>
       <p className="text-xs text-muted">
         Redan i steg 1: mät eller uppskatta ytor med Google Earth, Street View
-        eller egen bild. Värdena följer med till steg 2 och 3. Du kan också bara
+        eller egen bild. Värdena följer med till fastighetens delar, utförda arbeten och planerat underhåll. Du kan också bara
         ange klumpsumma (total m²) i matrisen ovan.
       </p>
       <YtaOchMaterialAiHjalp

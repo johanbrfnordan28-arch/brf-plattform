@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { Besiktningar } from "@/components/underhallsplan/BesiktningarSteg";
 import { BildstodAnalys } from "@/components/underhallsplan/BildstodAnalys";
+import { FastighetsdelarSteg } from "@/components/underhallsplan/FastighetsdelarSteg";
 import { Renoveringshistorik } from "@/components/underhallsplan/Renoveringshistorik";
 import { TestplanValjare } from "@/components/underhallsplan/TestplanValjare";
 import { UnderhallsplanBudget } from "@/components/underhallsplan/UnderhallsplanBudget";
@@ -259,6 +260,7 @@ function renoveringarListaLik(
 
 type WizardStegId =
   | "grund"
+  | "delar"
   | "renoveringar"
   | "register"
   | "besiktningar"
@@ -272,13 +274,14 @@ const WIZARD_STEG_META: Record<
   { stegNummer: number; titel: string }
 > = {
   grund: { stegNummer: 1, titel: "Grunduppgifter" },
-  renoveringar: { stegNummer: 2, titel: "Utförda arbeten" },
-  register: { stegNummer: 3, titel: "Kommande underhåll" },
-  besiktningar: { stegNummer: 4, titel: "Schema besiktningar" },
-  bildstod: { stegNummer: 5, titel: "Bildstöd" },
-  arsbudget: { stegNummer: 6, titel: PLAN_BEGREPP.arsbudgetSteg },
-  slutsida: { stegNummer: 7, titel: "Slutsida" },
-  kommandeProjekt: { stegNummer: 8, titel: "Kommande projekt" },
+  delar: { stegNummer: 2, titel: "Fastighetens delar" },
+  renoveringar: { stegNummer: 3, titel: "Utförda arbeten" },
+  register: { stegNummer: 4, titel: "Planerat underhåll" },
+  besiktningar: { stegNummer: 5, titel: "Schema besiktningar" },
+  bildstod: { stegNummer: 6, titel: "Bildstöd" },
+  arsbudget: { stegNummer: 7, titel: PLAN_BEGREPP.arsbudgetSteg },
+  slutsida: { stegNummer: 8, titel: "Slutsida" },
+  kommandeProjekt: { stegNummer: 9, titel: "Kommande projekt" },
 };
 
 type StegLasStatus = {
@@ -295,6 +298,7 @@ function hamtaStegLasOrsak(
   switch (id) {
     case "grund":
       return null;
+    case "delar":
     case "renoveringar":
     case "slutsida":
     case "kommandeProjekt":
@@ -304,16 +308,16 @@ function hamtaStegLasOrsak(
     case "register":
       return status.renoveringarSaved
         ? null
-        : "Spara utförda arbeten i steg 2 innan komponentregistret kan öppnas.";
+        : "Spara utförda arbeten i steg 3 innan planerat underhåll kan öppnas.";
     case "besiktningar":
     case "bildstod":
       return status.komponenterSaved
         ? null
-        : "Spara komponentregistret i steg 3 (Kommande underhåll) innan detta steg kan öppnas.";
+        : "Spara planerat underhåll i steg 4 innan detta steg kan öppnas.";
     case "arsbudget":
       return status.besiktningarSaved
         ? null
-        : "Spara schemat för besiktningar i steg 4 innan årsbudgeten kan öppnas.";
+        : "Spara schemat för besiktningar i steg 5 innan årsbudgeten kan öppnas.";
     default:
       return null;
   }
@@ -1558,8 +1562,8 @@ export function UnderhallsplanWizard() {
             <>
               Här bygger och ändrar styrelsen <strong>er egen</strong> underhållsplan —
               anpassad för just er fastighet. Öppna grundmallen för att se den
-              centrala mallen. I steg 3 tar ni bort komponenter som inte finns
-              i fastigheten och lägger till dem som saknas.
+              centrala mallen. I steg 2 väljer ni fastighetens delar. De följer
+              med till utförda arbeten och planerat underhåll.
             </>
           )}
         </p>
@@ -1580,9 +1584,9 @@ export function UnderhallsplanWizard() {
               </span>
               <span>
                 Fortsätt i ordning:{" "}
-                <strong>steg 2 → 3 → 4</strong> (utförda arbeten, komponenter,
-                besiktningar). Steg 5 (bildstöd) och steg 6 (årsbudget) öppnas
-                när föregående steg sparats. Allt sparas i er plan.
+                <strong>steg 2 → 3 → 4</strong> (fastighetens delar, utförda
+                arbeten, planerat underhåll). Steg 5 är besiktningar. Allt
+                sparas i er plan.
               </span>
             </li>
             <li className="flex gap-2">
@@ -1590,7 +1594,7 @@ export function UnderhallsplanWizard() {
                 3.
               </span>
               <span>
-                <strong>Steg 7 — Summering</strong> ger en överskådlig slutprodukt
+                <strong>Steg 8 — Summering</strong> ger en överskådlig slutprodukt
                 för styrelsemötet och för nästa styrelse. Justera kostnader där
                 vid behov.
               </span>
@@ -1600,7 +1604,7 @@ export function UnderhallsplanWizard() {
         <p className="mt-3 text-xs text-muted">
           Underhållsplanen är den långsiktiga 50-årsplanen med budget och
           livslängder. Börja i steg 1 (grunduppgifter) och gå vidare steg för
-          steg — summeringen i steg 7 är underlaget till styrelsemötet.
+          steg — summeringen i steg 8 är underlaget till styrelsemötet.
         </p>
       </div>
 
@@ -1647,7 +1651,7 @@ export function UnderhallsplanWizard() {
             onClick={gotoSlutsida}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
           >
-            Visa summering (steg 7)
+            Visa summering (steg 8)
           </button>
         </div>
       )}
@@ -1817,7 +1821,7 @@ export function UnderhallsplanWizard() {
           </button>
           {grundSaved && (
             <p className="text-sm font-medium text-primary-dark">
-              Sparat — gå vidare till renoveringshistorik (steg 2).
+              Sparat — gå vidare till fastighetens delar (steg 2).
             </p>
           )}
         </div>
@@ -1825,16 +1829,36 @@ export function UnderhallsplanWizard() {
       </StegPanel>
 
       <StegPanel
-        id="renoveringar"
+        id="delar"
         stegNummer={2}
+        titel="Fastighetens delar"
+        isOpen={openSteg === "delar"}
+        onToggle={toggleSteg}
+        {...stegPanelNavProps("delar")}
+        summary={
+          activeComponents.length > 0
+            ? `${activeComponents.length} ${activeComponents.length === 1 ? "del vald" : "delar valda"} — de följer med till utförda arbeten och planerat underhåll.`
+            : "Välj tak, fasad, gård och övriga delar innan ni fyller i arbeten."
+        }
+      >
+        <FastighetsdelarSteg
+          activeComponents={activeComponents}
+          onToggle={toggleKomponentAktiv}
+          onVidare={() => stangOchOppnaSteg("renoveringar")}
+        />
+      </StegPanel>
+
+      <StegPanel
+        id="renoveringar"
+        stegNummer={3}
         titel="Utförda arbeten"
         isOpen={openSteg === "renoveringar"}
         onToggle={toggleSteg}
         {...stegPanelNavProps("renoveringar")}
         summary={
           renoveringarSaved
-            ? "Sparat — komponentregistret är förifyllt; steg 3 visar kommande underhåll."
-            : "Renoveringar, besiktningar och kostnader — spara för att fylla registret."
+            ? "Sparat — delarna från steg 2 är förifyllda; steg 4 visar planerat underhåll."
+            : "Renoveringar, besiktningar och kostnader för de delar ni valde i steg 2."
         }
       >
         <Renoveringshistorik
@@ -1870,15 +1894,15 @@ export function UnderhallsplanWizard() {
 
       <StegPanel
         id="register"
-        stegNummer={3}
-        titel="Kommande underhåll"
+        stegNummer={4}
+        titel="Planerat underhåll"
         isOpen={openSteg === "register"}
         onToggle={toggleSteg}
         {...stegPanelNavProps("register")}
         summary={
           komponenterSaved
             ? "Sparat — justera kommande år och kostnader vid behov."
-            : "Sammanställning av planerat underhåll per del — förifyllt från steg 2."
+            : "Sammanställning av planerat underhåll per del — samma delar som i steg 2."
         }
       >
         <p className="text-sm leading-relaxed text-muted">
@@ -1955,7 +1979,7 @@ export function UnderhallsplanWizard() {
 
         {!renoveringarSaved && (
           <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-            Spara renoveringshistoriken i steg 2 först, sedan aktiveras registret.
+            Spara utförda arbeten i steg 3 först, sedan aktiveras planerat underhåll.
           </p>
         )}
 
@@ -2105,7 +2129,7 @@ export function UnderhallsplanWizard() {
           />
         ) : (
           <p className="mt-6 rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-muted">
-            Spara renoveringshistoriken i steg 2 först — då aktiveras komponentlistan
+            Spara utförda arbeten i steg 3 först — då aktiveras listan för planerat underhåll
             här.
           </p>
         )}
@@ -2123,7 +2147,7 @@ export function UnderhallsplanWizard() {
           </button>
           {komponenterSaved && (
             <p className="text-sm font-medium text-primary-dark">
-              Sparat — gå vidare till besiktningar (steg 4).
+              Sparat — gå vidare till besiktningar (steg 5).
             </p>
           )}
           {komponenterSaved && (
@@ -2132,7 +2156,7 @@ export function UnderhallsplanWizard() {
               onClick={() => stangOchOppnaSteg("besiktningar")}
               className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
             >
-              Öppna steg 4
+              Öppna steg 5
             </button>
           )}
         </div>
@@ -2140,15 +2164,15 @@ export function UnderhallsplanWizard() {
 
       <StegPanel
         id="besiktningar"
-        stegNummer={4}
+        stegNummer={5}
         titel="Schema besiktningar"
         isOpen={openSteg === "besiktningar"}
         onToggle={toggleSteg}
         {...stegPanelNavProps("besiktningar")}
         summary={
           besiktningarSaved
-            ? "Sparat — gå vidare till bildstöd (steg 5) eller underlag till årsbudgeten (steg 6)."
-            : "Intervall, nästa år och pris — senast utfört fylls i steg 2."
+            ? "Sparat — gå vidare till bildstöd (steg 6) eller underlag till årsbudgeten (steg 7)."
+            : "Intervall, nästa år och pris — senast utfört fylls i steg 3."
         }
       >
         <Besiktningar
@@ -2170,7 +2194,7 @@ export function UnderhallsplanWizard() {
 
       <StegPanel
         id="bildstod"
-        stegNummer={5}
+        stegNummer={6}
         titel="Bildstöd"
         isOpen={openSteg === "bildstod"}
         onToggle={toggleSteg}
@@ -2178,7 +2202,7 @@ export function UnderhallsplanWizard() {
         summary={
           komponenterSaved
             ? "Bilder, Google Earth och ytmätning — jämför tak och fasad mot registret."
-            : "Spara komponentregistret i steg 3 först — därefter öppnas bildstödet."
+            : "Spara planerat underhåll i steg 4 först — därefter öppnas bildstödet."
         }
       >
         <BildstodAnalys
@@ -2204,14 +2228,14 @@ export function UnderhallsplanWizard() {
             onClick={() => stangOchOppnaSteg("arsbudget")}
             className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
           >
-            Öppna steg 6 (budgetunderlag)
+            Öppna steg 7 (budgetunderlag)
           </button>
         </div>
       </StegPanel>
 
       <StegPanel
         id="arsbudget"
-        stegNummer={6}
+        stegNummer={7}
         titel={PLAN_BEGREPP.arsbudgetSteg}
         isOpen={openSteg === "arsbudget"}
         onToggle={toggleSteg}
@@ -2239,14 +2263,14 @@ export function UnderhallsplanWizard() {
             onClick={() => stangOchOppnaSteg("slutsida")}
             className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
           >
-            Öppna steg 7 (slutsida)
+            Öppna steg 8 (slutsida)
           </button>
         </div>
       </StegPanel>
 
       <StegPanel
         id="slutsida"
-        stegNummer={7}
+        stegNummer={8}
         titel="Slutsida"
         isOpen={openSteg === "slutsida"}
         onToggle={toggleSteg}
@@ -2292,7 +2316,7 @@ export function UnderhallsplanWizard() {
               onClick={() => stangOchOppnaSteg("kommandeProjekt")}
               className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:border-primary/40"
             >
-              Öppna steg 8 (kommande projekt)
+              Öppna steg 9 (kommande projekt)
             </button>
           )}
           {!skrivskyddad && (
@@ -2305,7 +2329,7 @@ export function UnderhallsplanWizard() {
 
       <StegPanel
         id="kommandeProjekt"
-        stegNummer={8}
+        stegNummer={9}
         titel="Kommande projekt"
         isOpen={openSteg === "kommandeProjekt"}
         hideInPrint

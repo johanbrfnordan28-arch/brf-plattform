@@ -1,7 +1,7 @@
 "use client";
 
 import { OppnaStangIkon, OppnaStangKnapp } from "@/components/OppnaStangKnapp";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   UnderkomponentKort,
   UnderkomponentKortLista,
@@ -482,8 +482,13 @@ export function KomponentDetaljer({
 
         {visaUnderkomponentLista && (
         <UnderkomponentKortLista>
-          {data.underkomponenter.map((rad) => {
+          {data.underkomponenter.map((rad, index) => {
             const def = mall.underkomponenter.find((u) => u.id === rad.id);
+            const foregaendeId = data.underkomponenter[index - 1]?.id;
+            const foregaendeGrupp = foregaendeId
+              ? mall.underkomponenter.find((u) => u.id === foregaendeId)?.grupp
+              : undefined;
+            const visaGrupp = Boolean(def?.grupp && def.grupp !== foregaendeGrupp);
             const hint = def?.måttHint ?? "Ange antal, kvm eller löpmeter.";
             const enhetInfo = måttenhetEtiketter[rad.måttenhet];
             const detaljPanel = def?.detaljPanel;
@@ -695,8 +700,13 @@ export function KomponentDetaljer({
             const visaStangOchByt = underNavFel?.visaStangOchByt ?? false;
 
             return (
+              <Fragment key={rad.id}>
+              {visaGrupp && (
+                <li className="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-primary-dark">
+                  {def?.grupp}
+                </li>
+              )}
               <UnderkomponentKort
-                key={rad.id}
                 etikett={etikettMedEgen}
                 hint={hint}
                 sammanfattning={sammanfattningRad}
@@ -1270,6 +1280,7 @@ export function KomponentDetaljer({
                 )}
 
               </UnderkomponentKort>
+              </Fragment>
             );
           })}
         </UnderkomponentKortLista>

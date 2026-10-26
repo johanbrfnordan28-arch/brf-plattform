@@ -28,7 +28,7 @@ export function UnderhallUtförtFalt({
         </p>
         <p className="mt-0.5 text-xs text-muted">
           {readOnlyUtfört && rad.underhallFranHistorik
-            ? "Fylls i i steg 2 (utförda arbeten) och förs över vid sparning."
+            ? "Fylls i i steg 3 (utförda arbeten) och förs över vid sparning."
             : "År och entreprenör för senaste åtgärd på denna del."}
         </p>
         {readOnlyUtfört && rad.underhallUtförtAr?.trim() ? (

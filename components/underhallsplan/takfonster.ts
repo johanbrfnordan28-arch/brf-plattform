@@ -14,6 +14,8 @@ export const TAKFONSTER_STORLEK_ANNAT = "annat";
 export type TakfonsterStorlek = {
   id: string;
   etikett: string;
+  /** Velux typkod när måttet motsvarar en standardstorlek. */
+  kod?: string;
   breddMm: number;
   hojdMm: number;
 };
@@ -55,32 +57,31 @@ export const takfonsterIRadAlternativ: { id: string; etikett: string }[] = [
 ];
 
 /**
- * Standardstorlekar för takfönster (yttre karm, mm).
- * Mått enligt branschens vanliga sortiment — inget tillverkarnamn i gränssnittet.
+ * Velux standardstorlekar (yttre karm, mm). Koden är Velux typbeteckning.
  */
 export const takfonsterStandardStorlekar: TakfonsterStorlek[] = [
-  { id: "472x550", etikett: "472 × 550 mm", breddMm: 472, hojdMm: 550 },
-  { id: "550x780", etikett: "550 × 780 mm", breddMm: 550, hojdMm: 780 },
-  { id: "550x980", etikett: "550 × 980 mm", breddMm: 550, hojdMm: 980 },
-  { id: "660x980", etikett: "660 × 980 mm", breddMm: 660, hojdMm: 980 },
-  { id: "780x980", etikett: "780 × 980 mm", breddMm: 780, hojdMm: 980 },
-  { id: "942x980", etikett: "942 × 980 mm", breddMm: 942, hojdMm: 980 },
-  { id: "1140x980", etikett: "1 140 × 980 mm", breddMm: 1140, hojdMm: 980 },
-  { id: "1340x980", etikett: "1 340 × 980 mm", breddMm: 1340, hojdMm: 980 },
-  { id: "550x1178", etikett: "550 × 1 178 mm", breddMm: 550, hojdMm: 1178 },
-  { id: "660x1178", etikett: "660 × 1 178 mm", breddMm: 660, hojdMm: 1178 },
-  { id: "780x1178", etikett: "780 × 1 178 mm", breddMm: 780, hojdMm: 1178 },
-  { id: "942x1178", etikett: "942 × 1 178 mm", breddMm: 942, hojdMm: 1178 },
-  { id: "1140x1178", etikett: "1 140 × 1 178 mm", breddMm: 1140, hojdMm: 1178 },
-  { id: "1340x1178", etikett: "1 340 × 1 178 mm", breddMm: 1340, hojdMm: 1178 },
-  { id: "780x1400", etikett: "780 × 1 400 mm", breddMm: 780, hojdMm: 1400 },
-  { id: "942x1400", etikett: "942 × 1 400 mm", breddMm: 942, hojdMm: 1400 },
-  { id: "1140x1400", etikett: "1 140 × 1 400 mm", breddMm: 1140, hojdMm: 1400 },
-  { id: "780x1600", etikett: "780 × 1 600 mm", breddMm: 780, hojdMm: 1600 },
-  { id: "942x1600", etikett: "942 × 1 600 mm", breddMm: 942, hojdMm: 1600 },
-  { id: "1140x1600", etikett: "1 140 × 1 600 mm", breddMm: 1140, hojdMm: 1600 },
-  { id: "1340x1600", etikett: "1 340 × 1 600 mm", breddMm: 1340, hojdMm: 1600 },
-  { id: "1340x1800", etikett: "1 340 × 1 800 mm", breddMm: 1340, hojdMm: 1800 },
+  { id: "472x550", etikett: "Velux 472 × 550 mm", breddMm: 472, hojdMm: 550 },
+  { id: "550x780", etikett: "Velux CK02 · 550 × 780 mm", kod: "CK02", breddMm: 550, hojdMm: 780 },
+  { id: "550x980", etikett: "Velux CK04 · 550 × 980 mm", kod: "CK04", breddMm: 550, hojdMm: 980 },
+  { id: "660x980", etikett: "Velux FK04 · 660 × 980 mm", kod: "FK04", breddMm: 660, hojdMm: 980 },
+  { id: "780x980", etikett: "Velux MK04 · 780 × 980 mm", kod: "MK04", breddMm: 780, hojdMm: 980 },
+  { id: "942x980", etikett: "Velux PK04 · 942 × 980 mm", kod: "PK04", breddMm: 942, hojdMm: 980 },
+  { id: "1140x980", etikett: "Velux SK04 · 1 140 × 980 mm", kod: "SK04", breddMm: 1140, hojdMm: 980 },
+  { id: "1340x980", etikett: "Velux UK04 · 1 340 × 980 mm", kod: "UK04", breddMm: 1340, hojdMm: 980 },
+  { id: "550x1178", etikett: "Velux CK06 · 550 × 1 178 mm", kod: "CK06", breddMm: 550, hojdMm: 1178 },
+  { id: "660x1178", etikett: "Velux FK06 · 660 × 1 178 mm", kod: "FK06", breddMm: 660, hojdMm: 1178 },
+  { id: "780x1178", etikett: "Velux MK06 · 780 × 1 178 mm", kod: "MK06", breddMm: 780, hojdMm: 1178 },
+  { id: "942x1178", etikett: "Velux PK06 · 942 × 1 178 mm", kod: "PK06", breddMm: 942, hojdMm: 1178 },
+  { id: "1140x1178", etikett: "Velux SK06 · 1 140 × 1 178 mm", kod: "SK06", breddMm: 1140, hojdMm: 1178 },
+  { id: "1340x1178", etikett: "Velux UK06 · 1 340 × 1 178 mm", kod: "UK06", breddMm: 1340, hojdMm: 1178 },
+  { id: "780x1400", etikett: "Velux MK08 · 780 × 1 400 mm", kod: "MK08", breddMm: 780, hojdMm: 1400 },
+  { id: "942x1400", etikett: "Velux PK08 · 942 × 1 400 mm", kod: "PK08", breddMm: 942, hojdMm: 1400 },
+  { id: "1140x1400", etikett: "Velux SK08 · 1 140 × 1 400 mm", kod: "SK08", breddMm: 1140, hojdMm: 1400 },
+  { id: "780x1600", etikett: "Velux MK10 · 780 × 1 600 mm", kod: "MK10", breddMm: 780, hojdMm: 1600 },
+  { id: "942x1600", etikett: "Velux PK10 · 942 × 1 600 mm", kod: "PK10", breddMm: 942, hojdMm: 1600 },
+  { id: "1140x1600", etikett: "Velux SK10 · 1 140 × 1 600 mm", kod: "SK10", breddMm: 1140, hojdMm: 1600 },
+  { id: "1340x1600", etikett: "Velux UK10 · 1 340 × 1 600 mm", kod: "UK10", breddMm: 1340, hojdMm: 1600 },
+  { id: "1340x1800", etikett: "Velux 1 340 × 1 800 mm", breddMm: 1340, hojdMm: 1800 },
 ];
 
 export type TakfonsterRegister = Record<string, TakfonsterData>;

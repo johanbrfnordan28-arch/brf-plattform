@@ -495,7 +495,7 @@ export function UnderhallsplanSlutsida({
             <p className="mt-1 text-xs text-muted">
               Ungefärliga installationsvärden från byggåret för er fastighets
               komponenter. Saknas uppgifter kompletteras med uppskattningar.
-              Ta bort komponenter som inte är aktuella i steg 3.
+              Ta bort komponenter som inte är aktuella i steg 2.
             </p>
             {k3Underlag.length > 0 ? (
               <ul className="mt-4 space-y-2">
@@ -525,7 +525,7 @@ export function UnderhallsplanSlutsida({
               </ul>
             ) : (
               <p className="mt-3 text-sm text-muted">
-                Aktivera komponenter i steg 3 för att se uppskattade värden.
+                Aktivera komponenter i steg 2 för att se uppskattade värden.
               </p>
             )}
             {komponentInstallationsSumma > 0 && (
@@ -973,7 +973,7 @@ export function UnderhallsplanSlutsida({
                 </>
               ) : (
                 <p className="mt-3 text-sm text-muted">
-                  Fyll i steg 2 eller lägg till renoveringar manuellt.
+                  Fyll i steg 3 eller lägg till renoveringar manuellt.
                 </p>
               )}
             </div>
@@ -1081,7 +1081,7 @@ export function UnderhallsplanSlutsida({
             </div>
           ) : (
             <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-              Aktivera komponenter i steg 3. Ta bort delar som inte är aktuella
+              Aktivera komponenter i steg 2. Ta bort delar som inte är aktuella
               för er fastighet — så blir planen mer överskådlig.
             </p>
           )}
@@ -1099,7 +1099,7 @@ export function UnderhallsplanSlutsida({
 
         <PrintSida sidnummer={6} titel="Planerade underhållstider">
           <p className="text-sm leading-relaxed text-muted">
-            Tiderna bygger på underhållstillfällen i registret (steg 3). Justera
+            Tiderna bygger på underhållstillfällen i planerat underhåll (steg 4). Justera
             varje kostnad här om riktpriserna blivit för höga eller låga — ändringen
             sparas i er förenings plan.
           </p>
@@ -1195,7 +1195,7 @@ export function UnderhallsplanSlutsida({
             </>
           ) : (
             <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-              Inga tillfällen med år och intervall är inlagda ännu. Gå till steg 3
+              Inga tillfällen med år och intervall är inlagda ännu. Gå till steg 4
               (komponentregister) och fyll i underhållstillfällen — t.ex. takmålning
               och takomläggning med olika intervall.
             </p>

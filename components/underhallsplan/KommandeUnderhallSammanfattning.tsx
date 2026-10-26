@@ -30,7 +30,7 @@ export function KommandeUnderhallSammanfattning({
     return (
       <p className="rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
         Inga planerade åtgärder med år ännu — fyll i kommande underhåll per del nedan
-        eller spara utförda arbeten i steg 2 först.
+        eller spara utförda arbeten i steg 3 först.
       </p>
     );
   }

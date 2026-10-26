@@ -27,7 +27,7 @@ type UtfördaBesiktningarPanelProps = {
   onChange: (lista: Besiktning[]) => void;
 };
 
-/** Senast utförda obligatoriska besiktningar — fylls i steg 2. */
+/** Senast utförda obligatoriska besiktningar — fylls i utförda arbeten (steg 3). */
 export function UtfördaBesiktningarPanel({
   lista,
   antalLagenheter,
@@ -64,8 +64,8 @@ export function UtfördaBesiktningarPanel({
         Utförda besiktningar (OVK, sotning m.m.)
       </p>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Ange senaste tillfälle och kostnad här. Vid sparning i steg 2 räknas nästa
-        besiktning ut (senast år + intervall) — schemat justeras i steg 4. Stäng av
+        Ange senaste tillfälle och kostnad här. Vid sparning i steg 3 räknas nästa
+        besiktning ut (senast år + intervall) — schemat justeras i steg 5. Stäng av
         det som inte gäller er förening.
       </p>
 

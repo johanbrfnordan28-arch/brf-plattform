@@ -237,7 +237,7 @@ export function BildstodAnalys({
 
       {!unlocked && (
         <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-          Spara komponentregistret i steg 3 först — därefter öppnas bildstödet.
+          Spara planerat underhåll i steg 4 först — därefter öppnas bildstödet.
         </p>
       )}
 
@@ -283,7 +283,7 @@ export function BildstodAnalys({
 
         {aktivaBildKomponenter.length === 0 && unlocked && (
           <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
-            Aktivera komponenter som Tak, Fasad eller Trapphus i registret (steg 3) för
+            Aktivera komponenter som Tak, Fasad eller Trapphus bland fastighetens delar (steg 2) för
             att få bildrutor kopplade till dem.
           </p>
         )}

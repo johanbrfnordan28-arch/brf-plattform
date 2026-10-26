@@ -346,7 +346,7 @@ export function Renoveringshistorik({
       <p className="text-sm leading-relaxed text-muted">
         Lägg in utförda arbeten med år och kostnad — plus besiktning efter åtgärd
         och obligatoriska besiktningar (OVK m.m.). Vid sparning förs uppgifterna
-        över till komponentregistret; i steg 3 justerar du bara kommande underhåll.
+        över till planerat underhåll; i steg 4 justerar du bara kommande år och kostnader.
       </p>
 
       {!unlocked && (
@@ -879,7 +879,7 @@ export function Renoveringshistorik({
             </button>
             {saved && (
               <p className="text-sm font-medium text-primary-dark">
-                Sparat — gå vidare till komponentregistret (steg 3).
+                Sparat — gå vidare till planerat underhåll (steg 4).
               </p>
             )}
           </div>
