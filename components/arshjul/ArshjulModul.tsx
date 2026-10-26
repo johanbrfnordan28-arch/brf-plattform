@@ -20,8 +20,8 @@ import {
   MOTESKEDJA_KATEGORIER,
   nastaOppnaSerieTillfalle,
   normaliseraHandelse,
-  senastKlaraSerieTillfalle,
   serieIntervallText,
+  sattSerieMoteDatum,
   skapaHandelseId,
   skapaTomHandelse,
   SOMMAR_EXKLUDERADE_MANADER,
@@ -106,6 +106,16 @@ function beskrivIntervall(h: ArshjulHandelse): string {
   }
   if (h.typ === "serie") {
     const antal = h.serieAntal ?? 0;
+    const forsta = h.serieDatum?.[0] ?? h.serieStartDatum;
+    if (
+      (h.kategori === "garantbesiktning" ||
+        h.kategori === "besiktningEntreprenad") &&
+      forsta
+    ) {
+      return antal > 1
+        ? `${formatDatumKort(forsta)} · ${antal} möten`
+        : formatDatumKort(forsta);
+    }
     return `${serieIntervallText(h)} · ${antal} ${antal === 1 ? "möte" : "möten"}`;
   }
   return "—";
@@ -131,7 +141,6 @@ export function ArshjulModul() {
   );
   const [importMeddelande, setImportMeddelande] = useState<string | null>(null);
   const [oppenHandelseId, setOppenHandelseId] = useState<string | null>(null);
-  const [visarFlerMotenId, setVisarFlerMotenId] = useState<string | null>(null);
   const skipFirstSave = useRef(true);
   const formRef = useRef<HTMLDetailsElement>(null);
 
@@ -234,6 +243,15 @@ export function ArshjulModul() {
     }
     setHandelser((current) => current.filter((x) => x.id !== id));
     if (redigeraId === id) setRedigeraId(null);
+  }
+
+  function andraMoteDatum(id: string, nummer: number, iso: string) {
+    if (!iso) return;
+    setHandelser((current) =>
+      current.map((h) =>
+        h.id === id ? sattSerieMoteDatum(h, nummer, iso) : h,
+      ),
+    );
   }
 
   function utokaHandelseSerie(id: string, extra = 1) {
@@ -476,9 +494,9 @@ export function ArshjulModul() {
         <p className="text-sm leading-relaxed text-muted">
           Planen räcker {ARSHJUL_PLANERING_AR} år framåt. Standardkategorierna
           börjar med ett möte per del, så listan inte fylls med hela året på en
-          gång. Lägg till fler möten i samma del när de behövs. Styrelsemöten
-          har tre delar: ordinarie möte, konstituerande möte och överlämning
-          till ny styrelse.
+          gång. Lägg till fler möten på det första mötet och redigera datumet.
+          Konstituerande möte är styrelsemötet efter årsstämman. Överlämningen
+          byggs på under året.
         </p>
         <DemoFilSparningNotis />
       </div>
@@ -1193,8 +1211,6 @@ export function ArshjulModul() {
             {handelserIOrdning.map((h, index) => {
               const serie = arSerieHandelse(h);
               const moten = serie ? byggSerieTillfallen(h) : [];
-              const nasta = serie ? nastaOppnaSerieTillfalle(h) : null;
-              const senastKlar = serie ? senastKlaraSerieTillfalle(h) : null;
               const visaStyrelseRubrik =
                 h.kategori === "styrelsemote" &&
                 handelserIOrdning[index - 1]?.kategori !== "styrelsemote";
@@ -1278,84 +1294,73 @@ export function ArshjulModul() {
                         </p>
                       ) : (
                         <ul className="space-y-1.5">
-                          {(visarFlerMotenId === h.id
-                            ? moten
-                            : [nasta ?? senastKlar ?? moten[0]]
-                          )
-                            .filter((t): t is ArshjulTillfalle => t != null)
-                            .map((t) => (
-                            <li
-                              key={`${h.id}-${t.serieNummer}`}
-                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#f7f9f8] px-2.5 py-1.5"
-                            >
-                              <span
-                                className={`min-w-0 flex-1 ${t.arKlar ? "text-muted line-through" : "text-foreground"}`}
+                          {moten.map((t, index) => {
+                            const arForsta = index === 0;
+                            return (
+                              <li
+                                key={`${h.id}-${t.serieNummer}`}
+                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#f7f9f8] px-2.5 py-1.5"
                               >
-                                {t.titel}
-                                <span className="ml-2 text-xs text-muted no-underline">
-                                  {formatDatumKort(t.datumIso)}
-                                </span>
-                              </span>
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    vaxlaKlarTillfalle(h.id, {
-                                      ar: t.ar,
-                                      datumIso: t.datumIso,
-                                      arKlar: t.arKlar,
-                                    })
-                                  }
-                                  className="rounded-lg border border-border bg-white px-2 py-1 text-xs font-medium text-primary-dark hover:border-primary/50"
+                                <span
+                                  className={`min-w-0 ${t.arKlar ? "text-muted line-through" : "text-foreground"}`}
                                 >
-                                  {t.arKlar ? "Ångra" : "Markera klar"}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    taBortMoteISerie(
+                                  {arForsta ? "Första mötet" : t.titel}
+                                </span>
+                                <input
+                                  type="date"
+                                  aria-label={`Datum för ${arForsta ? "första mötet" : t.titel}`}
+                                  value={t.datumIso.slice(0, 10)}
+                                  onChange={(e) =>
+                                    andraMoteDatum(
                                       h.id,
-                                      t.serieNummer ?? 0,
-                                      t.titel,
+                                      t.serieNummer ?? index + 1,
+                                      e.target.value,
                                     )
                                   }
-                                  className={TA_BORT_KLASS}
-                                >
-                                  Ta bort möte
-                                </button>
-                              </div>
-                            </li>
-                          ))}
+                                  className="rounded-lg border border-border bg-white px-2 py-1 text-xs"
+                                />
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {arForsta && (
+                                    <button
+                                      type="button"
+                                      onClick={() => utokaHandelseSerie(h.id, 1)}
+                                      className="rounded-lg border border-primary/40 bg-white px-2 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                                    >
+                                      Lägg till möte
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      vaxlaKlarTillfalle(h.id, {
+                                        ar: t.ar,
+                                        datumIso: t.datumIso,
+                                        arKlar: t.arKlar,
+                                      })
+                                    }
+                                    className="rounded-lg border border-border bg-white px-2 py-1 text-xs font-medium text-primary-dark hover:border-primary/50"
+                                  >
+                                    {t.arKlar ? "Ångra" : "Markera klar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      taBortMoteISerie(
+                                        h.id,
+                                        t.serieNummer ?? 0,
+                                        arForsta ? "första mötet" : t.titel,
+                                      )
+                                    }
+                                    className={TA_BORT_KLASS}
+                                  >
+                                    Ta bort möte
+                                  </button>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        {moten.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setVisarFlerMotenId((id) =>
-                                id === h.id ? null : h.id,
-                              )
-                            }
-                            className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/40"
-                            aria-expanded={visarFlerMotenId === h.id}
-                          >
-                            {visarFlerMotenId === h.id
-                              ? "Visa bara aktuellt möte"
-                              : `Visa övriga möten (${moten.length - 1})`}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            utokaHandelseSerie(h.id, 1);
-                            setVisarFlerMotenId(h.id);
-                          }}
-                          className="rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
-                        >
-                          Lägg till möte
-                        </button>
-                      </div>
                     </div>
                   )}
                 </li>

@@ -697,6 +697,27 @@ export function utokaSerie(
   });
 }
 
+export function sattSerieMoteDatum(
+  h: ArshjulHandelse,
+  nummer: number,
+  iso: string,
+): ArshjulHandelse {
+  const datumIso = iso.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datumIso)) return h;
+  const datum = byggSerieTillfallen(h).map((t) => t.datumIso);
+  const index = nummer - 1;
+  if (index < 0 || index >= datum.length) return h;
+  const nasta = [...datum];
+  nasta[index] = datumIso;
+  return normaliseraHandelse({
+    ...h,
+    typ: "serie",
+    serieAntal: nasta.length,
+    serieDatum: nasta,
+    serieStartDatum: nasta[0] ?? h.serieStartDatum,
+  });
+}
+
 export function taBortSerieMote(
   h: ArshjulHandelse,
   nummer: number,
@@ -940,6 +961,7 @@ function skapaSerieMall(opts: {
   veckodagOrdinal?: number;
   exkluderaManader?: number[];
   paminnelseDagar?: number[];
+  attHantera?: string[];
 }): ArshjulHandelse {
   const mall = normaliseraHandelse({
     id: opts.id,
@@ -954,6 +976,7 @@ function skapaSerieMall(opts: {
     veckodag: opts.veckodag,
     veckodagOrdinal: opts.veckodagOrdinal,
     exkluderaManader: opts.exkluderaManader,
+    attHantera: opts.attHantera,
     paminnelseDagar: opts.paminnelseDagar ?? [14, 7, 1],
     klar: false,
     skapad: "standard",
@@ -1005,19 +1028,25 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-konstituerande",
       titel: "Konstituerande möte",
       beskrivning:
-        "Första styrelsemötet efter årsstämman. Styrelsen fördelar uppdrag: ordförande, kassör, sekreterare och firmatecknare. Lägg till nästa års möte när det behövs.",
+        "Styrelsemötet direkt efter årsstämman. Här bestäms rollerna. Protokollet anmäls till Bolagsverket. Den godkända årsredovisningen tas med till banken och skickas också in till Bolagsverket.",
       kategori: "styrelsemote",
       antal: 1,
       varje: 12,
       enhet: "manad",
       startIso: konstituerande,
       paminnelseDagar: [30, 14, 7],
+      attHantera: [
+        "Bestäm roller: ordförande, kassör, sekreterare och firmatecknare",
+        "Anmäl styrelsen till Bolagsverket med protokoll från stämman och från det här mötet",
+        "Skicka in den fastställda årsredovisningen och fastställelseintyg till Bolagsverket senast en månad efter stämman",
+        "Ta med den godkända årsredovisningen till banken",
+      ],
     }),
     skapaSerieMall({
       id: "std-overlamning",
       titel: "Överlämning till ny styrelse",
       beskrivning:
-        "Avgående styrelse lämnar över handlingar, bank, avtal och pågående ärenden till den nya styrelsen. Lägg till nästa överlämning när styrelsen byts.",
+        "Själva överlämningen. Listan byggs på under året med aktuella åtgärder, avtal och pågående ärenden som den nya styrelsen ska ta över.",
       kategori: "styrelsemote",
       antal: 1,
       varje: 12,
@@ -1182,7 +1211,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-besiktning-entreprenad",
       titel: "Slutbesiktning",
       beskrivning:
-        "Slutbesiktning av entreprenaden. Utöka om ni har delbesiktningar.",
+        "Ett möte. Lägg till ett till bara om det behövs en delbesiktning, och redigera datumet.",
       kategori: "besiktningEntreprenad",
       antal: 1,
       varje: 2,
@@ -1195,10 +1224,10 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-garant",
       titel: "Garantibesiktning (2-årsbesiktning)",
       beskrivning:
-        "Garantibesiktning två år efter slutbesiktningen. Justera datumet när slutbesiktningen är klardatum.",
+        "Ett möte, två år efter slutbesiktningen. Justera datumet. Lägg till ett möte bara om det behövs en extra besiktning, och redigera det datumet.",
       kategori: "garantbesiktning",
       antal: 1,
-      varje: 1,
+      varje: 24,
       enhet: "manad",
       startIso: garantStart,
       paminnelseDagar: [180, 90, 30, 14],
@@ -1259,6 +1288,43 @@ export function migreraArshjulHandelser(
         klarDatum: h.klarDatum,
         serieStartDatum: h.datum ?? mall.serieStartDatum,
         paminnelseDagar: h.paminnelseDagar,
+      });
+    }
+    if (
+      (h.id === "std-konstituerande" || h.id === "std-overlamning") &&
+      mall
+    ) {
+      const gammalKonstituerande =
+        h.beskrivning.startsWith("Första styrelsemötet efter årsstämman");
+      const gammalOverlamning = h.beskrivning.startsWith(
+        "Avgående styrelse lämnar över",
+      );
+      return normaliseraHandelse({
+        ...h,
+        beskrivning:
+          gammalKonstituerande || gammalOverlamning
+            ? mall.beskrivning
+            : h.beskrivning,
+        attHantera:
+          (h.attHantera?.length ?? 0) > 0 ? h.attHantera : mall.attHantera,
+      });
+    }
+    if (
+      h.id === "std-garant" &&
+      h.typ === "serie" &&
+      h.serieIntervallEnhet === "manad" &&
+      h.serieIntervallVarje === 1 &&
+      (h.klarDatum?.length ?? 0) === 0 &&
+      mall
+    ) {
+      const forsta = h.serieDatum?.[0] ?? h.serieStartDatum;
+      return normaliseraHandelse({
+        ...h,
+        beskrivning: mall.beskrivning,
+        serieAntal: 1,
+        serieIntervallVarje: mall.serieIntervallVarje,
+        serieIntervallEnhet: mall.serieIntervallEnhet,
+        serieDatum: forsta ? [forsta.slice(0, 10)] : h.serieDatum,
       });
     }
     let next = h;
