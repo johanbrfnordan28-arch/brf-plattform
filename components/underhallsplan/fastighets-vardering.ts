@@ -101,7 +101,7 @@ function hittaRegisterKoppling(
     const rad = data.underkomponenter.find(
       (r) => r.id === koppling.underkomponentId,
     );
-    if (!rad || (!rad.aktiv && !rad.ärEgen)) continue;
+    if (!rad || rad.medIPlan === false || (!rad.aktiv && !rad.ärEgen)) continue;
 
     return {
       komponentNamn: koppling.komponentNamn,

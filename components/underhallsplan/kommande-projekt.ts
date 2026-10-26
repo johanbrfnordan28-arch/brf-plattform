@@ -59,7 +59,7 @@ export function sammanstallAtgarderForProjektLank(
   for (const [komponent, data] of Object.entries(register)) {
     const mall = hamtaKomponentMall(komponent);
     for (const rad of data.underkomponenter) {
-      if (!rad.aktiv) continue;
+      if (!rad.aktiv || rad.medIPlan === false) continue;
       const nasta = Number.parseInt(rad.underhallNastaAr ?? "", 10);
       if (Number.isNaN(nasta) || nasta < minAr || nasta > maxAr) continue;
 

@@ -218,7 +218,7 @@ function antalForslagTak(
   const ut: YtaAiAntalForslag[] = [];
   if (!data) return ut;
   for (const rad of data.underkomponenter) {
-    if (!rad.aktiv || rad.måttenhet !== "antal") continue;
+    if (!rad.aktiv || rad.medIPlan === false || rad.måttenhet !== "antal") continue;
     if (rad.värde?.trim()) {
       ut.push({
         etikett: rad.etikett,

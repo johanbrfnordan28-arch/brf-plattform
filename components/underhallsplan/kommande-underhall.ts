@@ -23,7 +23,7 @@ export function sammanstallKommandeUnderhall(
   for (const [komponent, data] of Object.entries(register)) {
     const mall = hamtaKomponentMall(komponent);
     for (const rad of data.underkomponenter) {
-      if (!rad.aktiv || arUnderhallFlyttad(rad)) continue;
+      if (!rad.aktiv || rad.medIPlan === false || arUnderhallFlyttad(rad)) continue;
       const nasta = Number.parseInt(rad.underhallNastaAr ?? "", 10);
       if (Number.isNaN(nasta) || nasta < planStartAr || nasta > planSlutAr) continue;
       const effektiv = effektivUnderhallKostnadKr(rad);

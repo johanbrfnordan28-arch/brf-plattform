@@ -245,7 +245,10 @@ export function FastighetsdelarSteg({
                         <button
                           type="button"
                           onClick={() =>
-                            uppdateraRad(namn, rad.id, { medIPlan: false })
+                            uppdateraRad(namn, rad.id, {
+                              medIPlan: false,
+                              aktiv: false,
+                            })
                           }
                           className="rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-800 hover:bg-red-50"
                         >

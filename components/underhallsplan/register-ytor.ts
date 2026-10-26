@@ -34,7 +34,7 @@ export function hamtaRegisterYtaTak(
   if (data) {
     const mall = hamtaKomponentMall("Tak");
     for (const rad of data.underkomponenter) {
-      if (!rad.aktiv || rad.måttenhet !== "kvm") continue;
+      if (!rad.aktiv || rad.medIPlan === false || rad.måttenhet !== "kvm") continue;
       const kvm = parseKvm(rad.värde);
       if (kvm == null) continue;
       const etikett =

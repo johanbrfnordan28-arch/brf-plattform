@@ -154,7 +154,7 @@ export function UnderhallsplanBudget({
       const data = komponentDetaljer[namn];
       if (!data) continue;
       for (const rad of data.underkomponenter) {
-        if (!rad.aktiv) continue;
+        if (!rad.aktiv || rad.medIPlan === false) continue;
         const moms = Number.parseInt(
           (rad.underhallMomsAvdragenKr ?? "").replace(/\s/g, ""),
           10,

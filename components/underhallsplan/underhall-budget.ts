@@ -117,7 +117,7 @@ export function samlaUnderhallAtgarder(
     const detalj = data as KomponentDetaljData;
 
     for (const rad of data.underkomponenter) {
-      if (!rad.aktiv || arUnderhallFlyttad(rad)) continue;
+      if (!rad.aktiv || rad.medIPlan === false || arUnderhallFlyttad(rad)) continue;
       if (fasadmaterialPlaneratViaTillfallen(komponent, rad.id, detalj)) {
         /**
          * Tillfällen (puts/målning m.m.) är redan tillagda ovan.

@@ -155,7 +155,7 @@ export function sammanstallRegisterKostnader(
     const data = komponentDetaljer[komponent];
     if (!data) continue;
     for (const rad of data.underkomponenter) {
-      if (!rad.aktiv) continue;
+      if (!rad.aktiv || rad.medIPlan === false) continue;
       const nyckel = `${komponent}|${rad.id}`;
       if (tackta.has(nyckel)) continue;
       const beloppKr = effektivUnderhallKostnadKr(rad);
