@@ -22,6 +22,10 @@ export function GlomtLosenordForm() {
   const [laddar, setLaddar] = useState(false);
 
   useEffect(() => {
+    const franLank = new URLSearchParams(window.location.search)
+      .get("epost")
+      ?.trim();
+    if (franLank) setEpost(franLank);
     void hamtaKontoKontext().then((kontext) => {
       if (kontext?.epost) {
         setEpost((nu) => nu || kontext.epost);

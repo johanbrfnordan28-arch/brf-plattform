@@ -37,7 +37,6 @@ import {
   rensaStandardTestForening,
 } from "@/lib/testforeningar";
 import { PROVA_GRATIS_PATH } from "@/lib/skapa-testforening-lank";
-import { EfterInloggningLosenordPanel } from "@/components/auth/EfterInloggningLosenordPanel";
 import type { ForeningServerDto } from "@/lib/forening-server";
 import {
   dtoTillForeningProfil,
@@ -206,6 +205,22 @@ function slaIhopForeningar(
 }
 
 const IDURA_KLAR_PATH = "/auth/idura/klar";
+const MISSLYCKANDEN_NYCKEL = "brf-inloggning-misslyckanden";
+const MISSLYCKANDEN_INNAN_ATERSTALLNING = 5;
+
+function lasMisslyckanden(): number {
+  if (typeof window === "undefined") return 0;
+  const antal = Number(sessionStorage.getItem(MISSLYCKANDEN_NYCKEL));
+  return Number.isFinite(antal) && antal > 0 ? antal : 0;
+}
+
+function sparaMisslyckanden(antal: number): void {
+  sessionStorage.setItem(MISSLYCKANDEN_NYCKEL, String(antal));
+}
+
+function nollstallMisslyckanden(): void {
+  sessionStorage.removeItem(MISSLYCKANDEN_NYCKEL);
+}
 
 export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const searchParams = useSearchParams();
@@ -215,13 +230,10 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   const [hydrated, setHydrated] = useState(false);
   const [epost, setEpost] = useState("");
   const [losenord, setLosenord] = useState("");
+  const [visaLosenord, setVisaLosenord] = useState(false);
   const [kontoFel, setKontoFel] = useState<string | null>(null);
   const [kontoLaddar, setKontoLaddar] = useState(false);
-  const [efterInloggning, setEfterInloggning] = useState<{
-    epost: string;
-    losenord: string;
-    foreningId: string;
-  } | null>(null);
+  const [misslyckanden, setMisslyckanden] = useState(0);
   const [serverSokTraffar, setServerSokTraffar] = useState<ForeningProfil[]>(
     [],
   );
@@ -289,6 +301,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
   useEffect(() => {
     const lokala = ladda();
     void synkaFranServer(lokala);
+    setMisslyckanden(lasMisslyckanden());
     setHydrated(true);
     const onUppdatera = () => {
       void synkaFranServer(ladda());
@@ -412,13 +425,9 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         });
         markeraPendingAktivForening(data.foreningId);
         sattAktivForeningId(data.foreningId);
-        setEfterInloggning({
-          epost: sparadEpost,
-          losenord,
-          foreningId: data.foreningId,
-        });
+        nollstallMisslyckanden();
         void synkaFranServer(ladda());
-        setKontoLaddar(false);
+        window.location.assign(hamtaForeningStartPath(data.foreningId));
         return;
       }
 
@@ -436,17 +445,13 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           });
           markeraPendingAktivForening(lokal.foreningId);
           sattAktivForeningId(lokal.foreningId);
-          setEfterInloggning({
-            epost: lokal.epost,
-            losenord: lokal.losenord,
-            foreningId: lokal.foreningId,
-          });
-          setKontoLaddar(false);
+          nollstallMisslyckanden();
+          window.location.assign(hamtaForeningStartPath(lokal.foreningId));
           return;
         }
       }
 
-      setKontoFel(data.fel || "Inloggning misslyckades.");
+      registreraMisslyckande(data.fel || "Inloggning misslyckades.");
     } catch {
       try {
         const { verifieraLokalKonto, sparaLokalKonto } = await import(
@@ -464,21 +469,24 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
           });
           markeraPendingAktivForening(lokal.foreningId);
           sattAktivForeningId(lokal.foreningId);
-          setEfterInloggning({
-            epost: lokal.epost,
-            losenord: lokal.losenord,
-            foreningId: lokal.foreningId,
-          });
-          setKontoLaddar(false);
+          nollstallMisslyckanden();
+          window.location.assign(hamtaForeningStartPath(lokal.foreningId));
           return;
         }
       } catch {
         /* ignore */
       }
-      setKontoFel("Kunde inte nå servern.");
+      registreraMisslyckande("Kunde inte nå servern.");
     } finally {
       setKontoLaddar(false);
     }
+  }
+
+  function registreraMisslyckande(meddelande: string) {
+    const nasta = lasMisslyckanden() + 1;
+    sparaMisslyckanden(nasta);
+    setMisslyckanden(nasta);
+    setKontoFel(meddelande);
   }
 
   function bekraftaRensa(id: string) {
@@ -502,16 +510,10 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
     );
   }
 
-  if (efterInloggning) {
-    return (
-      <EfterInloggningLosenordPanel
-        epost={efterInloggning.epost}
-        losenord={efterInloggning.losenord}
-        foreningId={efterInloggning.foreningId}
-        foreningStartPath={hamtaForeningStartPath(efterInloggning.foreningId)}
-      />
-    );
-  }
+  const visaAterstallning = misslyckanden >= MISSLYCKANDEN_INNAN_ATERSTALLNING;
+  const aterstallLank = `/konto/glomt-losenord${
+    epost.trim() ? `?epost=${encodeURIComponent(epost.trim())}` : ""
+  }`;
 
   return (
     <div className="mx-auto max-w-lg space-y-5 px-4">
@@ -724,14 +726,7 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
         <p className="mt-1 text-sm text-muted">
           Lösenordet skickades när föreningen skapades. På ny enhet eller
           webbläsare: logga in här med e-post och lösenord — då hämtas er
-          förening från servern.{" "}
-          <Link
-            href="/konto/glomt-losenord"
-            className="font-medium text-primary-dark underline hover:no-underline"
-          >
-            Glömt lösenord?
-          </Link>
-          . När du är inloggad byter du lösenord under{" "}
+          förening från servern. När du är inloggad byter du lösenord under{" "}
           <strong className="font-medium text-foreground">Konto</strong>.
         </p>
         <form onSubmit={loggaInMedKonto} className="mt-4 space-y-3">
@@ -746,21 +741,54 @@ export function StyrelseLoginModul({ lage = "test" }: StyrelseLoginModulProps) {
               required
             />
           </label>
-          <label className="block text-sm">
+          <div className="block text-sm">
             <span className="font-medium text-foreground">Lösenord</span>
-            <input
-              type="password"
-              value={losenord}
-              onChange={(e) => setLosenord(e.target.value)}
-              autoComplete="current-password"
-              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-              required
-            />
-          </label>
+            <div className="relative mt-1">
+              <input
+                type={visaLosenord ? "text" : "password"}
+                value={losenord}
+                onChange={(e) => setLosenord(e.target.value)}
+                autoComplete="current-password"
+                className="w-full rounded-lg border border-border px-3 py-2 pr-16"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setVisaLosenord((synlig) => !synlig)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                aria-pressed={visaLosenord}
+                aria-label={visaLosenord ? "Dölj lösenord" : "Visa lösenord"}
+              >
+                {visaLosenord ? "Dölj" : "Visa"}
+              </button>
+            </div>
+          </div>
           {kontoFel ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
               {kontoFel}
             </p>
+          ) : null}
+          {visaAterstallning ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+              <p>
+                Inloggningen har misslyckats {misslyckanden} gånger. Du kan
+                be om ett nytt lösenord till e-posten.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3">
+                <Link
+                  href={aterstallLank}
+                  className="font-medium text-primary-dark underline hover:no-underline"
+                >
+                  Glömt lösenord
+                </Link>
+                <Link
+                  href={aterstallLank}
+                  className="font-medium text-primary-dark underline hover:no-underline"
+                >
+                  Be om nytt lösenord
+                </Link>
+              </div>
+            </div>
           ) : null}
           <button
             type="submit"
