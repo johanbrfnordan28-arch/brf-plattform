@@ -3,6 +3,7 @@ import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkong
 import { hamtaBalkongKostnadDetaljer } from "@/components/underhallsplan/balkong-pris";
 import {
   hamtaFonsterDorrKostnadFasad,
+  hamtaDorrKostnadDorrar,
   hamtaFonsterKostnadFonster,
 } from "@/components/underhallsplan/fonster-dorr-pris";
 import { HISS_UNDERKOMPONENT_ID } from "@/components/underhallsplan/hissar";
@@ -51,6 +52,19 @@ export function sammanstallRegisterKostnader(
         beloppKr: fonster,
       });
       tackta.add("Fönster|fonster");
+    }
+  }
+
+  if (activeComponents.includes("Dörrar")) {
+    const dorrar = hamtaDorrKostnadDorrar(komponentDetaljer.Dörrar);
+    if (dorrar > 0) {
+      rader.push({
+        id: "dorrar-dorrar",
+        komponent: "Dörrar",
+        etikett: "Dörrar (uppskattat)",
+        beloppKr: dorrar,
+      });
+      tackta.add("Dörrar|dorrar");
     }
   }
 

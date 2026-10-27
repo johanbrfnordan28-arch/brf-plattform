@@ -33,11 +33,6 @@ const rekommendationer: Record<
       arK3Komponent: true,
       hint: "FAR: trä/plast 40 år; trä beklädd/aluminium 60 år.",
     },
-    dorrar: {
-      rekommenderadAvskrivningAr: 0,
-      arK3Komponent: false,
-      hint: "Ytterdörrar — normalt underhåll; FAR lyfter inte dörrar som egen väsentlig komponent.",
-    },
     balkonger: {
       rekommenderadAvskrivningAr: 50,
       arK3Komponent: true,
@@ -47,6 +42,13 @@ const rekommendationer: Record<
       rekommenderadAvskrivningAr: 0,
       arK3Komponent: false,
       hint: "Sockel — normalt del av fasad/stomme, inte egen FAR-komponent.",
+    },
+  },
+  Dörrar: {
+    dorrar: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Ytterdörrar — normalt underhåll; FAR lyfter inte dörrar som egen väsentlig komponent.",
     },
   },
   Fönster: {

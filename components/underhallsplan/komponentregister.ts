@@ -2,6 +2,7 @@ import { standardUnderhallIntervallAr } from "@/components/underhallsplan/underh
 import { standardAvskrivningAr } from "@/components/underhallsplan/komponent-avskrivning";
 import {
   formateraFonsterDorrPoster,
+  normaliseraDorrPost,
   normaliseraFonsterDorrPost,
   type FonsterDorrPost,
 } from "@/components/underhallsplan/fonster-dorrar";
@@ -569,7 +570,7 @@ export const fastighetsdelGrupper = [
   {
     id: "utvandigt",
     titel: "Utvändigt",
-    komponenter: ["Tak", "Fasad", "Fönster", "Balkonger", "Mark och gård"],
+    komponenter: ["Tak", "Fönster", "Dörrar", "Fasad", "Balkonger", "Mark och gård"],
   },
   {
     id: "invandigt",
@@ -593,6 +594,7 @@ export const foreslagnaKomponenter = [
   "Stomme",
   "Fasad",
   "Fönster",
+  "Dörrar",
   "Tak",
   "Trapphus",
   "VVS",
@@ -698,12 +700,24 @@ const komponentMallar: Record<string, KomponentMall> = {
         detaljPanel: "fasad-sockel-val",
         doldIRenoveringshistorik: true,
       },
+    ],
+  },
+  Dörrar: {
+    namn: "Dörrar",
+    deltypSektionTitel: "Dörrar — material / typ",
+    deltyper: [
+      { id: "ek", etikett: "Ekdörr" },
+      { id: "malad-tra", etikett: "Målad trädörr" },
+      { id: "aluminium", etikett: "Aluminiumdörr" },
+      { id: "plat", etikett: "Plåtdörr" },
+    ],
+    underkomponenter: [
       {
         id: "dorrar",
         etikett: "Dörrar",
-        grupp: "Öppningar",
         defaultMåttenhet: "antal",
-        måttHint: "Modulmått, material och antal — öppna för att registrera.",
+        måttHint:
+          "Modulmått (dm), material och antal per rad — lägg till flera rader vid olika storlekar.",
         detaljPanel: "dorr-lista",
       },
     ],
@@ -2030,6 +2044,63 @@ function flyttaFonsterTillEgenKomponent(
   };
 }
 
+function flyttaDorrarTillEgenKomponent(
+  activeComponents: string[],
+  register: Record<string, KomponentDetaljData>,
+): {
+  activeComponents: string[];
+  register: Record<string, KomponentDetaljData>;
+} {
+  const fasad = register.Fasad;
+  const poster = fasad?.fonsterDorrRegister?.dorrar ?? [];
+  if (poster.length === 0) return { activeComponents, register };
+
+  let active = activeComponents;
+  if (!active.includes("Dörrar")) active = [...active, "Dörrar"];
+
+  const dorrMall = hamtaKomponentMall("Dörrar");
+  const befintlig =
+    register.Dörrar && dorrMall
+      ? synkaKomponentDetaljMedMall(register.Dörrar, dorrMall)
+      : skapaTomKomponentDetalj("Dörrar");
+
+  const befintligaPoster = befintlig.fonsterDorrRegister?.dorrar ?? [];
+  const sammanslagna = [...befintligaPoster, ...poster];
+
+  const uppdaterad: KomponentDetaljData = {
+    ...befintlig,
+    fonsterDorrRegister: {
+      ...befintlig.fonsterDorrRegister,
+      dorrar: sammanslagna,
+    },
+    underkomponenter: befintlig.underkomponenter.map((r) =>
+      r.id === "dorrar" ? { ...r, aktiv: true } : r,
+    ),
+  };
+
+  const fasadUtan = fasad
+    ? {
+        ...fasad,
+        fonsterDorrRegister: {
+          ...fasad.fonsterDorrRegister,
+          dorrar: [],
+        },
+        underkomponenter: fasad.underkomponenter.map((r) =>
+          r.id === "dorrar" ? { ...r, aktiv: false } : r,
+        ),
+      }
+    : fasad;
+
+  return {
+    activeComponents: active,
+    register: {
+      ...register,
+      Fasad: fasadUtan ?? register.Fasad,
+      Dörrar: uppdaterad,
+    },
+  };
+}
+
 function flyttaBalkongerTillEgenKomponent(
   activeComponents: string[],
   register: Record<string, KomponentDetaljData>,
@@ -2615,7 +2686,9 @@ export function hamtaFonsterDorrPoster(
   underId: string,
 ): FonsterDorrPost[] {
   const poster = data.fonsterDorrRegister?.[underId] ?? [];
-  return underId === "dorrar" ? poster : poster.map(normaliseraFonsterDorrPost);
+  return underId === "dorrar"
+    ? poster.map(normaliseraDorrPost)
+    : poster.map(normaliseraFonsterDorrPost);
 }
 
 export function uppdateraFonsterDorrPoster(
@@ -2625,7 +2698,7 @@ export function uppdateraFonsterDorrPoster(
 ): KomponentDetaljData {
   const normaliserade =
     underId === "dorrar"
-      ? poster
+      ? poster.map(normaliseraDorrPost)
       : poster.map(normaliseraFonsterDorrPost);
   return {
     ...data,
@@ -3130,8 +3203,10 @@ export function synkaUnderhallsplanState(
     flyttaStammarTillVvs(activeEfterHiss, regEfterHiss);
   const { activeComponents: activeEfterFonster, register: regEfterFonster } =
     flyttaFonsterTillEgenKomponent(activeEfterStammar, regEfterStammar);
+  const { activeComponents: activeEfterDorrar, register: regEfterDorrar } =
+    flyttaDorrarTillEgenKomponent(activeEfterFonster, regEfterFonster);
   const { activeComponents: activeEfterBalkong, register: regEfterBalkong } =
-    flyttaBalkongerTillEgenKomponent(activeEfterFonster, regEfterFonster);
+    flyttaBalkongerTillEgenKomponent(activeEfterDorrar, regEfterDorrar);
   const { activeComponents: activeEfterVarme, register: regEfterVarme } =
     flyttaVvsVarmeTillVarmecentral(activeEfterBalkong, regEfterBalkong);
   const { activeComponents: active, register: reg } =

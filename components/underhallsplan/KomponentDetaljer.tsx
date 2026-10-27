@@ -730,10 +730,17 @@ export function KomponentDetaljer({
               takterrassKort ??
               medlemstakterrassKort ??
               null;
-            const visaFasadUnderhall =
-              komponentNamn === "Fasad" &&
-              (rad.id === "fonster" || rad.id === "dorrar") &&
-              (detaljPanel === "fonster-lista" || detaljPanel === "dorr-lista");
+            const visaFonsterDorrUnderhallTips =
+              (komponentNamn === "Fönster" &&
+                rad.id === "fonster" &&
+                detaljPanel === "fonster-lista") ||
+              (komponentNamn === "Dörrar" &&
+                rad.id === "dorrar" &&
+                detaljPanel === "dorr-lista") ||
+              (komponentNamn === "Fasad" &&
+                (rad.id === "fonster" || rad.id === "dorrar") &&
+                (detaljPanel === "fonster-lista" ||
+                  detaljPanel === "dorr-lista"));
 
             const etikettMedEgen = `${rad.etikett}${rad.ärEgen ? " (egen)" : ""}`;
             const sammanfattningRad =
@@ -962,7 +969,7 @@ export function KomponentDetaljer({
                       onChange={(poster) =>
                         onChange(uppdateraFonsterDorrPoster(data, rad.id, poster))
                       }
-                      visaUnderhallTips={visaFasadUnderhall}
+                      visaUnderhallTips={visaFonsterDorrUnderhallTips}
                     />
                   </div>
                 )}

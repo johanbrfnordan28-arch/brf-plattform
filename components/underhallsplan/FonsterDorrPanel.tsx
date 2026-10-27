@@ -255,7 +255,16 @@ export function FonsterDorrPanel({
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-muted">
         Välj <strong className="text-foreground">modulmått</strong> från listan (dm × dm),
-        {dorr ? " dörrtyp" : " material"} och antal. Lägg till en rad per storlek/modul.
+        {dorr ? (
+          <>
+            {" "}
+            <strong className="text-foreground">material</strong> och{" "}
+            <strong className="text-foreground">antal</strong>. Lägg till en rad
+            per storlek — flera olika modulmått blir flera rader.
+          </>
+        ) : (
+          <> material och antal. Lägg till en rad per storlek/modul.</>
+        )}
         {!dorr && (
           <>
             {" "}

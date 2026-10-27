@@ -11,10 +11,6 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       rekommenderatIntervallAr: 40,
       intervallHint: "Fönsterbyte — ofta 30–50 år beroende på material och skick.",
     },
-    dorrar: {
-      rekommenderatIntervallAr: 35,
-      intervallHint: "Ytterdörrar — ofta 25–40 år.",
-    },
     balkonger: {
       rekommenderatIntervallAr: 25,
       intervallHint:
@@ -28,6 +24,12 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       rekommenderatIntervallAr: 30,
       intervallHint:
         "Ommålning puts ca 25–40 år; putsreparation vid behov. Tegel/trä varierar.",
+    },
+  },
+  Dörrar: {
+    dorrar: {
+      rekommenderatIntervallAr: 35,
+      intervallHint: "Ytterdörrar — ofta 25–40 år.",
     },
   },
   Tak: {

@@ -117,6 +117,7 @@ export function beraknaFonsterDorrListaPris(
   };
 }
 
+/** @deprecated Fönster och dörrar ligger i egna komponenter — kvar för äldre fasaddata. */
 export function hamtaFonsterDorrKostnadFasad(
   fasadDetalj: KomponentDetaljData | undefined,
 ): { fonster: number; dorrar: number; totalt: number } {
@@ -138,6 +139,18 @@ export function hamtaFonsterDorrKostnadFasad(
         ).totaltKr
       : 0;
   return { fonster, dorrar, totalt: fonster + dorrar };
+}
+
+export function hamtaDorrKostnadDorrar(
+  dorrDetalj: KomponentDetaljData | undefined,
+): number {
+  if (!dorrDetalj) return 0;
+  const dorrRad = dorrDetalj.underkomponenter.find((r) => r.id === "dorrar");
+  if (!dorrRad?.aktiv) return 0;
+  return beraknaFonsterDorrListaPris(
+    dorrDetalj.fonsterDorrRegister?.dorrar ?? [],
+    true,
+  ).totaltKr;
 }
 
 export function hamtaFonsterKostnadFonster(

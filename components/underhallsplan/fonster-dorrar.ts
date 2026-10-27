@@ -207,6 +207,35 @@ export function normaliseraFonsterDorrPost(post: FonsterDorrPost): FonsterDorrPo
   };
 }
 
+/** Dörrposter — modulmått, material och antal ska alltid vara ifyllda vid sparande. */
+export function normaliseraDorrPost(post: FonsterDorrPost): FonsterDorrPost {
+  const base = normaliseraFonsterDorrPost(post);
+  const dorrMaterial =
+    base.dorrMaterial ??
+    (base.material === "tra"
+      ? "malad-tra"
+      : base.material === "aluminium" || base.material === "alu-kldd"
+        ? "aluminium"
+        : "malad-tra");
+  return {
+    ...base,
+    dorrMaterial,
+    dorrTraUnderhall:
+      dorrMaterial === "malad-tra"
+        ? base.dorrTraUnderhall ?? "malning"
+        : base.dorrTraUnderhall,
+    platAlder:
+      dorrMaterial === "plat" ? base.platAlder ?? "aldre" : base.platAlder,
+    dorrPlatUnderhall:
+      dorrMaterial === "plat"
+        ? base.dorrPlatUnderhall ??
+          ((base.platAlder ?? "aldre") === "aldre" ? "malning" : "kontroll")
+        : base.dorrPlatUnderhall,
+    harKodlas: base.harKodlas ?? true,
+    lasUnderhall: base.lasUnderhall ?? ["gangjarn", "cylinder-lasspray"],
+  };
+}
+
 function fonsterPlatsEtikett(post: FonsterDorrPost): string {
   const delar: string[] = [];
   const lage = fonsterLageEtikett(post.lage);
