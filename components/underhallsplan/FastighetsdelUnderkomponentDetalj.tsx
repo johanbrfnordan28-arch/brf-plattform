@@ -1,0 +1,185 @@
+"use client";
+
+import { BalkongerPanel } from "@/components/underhallsplan/BalkongerPanel";
+import { FasadmaterialPanel } from "@/components/underhallsplan/FasadmaterialPanel";
+import { FasadSockelPanel } from "@/components/underhallsplan/FasadSockelPanel";
+import { FonsterDorrPanel } from "@/components/underhallsplan/FonsterDorrPanel";
+import {
+  hamtaFasadAtgardPrisRegister,
+  uppdateraFasadAtgardPrisRegister,
+} from "@/components/underhallsplan/fasad-atgard-pris";
+import { TakbelaggningPanel } from "@/components/underhallsplan/TakbelaggningPanel";
+import {
+  hamtaFonsterDorrPoster,
+  hamtaFasadAtgardData,
+  hamtaFasadSidaMaterialPoster,
+  hamtaFasadSockelPoster,
+  hamtaKomponentMall,
+  hamtaTakBelaggningData,
+  hamtaBalkongPoster,
+  uppdateraBalkongPoster,
+  uppdateraEgnaBalkongTyper,
+  uppdateraFasadAtgardData,
+  uppdateraFasadSidaMaterialPoster,
+  uppdateraFasadSockelPoster,
+  uppdateraFonsterDorrPoster,
+  uppdateraTakBelaggningData,
+  type KomponentDetaljData,
+  type UnderkomponentDetaljPanel,
+  type UnderkomponentRad,
+} from "@/components/underhallsplan/komponentregister";
+import type { Grunduppgifter } from "@/components/underhallsplan/types";
+
+/** Underkomponenter med eget formulär — enkel m²/st-rad döljs i steg 2. */
+const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
+  "takbelaggning-val",
+  "balkong-lista",
+  "fonster-lista",
+  "dorr-lista",
+  "fasadmaterial-val",
+  "fasad-sockel-val",
+]);
+
+export function skaDoljaEnkelMattISteg2(
+  detaljPanel?: UnderkomponentDetaljPanel,
+): boolean {
+  return Boolean(detaljPanel && UTFORLIGA_PANELER.has(detaljPanel));
+}
+
+type FastighetsdelUnderkomponentDetaljProps = {
+  komponentNamn: string;
+  rad: UnderkomponentRad;
+  detaljPanel: UnderkomponentDetaljPanel;
+  data: KomponentDetaljData;
+  grund: Grunduppgifter;
+  foreningsAdresser: string[];
+  planStartAr: number;
+  planLangdAr: number;
+  onChange: (data: KomponentDetaljData) => void;
+  onRadChange: (patch: Partial<UnderkomponentRad>) => void;
+};
+
+export function FastighetsdelUnderkomponentDetalj({
+  komponentNamn,
+  rad,
+  detaljPanel,
+  data,
+  grund,
+  foreningsAdresser,
+  planStartAr,
+  planLangdAr,
+  onChange,
+  onRadChange,
+}: FastighetsdelUnderkomponentDetaljProps) {
+  const mall = hamtaKomponentMall(komponentNamn);
+
+  if (detaljPanel === "takbelaggning-val") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <TakbelaggningPanel
+          data={data}
+          grund={grund}
+          belaggning={hamtaTakBelaggningData(data, rad.id)}
+          måttenhet={rad.måttenhet}
+          värde={rad.värde}
+          onBelaggningChange={(belaggning) =>
+            onChange(uppdateraTakBelaggningData(data, rad.id, belaggning))
+          }
+          onMåttChange={(patch) => onRadChange(patch)}
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "balkong-lista") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <BalkongerPanel
+          poster={hamtaBalkongPoster(data, rad.id)}
+          egnaTyper={data.egnaBalkongTyper ?? []}
+          onChange={(poster) =>
+            onChange(uppdateraBalkongPoster(data, rad.id, poster))
+          }
+          onEgnaTyperChange={(typer) =>
+            onChange(uppdateraEgnaBalkongTyper(data, typer))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "fonster-lista" || detaljPanel === "dorr-lista") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <FonsterDorrPanel
+          titel={rad.etikett}
+          modulmattTyp={
+            rad.id === "dorrar"
+              ? "dorr"
+              : rad.id === "balkongdorrar"
+                ? "balkongdorr"
+                : "fonster"
+          }
+          poster={hamtaFonsterDorrPoster(data, rad.id)}
+          foreningsAdresser={foreningsAdresser}
+          grund={grund}
+          onChange={(poster) =>
+            onChange(uppdateraFonsterDorrPoster(data, rad.id, poster))
+          }
+          visaUnderhallTips={false}
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "fasadmaterial-val") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <FasadmaterialPanel
+          mall={mall}
+          data={data}
+          måttenhet={rad.måttenhet}
+          värde={rad.värde}
+          grund={grund}
+          planStartAr={planStartAr}
+          planLangdAr={planLangdAr}
+          fasadAtgard={hamtaFasadAtgardData(data, rad.id)}
+          fasadAtgardPriser={hamtaFasadAtgardPrisRegister(
+            data,
+            rad.id,
+            rad.värde,
+          )}
+          onValdaDeltyperChange={(valdaDeltyper) =>
+            onChange({ ...data, valdaDeltyper })
+          }
+          onMåttChange={(patch) => onRadChange(patch)}
+          onFasadAtgardChange={(atgard) =>
+            onChange(uppdateraFasadAtgardData(data, rad.id, atgard))
+          }
+          onFasadAtgardPriserChange={(priser) =>
+            onChange(uppdateraFasadAtgardPrisRegister(data, rad.id, priser))
+          }
+          fasadSidor={hamtaFasadSidaMaterialPoster(data, rad.id)}
+          onFasadSidorChange={(poster) =>
+            onChange(uppdateraFasadSidaMaterialPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "fasad-sockel-val") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <FasadSockelPanel
+          poster={hamtaFasadSockelPoster(data, rad.id)}
+          onChange={(poster) =>
+            onChange(uppdateraFasadSockelPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  return null;
+}

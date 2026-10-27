@@ -16,12 +16,18 @@ import {
   type FasadVaderstreckId,
 } from "@/components/underhallsplan/fastighets-ytor";
 import {
+  FastighetsdelUnderkomponentDetalj,
+  skaDoljaEnkelMattISteg2,
+} from "@/components/underhallsplan/FastighetsdelUnderkomponentDetalj";
+import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
+import {
   fastighetsdelGrupper,
   foreslagnaKomponenter,
   hamtaKomponentMall,
   måttenhetEtiketter,
   skapaKomponentId,
   skapaTomKomponentDetalj,
+  synkaKomponentDetaljMedMall,
   type KomponentDetaljData,
   type Måttenhet,
   type UnderkomponentRad,
@@ -37,6 +43,8 @@ type FastighetsdelarStegProps = {
   onDetalj: (namn: string, data: KomponentDetaljData) => void;
   onGrundChange: (grund: Grunduppgifter) => void;
   onVidare: () => void;
+  planStartAr: number;
+  planLangdAr: number;
 };
 
 function talFranText(text: string | undefined): number {
@@ -79,7 +87,10 @@ export function FastighetsdelarSteg({
   onDetalj,
   onGrundChange,
   onVidare,
+  planStartAr,
+  planLangdAr,
 }: FastighetsdelarStegProps) {
+  const foreningsAdresser = hamtaByggnadAdresser(grund);
   const [oppen, setOppen] = useState<string | null>("Tak");
   const [nyDel, setNyDel] = useState("");
   const [valdDel, setValdDel] = useState("");
@@ -97,7 +108,9 @@ export function FastighetsdelarSteg({
   );
 
   function detaljFor(namn: string): KomponentDetaljData {
-    return komponentDetaljer[namn] ?? skapaTomKomponentDetalj(namn);
+    const mall = hamtaKomponentMall(namn);
+    const raw = komponentDetaljer[namn] ?? skapaTomKomponentDetalj(namn);
+    return synkaKomponentDetaljMedMall(raw, mall);
   }
 
   function sparaDetalj(namn: string, data: KomponentDetaljData) {
@@ -225,11 +238,16 @@ export function FastighetsdelarSteg({
             ) : (
               <ul className="space-y-2">
                 {synliga.map((rad) => {
+                  const def = mall.underkomponenter.find(
+                    (del) => del.id === rad.id,
+                  );
+                  const detaljPanel = def?.detaljPanel;
+                  const doljEnkelMatt = skaDoljaEnkelMattISteg2(detaljPanel);
                   const forslag = forslagFranGrund(namn, rad.id, grund);
                   const enhet = måttenhetEtiketter[rad.måttenhet];
                   const hint =
-                    mall.underkomponenter.find((del) => del.id === rad.id)
-                      ?.måttHint ?? "Ange antal, yta eller löpmeter.";
+                    def?.måttHint ?? "Ange antal, yta eller löpmeter.";
+                  const data = detaljFor(namn);
                   return (
                     <li
                       key={rad.id}
@@ -255,46 +273,69 @@ export function FastighetsdelarSteg({
                           Ta bort
                         </button>
                       </div>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-[9rem_1fr]">
-                        <label className="block text-xs text-muted">
-                          Mått
-                          <select
-                            value={rad.måttenhet}
-                            onChange={(e) =>
-                              uppdateraRad(namn, rad.id, {
-                                måttenhet: e.target.value as Måttenhet,
-                                aktiv: true,
-                              })
-                            }
-                            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
-                          >
-                            {(Object.keys(måttenhetEtiketter) as Måttenhet[]).map(
-                              (key) => (
+                      {!doljEnkelMatt && (
+                        <div className="mt-2 grid gap-2 sm:grid-cols-[9rem_1fr]">
+                          <label className="block text-xs text-muted">
+                            Mått
+                            <select
+                              value={rad.måttenhet}
+                              onChange={(e) =>
+                                uppdateraRad(namn, rad.id, {
+                                  måttenhet: e.target.value as Måttenhet,
+                                  aktiv: true,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+                            >
+                              {(
+                                Object.keys(måttenhetEtiketter) as Måttenhet[]
+                              ).map((key) => (
                                 <option key={key} value={key}>
                                   {måttenhetEtiketter[key].etikett}
                                 </option>
-                              ),
-                            )}
-                          </select>
-                        </label>
-                        <label className="block text-xs text-muted">
-                          {enhet.etikett} ({enhet.enhet})
-                          <input
-                            type="number"
-                            min={0}
-                            step={rad.måttenhet === "antal" ? 1 : 0.1}
-                            value={rad.värde}
-                            onChange={(e) =>
-                              uppdateraRad(namn, rad.id, {
-                                värde: e.target.value,
-                                aktiv: true,
-                              })
-                            }
-                            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
-                          />
-                        </label>
-                      </div>
-                      {forslag && forslag !== rad.värde.trim() && (
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block text-xs text-muted">
+                            {enhet.etikett} ({enhet.enhet})
+                            <input
+                              type="number"
+                              min={0}
+                              step={rad.måttenhet === "antal" ? 1 : 0.1}
+                              value={rad.värde}
+                              onChange={(e) =>
+                                uppdateraRad(namn, rad.id, {
+                                  värde: e.target.value,
+                                  aktiv: true,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+                            />
+                          </label>
+                        </div>
+                      )}
+                      {detaljPanel && (
+                        <FastighetsdelUnderkomponentDetalj
+                          komponentNamn={namn}
+                          rad={rad}
+                          detaljPanel={detaljPanel}
+                          data={data}
+                          grund={grund}
+                          foreningsAdresser={foreningsAdresser}
+                          planStartAr={planStartAr}
+                          planLangdAr={planLangdAr}
+                          onChange={(next) => sparaDetalj(namn, next)}
+                          onRadChange={(patch) =>
+                            uppdateraRad(namn, rad.id, {
+                              ...patch,
+                              aktiv: true,
+                            })
+                          }
+                        />
+                      )}
+                      {!doljEnkelMatt &&
+                        forslag &&
+                        forslag !== rad.värde.trim() && (
                         <button
                           type="button"
                           onClick={() =>
@@ -309,7 +350,7 @@ export function FastighetsdelarSteg({
                         >
                           Hämta {forslag} m² från grunduppgifter
                         </button>
-                      )}
+                        )}
                     </li>
                   );
                 })}
@@ -366,9 +407,11 @@ export function FastighetsdelarSteg({
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted">
-        Här lägger du till och tar bort det som finns på huset. Antal och ytor
-        kan fyllas i direkt, eller hämtas från grunduppgifterna. Det som tas
-        bort syns inte i stegen längre ner.
+        Här lägger du till och tar bort det som finns på huset. För tak,
+        balkonger, fönster, dörrar och fasad fyller du i material och mängder
+        per del (t.ex. koppar tak i m², eller flera balkongtyper). Enklare
+        underdelar får antal, yta eller löpmeter direkt. Det som tas bort syns
+        inte i stegen längre ner.
       </p>
       {fastighetsdelGrupper.map((grupp) => {
         const delar = grupp.komponenter.filter((namn) =>

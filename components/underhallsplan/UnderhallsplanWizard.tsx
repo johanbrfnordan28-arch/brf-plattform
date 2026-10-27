@@ -1888,6 +1888,8 @@ export function UnderhallsplanWizard() {
           activeComponents={activeComponents}
           komponentDetaljer={komponentDetaljer}
           grund={grundNorm}
+          planStartAr={planStartAr}
+          planLangdAr={planLangdAr}
           onToggle={(namn) => sattDelMedIPlan(namn, false)}
           onLaggTill={(namn) => sattDelMedIPlan(namn, true)}
           onDetalj={uppdateraKomponentDetalj}
