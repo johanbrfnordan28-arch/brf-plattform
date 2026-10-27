@@ -12,6 +12,17 @@ import {
   type FasadAtgardData,
 } from "@/components/underhallsplan/fasad-atgard";
 import {
+  normaliseraFasadSidaMaterialPoster,
+  type FasadSidaMaterialPost,
+  type FasadSidaMaterialRegister,
+} from "@/components/underhallsplan/fasad-sidor-material";
+import {
+  beraknaFasadSockelTotalKvm,
+  normaliseraFasadSockelPoster,
+  type FasadSockelRegister,
+  type FasadSockelSegment,
+} from "@/components/underhallsplan/fasad-sockel";
+import {
   formateraTakBelaggning,
   migreraTakBelaggningFranDeltyper,
   normaliseraTakBelaggningData,
@@ -172,6 +183,7 @@ export type UnderkomponentDetaljPanel =
   | "takfonster-lista"
   | "p-platser-val"
   | "fasadmaterial-val"
+  | "fasad-sockel-val"
   | "takbelaggning-val"
   | "brandskydd-sba"
   | "brandskydd-branddorrar";
@@ -481,6 +493,10 @@ export type KomponentDetaljData = {
   fonsterDorrRegister?: FonsterDorrRegister;
   /** Planerade fasadåtgärder per underkomponent-id (fasadmaterial) */
   fasadAtgardRegister?: FasadAtgardRegister;
+  /** Material per väderstreck och hus (fasadmaterial) */
+  fasadSidaMaterialRegister?: FasadSidaMaterialRegister;
+  /** Sockelpartier med höjd och löpmeter (sockel) */
+  fasadSockelRegister?: FasadSockelRegister;
   /** Prissättning per fasadåtgärd (kvm/st/total). */
   fasadAtgardPrisRegister?: FasadAtgardPrisRegisterMap;
   /** Underhållstillfällen (tak, fönster m.fl.) per underkomponent-id. */
@@ -654,6 +670,8 @@ const komponentMallar: Record<string, KomponentMall> = {
     deltyper: [
       { id: "tunnputs", etikett: "Tunnputs" },
       { id: "puts", etikett: "Puts" },
+      { id: "kalkputs", etikett: "Kalkputs / kalkcement" },
+      { id: "silikatputs", etikett: "Silikatputs" },
       { id: "tegel", etikett: "Tegel" },
       { id: "tegel-putsband", etikett: "Tegel med putsband" },
       { id: "tra", etikett: "Trä" },
@@ -670,7 +688,16 @@ const komponentMallar: Record<string, KomponentMall> = {
           "Material, planerad åtgärd (putsreparation, ommålning m.m.) och total fasadarea.",
         detaljPanel: "fasadmaterial-val",
       },
-      { id: "sockel", etikett: "Sockel", grupp: "Fasadytor", defaultMåttenhet: "löpmeter", måttHint: "Sockelns omfattning.", doldIRenoveringshistorik: true },
+      {
+        id: "sockel",
+        etikett: "Sockel",
+        grupp: "Fasadytor",
+        defaultMåttenhet: "kvm",
+        måttHint:
+          "Flera partier med sockelhöjd (mm) och löpmeter — yta i m² beräknas automatiskt.",
+        detaljPanel: "fasad-sockel-val",
+        doldIRenoveringshistorik: true,
+      },
       {
         id: "dorrar",
         etikett: "Dörrar",
@@ -1184,6 +1211,28 @@ function skapaTomFasadAtgardRegister(mall: KomponentMall): FasadAtgardRegister {
   for (const def of mall.underkomponenter) {
     if (def.detaljPanel === "fasadmaterial-val") {
       reg[def.id] = skapaTomFasadAtgardData();
+    }
+  }
+  return reg;
+}
+
+function skapaTomFasadSidaMaterialRegister(
+  mall: KomponentMall,
+): FasadSidaMaterialRegister {
+  const reg: FasadSidaMaterialRegister = {};
+  for (const def of mall.underkomponenter) {
+    if (def.detaljPanel === "fasadmaterial-val") {
+      reg[def.id] = [];
+    }
+  }
+  return reg;
+}
+
+function skapaTomFasadSockelRegister(mall: KomponentMall): FasadSockelRegister {
+  const reg: FasadSockelRegister = {};
+  for (const def of mall.underkomponenter) {
+    if (def.detaljPanel === "fasad-sockel-val") {
+      reg[def.id] = [];
     }
   }
   return reg;
@@ -2309,6 +2358,18 @@ export function synkaKomponentDetaljMedMall(
       ...tom.takfonsterRegister,
       ...dataIn.takfonsterRegister,
     },
+    fasadSidaMaterialRegister: Object.fromEntries(
+      Object.entries({
+        ...tom.fasadSidaMaterialRegister,
+        ...dataIn.fasadSidaMaterialRegister,
+      }).map(([key, val]) => [key, normaliseraFasadSidaMaterialPoster(val)]),
+    ),
+    fasadSockelRegister: Object.fromEntries(
+      Object.entries({
+        ...tom.fasadSockelRegister,
+        ...dataIn.fasadSockelRegister,
+      }).map(([key, val]) => [key, normaliseraFasadSockelPoster(val)]),
+    ),
     takBelaggningRegister:
       Object.keys(takBelaggningRegister).length > 0
         ? takBelaggningRegister
@@ -2336,6 +2397,8 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
   const takterrassRegister = skapaTomTakterrassRegister(mall);
   const medlemstakterrassRegister = skapaTomMedlemstakterrassRegister(mall);
   const takfonsterRegister = skapaTomTakfonsterRegister(mall);
+  const fasadSidaMaterialRegister = skapaTomFasadSidaMaterialRegister(mall);
+  const fasadSockelRegister = skapaTomFasadSockelRegister(mall);
   const takBelaggningRegister = skapaTomTakBelaggningRegister(mall);
   return {
     valdaDeltyper: [],
@@ -2403,6 +2466,14 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
         : undefined,
     takfonsterRegister:
       Object.keys(takfonsterRegister).length > 0 ? takfonsterRegister : undefined,
+    fasadSidaMaterialRegister:
+      Object.keys(fasadSidaMaterialRegister).length > 0
+        ? fasadSidaMaterialRegister
+        : undefined,
+    fasadSockelRegister:
+      Object.keys(fasadSockelRegister).length > 0
+        ? fasadSockelRegister
+        : undefined,
     takBelaggningRegister:
       Object.keys(takBelaggningRegister).length > 0
         ? takBelaggningRegister
@@ -2459,6 +2530,70 @@ export function hamtaFasadAtgardData(
   underId: string,
 ): FasadAtgardData {
   return normaliseraFasadAtgardData(data.fasadAtgardRegister?.[underId]);
+}
+
+export function hamtaFasadSidaMaterialPoster(
+  data: KomponentDetaljData,
+  underId: string,
+): FasadSidaMaterialPost[] {
+  return normaliseraFasadSidaMaterialPoster(
+    data.fasadSidaMaterialRegister?.[underId],
+  );
+}
+
+export function uppdateraFasadSidaMaterialPoster(
+  data: KomponentDetaljData,
+  underId: string,
+  poster: FasadSidaMaterialPost[],
+): KomponentDetaljData {
+  const normaliserade = normaliseraFasadSidaMaterialPoster(poster);
+  const materialIds = [
+    ...new Set(normaliserade.map((p) => p.materialId).filter(Boolean)),
+  ];
+  const valdaDeltyper = [
+    ...new Set([...data.valdaDeltyper, ...materialIds]),
+  ];
+  return {
+    ...data,
+    valdaDeltyper,
+    fasadSidaMaterialRegister: {
+      ...data.fasadSidaMaterialRegister,
+      [underId]: normaliserade,
+    },
+  };
+}
+
+export function hamtaFasadSockelPoster(
+  data: KomponentDetaljData,
+  underId: string,
+): FasadSockelSegment[] {
+  return normaliseraFasadSockelPoster(data.fasadSockelRegister?.[underId]);
+}
+
+export function uppdateraFasadSockelPoster(
+  data: KomponentDetaljData,
+  underId: string,
+  poster: FasadSockelSegment[],
+): KomponentDetaljData {
+  const normaliserade = normaliseraFasadSockelPoster(poster);
+  const kvm = beraknaFasadSockelTotalKvm(normaliserade);
+  const underkomponenter = data.underkomponenter.map((r) =>
+    r.id === underId
+      ? {
+          ...r,
+          måttenhet: "kvm" as Måttenhet,
+          värde: kvm > 0 ? String(Math.round(kvm * 10) / 10) : r.värde,
+        }
+      : r,
+  );
+  return {
+    ...data,
+    underkomponenter,
+    fasadSockelRegister: {
+      ...data.fasadSockelRegister,
+      [underId]: normaliserade,
+    },
+  };
 }
 
 export function uppdateraFasadAtgardData(

@@ -38,7 +38,7 @@ function ByggnadFasadSidorRad({
       </p>
       <p className="mt-0.5 text-[10px] text-muted">
         Högst {MAX_ANTAL_FASADER} fasader. Gata och gård räcker ofta. Lägg till
-        norr eller söder om den sidan finns.
+        norr, söder, väster eller öster om sidan finns.
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {fasadSidorForHus(hus).map((l) => {
@@ -104,7 +104,8 @@ export function GrundFasaderPanel({ grund: rawGrund, onChange }: GrundFasaderPan
         När adresserna är på plats: välj vilka fasader varje byggnad har. Ett hus
         har högst fyra. Ofta räcker{" "}
         <strong className="font-medium text-foreground">Gata och Gård</strong>.
-        Lägg till Norr eller Söder om den sidan finns. Ytan i m² fyller du i
+        Lägg till väderstreck (norr, söder, väster, öster) om sidan finns. Ytan
+        i m² fyller du i
         nedan, och samma sidor syns i fastighetens delar.
       </p>
 

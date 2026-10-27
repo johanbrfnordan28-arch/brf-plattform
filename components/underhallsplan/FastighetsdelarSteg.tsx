@@ -474,8 +474,8 @@ function FasadSidor({
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-muted">
         Fasader hämtas från grunduppgifterna. Ett hus har högst{" "}
-        {MAX_ANTAL_FASADER}. Ofta räcker gata och gård. Lägg till norr eller
-        söder om den sidan finns, och ta bort den som inte finns.
+        {MAX_ANTAL_FASADER}. Ofta räcker gata och gård. Lägg till norr, söder,
+        väster eller öster om sidan finns, och ta bort den som inte finns.
       </p>
       {data.hus.map((h) => (
         <HusFasadRader

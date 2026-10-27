@@ -13,12 +13,14 @@ export const MAX_ANTAL_FASADER = 4;
 
 export const FASAD_STANDARD: FasadVaderstreckId[] = ["gata", "gard"];
 
-/** Sidor som kan väljas på huset: gata, gård och vid behov norr eller söder. */
+/** Sidor som kan väljas på huset (högst fyra totalt). */
 export const FASAD_VALBARA: { id: FasadVaderstreckId; etikett: string }[] = [
   { id: "gata", etikett: "Gata" },
   { id: "gard", etikett: "Gård" },
   { id: "norr", etikett: "Norr" },
   { id: "soder", etikett: "Söder" },
+  { id: "vaster", etikett: "Väster" },
+  { id: "oster", etikett: "Öster" },
 ];
 
 export type FastighetsHus = {

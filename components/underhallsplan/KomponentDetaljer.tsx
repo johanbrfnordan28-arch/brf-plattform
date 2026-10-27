@@ -7,6 +7,9 @@ import {
   UnderkomponentKortLista,
 } from "@/components/underhallsplan/KomponentTrädUi";
 import { FasadmaterialPanel } from "@/components/underhallsplan/FasadmaterialPanel";
+import { FasadSockelPanel } from "@/components/underhallsplan/FasadSockelPanel";
+import { formateraFasadSidorMaterial } from "@/components/underhallsplan/fasad-sidor-material";
+import { formateraFasadSockelPoster } from "@/components/underhallsplan/fasad-sockel";
 import { formateraFasadAtgarder } from "@/components/underhallsplan/fasad-atgard";
 import { beraknaFasadKostnadPerAr } from "@/components/underhallsplan/fasad-atgard-plan";
 import {
@@ -34,6 +37,8 @@ import {
   formateraKomponentSammanfattning,
   hamtaFonsterDorrPoster,
   hamtaFasadAtgardData,
+  hamtaFasadSidaMaterialPoster,
+  hamtaFasadSockelPoster,
   hamtaKomponentMall,
   hamtaLokalInventar,
   hamtaLokalYtskikt,
@@ -58,6 +63,8 @@ import {
   standardYtskikt,
   uppdateraFonsterDorrPoster,
   uppdateraFasadAtgardData,
+  uppdateraFasadSidaMaterialPoster,
+  uppdateraFasadSockelPoster,
   uppdateraLokalInventar,
   uppdateraTakterrassPoster,
   hamtaMedlemstakterrassPoster,
@@ -560,6 +567,11 @@ export function KomponentDetaljer({
                     data.valdaDeltyper
                       .map((id) => deltypEtikett(id, data, mall))
                       .join(", "),
+                    formateraFasadSidorMaterial(
+                      hamtaFasadSidaMaterialPoster(data, rad.id),
+                      grund,
+                      (id) => deltypEtikett(id, data, mall),
+                    ),
                     formateraFasadAtgarder(hamtaFasadAtgardData(data, rad.id)),
                     rad.värde.trim()
                       ? `${rad.värde.trim()} ${enhetInfo.enhet}`
@@ -567,6 +579,12 @@ export function KomponentDetaljer({
                   ]
                     .filter(Boolean)
                     .join(" · ") || null
+                : null;
+            const fasadSockelKort =
+              detaljPanel === "fasad-sockel-val" && rad.aktiv
+                ? formateraFasadSockelPoster(
+                    hamtaFasadSockelPoster(data, rad.id),
+                  ) || null
                 : null;
             const takbelaggningKort =
               detaljPanel === "takbelaggning-val" && rad.aktiv
@@ -694,6 +712,7 @@ export function KomponentDetaljer({
               fonsterDorrKort ??
               ytskiktKort ??
               fasadmaterialKort ??
+              fasadSockelKort ??
               takbelaggningKort ??
               golvKort ??
               lokalKomplementKort ??
@@ -1008,7 +1027,26 @@ export function KomponentDetaljer({
                         uppdateraFasadAtgardPrisRegister(data, rad.id, priser),
                       )
                     }
+                    fasadSidor={hamtaFasadSidaMaterialPoster(data, rad.id)}
+                    onFasadSidorChange={(poster) =>
+                      onChange(
+                        uppdateraFasadSidaMaterialPoster(data, rad.id, poster),
+                      )
+                    }
                   />
+                )}
+
+                {ärÖppen && rad.aktiv && detaljPanel === "fasad-sockel-val" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <FasadSockelPanel
+                      poster={hamtaFasadSockelPoster(data, rad.id)}
+                      onChange={(poster) =>
+                        onChange(
+                          uppdateraFasadSockelPoster(data, rad.id, poster),
+                        )
+                      }
+                    />
+                  </div>
                 )}
 
                 {ärÖppen && rad.aktiv && detaljPanel === "golv-val" && (
