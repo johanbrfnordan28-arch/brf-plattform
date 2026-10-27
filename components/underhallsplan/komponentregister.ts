@@ -12,6 +12,14 @@ import {
   type FasadAtgardData,
 } from "@/components/underhallsplan/fasad-atgard";
 import {
+  formateraTakBelaggning,
+  migreraTakBelaggningFranDeltyper,
+  normaliseraTakBelaggningData,
+  skapaTomTakBelaggningRegister,
+  valdaDeltyperFranTakBelaggning,
+  type TakBelaggningData,
+} from "@/components/underhallsplan/tak-belaggning";
+import {
   formateraLokalInventar,
   skapaTomLokalInventar,
   type LokalInventarRad,
@@ -158,6 +166,7 @@ export type UnderkomponentDetaljPanel =
   | "takfonster-lista"
   | "p-platser-val"
   | "fasadmaterial-val"
+  | "takbelaggning-val"
   | "brandskydd-sba"
   | "brandskydd-branddorrar";
 
@@ -504,6 +513,8 @@ export type KomponentDetaljData = {
   medlemstakterrassRegister?: MedlemstakterrassRegister;
   /** Takfönster per underkomponent-id */
   takfonsterRegister?: TakfonsterRegister;
+  /** Takbeläggning per underkomponent-id (takyta) */
+  takBelaggningRegister?: import("@/components/underhallsplan/tak-belaggning").TakBelaggningRegister;
   /** SBA per underkomponent-id (Brandskydd) */
   brandskyddSbaRegister?: BrandskyddSbaRegister;
   /** Branddörrar per underkomponent-id (Brandskydd) */
@@ -689,56 +700,31 @@ const komponentMallar: Record<string, KomponentMall> = {
   Tak: {
     namn: "Tak",
     deltypSektionTitel: "Takbeläggning / typ",
-    deltypHjalp:
-      "Flera material kan väljas om taket består av mer än en beläggning, till exempel tegel och bandlagd plåt.",
-    deltyper: [
-      { id: "tegel", etikett: "Tegel" },
-      { id: "papp", etikett: "Papp" },
-      {
-        id: "korrugerad-plat",
-        etikett: "Korrugerad plåt, målad",
-        beskrivning:
-          "Alltid målad stålplåt, inte koppar. Infästning med spik eller skruv genom plåten. Kan ligga på bärläkt och ströläkt ovanpå takpappen. Underhåll: rengöring och ommålning.",
-      },
-      {
-        id: "bandlaggd-plat",
-        etikett: "Bandlagd plåt, målad",
-        beskrivning:
-          "Målad stålplåt på underlagspapp. Infästningen sitter dold under plåten. Underhåll: rengöring och ommålning.",
-      },
-      {
-        id: "bandlaggd-koppar",
-        etikett: "Bandlagd koppar",
-        beskrivning:
-          "Koppar på underlagspapp med dold infästning. Koppar får patina och målas inte. Underhåll: rengöring och kontroll.",
-      },
-      {
-        id: "bandlaggd-aluminium",
-        etikett: "Bandlagd aluminium",
-        beskrivning:
-          "Aluminium på underlagspapp med dold infästning. Lackerad aluminium kan rengöras och målas om. Obehandlad aluminium målas inte.",
-      },
-      {
-        id: "bandlaggd-zink",
-        etikett: "Bandlagd zink",
-        beskrivning:
-          "Zink på underlagspapp med dold infästning. Zink får patina och målas normalt inte. Underhåll: rengöring och kontroll.",
-      },
-      {
-        id: "bandlaggd-rostfritt",
-        etikett: "Bandlagd rostfritt stål",
-        beskrivning:
-          "Rostfritt stål på underlagspapp med dold infästning. Rostfritt målas inte. Underhåll: rengöring och kontroll.",
-      },
-    ],
+    tillatEgenDeltyp: false,
+    deltyper: [],
     underkomponenter: [
       {
         id: "takyta",
         etikett: "Takytor (beläggning)",
         grupp: "Takbeläggning",
         defaultMåttenhet: "kvm",
+        detaljPanel: "takbelaggning-val",
         måttHint:
-          "Total takyta i m². Välj ett eller flera material ovan. Korrugerad plåt är alltid målad och fästs med spik eller skruv. Bandlagd plåt kan vara målad stålplåt, koppar, aluminium, zink eller rostfritt, med dold infästning på papp.",
+          "Total takyta i m². Välj tegel (betong/lertegel och kulör), korrugerad plåt (bärläkt/ströläkt) eller bandlagd plåt (plåt, koppar, aluminium, zink, rostfritt).",
+      },
+      {
+        id: "nock",
+        etikett: "Nock",
+        grupp: "Takbeläggning",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter nock — främst vid tegeltak.",
+      },
+      {
+        id: "ranndal",
+        etikett: "Ränndalar",
+        grupp: "Takbeläggning",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter ränndal — främst vid tegeltak.",
       },
       {
         id: "takstegar",
@@ -2185,7 +2171,7 @@ export function synkaKomponentDetaljMedMall(
           mallDeltypIds.has(id),
         )
       : valdaDeltyperIn;
-  const valdaDeltyper =
+  const valdaDeltyperLegacyTak =
     mall.namn === "Tak"
       ? [
           ...new Set(
@@ -2195,6 +2181,30 @@ export function synkaKomponentDetaljMedMall(
           ),
         ]
       : valdaDeltyperRå;
+
+  const takBelaggningRegisterBas = {
+    ...skapaTomTakBelaggningRegister(mall),
+    ...dataIn.takBelaggningRegister,
+  };
+  let takBelaggningRegister = takBelaggningRegisterBas;
+  if (mall.namn === "Tak") {
+    const takytaId = "takyta";
+    const migrerad = migreraTakBelaggningFranDeltyper(
+      valdaDeltyperLegacyTak,
+      takBelaggningRegisterBas[takytaId],
+    );
+    takBelaggningRegister = {
+      ...takBelaggningRegisterBas,
+      [takytaId]: normaliseraTakBelaggningData(migrerad),
+    };
+  }
+
+  const valdaDeltyper =
+    mall.namn === "Tak"
+      ? valdaDeltyperFranTakBelaggning(
+          normaliseraTakBelaggningData(takBelaggningRegister.takyta),
+        )
+      : valdaDeltyperLegacyTak;
 
   return {
     valdaDeltyper,
@@ -2291,6 +2301,10 @@ export function synkaKomponentDetaljMedMall(
       ...tom.takfonsterRegister,
       ...dataIn.takfonsterRegister,
     },
+    takBelaggningRegister:
+      Object.keys(takBelaggningRegister).length > 0
+        ? takBelaggningRegister
+        : undefined,
   };
 }
 
@@ -2314,6 +2328,7 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
   const takterrassRegister = skapaTomTakterrassRegister(mall);
   const medlemstakterrassRegister = skapaTomMedlemstakterrassRegister(mall);
   const takfonsterRegister = skapaTomTakfonsterRegister(mall);
+  const takBelaggningRegister = skapaTomTakBelaggningRegister(mall);
   return {
     valdaDeltyper: [],
     egnaDeltyper: [],
@@ -2380,6 +2395,33 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
         : undefined,
     takfonsterRegister:
       Object.keys(takfonsterRegister).length > 0 ? takfonsterRegister : undefined,
+    takBelaggningRegister:
+      Object.keys(takBelaggningRegister).length > 0
+        ? takBelaggningRegister
+        : undefined,
+  };
+}
+
+export function hamtaTakBelaggningData(
+  data: KomponentDetaljData,
+  underId: string,
+): TakBelaggningData {
+  return normaliseraTakBelaggningData(data.takBelaggningRegister?.[underId]);
+}
+
+export function uppdateraTakBelaggningData(
+  data: KomponentDetaljData,
+  underId: string,
+  belaggning: TakBelaggningData,
+): KomponentDetaljData {
+  const normaliserad = normaliseraTakBelaggningData(belaggning);
+  return {
+    ...data,
+    valdaDeltyper: valdaDeltyperFranTakBelaggning(normaliserad),
+    takBelaggningRegister: {
+      ...data.takBelaggningRegister,
+      [underId]: normaliserad,
+    },
   };
 }
 
@@ -2961,6 +3003,17 @@ export function formateraKomponentSammanfattning(
       );
       if (fasadDelar.length > 0) {
         delar.push(`${rad.etikett}: ${fasadDelar.join(" · ")}`);
+      }
+      continue;
+    }
+    if (def?.detaljPanel === "takbelaggning-val") {
+      const mat = formateraTakBelaggning(hamtaTakBelaggningData(data, rad.id));
+      const yta = rad.värde.trim()
+        ? `${rad.värde.trim()} ${måttenhetEtiketter[rad.måttenhet].enhet}`
+        : "";
+      const takDelar = [mat, yta].filter(Boolean);
+      if (takDelar.length > 0) {
+        delar.push(`${rad.etikett}: ${takDelar.join(" · ")}`);
       }
       continue;
     }

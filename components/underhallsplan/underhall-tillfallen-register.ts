@@ -104,29 +104,40 @@ export function hamtaTillfallenKopplingForUnderkomponent(
 export function skapaForslagTakTillfallen(
   utförtAr: number,
   planStartAr: number,
+  kanMalas = true,
 ): UnderhallTillfallenData {
   const omlaggningAr = utförtAr + 25;
   const malningAr = Math.max(planStartAr, utförtAr + 10);
-  return {
-    tillfallen: [
-      {
-        id: "forslag-malning",
-        titel: "Takmålning / ytaunderhåll",
-        nastaAr: String(malningAr),
-        intervallAr: "10",
-        atgarder: ["takmalning"],
-        inkluderadeUnderkomponenter: [],
-      },
-      {
-        id: "forslag-omlaggning",
-        titel: "Takomläggning",
-        nastaAr: String(omlaggningAr),
-        intervallAr: "25",
-        atgarder: ["takomlaggning", "plat-underhall"],
-        inkluderadeUnderkomponenter: ["skorsten"],
-      },
-    ],
-  };
+  const rengoringAr = Math.max(planStartAr, utförtAr + 5);
+  const tillfallen: UnderhallTillfallenData["tillfallen"] = [
+    {
+      id: "forslag-rengoring",
+      titel: "Takrengöring",
+      nastaAr: String(rengoringAr),
+      intervallAr: "5",
+      atgarder: ["tak-rengoring"],
+      inkluderadeUnderkomponenter: [],
+    },
+  ];
+  if (kanMalas) {
+    tillfallen.push({
+      id: "forslag-malning",
+      titel: "Takmålning / ytaunderhåll",
+      nastaAr: String(malningAr),
+      intervallAr: "10",
+      atgarder: ["takmalning"],
+      inkluderadeUnderkomponenter: [],
+    });
+  }
+  tillfallen.push({
+    id: "forslag-omlaggning",
+    titel: "Takomläggning",
+    nastaAr: String(omlaggningAr),
+    intervallAr: "25",
+    atgarder: ["takomlaggning", "plat-underhall"],
+    inkluderadeUnderkomponenter: ["skorsten"],
+  });
+  return { tillfallen };
 }
 
 export function synkaTillfallenFranHistorikPaRegister(

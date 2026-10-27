@@ -11,6 +11,7 @@ import type { FasadAtgardPrisRad } from "@/components/underhallsplan/fasad-atgar
 import { skapaTomFasadAtgardPrisRad } from "@/components/underhallsplan/fasad-atgard-pris";
 
 const RIKT_TAK_ATGARD: Record<string, RiktprisSpec> = {
+  "tak-rengoring": { enhet: "kvm", prisKr: 35 },
   takomlaggning: { enhet: "kvm", prisKr: 850 },
   takmalning: { enhet: "kvm", prisKr: 120 },
   "plat-underhall": { enhet: "kvm", prisKr: 45 },

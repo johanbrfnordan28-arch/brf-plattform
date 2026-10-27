@@ -15,6 +15,12 @@ export type UnderhallTillfallenPlanNyckel =
 
 const takTakytaAtgarder: UnderhallAtgardKatalogPost[] = [
   {
+    id: "tak-rengoring",
+    etikett: "Takrengöring",
+    beskrivning:
+      "Rengöring av takytan — gäller tegel, plåt, papp och övriga beläggningar.",
+  },
+  {
     id: "takomlaggning",
     etikett: "Takomläggning / nytt tak",
     beskrivning:
@@ -24,7 +30,7 @@ const takTakytaAtgarder: UnderhallAtgardKatalogPost[] = [
     id: "takmalning",
     etikett: "Takmålning / ytaunderhåll",
     beskrivning:
-      "Målning eller ytbehandling av plåt/taktäckning — enklare åtgärd mellan större takprojekt.",
+      "Ommålning av målad plåt — gäller inte koppar, zink, rostfritt eller obehandlad aluminium.",
   },
   {
     id: "plat-underhall",

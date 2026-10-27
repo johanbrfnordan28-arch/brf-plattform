@@ -63,6 +63,8 @@ import {
   uppdateraMedlemstakterrassData,
   uppdateraTakterrassData,
   uppdateraTakfonsterData,
+  hamtaTakBelaggningData,
+  uppdateraTakBelaggningData,
   uppdateraBalkongPoster,
   uppdateraEgnaHissMarken,
   uppdateraHissPoster,
@@ -130,9 +132,12 @@ import { formateraTakfonsterData } from "@/components/underhallsplan/takfonster"
 import { formateraTvattstugaPoster } from "@/components/underhallsplan/tvattstugor";
 import { KommandeUnderhallFalt } from "@/components/underhallsplan/KommandeUnderhallFalt";
 import { YtskiktValPanel } from "@/components/underhallsplan/YtskiktValPanel";
-import { TakYtaSammanstallning } from "@/components/underhallsplan/TakYtaSammanstallning";
+import { TakbelaggningPanel } from "@/components/underhallsplan/TakbelaggningPanel";
+import {
+  formateraTakBelaggning,
+  takBelaggningKanMalas,
+} from "@/components/underhallsplan/tak-belaggning";
 import { KomponentKlumpsummaVy } from "@/components/underhallsplan/KomponentKlumpsummaVy";
-import { YtaOchMaterialAiHjalp } from "@/components/underhallsplan/YtaOchMaterialAiHjalp";
 import {
   skaVisaUnderkomponentLista,
 } from "@/components/underhallsplan/komponent-vy";
@@ -561,6 +566,19 @@ export function KomponentDetaljer({
                     .filter(Boolean)
                     .join(" · ") || null
                 : null;
+            const takbelaggningKort =
+              detaljPanel === "takbelaggning-val" && rad.aktiv
+                ? [
+                    formateraTakBelaggning(
+                      hamtaTakBelaggningData(data, rad.id),
+                    ),
+                    rad.värde.trim()
+                      ? `${rad.värde.trim()} ${enhetInfo.enhet}`
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || null
+                : null;
             const golvKort =
               detaljPanel === "golv-val" && rad.aktiv
                 ? formateraGolvRad(rad)
@@ -670,6 +688,7 @@ export function KomponentDetaljer({
               fonsterDorrKort ??
               ytskiktKort ??
               fasadmaterialKort ??
+              takbelaggningKort ??
               golvKort ??
               lokalKomplementKort ??
               lokalKort ??
@@ -850,7 +869,13 @@ export function KomponentDetaljer({
                                   data,
                                   rad.id,
                                   tillfallenPlanNyckel === "tak-takyta"
-                                    ? skapaForslagTakTillfallen(utförtArNum, planStartAr)
+                                    ? skapaForslagTakTillfallen(
+                                        utförtArNum,
+                                        planStartAr,
+                                        takBelaggningKanMalas(
+                                          hamtaTakBelaggningData(data, rad.id),
+                                        ),
+                                      )
                                     : skapaForslagFonsterTillfallen(
                                         utförtArNum,
                                         planStartAr,
@@ -862,8 +887,37 @@ export function KomponentDetaljer({
                       }
                       forslagEtikett={
                         tillfallenPlanNyckel === "tak-takyta"
-                          ? "Föreslå takmålning + omläggning (25 år)"
+                          ? "Föreslå rengöring, målning (plåt) + omläggning"
                           : "Föreslå målning + fönsterbyte"
+                      }
+                      atgardFilter={
+                        tillfallenPlanNyckel === "tak-takyta"
+                          ? (id) =>
+                              id !== "takmalning" ||
+                              takBelaggningKanMalas(
+                                hamtaTakBelaggningData(data, rad.id),
+                              )
+                          : undefined
+                      }
+                    />
+                  </div>
+                )}
+
+                {ärÖppen && rad.aktiv && detaljPanel === "takbelaggning-val" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <TakbelaggningPanel
+                      data={data}
+                      grund={grund}
+                      belaggning={hamtaTakBelaggningData(data, rad.id)}
+                      måttenhet={rad.måttenhet}
+                      värde={rad.värde}
+                      onBelaggningChange={(belaggning) =>
+                        onChange(
+                          uppdateraTakBelaggningData(data, rad.id, belaggning),
+                        )
+                      }
+                      onMåttChange={(patch) =>
+                        uppdateraUnderkomponent(rad.id, patch)
                       }
                     />
                   </div>
@@ -1260,26 +1314,6 @@ export function KomponentDetaljer({
                         />
                       </label>
                     </div>
-                    {komponentNamn === "Tak" && rad.id === "takyta" && (
-                      <>
-                        <YtaOchMaterialAiHjalp
-                          typ="Tak"
-                          grund={grund}
-                          komponentData={data}
-                          registerKvm={rad.värde}
-                          onApplyKvm={(kvm) =>
-                            uppdateraUnderkomponent(rad.id, { värde: kvm })
-                          }
-                        />
-                        <TakYtaSammanstallning
-                          grund={grund}
-                          registerTakKvm={rad.värde}
-                          onApplyGrundSummaTillRegister={(kvm) =>
-                            uppdateraUnderkomponent(rad.id, { värde: kvm })
-                          }
-                        />
-                      </>
-                    )}
                   </div>
                 )}
 

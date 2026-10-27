@@ -34,6 +34,8 @@ type UnderhallTillfallenPanelProps = {
   onPriserChange: (priser: FasadAtgardPrisRegister) => void;
   onForslagStandard?: () => void;
   forslagEtikett?: string;
+  /** t.ex. dölj takmålning när beläggningen inte kan målas */
+  atgardFilter?: (atgardId: string) => boolean;
 };
 
 export function UnderhallTillfallenPanel({
@@ -51,8 +53,11 @@ export function UnderhallTillfallenPanel({
   onPriserChange,
   onForslagStandard,
   forslagEtikett,
+  atgardFilter,
 }: UnderhallTillfallenPanelProps) {
-  const katalog = hamtaUnderhallAtgardKatalog(planNyckel);
+  const katalog = hamtaUnderhallAtgardKatalog(planNyckel).filter(
+    (a) => !atgardFilter || atgardFilter(a.id),
+  );
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const standardIntervall =
     standardUnderhallIntervallAr(komponentNamn, underkomponentId) || "25";
