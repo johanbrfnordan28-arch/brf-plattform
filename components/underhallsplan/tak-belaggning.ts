@@ -102,6 +102,93 @@ export {
   bandlagdMaterial as takBelaggningBandlagdMaterial,
 };
 
+/** Alla takmaterial i en lista — för rullgardin i steg 2. */
+export type TakBelaggningMaterialVal = {
+  id: string;
+  etikett: string;
+  grupp: string;
+};
+
+export const takBelaggningMaterialAlternativ: TakBelaggningMaterialVal[] = [
+  ...tegelTyper.map((t) => ({
+    id: `tegel:${t.id}`,
+    etikett: t.etikett,
+    grupp: "Tegel",
+  })),
+  {
+    id: "plat-korrigerad:spik",
+    etikett: "Korrugerad plåt — spikad",
+    grupp: "Plåt",
+  },
+  {
+    id: "plat-korrigerad:skruv",
+    etikett: "Korrugerad plåt — skruvad",
+    grupp: "Plåt",
+  },
+  ...bandlagdMaterial.map((m) => ({
+    id: `plat-bandlagd:${m.id}`,
+    etikett: m.etikett,
+    grupp: "Bandlagd plåt",
+  })),
+  { id: "papp", etikett: "Papp / underlag", grupp: "Papp" },
+];
+
+export function takMaterialValIdFranPost(post: TakBelaggningPost): string {
+  if (post.huvudtyp === "papp") return "papp";
+  if (post.huvudtyp === "tegel") {
+    return `tegel:${post.tegelTyp === "lertegel" ? "lertegel" : "betongpannor"}`;
+  }
+  if (post.huvudtyp === "plat-korrigerad") {
+    return `plat-korrigerad:${post.korrigeradInfastning === "skruv" ? "skruv" : "spik"}`;
+  }
+  if (post.huvudtyp === "plat-bandlagd") {
+    const mat = post.bandlagdMaterial ?? "stalplat";
+    return `plat-bandlagd:${mat}`;
+  }
+  return "tegel:betongpannor";
+}
+
+export function postPatchFranTakMaterialVal(
+  valId: string,
+  befintlig?: TakBelaggningPost,
+): Partial<TakBelaggningPost> {
+  if (valId === "papp") {
+    return { huvudtyp: "papp" };
+  }
+  if (valId.startsWith("tegel:")) {
+    const typ: TegelTyp =
+      valId.endsWith(":lertegel") ? "lertegel" : "betongpannor";
+    return {
+      huvudtyp: "tegel",
+      tegelTyp: typ,
+      tegelKulor: befintlig?.tegelKulor ?? "",
+    };
+  }
+  if (valId.startsWith("plat-korrigerad:")) {
+    const inf: KorrigeradInfastning = valId.endsWith(":skruv")
+      ? "skruv"
+      : "spik";
+    return { huvudtyp: "plat-korrigerad", korrigeradInfastning: inf };
+  }
+  if (valId.startsWith("plat-bandlagd:")) {
+    const raw = valId.slice("plat-bandlagd:".length) as BandlagdPlatMaterial;
+    const mat: BandlagdPlatMaterial =
+      raw === "koppar" ||
+      raw === "aluminium" ||
+      raw === "zink" ||
+      raw === "rostfritt"
+        ? raw
+        : "stalplat";
+    return {
+      huvudtyp: "plat-bandlagd",
+      bandlagdMaterial: mat,
+      aluminiumLackerad:
+        mat === "aluminium" ? befintlig?.aluminiumLackerad : undefined,
+    };
+  }
+  return { huvudtyp: "tegel", tegelTyp: "betongpannor", tegelKulor: "" };
+}
+
 function standardMangdEnhet(
   huvudtyp: TakBelaggningHuvudtyp,
 ): TakBelaggningMangdEnhet {

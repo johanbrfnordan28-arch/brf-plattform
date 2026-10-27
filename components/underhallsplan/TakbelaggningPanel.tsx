@@ -11,7 +11,10 @@ import {
   takBelaggningBandlagdMaterial,
   takBelaggningKanMalas,
   takBelaggningMangdEnhetEtiketter,
+  takBelaggningMaterialAlternativ,
   takBelaggningTegelTyper,
+  postPatchFranTakMaterialVal,
+  takMaterialValIdFranPost,
   type BandlagdPlatMaterial,
   type KorrigeradInfastning,
   type TakBelaggningData,
@@ -34,6 +37,8 @@ type TakbelaggningPanelProps = {
   värde: string;
   onBelaggningChange: (next: TakBelaggningData) => void;
   onMåttChange: (patch: { måttenhet?: Måttenhet; värde?: string }) => void;
+  /** Steg 2 — material väljs i rullgardin i stället för knappar. */
+  materialvalAsSelect?: boolean;
 };
 
 const huvudtyper: {
@@ -108,6 +113,7 @@ export function TakbelaggningPanel({
   värde,
   onBelaggningChange,
   onMåttChange,
+  materialvalAsSelect = false,
 }: TakbelaggningPanelProps) {
   const enhetInfo = måttenhetEtiketter[måttenhet];
   const poster = belaggning.belaggningar;
@@ -193,6 +199,91 @@ export function TakbelaggningPanel({
                   className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                 />
               </label>
+              {materialvalAsSelect ? (
+                <>
+                  <label className="mt-3 block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Takmaterial
+                    </span>
+                    <select
+                      value={takMaterialValIdFranPost(post)}
+                      onChange={(e) =>
+                        uppdateraBelaggning(
+                          redigeraPost(belaggning, post.id, {
+                            ...postPatchFranTakMaterialVal(
+                              e.target.value,
+                              post,
+                            ),
+                          }),
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {Array.from(
+                        new Set(
+                          takBelaggningMaterialAlternativ.map((a) => a.grupp),
+                        ),
+                      ).map((grupp) => (
+                        <optgroup key={grupp} label={grupp}>
+                          {takBelaggningMaterialAlternativ
+                            .filter((a) => a.grupp === grupp)
+                            .map((alt) => (
+                              <option key={alt.id} value={alt.id}>
+                                {alt.etikett}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </label>
+                  {post.huvudtyp === "tegel" && (
+                    <label className="mt-3 block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Kulör (valfritt)
+                      </span>
+                      <input
+                        type="text"
+                        value={post.tegelKulor ?? ""}
+                        onChange={(e) =>
+                          uppdateraBelaggning(
+                            redigeraPost(belaggning, post.id, {
+                              tegelKulor: e.target.value,
+                            }),
+                          )
+                        }
+                        placeholder="t.ex. röd, svart glaserad"
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                      />
+                    </label>
+                  )}
+                  {post.huvudtyp === "plat-bandlagd" &&
+                    post.bandlagdMaterial === "aluminium" && (
+                      <label className="mt-3 flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={post.aluminiumLackerad === true}
+                          onChange={(e) =>
+                            uppdateraBelaggning(
+                              redigeraPost(belaggning, post.id, {
+                                aluminiumLackerad: e.target.checked,
+                              }),
+                            )
+                          }
+                        />
+                        <span>Lackerad aluminium (kan målas om)</span>
+                      </label>
+                    )}
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted">
+                    {
+                      huvudtyper.find((h) => h.id === post.huvudtyp)
+                        ?.beskrivning
+                    }
+                    {post.huvudtyp === "plat-bandlagd"
+                      ? ` ${takBelaggningBandlagdMaterial.find((m) => m.id === (post.bandlagdMaterial ?? "stalplat"))?.underhall ?? ""}`
+                      : ""}
+                  </p>
+                </>
+              ) : null}
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm">
                   <span className="text-xs font-medium text-muted">Mängd</span>
@@ -240,148 +331,166 @@ export function TakbelaggningPanel({
                   </select>
                 </label>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {huvudtyper.map((h) =>
-                  valKnapp(
-                    post.huvudtyp === h.id,
-                    () =>
-                      uppdateraBelaggning(
-                        redigeraPost(belaggning, post.id, {
-                          huvudtyp: h.id,
-                          ...(h.id === "tegel"
-                            ? {
-                                tegelTyp: "betongpannor" as TegelTyp,
-                                tegelKulor: post.tegelKulor ?? "",
-                              }
-                            : {}),
-                          ...(h.id === "plat-korrigerad"
-                            ? { korrigeradInfastning: "spik" as KorrigeradInfastning }
-                            : {}),
-                          ...(h.id === "plat-bandlagd"
-                            ? { bandlagdMaterial: "stalplat" as BandlagdPlatMaterial }
-                            : {}),
-                        }),
-                      ),
-                    h.etikett,
-                    `${post.id}-${h.id}`,
-                  ),
-                )}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-muted">
-                {huvudtyper.find((h) => h.id === post.huvudtyp)?.beskrivning}
-              </p>
-
-              {post.huvudtyp === "tegel" && (
-                <div className="mt-3 space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    {takBelaggningTegelTyper.map((t) =>
+              {!materialvalAsSelect ? (
+                <>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {huvudtyper.map((h) =>
                       valKnapp(
-                        post.tegelTyp === t.id,
+                        post.huvudtyp === h.id,
                         () =>
                           uppdateraBelaggning(
                             redigeraPost(belaggning, post.id, {
-                              tegelTyp: t.id,
+                              huvudtyp: h.id,
+                              ...(h.id === "tegel"
+                                ? {
+                                    tegelTyp: "betongpannor" as TegelTyp,
+                                    tegelKulor: post.tegelKulor ?? "",
+                                  }
+                                : {}),
+                              ...(h.id === "plat-korrigerad"
+                                ? {
+                                    korrigeradInfastning:
+                                      "spik" as KorrigeradInfastning,
+                                  }
+                                : {}),
+                              ...(h.id === "plat-bandlagd"
+                                ? {
+                                    bandlagdMaterial:
+                                      "stalplat" as BandlagdPlatMaterial,
+                                  }
+                                : {}),
                             }),
                           ),
-                        t.etikett,
-                        `${post.id}-tegel-${t.id}`,
+                        h.etikett,
+                        `${post.id}-${h.id}`,
                       ),
                     )}
                   </div>
-                  <label className="block text-sm">
-                    <span className="text-xs font-medium text-muted">Kulör</span>
-                    <input
-                      type="text"
-                      value={post.tegelKulor ?? ""}
-                      onChange={(e) =>
-                        uppdateraBelaggning(
-                          redigeraPost(belaggning, post.id, {
-                            tegelKulor: e.target.value,
-                          }),
-                        )
-                      }
-                      placeholder="t.ex. röd, svart glaserad, tegelröd"
-                      className="mt-1 w-full max-w-md rounded-lg border border-border px-3 py-2 text-sm"
-                    />
-                  </label>
-                </div>
-              )}
-
-              {post.huvudtyp === "plat-korrigerad" && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-muted">Infästning</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {valKnapp(
-                      post.korrigeradInfastning !== "skruv",
-                      () =>
-                        uppdateraBelaggning(
-                          redigeraPost(belaggning, post.id, {
-                            korrigeradInfastning: "spik",
-                          }),
-                        ),
-                      "Spikad",
-                    )}
-                    {valKnapp(
-                      post.korrigeradInfastning === "skruv",
-                      () =>
-                        uppdateraBelaggning(
-                          redigeraPost(belaggning, post.id, {
-                            korrigeradInfastning: "skruv",
-                          }),
-                        ),
-                      "Skruvad",
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {post.huvudtyp === "plat-bandlagd" && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs font-medium text-muted">Material</p>
-                  <div className="flex flex-wrap gap-2">
-                    {takBelaggningBandlagdMaterial.map((m) =>
-                      valKnapp(
-                        (post.bandlagdMaterial ?? "stalplat") === m.id,
-                        () =>
-                          uppdateraBelaggning(
-                            redigeraPost(belaggning, post.id, {
-                              bandlagdMaterial: m.id,
-                              aluminiumLackerad:
-                                m.id === "aluminium"
-                                  ? post.aluminiumLackerad
-                                  : undefined,
-                            }),
-                          ),
-                        m.etikett,
-                        `${post.id}-band-${m.id}`,
-                      ),
-                    )}
-                  </div>
-                  {post.bandlagdMaterial === "aluminium" && (
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={post.aluminiumLackerad === true}
-                        onChange={(e) =>
-                          uppdateraBelaggning(
-                            redigeraPost(belaggning, post.id, {
-                              aluminiumLackerad: e.target.checked,
-                            }),
-                          )
-                        }
-                      />
-                      <span>Lackerad aluminium (kan målas om)</span>
-                    </label>
-                  )}
-                  <p className="text-[11px] text-muted">
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted">
                     {
-                      takBelaggningBandlagdMaterial.find(
-                        (m) => m.id === (post.bandlagdMaterial ?? "stalplat"),
-                      )?.underhall
+                      huvudtyper.find((h) => h.id === post.huvudtyp)
+                        ?.beskrivning
                     }
                   </p>
-                </div>
-              )}
+
+                  {post.huvudtyp === "tegel" && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {takBelaggningTegelTyper.map((t) =>
+                          valKnapp(
+                            post.tegelTyp === t.id,
+                            () =>
+                              uppdateraBelaggning(
+                                redigeraPost(belaggning, post.id, {
+                                  tegelTyp: t.id,
+                                }),
+                              ),
+                            t.etikett,
+                            `${post.id}-tegel-${t.id}`,
+                          ),
+                        )}
+                      </div>
+                      <label className="block text-sm">
+                        <span className="text-xs font-medium text-muted">
+                          Kulör
+                        </span>
+                        <input
+                          type="text"
+                          value={post.tegelKulor ?? ""}
+                          onChange={(e) =>
+                            uppdateraBelaggning(
+                              redigeraPost(belaggning, post.id, {
+                                tegelKulor: e.target.value,
+                              }),
+                            )
+                          }
+                          placeholder="t.ex. röd, svart glaserad, tegelröd"
+                          className="mt-1 w-full max-w-md rounded-lg border border-border px-3 py-2 text-sm"
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {post.huvudtyp === "plat-korrigerad" && (
+                    <div className="mt-3">
+                      <p className="text-xs font-medium text-muted">
+                        Infästning
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {valKnapp(
+                          post.korrigeradInfastning !== "skruv",
+                          () =>
+                            uppdateraBelaggning(
+                              redigeraPost(belaggning, post.id, {
+                                korrigeradInfastning: "spik",
+                              }),
+                            ),
+                          "Spikad",
+                        )}
+                        {valKnapp(
+                          post.korrigeradInfastning === "skruv",
+                          () =>
+                            uppdateraBelaggning(
+                              redigeraPost(belaggning, post.id, {
+                                korrigeradInfastning: "skruv",
+                              }),
+                            ),
+                          "Skruvad",
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {post.huvudtyp === "plat-bandlagd" && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs font-medium text-muted">Material</p>
+                      <div className="flex flex-wrap gap-2">
+                        {takBelaggningBandlagdMaterial.map((m) =>
+                          valKnapp(
+                            (post.bandlagdMaterial ?? "stalplat") === m.id,
+                            () =>
+                              uppdateraBelaggning(
+                                redigeraPost(belaggning, post.id, {
+                                  bandlagdMaterial: m.id,
+                                  aluminiumLackerad:
+                                    m.id === "aluminium"
+                                      ? post.aluminiumLackerad
+                                      : undefined,
+                                }),
+                              ),
+                            m.etikett,
+                            `${post.id}-band-${m.id}`,
+                          ),
+                        )}
+                      </div>
+                      {post.bandlagdMaterial === "aluminium" && (
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={post.aluminiumLackerad === true}
+                            onChange={(e) =>
+                              uppdateraBelaggning(
+                                redigeraPost(belaggning, post.id, {
+                                  aluminiumLackerad: e.target.checked,
+                                }),
+                              )
+                            }
+                          />
+                          <span>Lackerad aluminium (kan målas om)</span>
+                        </label>
+                      )}
+                      <p className="text-[11px] text-muted">
+                        {
+                          takBelaggningBandlagdMaterial.find(
+                            (m) =>
+                              m.id === (post.bandlagdMaterial ?? "stalplat"),
+                          )?.underhall
+                        }
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
           ))}
         </div>

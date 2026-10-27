@@ -82,6 +82,7 @@ export function FastighetsdelUnderkomponentDetalj({
           belaggning={hamtaTakBelaggningData(data, rad.id)}
           måttenhet={rad.måttenhet}
           värde={rad.värde}
+          materialvalAsSelect
           onBelaggningChange={(belaggning) =>
             onChange(uppdateraTakBelaggningData(data, rad.id, belaggning))
           }
