@@ -544,7 +544,11 @@ export function KomponentDetaljer({
               detaljPanel === "fonster-lista" || detaljPanel === "dorr-lista"
                 ? formateraFonsterDorrPoster(
                     fonsterDorrPoster,
-                    detaljPanel === "dorr-lista" ? "dorr" : "fonster",
+                    detaljPanel === "dorr-lista"
+                      ? "dorr"
+                      : rad.id === "balkongdorrar"
+                        ? "balkongdorr"
+                        : "fonster",
                   )
                 : null;
             const ytskiktKort =
@@ -732,7 +736,7 @@ export function KomponentDetaljer({
               null;
             const visaFonsterDorrUnderhallTips =
               (komponentNamn === "Fönster" &&
-                rad.id === "fonster" &&
+                (rad.id === "fonster" || rad.id === "balkongdorrar") &&
                 detaljPanel === "fonster-lista") ||
               (komponentNamn === "Dörrar" &&
                 rad.id === "dorrar" &&
@@ -962,7 +966,13 @@ export function KomponentDetaljer({
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <FonsterDorrPanel
                       titel={rad.etikett}
-                      modulmattTyp={rad.id === "dorrar" ? "dorr" : "fonster"}
+                      modulmattTyp={
+                        rad.id === "dorrar"
+                          ? "dorr"
+                          : rad.id === "balkongdorrar"
+                            ? "balkongdorr"
+                            : "fonster"
+                      }
                       poster={fonsterDorrPoster}
                       foreningsAdresser={foreningsAdresser}
                       grund={grund}

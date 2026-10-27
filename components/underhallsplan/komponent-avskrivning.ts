@@ -57,6 +57,11 @@ const rekommendationer: Record<
       arK3Komponent: true,
       hint: "FAR: trä/plast 40 år; trä beklädd/aluminium 60 år.",
     },
+    balkongdorrar: {
+      rekommenderadAvskrivningAr: 40,
+      arK3Komponent: true,
+      hint: "Som fönster — FAR: trä/plast 40 år; trä beklädd/aluminium 60 år.",
+    },
   },
   Tak: {
     takyta: {

@@ -737,7 +737,15 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Fönster",
         defaultMåttenhet: "antal",
         måttHint:
-          "Modulmått, material, antal — samt adress och läge (norr, söder, gård m.m.).",
+          "Modulmått bredd×höjd (dm), material, antal — samt adress och läge.",
+        detaljPanel: "fonster-lista",
+      },
+      {
+        id: "balkongdorrar",
+        etikett: "Balkongdörrar",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Modulmått bredd×höjd (dm), material och antal — flera rader vid olika storlekar.",
         detaljPanel: "fonster-lista",
       },
     ],

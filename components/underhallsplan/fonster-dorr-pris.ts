@@ -157,12 +157,24 @@ export function hamtaFonsterKostnadFonster(
   fonsterDetalj: KomponentDetaljData | undefined,
 ): number {
   if (!fonsterDetalj) return 0;
+  let totalt = 0;
   const fonsterRad = fonsterDetalj.underkomponenter.find((r) => r.id === "fonster");
-  if (!fonsterRad?.aktiv) return 0;
-  return beraknaFonsterDorrListaPris(
-    fonsterDetalj.fonsterDorrRegister?.fonster ?? [],
-    false,
-  ).totaltKr;
+  if (fonsterRad?.aktiv) {
+    totalt += beraknaFonsterDorrListaPris(
+      fonsterDetalj.fonsterDorrRegister?.fonster ?? [],
+      false,
+    ).totaltKr;
+  }
+  const balkongRad = fonsterDetalj.underkomponenter.find(
+    (r) => r.id === "balkongdorrar",
+  );
+  if (balkongRad?.aktiv) {
+    totalt += beraknaFonsterDorrListaPris(
+      fonsterDetalj.fonsterDorrRegister?.balkongdorrar ?? [],
+      false,
+    ).totaltKr;
+  }
+  return totalt;
 }
 
 export function formateraFonsterDorrPris(totaltKr: number): string {

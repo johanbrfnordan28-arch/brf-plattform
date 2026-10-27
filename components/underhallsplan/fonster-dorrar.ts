@@ -136,6 +136,8 @@ export function skapaTomFonsterPost(): FonsterDorrPost {
   };
 }
 
+export const skapaTomBalkongdorrPost = skapaTomFonsterPost;
+
 export function skapaTomDorrPost(): FonsterDorrPost {
   return {
     id: skapaFonsterDorrPostId(),
@@ -178,6 +180,22 @@ function parseLageFranText(text: string): FonsterLageId | "" {
   return "";
 }
 
+/** Normaliserar t.ex. 8x10 → 8×10 (bredd × höjd). */
+export function normaliseraModulmattText(raw: string): string {
+  const s = raw.trim();
+  if (!s) return "";
+  const match = s.match(
+    /^(\d+(?:[.,]\d+)?)\s*[x×X*]\s*(\d+(?:[.,]\d+)?)/,
+  );
+  if (!match) return s;
+  const bredd = Number.parseFloat(match[1].replace(",", "."));
+  const hojd = Number.parseFloat(match[2].replace(",", "."));
+  if (!Number.isFinite(bredd) || !Number.isFinite(hojd)) return s;
+  const fmt = (n: number) =>
+    Number.isInteger(n) ? String(Math.round(n)) : String(n);
+  return `${fmt(bredd)}×${fmt(hojd)}`;
+}
+
 /** Flyttar väderstreck/gård/gata från modulmått-rad till lage (äldre data). */
 export function normaliseraFonsterDorrPost(post: FonsterDorrPost): FonsterDorrPost {
   let lage = post.lage ?? "";
@@ -201,7 +219,7 @@ export function normaliseraFonsterDorrPost(post: FonsterDorrPost): FonsterDorrPo
 
   return {
     ...post,
-    modulmatt,
+    modulmatt: normaliseraModulmattText(modulmatt),
     lage,
     adress: post.adress?.trim() ?? "",
   };
@@ -512,17 +530,49 @@ export function formateraDorrPosterDetalj(poster: FonsterDorrPost[]): string {
   return rader.join("; ");
 }
 
+export function summeraBalkongdorrPoster(
+  poster: FonsterDorrPost[],
+): ListaSummeringRad[] {
+  const rader = summeraFonsterPoster(poster).map((r) =>
+    r.etikett === "Fönster totalt"
+      ? { ...r, etikett: "Balkongdörrar totalt" }
+      : r,
+  );
+  return rader;
+}
+
+export function formateraBalkongdorrPoster(poster: FonsterDorrPost[]): string {
+  return formateraSummeringRader(summeraBalkongdorrPoster(poster));
+}
+
+export function formateraBalkongdorrPosterDetalj(
+  poster: FonsterDorrPost[],
+): string {
+  const text = formateraFonsterPosterDetalj(poster);
+  if (!text) return "";
+  return text.replace(/^([^:]+): /, "$1 (balkongdörr): ");
+}
+
 export function formateraFonsterDorrPoster(
   poster: FonsterDorrPost[],
   typ: ModulmattTyp = "fonster",
 ): string {
-  return typ === "dorr" ? formateraDorrPoster(poster) : formateraFonsterPoster(poster);
+  if (typ === "dorr") return formateraDorrPoster(poster);
+  if (typ === "balkongdorr") return formateraBalkongdorrPoster(poster);
+  return formateraFonsterPoster(poster);
 }
+
+/** Tips om modulmått — gäller fönster, balkongdörrar och ytterdörrar. */
+export const MODULMATT_TYPBRICKA_TIPS =
+  "Modulmått anges bredd × höjd i decimeter (dm), t.ex. 9×21 — första talet är bredden. Kontrollera mot fönstrets eller dörrens typ-/ID-bricka på karmen.";
+
+export const MODULMATT_ORDNING_FORKLARING =
+  "Första talet = bredd (dm), andra = höjd (dm). På typbrickan står ofta samma ordning — dubbelkolla så att 8×10 inte blir 10×8.";
 
 /** Välj eget mått i listan */
 export const MODULMATT_EGEN = "__egen__";
 
-export type ModulmattTyp = "fonster" | "dorr";
+export type ModulmattTyp = "fonster" | "dorr" | "balkongdorr";
 
 export type ModulmattAlternativ = {
   id: string;
@@ -564,30 +614,51 @@ export const fonsterModulmatt: ModulmattAlternativ[] = [
 
 /** Vanliga dörrmoduler (dm × dm) */
 export const dorrModulmatt: ModulmattAlternativ[] = [
-  { id: "8×19", etikett: "8×19 dm", bredd: 8, hojd: 19 },
-  { id: "8×21", etikett: "8×21 dm", bredd: 8, hojd: 21 },
-  { id: "9×19", etikett: "9×19 dm", bredd: 9, hojd: 19 },
-  { id: "9×21", etikett: "9×21 dm", bredd: 9, hojd: 21 },
-  { id: "10×19", etikett: "10×19 dm", bredd: 10, hojd: 19 },
-  { id: "10×21", etikett: "10×21 dm", bredd: 10, hojd: 21 },
-  { id: "12×19", etikett: "12×19 dm", bredd: 12, hojd: 19 },
-  { id: "12×21", etikett: "12×21 dm", bredd: 12, hojd: 21 },
-  { id: "14×21", etikett: "14×21 dm", bredd: 14, hojd: 21 },
+  { id: "8×19", etikett: "8×19 dm (bredd × höjd)", bredd: 8, hojd: 19 },
+  { id: "8×21", etikett: "8×21 dm (bredd × höjd)", bredd: 8, hojd: 21 },
+  { id: "9×19", etikett: "9×19 dm (bredd × höjd)", bredd: 9, hojd: 19 },
+  { id: "9×21", etikett: "9×21 dm (bredd × höjd)", bredd: 9, hojd: 21 },
+  { id: "10×19", etikett: "10×19 dm (bredd × höjd)", bredd: 10, hojd: 19 },
+  { id: "10×21", etikett: "10×21 dm (bredd × höjd)", bredd: 10, hojd: 21 },
+  { id: "12×19", etikett: "12×19 dm (bredd × höjd)", bredd: 12, hojd: 19 },
+  { id: "12×21", etikett: "12×21 dm (bredd × höjd)", bredd: 12, hojd: 21 },
+  { id: "14×21", etikett: "14×21 dm (bredd × höjd)", bredd: 14, hojd: 21 },
 ];
 
+/** Balkongdörrar — ofta höga moduler, samma princip som fönster/dörr. */
+export const balkongdorrModulmatt: ModulmattAlternativ[] = (() => {
+  const map = new Map<string, ModulmattAlternativ>();
+  for (const m of [
+    ...fonsterModulmatt.filter((f) => f.hojd >= 16),
+    ...dorrModulmatt,
+  ]) {
+    map.set(m.id, {
+      ...m,
+      etikett: `${m.id} dm (bredd × höjd)`,
+    });
+  }
+  return [...map.values()].sort(
+    (a, b) => a.bredd - b.bredd || a.hojd - b.hojd,
+  );
+})();
+
 export function hamtaModulmattLista(typ: ModulmattTyp): ModulmattAlternativ[] {
-  return typ === "dorr" ? dorrModulmatt : fonsterModulmatt;
+  if (typ === "dorr") return dorrModulmatt;
+  if (typ === "balkongdorr") return balkongdorrModulmatt;
+  return fonsterModulmatt;
 }
 
 export function ärKäntModulmatt(modulmatt: string, typ: ModulmattTyp): boolean {
-  return hamtaModulmattLista(typ).some((m) => m.id === modulmatt);
+  const norm = normaliseraModulmattText(modulmatt);
+  return hamtaModulmattLista(typ).some((m) => m.id === norm || m.id === modulmatt);
 }
 
 export function modulmattSelectVarde(
   modulmatt: string,
   typ: ModulmattTyp,
 ): string {
-  if (!modulmatt.trim()) return "";
-  if (ärKäntModulmatt(modulmatt, typ)) return modulmatt;
+  const norm = normaliseraModulmattText(modulmatt);
+  if (!norm) return "";
+  if (ärKäntModulmatt(norm, typ)) return norm;
   return MODULMATT_EGEN;
 }

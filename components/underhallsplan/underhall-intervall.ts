@@ -32,6 +32,16 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       intervallHint: "Ytterdörrar — ofta 25–40 år.",
     },
   },
+  Fönster: {
+    fonster: {
+      rekommenderatIntervallAr: 40,
+      intervallHint: "Fönsterbyte — ofta 30–50 år beroende på material och skick.",
+    },
+    balkongdorrar: {
+      rekommenderatIntervallAr: 40,
+      intervallHint: "Balkongdörrar — ofta 30–50 år, samma som fönster.",
+    },
+  },
   Tak: {
     takyta: {
       rekommenderatIntervallAr: 30,

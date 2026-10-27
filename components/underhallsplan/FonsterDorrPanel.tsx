@@ -10,8 +10,10 @@ import {
   FONSTER_ADRESS_ANNAN,
   fonsterLageAlternativ,
   fonsterMaterial,
+  skapaTomBalkongdorrPost,
   skapaTomDorrPost,
   skapaTomFonsterPost,
+  summeraBalkongdorrPoster,
   summeraDorrPoster,
   summeraFonsterPoster,
   traUnderhallAlternativ,
@@ -152,17 +154,29 @@ function ärDorr(typ: ModulmattTyp): boolean {
 
 function FonsterDorrPrisOchSummering({
   poster,
-  dorr,
+  modulmattTyp,
   titel,
   onEnhetsprisChange,
 }: {
   poster: FonsterDorrPost[];
-  dorr: boolean;
+  modulmattTyp: ModulmattTyp;
   titel: string;
   onEnhetsprisChange: (id: string, varde: string) => void;
 }) {
+  const dorr = ärDorr(modulmattTyp);
   const { rader: prisRader, totaltKr } = beraknaFonsterDorrListaPris(poster, dorr);
-  const summering = dorr ? summeraDorrPoster(poster) : summeraFonsterPoster(poster);
+  const summering =
+    modulmattTyp === "balkongdorr"
+      ? summeraBalkongdorrPoster(poster)
+      : dorr
+        ? summeraDorrPoster(poster)
+        : summeraFonsterPoster(poster);
+  const totaltEtikett =
+    modulmattTyp === "balkongdorr"
+      ? "Balkongdörrar totalt"
+      : dorr
+        ? "Dörrar totalt"
+        : "Fönster totalt";
   const totaltSt = parseNummerSumma(poster.map((p) => p.antal));
   const summerRader = summering.filter(
     (r) => !r.etikett.includes("totalt") && r.etikett !== "Antal modulrader",
@@ -185,14 +199,14 @@ function FonsterDorrPrisOchSummering({
             anvanderRiktpris: rad.anvanderRiktpris,
           }))}
           totaltKr={totaltKr}
-          totaltEtikett={dorr ? "Dörrar totalt" : "Fönster totalt"}
+          totaltEtikett={totaltEtikett}
           onEnhetsprisChange={onEnhetsprisChange}
         />
       )}
       <ListaSummeringPanel
         titel={`Summering ${titel.toLowerCase()}`}
         rader={summerRader}
-        totaletikett={dorr ? "Dörrar totalt" : "Fönster totalt"}
+        totaletikett={totaltEtikett}
         totaltVarde={
           totaltSt > 0
             ? `${formatSummeringTal(totaltSt, 0)} st`
@@ -244,7 +258,13 @@ export function FonsterDorrPanel({
   }
 
   function läggTillPost() {
-    onChange([...poster, dorr ? skapaTomDorrPost() : skapaTomFonsterPost()]);
+    const tom =
+      modulmattTyp === "dorr"
+        ? skapaTomDorrPost()
+        : modulmattTyp === "balkongdorr"
+          ? skapaTomBalkongdorrPost()
+          : skapaTomFonsterPost();
+    onChange([...poster, tom]);
   }
 
   function taBortPost(id: string) {
@@ -610,7 +630,7 @@ export function FonsterDorrPanel({
       {poster.length > 0 && (
         <FonsterDorrPrisOchSummering
           poster={poster}
-          dorr={dorr}
+          modulmattTyp={modulmattTyp}
           titel={titel}
           onEnhetsprisChange={(id, varde) =>
             uppdateraPost(id, { enhetsprisKr: varde })
@@ -620,7 +640,11 @@ export function FonsterDorrPanel({
 
       {visaUnderhallTips && (
         <p className="rounded-lg border border-primary/20 bg-[#eef6f0] px-3 py-2 text-xs leading-relaxed text-foreground">
-          {dorr ? underhallAllaDorrarText : underhallAllaFonsterText}
+          {dorr
+            ? underhallAllaDorrarText
+            : modulmattTyp === "balkongdorr"
+              ? `${underhallAllaFonsterText} Balkongdörrar följer samma modulmått och materialval som fönster.`
+              : underhallAllaFonsterText}
         </p>
       )}
     </div>

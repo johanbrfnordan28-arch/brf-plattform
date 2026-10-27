@@ -3,7 +3,10 @@
 import {
   hamtaModulmattLista,
   MODULMATT_EGEN,
+  MODULMATT_ORDNING_FORKLARING,
+  MODULMATT_TYPBRICKA_TIPS,
   modulmattSelectVarde,
+  normaliseraModulmattText,
   type ModulmattTyp,
 } from "@/components/underhallsplan/fonster-dorrar";
 
@@ -21,14 +24,16 @@ export function ModulmattValjare({ typ, varde, onChange }: ModulmattValjareProps
   return (
     <div className="space-y-2">
       <label className="block text-sm">
-        <span className="text-xs font-medium text-muted">Modulmått</span>
+        <span className="text-xs font-medium text-muted">
+          Modulmått (bredd × höjd, dm)
+        </span>
         <select
           value={selectVarde}
           onChange={(e) => {
             const ny = e.target.value;
             if (ny === "") onChange("");
             else if (ny === MODULMATT_EGEN) onChange(varde.trim() || "");
-            else onChange(ny);
+            else onChange(normaliseraModulmattText(ny));
           }}
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
         >
@@ -48,7 +53,8 @@ export function ModulmattValjare({ typ, varde, onChange }: ModulmattValjareProps
           <input
             value={varde}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="t.ex. 11×17"
+            onBlur={(e) => onChange(normaliseraModulmattText(e.target.value))}
+            placeholder="t.ex. 9×21 (bredd × höjd)"
             className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
           />
         </label>
@@ -56,9 +62,11 @@ export function ModulmattValjare({ typ, varde, onChange }: ModulmattValjareProps
 
       {selectVarde && selectVarde !== MODULMATT_EGEN && (
         <p className="text-xs text-muted">
-          Modul {selectVarde} dm (bredd × höjd i decimeter).
+          Modul {selectVarde} dm — {MODULMATT_ORDNING_FORKLARING}
         </p>
       )}
+
+      <p className="text-xs leading-relaxed text-muted">{MODULMATT_TYPBRICKA_TIPS}</p>
     </div>
   );
 }
