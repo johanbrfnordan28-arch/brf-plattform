@@ -38,8 +38,7 @@ import {
   hamtaLokalInventar,
   hamtaLokalYtskikt,
   uppdateraLokalYtskikt,
-  hamtaMedlemstakterrassData,
-  hamtaTakterrassData,
+  hamtaTakterrassPoster,
   hamtaTakfonsterData,
   hamtaBalkongPoster,
   hamtaHissPoster,
@@ -60,8 +59,9 @@ import {
   uppdateraFonsterDorrPoster,
   uppdateraFasadAtgardData,
   uppdateraLokalInventar,
-  uppdateraMedlemstakterrassData,
-  uppdateraTakterrassData,
+  uppdateraTakterrassPoster,
+  hamtaMedlemstakterrassPoster,
+  uppdateraMedlemstakterrassPoster,
   uppdateraTakfonsterData,
   hamtaTakBelaggningData,
   uppdateraTakBelaggningData,
@@ -108,8 +108,10 @@ import { formateraVarmestamPoster } from "@/components/underhallsplan/varmestamm
 import { formateraStamventilPoster } from "@/components/underhallsplan/stamventiler";
 import { MedlemstakterrassPanel } from "@/components/underhallsplan/MedlemstakterrassPanel";
 import { TakterrassPanel } from "@/components/underhallsplan/TakterrassPanel";
-import { formateraMedlemstakterrass } from "@/components/underhallsplan/medlemstakterrass";
-import { formateraTakterrass } from "@/components/underhallsplan/takterrass";
+import {
+  formateraMedlemstakterrassLista,
+} from "@/components/underhallsplan/medlemstakterrass";
+import { formateraTakterrassLista } from "@/components/underhallsplan/takterrass";
 import {
   beraknaMedlemstakterrassPris,
   formateraMedlemstakterrassPris,
@@ -665,22 +667,26 @@ export function KomponentDetaljer({
             const takterrassKort =
               detaljPanel === "takterrass-val" && rad.aktiv
                 ? (() => {
-                    const terrassData = hamtaTakterrassData(data, rad.id);
-                    const text = formateraTakterrass(terrassData);
-                    const pris = formateraTakterrassPris(
-                      beraknaTakterrassPris(terrassData).totaltKr,
+                    const poster = hamtaTakterrassPoster(data, rad.id);
+                    const text = formateraTakterrassLista(poster);
+                    const totalt = poster.reduce(
+                      (s, p) => s + beraknaTakterrassPris(p).totaltKr,
+                      0,
                     );
+                    const pris = formateraTakterrassPris(totalt);
                     return pris ? `${text} · ${pris}` : text;
                   })()
                 : null;
             const medlemstakterrassKort =
               detaljPanel === "medlemstakterrass-val" && rad.aktiv
                 ? (() => {
-                    const terrassData = hamtaMedlemstakterrassData(data, rad.id);
-                    const text = formateraMedlemstakterrass(terrassData);
-                    const pris = formateraMedlemstakterrassPris(
-                      beraknaMedlemstakterrassPris(terrassData).totaltKr,
+                    const poster = hamtaMedlemstakterrassPoster(data, rad.id);
+                    const text = formateraMedlemstakterrassLista(poster);
+                    const totalt = poster.reduce(
+                      (s, p) => s + beraknaMedlemstakterrassPris(p).totaltKr,
+                      0,
                     );
+                    const pris = formateraMedlemstakterrassPris(totalt);
                     return pris ? `${text} · ${pris}` : text;
                   })()
                 : null;
@@ -1237,6 +1243,8 @@ export function KomponentDetaljer({
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <TakfonsterListaPanel
                       data={hamtaTakfonsterData(data, rad.id)}
+                      foreningsAdresser={foreningsAdresser}
+                      grund={grund}
                       onChange={(takfonster) =>
                         onChange(uppdateraTakfonsterData(data, rad.id, takfonster))
                       }
@@ -1247,9 +1255,9 @@ export function KomponentDetaljer({
                 {ärÖppen && rad.aktiv && detaljPanel === "takterrass-val" && (
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <TakterrassPanel
-                      data={hamtaTakterrassData(data, rad.id)}
-                      onChange={(takterrass) =>
-                        onChange(uppdateraTakterrassData(data, rad.id, takterrass))
+                      poster={hamtaTakterrassPoster(data, rad.id)}
+                      onChange={(poster) =>
+                        onChange(uppdateraTakterrassPoster(data, rad.id, poster))
                       }
                     />
                   </div>
@@ -1260,13 +1268,13 @@ export function KomponentDetaljer({
                   detaljPanel === "medlemstakterrass-val" && (
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <MedlemstakterrassPanel
-                      data={hamtaMedlemstakterrassData(data, rad.id)}
-                      onChange={(medlemstakterrass) =>
+                      poster={hamtaMedlemstakterrassPoster(data, rad.id)}
+                      onChange={(poster) =>
                         onChange(
-                          uppdateraMedlemstakterrassData(
+                          uppdateraMedlemstakterrassPoster(
                             data,
                             rad.id,
-                            medlemstakterrass,
+                            poster,
                           ),
                         )
                       }

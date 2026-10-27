@@ -147,12 +147,23 @@ export function formateraTakterrassPris(totaltKr: number): string {
 }
 
 export function hamtaTakterrassPrisFranRegister(
-  register: Record<string, TakterrassData> | undefined,
+  register:
+    | Record<
+        string,
+        TakterrassData | import("@/components/underhallsplan/takterrass").TakterrassPost[]
+      >
+    | undefined,
   underId: string,
 ): number {
-  const data = register?.[underId];
-  if (!data) return 0;
-  return beraknaTakterrassPris(data).totaltKr;
+  const raw = register?.[underId];
+  if (!raw) return 0;
+  if (Array.isArray(raw)) {
+    return raw.reduce(
+      (sum, post) => sum + beraknaTakterrassPris(post).totaltKr,
+      0,
+    );
+  }
+  return beraknaTakterrassPris(raw).totaltKr;
 }
 
 /** Summerad prissatt kostnad för gemensam takterrass under Tak. */

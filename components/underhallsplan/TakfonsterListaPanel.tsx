@@ -1,8 +1,11 @@
 "use client";
 
 import { formatKr } from "@/components/underhallsplan/besiktningar";
+import { FONSTER_ADRESS_ANNAN } from "@/components/underhallsplan/fonster-dorrar";
+import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
 import { TakfonsterStorlekValjare } from "@/components/underhallsplan/TakfonsterStorlekValjare";
+import type { Grunduppgifter } from "@/components/underhallsplan/types";
 import {
   beraknaTakfonsterKombinationSumma,
   beraknaTakfonsterPris,
@@ -23,11 +26,88 @@ import {
 type TakfonsterListaPanelProps = {
   data: TakfonsterData;
   onChange: (data: TakfonsterData) => void;
+  foreningsAdresser?: string[];
+  grund?: Grunduppgifter;
 };
+
+function TakfonsterAdressFalt({
+  adress,
+  foreningsAdresser,
+  grund,
+  onChange,
+}: {
+  adress?: string;
+  foreningsAdresser: string[];
+  grund?: Grunduppgifter;
+  onChange: (adress: string) => void;
+}) {
+  const sparadAdress = adress?.trim() ?? "";
+  const adresser = (
+    grund ? hamtaByggnadAdresser(grund) : foreningsAdresser
+  ).filter(Boolean);
+  const adressVal = adresser.includes(sparadAdress)
+    ? sparadAdress
+    : sparadAdress
+      ? FONSTER_ADRESS_ANNAN
+      : "";
+
+  return (
+    <label className="block text-sm sm:col-span-2">
+      <span className="text-xs font-medium text-muted">Adress (valfritt)</span>
+      {adresser.length > 0 ? (
+        <>
+          <select
+            value={adressVal}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === FONSTER_ADRESS_ANNAN) {
+                onChange(
+                  sparadAdress && !adresser.includes(sparadAdress)
+                    ? sparadAdress
+                    : "",
+                );
+              } else {
+                onChange(val);
+              }
+            }}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          >
+            <option value="">— Välj adress —</option>
+            {adresser.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+            <option value={FONSTER_ADRESS_ANNAN}>Annan adress…</option>
+          </select>
+          {adressVal === FONSTER_ADRESS_ANNAN && (
+            <input
+              type="text"
+              value={sparadAdress}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Ange adress"
+              className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          )}
+        </>
+      ) : (
+        <input
+          type="text"
+          value={sparadAdress}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="T.ex. Exempelgatan 12 A"
+          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+        />
+      )}
+    </label>
+  );
+}
 
 export function TakfonsterListaPanel({
   data,
   onChange,
+  foreningsAdresser = [],
+  grund,
 }: TakfonsterListaPanelProps) {
   const d = normaliseraTakfonsterData(data);
   const { totaltKr } = beraknaTakfonsterPris(d);
@@ -64,7 +144,9 @@ export function TakfonsterListaPanel({
           Del 1 — Singelfönster
         </legend>
         <p className="mt-0.5 text-xs leading-relaxed text-muted">
-          Ett takfönster per enhet. Välj mått, ange antal och prissätt med kr/st.
+          Velux har cirka 95 % av takfönstermarknaden — välj standardmått, ange
+          antal och lägg till fler rader vid olika storlekar eller adresser.
+          Eget mått finns sist i storlekslistan.
         </p>
 
         {d.singel.length === 0 ? (
@@ -96,9 +178,18 @@ export function TakfonsterListaPanel({
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
+                  <TakfonsterAdressFalt
+                    adress={post.adress}
+                    foreningsAdresser={foreningsAdresser}
+                    grund={grund}
+                    onChange={(adress) =>
+                      uppdateraSingel(post.id, { adress })
+                    }
+                  />
+
                   <label className="block text-sm sm:col-span-2">
                     <span className="text-xs font-medium text-muted">
-                      Namn / plats (valfritt)
+                      Plats / kommentar (valfritt)
                     </span>
                     <input
                       type="text"
@@ -240,9 +331,18 @@ export function TakfonsterListaPanel({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
+                    <TakfonsterAdressFalt
+                      adress={post.adress}
+                      foreningsAdresser={foreningsAdresser}
+                      grund={grund}
+                      onChange={(adress) =>
+                        uppdateraKombination(post.id, { adress })
+                      }
+                    />
+
                     <label className="block text-sm sm:col-span-2">
                       <span className="text-xs font-medium text-muted">
-                        Namn / plats (valfritt)
+                        Plats / kommentar (valfritt)
                       </span>
                       <input
                         type="text"

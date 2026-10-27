@@ -3,7 +3,7 @@
 import {
   hamtaTakfonsterStorlek,
   TAKFONSTER_STORLEK_ANNAT,
-  takfonsterStandardStorlekar,
+  takfonsterStorlekarPerBredd,
   takfonsterStorlekSelectVarde,
 } from "@/components/underhallsplan/takfonster";
 
@@ -25,7 +25,7 @@ export function TakfonsterStorlekValjare({
   breddMm,
   hojdMm,
   etikett = "Storlek (Velux, yttre karm)",
-  hjalpText = "Välj Velux-storlek och ange antal. Annat mått kan fyllas i manuellt.",
+  hjalpText = "Velux dominerar takfönstermarknaden — välj standardmått (yttre karm) eller eget mått sist i listan.",
   onChange,
 }: TakfonsterStorlekValjareProps) {
   const selectVarde = takfonsterStorlekSelectVarde(storlekId);
@@ -63,12 +63,16 @@ export function TakfonsterStorlekValjare({
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
         >
           <option value="">Välj bredd och höjd</option>
-          {takfonsterStandardStorlekar.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.etikett}
-            </option>
+          {takfonsterStorlekarPerBredd().map((grupp) => (
+            <optgroup key={grupp.breddMm} label={grupp.etikett}>
+              {grupp.storlekar.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.etikett}
+                </option>
+              ))}
+            </optgroup>
           ))}
-          <option value={TAKFONSTER_STORLEK_ANNAT}>Annat mått…</option>
+          <option value={TAKFONSTER_STORLEK_ANNAT}>Eget mått (bredd × höjd mm)…</option>
         </select>
       </label>
 

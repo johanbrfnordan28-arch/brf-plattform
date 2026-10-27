@@ -996,7 +996,11 @@ export const testplan90: TestplanDefinition = {
           },
         ),
         takterrassRegister: {
-          takterrass: {
+          takterrass: [
+            {
+            id: "terrass-1",
+            benamning: "Gemensam takterrass",
+            golvBekladning: "keramik",
             vaggarMaterial: "bandtackt-plat",
             vaggarAnnanText: "",
             vaggarLopmeter: "48",
@@ -1008,6 +1012,7 @@ export const testplan90: TestplanDefinition = {
             tatskiktAnnanText: "",
             tatskiktKvm: "24",
             golvbrunnAntal: "2",
+            golvbrunnKoppling: "avloppsstam",
             breddavloppAntal: "1",
             belysningAntal: "8",
             elkontaktAntal: "4",
@@ -1024,6 +1029,7 @@ export const testplan90: TestplanDefinition = {
               golvarme: "950",
             },
           },
+          ],
         },
       },
       "Mark och gård": {

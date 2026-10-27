@@ -60,10 +60,7 @@ import {
   type VvsStambyteData,
 } from "@/components/underhallsplan/vvs-stambyte";
 import {
-  formateraMedlemstakterrass,
   MEDLEMS_TAKTERRASS_UNDERKOMPONENT_ID,
-  normaliseraMedlemstakterrassData,
-  skapaTomMedlemstakterrassData,
   type MedlemstakterrassData,
 } from "@/components/underhallsplan/medlemstakterrass";
 import {
@@ -75,12 +72,21 @@ import {
   type TakfonsterRegister,
 } from "@/components/underhallsplan/takfonster";
 import {
-  formateraTakterrass,
-  normaliseraTakterrassData,
-  skapaTomTakterrassData,
+  formateraTakterrassLista,
+  normaliseraTakterrassPoster,
+  skapaTomTakterrassPost,
   TAKTERRASS_UNDERKOMPONENT_ID,
   type TakterrassData,
+  type TakterrassPost,
+  type TakterrassRegister,
 } from "@/components/underhallsplan/takterrass";
+import {
+  formateraMedlemstakterrassLista,
+  normaliseraMedlemstakterrassPoster,
+  skapaTomMedlemstakterrassPost,
+  type MedlemstakterrassPost,
+  type MedlemstakterrassRegister,
+} from "@/components/underhallsplan/medlemstakterrass";
 import {
   formateraTvattstugaPoster,
   skapaTomTvattstugaPost,
@@ -462,9 +468,7 @@ export type HissRegister = Record<string, HissPost[]>;
 
 export type VentilationExtraRegister = Record<string, VentilationExtraPost[]>;
 
-export type TakterrassRegister = Record<string, TakterrassData>;
-
-export type MedlemstakterrassRegister = Record<string, MedlemstakterrassData>;
+export type { TakterrassRegister, MedlemstakterrassRegister };
 
 export type BrandskyddSbaRegister = Record<string, BrandskyddSbaData>;
 export type BrandskyddBranddorrRegister = Record<string, BrandskyddBranddorrarData>;
@@ -1239,7 +1243,7 @@ function skapaTomTakterrassRegister(mall: KomponentMall): TakterrassRegister {
   const reg: TakterrassRegister = {};
   for (const def of mall.underkomponenter) {
     if (def.detaljPanel === "takterrass-val") {
-      reg[def.id] = skapaTomTakterrassData();
+      reg[def.id] = [];
     }
   }
   return reg;
@@ -1251,7 +1255,7 @@ function skapaTomMedlemstakterrassRegister(
   const reg: MedlemstakterrassRegister = {};
   for (const def of mall.underkomponenter) {
     if (def.detaljPanel === "medlemstakterrass-val") {
-      reg[def.id] = skapaTomMedlemstakterrassData();
+      reg[def.id] = [];
     }
   }
   return reg;
@@ -2289,14 +2293,18 @@ export function synkaKomponentDetaljMedMall(
       ...dataIn.brandskyddBranddorrRegister,
     },
     egnaHissMarken: dataIn.egnaHissMarken ?? [],
-    takterrassRegister: {
-      ...tom.takterrassRegister,
-      ...dataIn.takterrassRegister,
-    },
-    medlemstakterrassRegister: {
-      ...tom.medlemstakterrassRegister,
-      ...dataIn.medlemstakterrassRegister,
-    },
+    takterrassRegister: Object.fromEntries(
+      Object.entries({
+        ...tom.takterrassRegister,
+        ...dataIn.takterrassRegister,
+      }).map(([key, val]) => [key, normaliseraTakterrassPoster(val)]),
+    ),
+    medlemstakterrassRegister: Object.fromEntries(
+      Object.entries({
+        ...tom.medlemstakterrassRegister,
+        ...dataIn.medlemstakterrassRegister,
+      }).map(([key, val]) => [key, normaliseraMedlemstakterrassPoster(val)]),
+    ),
     takfonsterRegister: {
       ...tom.takfonsterRegister,
       ...dataIn.takfonsterRegister,
@@ -2632,13 +2640,39 @@ export function hamtaVvsStambyteData(
   return normaliseraVvsStambyteData(raw);
 }
 
+export function hamtaTakterrassPoster(
+  data: KomponentDetaljData,
+  underId: string,
+): TakterrassPost[] {
+  return normaliseraTakterrassPoster(data.takterrassRegister?.[underId]);
+}
+
+export function uppdateraTakterrassPoster(
+  data: KomponentDetaljData,
+  underId: string,
+  poster: TakterrassPost[],
+): KomponentDetaljData {
+  return {
+    ...data,
+    takterrassRegister: {
+      ...data.takterrassRegister,
+      [underId]: normaliseraTakterrassPoster(poster),
+    },
+  };
+}
+
+/** Första terrassen — bakåtkompatibilitet. */
 export function hamtaTakterrassData(
   data: KomponentDetaljData,
   underId: string,
 ): TakterrassData {
-  const raw = data.takterrassRegister?.[underId];
-  if (!raw) return skapaTomTakterrassData();
-  return normaliseraTakterrassData(raw);
+  const poster = hamtaTakterrassPoster(data, underId);
+  if (poster.length === 0) {
+    const { id: _id, benamning: _b, ...rest } = skapaTomTakterrassPost();
+    return rest;
+  }
+  const { id: _id, benamning: _b, ...rest } = poster[0];
+  return rest;
 }
 
 export function uppdateraTakterrassData(
@@ -2646,11 +2680,38 @@ export function uppdateraTakterrassData(
   underId: string,
   takterrass: TakterrassData,
 ): KomponentDetaljData {
+  const befintlig = hamtaTakterrassPoster(data, underId);
+  if (befintlig.length === 0) {
+    return uppdateraTakterrassPoster(data, underId, [
+      { ...skapaTomTakterrassPost(), ...takterrass },
+    ]);
+  }
+  const [forsta, ...rest] = befintlig;
+  return uppdateraTakterrassPoster(data, underId, [
+    { ...forsta, ...takterrass },
+    ...rest,
+  ]);
+}
+
+export function hamtaMedlemstakterrassPoster(
+  data: KomponentDetaljData,
+  underId: string,
+): MedlemstakterrassPost[] {
+  return normaliseraMedlemstakterrassPoster(
+    data.medlemstakterrassRegister?.[underId],
+  );
+}
+
+export function uppdateraMedlemstakterrassPoster(
+  data: KomponentDetaljData,
+  underId: string,
+  poster: MedlemstakterrassPost[],
+): KomponentDetaljData {
   return {
     ...data,
-    takterrassRegister: {
-      ...data.takterrassRegister,
-      [underId]: takterrass,
+    medlemstakterrassRegister: {
+      ...data.medlemstakterrassRegister,
+      [underId]: normaliseraMedlemstakterrassPoster(poster),
     },
   };
 }
@@ -2658,24 +2719,32 @@ export function uppdateraTakterrassData(
 export function hamtaMedlemstakterrassData(
   data: KomponentDetaljData,
   underId: string,
-): MedlemstakterrassData {
-  const raw = data.medlemstakterrassRegister?.[underId];
-  if (!raw) return skapaTomMedlemstakterrassData();
-  return normaliseraMedlemstakterrassData(raw);
+): import("@/components/underhallsplan/medlemstakterrass").MedlemstakterrassData {
+  const poster = hamtaMedlemstakterrassPoster(data, underId);
+  if (poster.length === 0) {
+    const { id: _id, benamning: _b, ...rest } = skapaTomMedlemstakterrassPost();
+    return rest;
+  }
+  const { id: _id, benamning: _b, ...rest } = poster[0];
+  return rest;
 }
 
 export function uppdateraMedlemstakterrassData(
   data: KomponentDetaljData,
   underId: string,
-  medlemstakterrass: MedlemstakterrassData,
+  medlemstakterrass: import("@/components/underhallsplan/medlemstakterrass").MedlemstakterrassData,
 ): KomponentDetaljData {
-  return {
-    ...data,
-    medlemstakterrassRegister: {
-      ...data.medlemstakterrassRegister,
-      [underId]: medlemstakterrass,
-    },
-  };
+  const befintlig = hamtaMedlemstakterrassPoster(data, underId);
+  if (befintlig.length === 0) {
+    return uppdateraMedlemstakterrassPoster(data, underId, [
+      { ...skapaTomMedlemstakterrassPost(), ...medlemstakterrass },
+    ]);
+  }
+  const [forsta, ...rest] = befintlig;
+  return uppdateraMedlemstakterrassPoster(data, underId, [
+    { ...forsta, ...medlemstakterrass },
+    ...rest,
+  ]);
 }
 
 export function hamtaTvattstugaPoster(
@@ -3158,19 +3227,19 @@ export function formateraKomponentSammanfattning(
       continue;
     }
     if (def?.detaljPanel === "takterrass-val") {
-      const terrass = data.takterrassRegister?.[rad.id];
-      if (terrass) {
-        const text = formateraTakterrass(terrass);
-        if (text) delar.push(`${rad.etikett}: ${text}`);
-      }
+      const text = formateraTakterrassLista(
+        normaliseraTakterrassPoster(data.takterrassRegister?.[rad.id]),
+      );
+      if (text) delar.push(`${rad.etikett}: ${text}`);
       continue;
     }
     if (def?.detaljPanel === "medlemstakterrass-val") {
-      const terrass = data.medlemstakterrassRegister?.[rad.id];
-      if (terrass) {
-        const text = formateraMedlemstakterrass(terrass);
-        if (text) delar.push(`${rad.etikett}: ${text}`);
-      }
+      const text = formateraMedlemstakterrassLista(
+        normaliseraMedlemstakterrassPoster(
+          data.medlemstakterrassRegister?.[rad.id],
+        ),
+      );
+      if (text) delar.push(`${rad.etikett}: ${text}`);
       continue;
     }
     const utförtInfo: string[] = [];

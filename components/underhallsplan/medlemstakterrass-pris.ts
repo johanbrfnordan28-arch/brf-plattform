@@ -135,7 +135,14 @@ export function hamtaMedlemstakterrassKostnadTak(
     (r) => r.id === MEDLEMS_TAKTERRASS_UNDERKOMPONENT_ID,
   );
   if (!rad?.aktiv) return 0;
-  const data = takDetalj.medlemstakterrassRegister?.[MEDLEMS_TAKTERRASS_UNDERKOMPONENT_ID];
-  if (!data) return 0;
-  return beraknaMedlemstakterrassPris(data).totaltKr;
+  const raw =
+    takDetalj.medlemstakterrassRegister?.[MEDLEMS_TAKTERRASS_UNDERKOMPONENT_ID];
+  if (!raw) return 0;
+  if (Array.isArray(raw)) {
+    return raw.reduce(
+      (sum, post) => sum + beraknaMedlemstakterrassPris(post).totaltKr,
+      0,
+    );
+  }
+  return beraknaMedlemstakterrassPris(raw).totaltKr;
 }

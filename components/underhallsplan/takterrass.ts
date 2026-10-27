@@ -1,6 +1,29 @@
 /** Gemensam takterrass — underkomponent under Tak. */
 
+import type { GolvbrunnKopplingId } from "@/components/underhallsplan/takterrass-avlopp";
+
 export const TAKTERRASS_UNDERKOMPONENT_ID = "takterrass";
+
+export type TakterrassGolvBekladningId = "papp" | "keramik";
+
+export const takterrassGolvBekladningAlternativ: {
+  id: TakterrassGolvBekladningId;
+  etikett: string;
+  beskrivning: string;
+}[] = [
+  {
+    id: "papp",
+    etikett: "Papp / tjärpapp",
+    beskrivning:
+      "Beläggningen är tätskikt i sig — utomhuspapp eller tjärpapp som avslutande yta.",
+  },
+  {
+    id: "keramik",
+    etikett: "Keramik / klinker",
+    beskrivning:
+      "Plattor ovanpå separat tätskikt — produkterna ska vara avsedda för utomhusbruk.",
+  },
+];
 
 /** Enhetspris per prispost — se takterrass-pris.ts */
 export type TakterrassPriser = {
@@ -47,6 +70,8 @@ export type TakterrassTatskiktId =
   | "ovrigt";
 
 export type TakterrassData = {
+  /** Papp som tätskikt i sig, eller keramik med tätskikt under. */
+  golvBekladning: TakterrassGolvBekladningId;
   vaggarMaterial: TakterrassVaggMaterialId;
   vaggarAnnanText: string;
   /** Vägglängd vid upphöjda kanter / stödmurar (valfritt) */
@@ -61,6 +86,8 @@ export type TakterrassData = {
   tatskiktAnnanText: string;
   tatskiktKvm: string;
   golvbrunnAntal: string;
+  /** Vart golvbrunnen leder vattnet. */
+  golvbrunnKoppling: GolvbrunnKopplingId;
   breddavloppAntal: string;
   belysningAntal: string;
   elkontaktAntal: string;
@@ -68,6 +95,14 @@ export type TakterrassData = {
   /** Enhetspris per del — används för kostnadsberäkning */
   priser?: TakterrassPriser;
 };
+
+export type TakterrassPost = TakterrassData & {
+  id: string;
+  /** T.ex. «Terrass mot gård» eller lägenhetsnummer. */
+  benamning: string;
+};
+
+export type TakterrassRegister = Record<string, TakterrassPost[]>;
 
 export const takterrassVaggMaterial: {
   id: TakterrassVaggMaterialId;
@@ -77,7 +112,8 @@ export const takterrassVaggMaterial: {
   {
     id: "bandtackt-plat",
     etikett: "Bandtäckt plåt",
-    beskrivning: "Vanligast på uppkragningar och stödmurar mot terrassen.",
+    beskrivning:
+      "Vanligast — plåtklädda väggar/uppkragningar. Välj «Eget val» om materialet avviker.",
   },
   { id: "eget", etikett: "Eget val" },
 ];
@@ -237,8 +273,30 @@ function normaliseraTatskiktMaterial(
   return { material: "mapelastic-mapei", annanText };
 }
 
+function inferGolvBekladning(
+  raw: Partial<TakterrassData>,
+): TakterrassGolvBekladningId {
+  if (raw.golvBekladning === "papp" || raw.golvBekladning === "keramik") {
+    return raw.golvBekladning;
+  }
+  const pappTatskikt = new Set<TakterrassTatskiktId>([
+    "tjarpapp",
+    "tatskiktsmatta",
+    "underlagsduk",
+    "asfaltsduk",
+  ]);
+  if (
+    pappTatskikt.has(raw.tatskiktMaterial as TakterrassTatskiktId) &&
+    (!raw.golvKvm?.trim() || raw.golvMaterial === "annat")
+  ) {
+    return "papp";
+  }
+  return "keramik";
+}
+
 export function skapaTomTakterrassData(): TakterrassData {
   return {
+    golvBekladning: "keramik",
     vaggarMaterial: standardTakterrassVagg(),
     vaggarAnnanText: "",
     vaggarLopmeter: "",
@@ -250,6 +308,7 @@ export function skapaTomTakterrassData(): TakterrassData {
     tatskiktAnnanText: "",
     tatskiktKvm: "",
     golvbrunnAntal: "",
+    golvbrunnKoppling: "",
     breddavloppAntal: "",
     belysningAntal: "",
     elkontaktAntal: "",
@@ -274,13 +333,18 @@ export function normaliseraTakterrassData(
     raw.tatskiktMaterial ?? tom.tatskiktMaterial,
     raw.tatskiktAnnanText ?? "",
   );
+  const golvBekladning = inferGolvBekladning(raw);
+  const koppling = raw.golvbrunnKoppling;
   return {
     ...tom,
     ...raw,
+    golvBekladning,
     vaggarMaterial: vagg.material,
     vaggarAnnanText: vagg.annanText,
     tatskiktMaterial: tatskikt.material,
     tatskiktAnnanText: tatskikt.annanText,
+    golvbrunnKoppling:
+      koppling === "avloppsstam" || koppling === "stupror" ? koppling : "",
     priser: {
       ...skapaTomTakterrassPriser(),
       ...raw.priser,
@@ -290,6 +354,44 @@ export function normaliseraTakterrassData(
       raw.breddavloppLopmeter?.trim() ||
       "",
   };
+}
+
+export function skapaTomTakterrassPost(benamning = ""): TakterrassPost {
+  return {
+    id: `terrass-${Date.now().toString(36)}`,
+    benamning,
+    ...skapaTomTakterrassData(),
+  };
+}
+
+/** Tidigare sparades en enskild terrass — migrera till lista. */
+export function normaliseraTakterrassPoster(raw: unknown): TakterrassPost[] {
+  if (Array.isArray(raw)) {
+    return raw.map((post, index) => {
+      const p = post as Partial<TakterrassPost>;
+      return {
+        id: p.id?.trim() || `terrass-${index + 1}`,
+        benamning: p.benamning?.trim() ?? "",
+        ...normaliseraTakterrassData(p as TakterrassData),
+      };
+    });
+  }
+  if (raw && typeof raw === "object") {
+    const data = normaliseraTakterrassData(raw as TakterrassData);
+    return [{ id: "terrass-1", benamning: "", ...data }];
+  }
+  return [];
+}
+
+export function formateraTakterrassLista(poster: TakterrassPost[]): string {
+  if (poster.length === 0) return "";
+  return poster
+    .map((p, i) => {
+      const rubrik = p.benamning.trim() || `Terrass ${i + 1}`;
+      const innehall = formateraTakterrass(p);
+      return innehall ? `${rubrik}: ${innehall}` : rubrik;
+    })
+    .join(" · ");
 }
 
 function vaggEtikett(id: TakterrassVaggMaterialId, annan: string): string {
@@ -310,6 +412,12 @@ function tatskiktEtikett(id: TakterrassTatskiktId, annan: string): string {
 export function formateraTakterrass(data: TakterrassData): string {
   const delar: string[] = [];
 
+  delar.push(
+    data.golvBekladning === "papp"
+      ? "golv papp (tätätskikt)"
+      : "golv keramik/klinker",
+  );
+
   const vagg = vaggEtikett(data.vaggarMaterial, data.vaggarAnnanText);
   delar.push(
     data.vaggarLopmeter.trim()
@@ -328,15 +436,28 @@ export function formateraTakterrass(data: TakterrassData): string {
     delar.push(`golv ${golv}`);
   }
 
-  const tatskikt = tatskiktEtikett(data.tatskiktMaterial, data.tatskiktAnnanText);
-  if (data.tatskiktKvm.trim()) {
-    delar.push(`tätätskikt utomhus ${tatskikt} ${data.tatskiktKvm.trim()} m²`);
-  } else {
-    delar.push(`tätätskikt utomhus ${tatskikt}`);
+  if (data.golvBekladning === "keramik") {
+    const tatskikt = tatskiktEtikett(
+      data.tatskiktMaterial,
+      data.tatskiktAnnanText,
+    );
+    if (data.tatskiktKvm.trim()) {
+      delar.push(
+        `tätätskikt utomhus ${tatskikt} ${data.tatskiktKvm.trim()} m²`,
+      );
+    } else {
+      delar.push(`tätätskikt utomhus ${tatskikt}`);
+    }
   }
 
   if (data.golvbrunnAntal.trim()) {
-    delar.push(`${data.golvbrunnAntal.trim()} golvbrunnar`);
+    const koppling =
+      data.golvbrunnKoppling === "avloppsstam"
+        ? " → stam"
+        : data.golvbrunnKoppling === "stupror"
+          ? " → stuprör"
+          : "";
+    delar.push(`${data.golvbrunnAntal.trim()} golvbrunnar${koppling}`);
   }
   if (data.breddavloppAntal.trim()) {
     delar.push(`${data.breddavloppAntal.trim()} breddavlopp`);
