@@ -767,7 +767,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         defaultMåttenhet: "kvm",
         detaljPanel: "takbelaggning-val",
         måttHint:
-          "Total takyta i m². Välj tegel (betong/lertegel och kulör), korrugerad plåt (bärläkt/ströläkt) eller bandlagd plåt (plåt, koppar, aluminium, zink, rostfritt).",
+          "Lägg till takpartier med material (tegel, plåt, koppar m.m.) och mängd per del i m², antal eller styck. Total takyta i m² kan summeras automatiskt.",
       },
       {
         id: "nock",

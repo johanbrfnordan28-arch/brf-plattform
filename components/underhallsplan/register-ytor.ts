@@ -1,7 +1,9 @@
 import {
   hamtaKomponentMall,
+  hamtaTakBelaggningData,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import { summeraTakBelaggningKvm } from "@/components/underhallsplan/tak-belaggning";
 
 const TAKYTA_ID = "takyta";
 const FASADMATERIAL_ID = "fasadmaterial";
@@ -40,7 +42,10 @@ export function hamtaRegisterYtaTak(
       const etikett =
         mall.underkomponenter.find((u) => u.id === rad.id)?.etikett ?? rad.etikett;
       if (rad.id === TAKYTA_ID) {
-        takytaKvm = kvm;
+        const kvmDelar = summeraTakBelaggningKvm(
+          hamtaTakBelaggningData(data, TAKYTA_ID),
+        );
+        takytaKvm = kvm ?? (kvmDelar > 0 ? kvmDelar : null);
       } else {
         kvmDelar.push({ etikett, kvm });
       }

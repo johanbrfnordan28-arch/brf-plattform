@@ -1,5 +1,18 @@
 /** Takbeläggning — materialvägar och underhållsregler (tegel, plåt, papp). */
 
+import { parseNummerSumma } from "@/components/underhallsplan/lista-summering";
+
+export type TakBelaggningMangdEnhet = "kvm" | "antal" | "styck";
+
+export const takBelaggningMangdEnhetEtiketter: Record<
+  TakBelaggningMangdEnhet,
+  { etikett: string; enhet: string }
+> = {
+  kvm: { etikett: "Yta", enhet: "m²" },
+  antal: { etikett: "Antal", enhet: "st" },
+  styck: { etikett: "Styck", enhet: "st" },
+};
+
 export type TakBelaggningHuvudtyp =
   | "tegel"
   | "plat-korrigerad"
@@ -19,7 +32,12 @@ export type KorrigeradInfastning = "spik" | "skruv";
 
 export type TakBelaggningPost = {
   id: string;
+  /** T.ex. Koppar tak väster — valfritt namn på byggnadsdelen. */
+  namn?: string;
   huvudtyp: TakBelaggningHuvudtyp;
+  /** Mängd för denna del — enhet väljs separat. */
+  mangd?: string;
+  mangdEnhet?: TakBelaggningMangdEnhet;
   tegelTyp?: TegelTyp;
   /** Kulör på tegelpannor, t.ex. röd, svart glaserad. */
   tegelKulor?: string;
@@ -84,10 +102,26 @@ export {
   bandlagdMaterial as takBelaggningBandlagdMaterial,
 };
 
+function standardMangdEnhet(
+  huvudtyp: TakBelaggningHuvudtyp,
+): TakBelaggningMangdEnhet {
+  return huvudtyp === "papp" ? "kvm" : "kvm";
+}
+
+function normaliseraMangdEnhet(
+  raw: TakBelaggningMangdEnhet | undefined,
+): TakBelaggningMangdEnhet {
+  if (raw === "antal" || raw === "styck" || raw === "kvm") return raw;
+  return "kvm";
+}
+
 export function skapaTomTakBelaggningPost(): TakBelaggningPost {
   return {
     id: `tak-${Date.now().toString(36)}`,
+    namn: "",
     huvudtyp: "tegel",
+    mangd: "",
+    mangdEnhet: "kvm",
     tegelTyp: "betongpannor",
     tegelKulor: "",
   };
@@ -101,7 +135,12 @@ function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBel
   const huvudtyp = raw.huvudtyp ?? "tegel";
   const post: TakBelaggningPost = {
     id: raw.id?.trim() || `tak-${index + 1}`,
+    namn: raw.namn?.trim() ?? "",
     huvudtyp,
+    mangd: raw.mangd?.trim() ?? "",
+    mangdEnhet: normaliseraMangdEnhet(
+      raw.mangdEnhet ?? standardMangdEnhet(huvudtyp),
+    ),
   };
   if (huvudtyp === "tegel") {
     post.tegelTyp =
@@ -244,7 +283,9 @@ function huvudtypEtikett(h: TakBelaggningHuvudtyp): string {
   }
 }
 
-export function formateraTakBelaggningPost(post: TakBelaggningPost): string {
+export function materialEtikettTakBelaggningPost(
+  post: TakBelaggningPost,
+): string {
   const delar = [huvudtypEtikett(post.huvudtyp)];
   if (post.huvudtyp === "tegel") {
     const typ =
@@ -268,6 +309,30 @@ export function formateraTakBelaggningPost(post: TakBelaggningPost): string {
   if (postKanMalas(post)) delar.push("målning möjlig");
   else delar.push("rengöring");
   return delar.join(" · ");
+}
+
+export function formateraTakBelaggningPost(post: TakBelaggningPost): string {
+  const material = materialEtikettTakBelaggningPost(post);
+  const namn = post.namn?.trim();
+  const enhet = normaliseraMangdEnhet(post.mangdEnhet);
+  const mangd = post.mangd?.trim();
+  const mangdText = mangd
+    ? `${mangd} ${takBelaggningMangdEnhetEtiketter[enhet].enhet}`
+    : "";
+  if (namn) {
+    return mangdText
+      ? `${namn}: ${material} · ${mangdText}`
+      : `${namn}: ${material}`;
+  }
+  return mangdText ? `${material} · ${mangdText}` : material;
+}
+
+export function summeraTakBelaggningKvm(data: TakBelaggningData): number {
+  const mangder = data.belaggningar
+    .filter((p) => normaliseraMangdEnhet(p.mangdEnhet) === "kvm")
+    .map((p) => p.mangd?.trim() ?? "")
+    .filter(Boolean);
+  return parseNummerSumma(mangder);
 }
 
 export function formateraTakBelaggning(data: TakBelaggningData): string {

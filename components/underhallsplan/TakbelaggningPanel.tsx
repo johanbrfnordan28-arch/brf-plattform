@@ -5,14 +5,18 @@ import { YtaOchMaterialAiHjalp } from "@/components/underhallsplan/YtaOchMateria
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 import {
   formateraTakBelaggning,
+  materialEtikettTakBelaggningPost,
   skapaTomTakBelaggningPost,
+  summeraTakBelaggningKvm,
   takBelaggningBandlagdMaterial,
   takBelaggningKanMalas,
+  takBelaggningMangdEnhetEtiketter,
   takBelaggningTegelTyper,
   type BandlagdPlatMaterial,
   type KorrigeradInfastning,
   type TakBelaggningData,
   type TakBelaggningHuvudtyp,
+  type TakBelaggningMangdEnhet,
   type TakBelaggningPost,
   type TegelTyp,
 } from "@/components/underhallsplan/tak-belaggning";
@@ -107,15 +111,27 @@ export function TakbelaggningPanel({
 }: TakbelaggningPanelProps) {
   const enhetInfo = måttenhetEtiketter[måttenhet];
   const poster = belaggning.belaggningar;
+  const kvmFranDelar = summeraTakBelaggningKvm(belaggning);
+
+  function uppdateraBelaggning(next: TakBelaggningData) {
+    onBelaggningChange(next);
+    const summaKvm = summeraTakBelaggningKvm(next);
+    if (summaKvm > 0) {
+      onMåttChange({
+        måttenhet: "kvm",
+        värde: String(Math.round(summaKvm * 10) / 10),
+      });
+    }
+  }
 
   function laggTill() {
-    onBelaggningChange({
+    uppdateraBelaggning({
       belaggningar: [...poster, skapaTomTakBelaggningPost()],
     });
   }
 
   function taBort(id: string) {
-    onBelaggningChange({
+    uppdateraBelaggning({
       belaggningar: poster.filter((p) => p.id !== id),
     });
   }
@@ -126,12 +142,13 @@ export function TakbelaggningPanel({
     <div className="space-y-4">
       <fieldset>
         <legend className="text-xs font-semibold text-primary-dark">
-          Takbeläggning — välj material
+          Takbeläggning — byggnadsdelar och material
         </legend>
         <p className="mt-1 text-xs text-muted">
-          Flera beläggningar om taket har olika partier (t.ex. tegel och
-          bandlagd plåt). Yta anges i m² nedan. Vid tegeltak: registrera även
-          nock och ränndalar som löpmeter under Tak.
+          Lägg till en rad per takparti (t.ex. koppar tak mot gård). Välj
+          material och ange mängd som yta (m²), antal eller styck. Total takyta
+          i m² fylls i automatiskt när du anger m² per del. Nock och ränndalar
+          registreras som löpmeter under övriga takdelar.
         </p>
         {poster.length === 0 ? (
           <p className="mt-2 text-sm text-muted">
@@ -156,12 +173,79 @@ export function TakbelaggningPanel({
                   Ta bort
                 </button>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <label className="mt-2 block text-sm">
+                <span className="text-xs font-medium text-muted">
+                  Namn på byggnadsdel (valfritt)
+                </span>
+                <input
+                  type="text"
+                  value={post.namn ?? ""}
+                  onChange={(e) =>
+                    uppdateraBelaggning(
+                      redigeraPost(belaggning, post.id, {
+                        namn: e.target.value,
+                      }),
+                    )
+                  }
+                  placeholder={materialEtikettTakBelaggningPost(post).split(
+                    " · ",
+                  )[0]}
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                />
+              </label>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="text-xs font-medium text-muted">Mängd</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={
+                      (post.mangdEnhet ?? "kvm") === "kvm" ? 0.1 : 1
+                    }
+                    value={post.mangd ?? ""}
+                    onChange={(e) =>
+                      uppdateraBelaggning(
+                        redigeraPost(belaggning, post.id, {
+                          mangd: e.target.value,
+                        }),
+                      )
+                    }
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="text-xs font-medium text-muted">Enhet</span>
+                  <select
+                    value={post.mangdEnhet ?? "kvm"}
+                    onChange={(e) =>
+                      uppdateraBelaggning(
+                        redigeraPost(belaggning, post.id, {
+                          mangdEnhet: e.target
+                            .value as TakBelaggningMangdEnhet,
+                        }),
+                      )
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    {(
+                      Object.keys(
+                        takBelaggningMangdEnhetEtiketter,
+                      ) as TakBelaggningMangdEnhet[]
+                    ).map((key) => (
+                      <option key={key} value={key}>
+                        {takBelaggningMangdEnhetEtiketter[key].etikett} (
+                        {takBelaggningMangdEnhetEtiketter[key].enhet})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {huvudtyper.map((h) =>
                   valKnapp(
                     post.huvudtyp === h.id,
                     () =>
-                      onBelaggningChange(
+                      uppdateraBelaggning(
                         redigeraPost(belaggning, post.id, {
                           huvudtyp: h.id,
                           ...(h.id === "tegel"
@@ -194,7 +278,7 @@ export function TakbelaggningPanel({
                       valKnapp(
                         post.tegelTyp === t.id,
                         () =>
-                          onBelaggningChange(
+                          uppdateraBelaggning(
                             redigeraPost(belaggning, post.id, {
                               tegelTyp: t.id,
                             }),
@@ -210,7 +294,7 @@ export function TakbelaggningPanel({
                       type="text"
                       value={post.tegelKulor ?? ""}
                       onChange={(e) =>
-                        onBelaggningChange(
+                        uppdateraBelaggning(
                           redigeraPost(belaggning, post.id, {
                             tegelKulor: e.target.value,
                           }),
@@ -230,7 +314,7 @@ export function TakbelaggningPanel({
                     {valKnapp(
                       post.korrigeradInfastning !== "skruv",
                       () =>
-                        onBelaggningChange(
+                        uppdateraBelaggning(
                           redigeraPost(belaggning, post.id, {
                             korrigeradInfastning: "spik",
                           }),
@@ -240,7 +324,7 @@ export function TakbelaggningPanel({
                     {valKnapp(
                       post.korrigeradInfastning === "skruv",
                       () =>
-                        onBelaggningChange(
+                        uppdateraBelaggning(
                           redigeraPost(belaggning, post.id, {
                             korrigeradInfastning: "skruv",
                           }),
@@ -259,7 +343,7 @@ export function TakbelaggningPanel({
                       valKnapp(
                         (post.bandlagdMaterial ?? "stalplat") === m.id,
                         () =>
-                          onBelaggningChange(
+                          uppdateraBelaggning(
                             redigeraPost(belaggning, post.id, {
                               bandlagdMaterial: m.id,
                               aluminiumLackerad:
@@ -279,7 +363,7 @@ export function TakbelaggningPanel({
                         type="checkbox"
                         checked={post.aluminiumLackerad === true}
                         onChange={(e) =>
-                          onBelaggningChange(
+                          uppdateraBelaggning(
                             redigeraPost(belaggning, post.id, {
                               aluminiumLackerad: e.target.checked,
                             }),
@@ -306,7 +390,7 @@ export function TakbelaggningPanel({
           onClick={laggTill}
           className="mt-3 rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
         >
-          + Lägg till takbeläggning
+          + Lägg till takparti
         </button>
         {formateraTakBelaggning(belaggning) && (
           <p className="mt-2 text-xs font-medium text-primary-dark">
@@ -345,6 +429,12 @@ export function TakbelaggningPanel({
         <span className="text-xs font-medium text-muted">
           Total takyta ({enhetInfo.enhet})
         </span>
+        {kvmFranDelar > 0 && (
+          <span className="mt-0.5 block text-[11px] text-muted">
+            Summering från m² per del: {kvmFranDelar.toLocaleString("sv-SE")}{" "}
+            m² — kan justeras manuellt.
+          </span>
+        )}
         <input
           type="number"
           min={0}
