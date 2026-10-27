@@ -10,10 +10,12 @@ import {
   normaliseraBalkongPost,
   type BalkongPost,
   type BalkongPriser,
+  type EgnaBalkongTypDef,
 } from "@/components/underhallsplan/balkonger";
 
 type BalkongPrisPanelProps = {
   post: BalkongPost;
+  egnaTyper?: EgnaBalkongTypDef[];
   onChange: (post: BalkongPost) => void;
 };
 
@@ -28,10 +30,14 @@ function tillTabellRad(rad: BalkongPrisRad) {
   };
 }
 
-export function BalkongPrisPanel({ post, onChange }: BalkongPrisPanelProps) {
-  const p = normaliseraBalkongPost(post);
+export function BalkongPrisPanel({
+  post,
+  egnaTyper = [],
+  onChange,
+}: BalkongPrisPanelProps) {
+  const p = normaliseraBalkongPost(post, egnaTyper);
   const priser = { ...skapaTomBalkongPriser(), ...p.priser };
-  const { rader, totaltKr } = beraknaBalkongPostPris(p);
+  const { rader, totaltKr } = beraknaBalkongPostPris(p, egnaTyper);
 
   function uppdateraPris(id: keyof BalkongPriser, varde: string) {
     onChange({

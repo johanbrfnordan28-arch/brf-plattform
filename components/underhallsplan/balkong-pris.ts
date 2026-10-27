@@ -11,9 +11,11 @@ import {
   balkongDelarMall,
   balkongHarPlatta,
   normaliseraBalkongPost,
+  normaliseraEgnaBalkongTyper,
   type BalkongDelId,
   type BalkongPost,
   type BalkongPriser,
+  type EgnaBalkongTypDef,
 } from "@/components/underhallsplan/balkonger";
 
 export type BalkongPrisRad = {
@@ -49,11 +51,14 @@ function slåIhopPriser(priser?: BalkongPriser): BalkongPriser {
   return { ...skapaTomBalkongPriser(), ...priser };
 }
 
-export function beraknaBalkongPostPris(post: BalkongPost): {
+export function beraknaBalkongPostPris(
+  post: BalkongPost,
+  egna: EgnaBalkongTypDef[] = [],
+): {
   rader: BalkongPrisRad[];
   totaltKr: number;
 } {
-  const p = normaliseraBalkongPost(post);
+  const p = normaliseraBalkongPost(post, egna);
   const priser = slåIhopPriser(p.priser);
   const rader: BalkongPrisRad[] = [];
 
@@ -89,7 +94,7 @@ export function beraknaBalkongPostPris(post: BalkongPost): {
     });
   }
 
-  if (balkongHarPlatta(p.balkongTyp) && p.golvMaterial !== "ingen-platta") {
+  if (balkongHarPlatta(p.balkongTyp, egna) && p.golvMaterial !== "ingen-platta") {
     const golvKvm = parseMangd(p.golvKvm);
     if (golvKvm > 0) {
       const enhetsprisKr = effektivEnhetspris(priser.golv, RIKT_BALKONG_DEL_KR.golv);
@@ -128,13 +133,16 @@ export function beraknaBalkongPostPris(post: BalkongPost): {
   return { rader, totaltKr };
 }
 
-export function beraknaBalkongListaPris(poster: BalkongPost[]): {
+export function beraknaBalkongListaPris(
+  poster: BalkongPost[],
+  egna: EgnaBalkongTypDef[] = [],
+): {
   poster: { postId: string; namn: string; totaltKr: number }[];
   totaltKr: number;
 } {
   const resultat = poster.map((post) => {
-    const p = normaliseraBalkongPost(post);
-    const { totaltKr } = beraknaBalkongPostPris(p);
+    const p = normaliseraBalkongPost(post, egna);
+    const { totaltKr } = beraknaBalkongPostPris(p, egna);
     return {
       postId: p.id,
       namn: p.namn.trim() || p.balkongTyp,
@@ -155,8 +163,12 @@ export function hamtaBalkongKostnadFasad(
     (r) => r.id === BALKONGER_UNDERKOMPONENT_ID,
   );
   if (!rad?.aktiv) return 0;
+  const egna = normaliseraEgnaBalkongTyper(fasadDetalj.egnaBalkongTyper);
   const poster = fasadDetalj.balkongRegister?.[BALKONGER_UNDERKOMPONENT_ID] ?? [];
-  return beraknaBalkongListaPris(poster.map(normaliseraBalkongPost)).totaltKr;
+  return beraknaBalkongListaPris(
+    poster.map((p) => normaliseraBalkongPost(p, egna)),
+    egna,
+  ).totaltKr;
 }
 
 export function hamtaBalkongKostnadBalkonger(
@@ -173,9 +185,13 @@ export function hamtaBalkongKostnadDetaljer(
     (r) => r.id === BALKONGER_UNDERKOMPONENT_ID,
   );
   if (!rad?.aktiv) return { poster: [], totaltKr: 0 };
+  const egna = normaliseraEgnaBalkongTyper(balkongerDetalj.egnaBalkongTyper);
   const poster =
     balkongerDetalj.balkongRegister?.[BALKONGER_UNDERKOMPONENT_ID] ?? [];
-  return beraknaBalkongListaPris(poster.map(normaliseraBalkongPost));
+  return beraknaBalkongListaPris(
+    poster.map((p) => normaliseraBalkongPost(p, egna)),
+    egna,
+  );
 }
 
 export function formateraBalkongPris(totaltKr: number): string {

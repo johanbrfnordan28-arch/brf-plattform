@@ -30,7 +30,7 @@ export function BalkongRenoveringFalt({
   registerPoster = [],
   onChange,
 }: BalkongRenoveringFaltProps) {
-  const normaliserade = registerPoster.map(normaliseraBalkongPost);
+  const normaliserade = registerPoster.map((p) => normaliseraBalkongPost(p));
   const valtAtgard = (balkongAtgard || "renovering") as BalkongAtgardId;
   const valtTyp = balkongTyp as BalkongTypId;
   const atgardInfo = balkongAtgardAlternativ.find((a) => a.id === valtAtgard);

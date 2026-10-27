@@ -73,6 +73,7 @@ import {
   hamtaTakBelaggningData,
   uppdateraTakBelaggningData,
   uppdateraBalkongPoster,
+  uppdateraEgnaBalkongTyper,
   uppdateraEgnaHissMarken,
   uppdateraHissPoster,
   uppdateraVentilationExtraPoster,
@@ -667,7 +668,10 @@ export function KomponentDetaljer({
                 : null;
             const balkongKort =
               detaljPanel === "balkong-lista" && rad.aktiv
-                ? formateraBalkongPoster(hamtaBalkongPoster(data, rad.id))
+                ? formateraBalkongPoster(
+                    hamtaBalkongPoster(data, rad.id),
+                    data.egnaBalkongTyper ?? [],
+                  )
                 : null;
             const hissKort =
               detaljPanel === "hiss-lista" && rad.aktiv
@@ -1223,8 +1227,12 @@ export function KomponentDetaljer({
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <BalkongerPanel
                       poster={hamtaBalkongPoster(data, rad.id)}
+                      egnaTyper={data.egnaBalkongTyper ?? []}
                       onChange={(poster) =>
                         onChange(uppdateraBalkongPoster(data, rad.id, poster))
+                      }
+                      onEgnaTyperChange={(typer) =>
+                        onChange(uppdateraEgnaBalkongTyper(data, typer))
                       }
                     />
                   </div>

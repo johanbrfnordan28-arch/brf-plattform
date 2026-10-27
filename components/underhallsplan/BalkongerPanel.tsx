@@ -9,10 +9,13 @@ import {
   balkongKonstruktioner,
   balkongRakeMaterial,
   balkongTyper,
+  balkongTypEtikett,
   balkongVisarKonstruktion,
   hamtaBalkongDelar,
   hamtaBalkongGolvAlternativ,
+  hamtaBalkongTypVal,
   normaliseraBalkongPost,
+  skapaEgnaBalkongTypId,
   skapaTomBalkongDelar,
   skapaTomBalkongPost,
   standardBalkongGolv,
@@ -24,6 +27,7 @@ import {
   type BalkongPost,
   type BalkongRakeMaterialId,
   type BalkongTypId,
+  type EgnaBalkongTypDef,
 } from "@/components/underhallsplan/balkonger";
 import { BalkongPrisPanel } from "@/components/underhallsplan/BalkongPrisPanel";
 import { beraknaBalkongListaPris } from "@/components/underhallsplan/balkong-pris";
@@ -32,7 +36,9 @@ import { formatSummeringTal, parseNummerSumma } from "@/components/underhallspla
 
 type BalkongerPanelProps = {
   poster: BalkongPost[];
+  egnaTyper: EgnaBalkongTypDef[];
   onChange: (poster: BalkongPost[]) => void;
+  onEgnaTyperChange: (typer: EgnaBalkongTypDef[]) => void;
 };
 
 function NummerFalt({
@@ -71,20 +77,29 @@ function NummerFalt({
 function tillämpaAtgardPaKonstruktion(
   post: BalkongPost,
   atgard: BalkongAtgardId,
+  egna: EgnaBalkongTypDef[],
 ): Partial<BalkongPost> {
   if (
     atgard !== "renovering" &&
-    balkongVisarKonstruktion(post.balkongTyp)
+    balkongVisarKonstruktion(post.balkongTyp, egna)
   ) {
     return { konstruktion: "tillbyggd" };
   }
   return {};
 }
 
-export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
-  const [nyBalkongTyp, setNyBalkongTyp] =
-    useState<BalkongTypId>("utvandig-balkong");
+export function BalkongerPanel({
+  poster,
+  egnaTyper,
+  onChange,
+  onEgnaTyperChange,
+}: BalkongerPanelProps) {
+  const typVal = hamtaBalkongTypVal(egnaTyper);
+  const [nyBalkongTyp, setNyBalkongTyp] = useState<string>("utvandig-balkong");
   const [nyAtgard, setNyAtgard] = useState<BalkongAtgardId>("renovering");
+  const [nyEgenEtikett, setNyEgenEtikett] = useState("");
+  const [nyEgenMall, setNyEgenMall] =
+    useState<BalkongTypId>("utvandig-balkong");
 
   function uppdateraPost(id: string, patch: Partial<BalkongPost>) {
     onChange(
@@ -92,20 +107,27 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
         if (p.id !== id) return p;
         const merged = { ...p, ...patch };
         if (patch.atgard && patch.atgard !== p.atgard) {
-          Object.assign(merged, tillämpaAtgardPaKonstruktion(merged, patch.atgard));
+          Object.assign(
+            merged,
+            tillämpaAtgardPaKonstruktion(merged, patch.atgard, egnaTyper),
+          );
         }
-        const next = normaliseraBalkongPost(merged);
+        const next = normaliseraBalkongPost(merged, egnaTyper);
         if (patch.balkongTyp && patch.balkongTyp !== p.balkongTyp) {
-          const alt = hamtaBalkongGolvAlternativ(patch.balkongTyp);
+          const alt = hamtaBalkongGolvAlternativ(patch.balkongTyp, egnaTyper);
           const golvMaterial = alt.some((a) => a.id === next.golvMaterial)
             ? next.golvMaterial
-            : standardBalkongGolv(patch.balkongTyp);
+            : standardBalkongGolv(patch.balkongTyp, egnaTyper);
           return {
             ...next,
             golvMaterial,
             golvAnnanText: golvMaterial === "annat" ? next.golvAnnanText : "",
-            konstruktion: standardBalkongKonstruktion(patch.balkongTyp),
-            delar: skapaTomBalkongDelar(patch.balkongTyp).map((m) => {
+            konstruktion: standardBalkongKonstruktion(
+              patch.balkongTyp,
+              next.atgard,
+              egnaTyper,
+            ),
+            delar: skapaTomBalkongDelar(patch.balkongTyp, egnaTyper).map((m) => {
               const bef = next.delar.find((r) => r.delId === m.delId);
               return bef ? { ...m, aktiv: bef.aktiv, mangd: bef.mangd } : m;
             }),
@@ -117,11 +139,10 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
   }
 
   function läggTillBalkong(
-    typ: BalkongTypId = nyBalkongTyp,
+    typ: string = nyBalkongTyp,
     atgard: BalkongAtgardId = nyAtgard,
   ) {
-    const etikett =
-      balkongTyper.find((t) => t.id === typ)?.etikett ?? "Balkong";
+    const etikett = balkongTypEtikett(typ, egnaTyper);
     const nr = poster.length + 1;
     onChange([
       ...poster,
@@ -129,8 +150,41 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
         poster.length === 0 ? etikett : `Balkong ${nr} (${etikett})`,
         typ,
         atgard,
+        egnaTyper,
       ),
     ]);
+  }
+
+  function läggTillEgenTyp(läggTillRad = false) {
+    const etikett = nyEgenEtikett.trim();
+    if (!etikett) return;
+    const id = skapaEgnaBalkongTypId();
+    const ny: EgnaBalkongTypDef = {
+      id,
+      etikett,
+      mallTyp: nyEgenMall,
+    };
+    onEgnaTyperChange([...egnaTyper, ny]);
+    setNyEgenEtikett("");
+    setNyBalkongTyp(id);
+    if (läggTillRad) läggTillBalkong(id, nyAtgard);
+  }
+
+  function taBortEgenTyp(id: string) {
+    const egen = egnaTyper.find((t) => t.id === id);
+    const fallback = egen?.mallTyp ?? "utvandig-balkong";
+    const kvar = egnaTyper.filter((t) => t.id !== id);
+    onEgnaTyperChange(kvar);
+    onChange(
+      poster.map((p) => {
+        if (p.balkongTyp !== id) return p;
+        return normaliseraBalkongPost(
+          { ...p, balkongTyp: fallback },
+          kvar,
+        );
+      }),
+    );
+    if (nyBalkongTyp === id) setNyBalkongTyp(fallback);
   }
 
   function taBort(id: string) {
@@ -178,18 +232,19 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
           <span className="text-xs font-medium text-muted">Balkongtyp</span>
           <select
             value={nyBalkongTyp}
-            onChange={(e) => setNyBalkongTyp(e.target.value as BalkongTypId)}
+            onChange={(e) => setNyBalkongTyp(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
           >
-            {balkongTyper.map((t) => (
+            {typVal.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.etikett}
+                {t.ärEgen ? " (egen)" : ""}
               </option>
             ))}
           </select>
-          {balkongTyper.find((t) => t.id === nyBalkongTyp)?.beskrivning && (
+          {typVal.find((t) => t.id === nyBalkongTyp)?.beskrivning && (
             <span className="mt-1 block text-xs text-muted">
-              {balkongTyper.find((t) => t.id === nyBalkongTyp)?.beskrivning}
+              {typVal.find((t) => t.id === nyBalkongTyp)?.beskrivning}
             </span>
           )}
         </label>
@@ -203,7 +258,7 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
       </button>
       <p className="text-xs text-muted">Snabbval med vald åtgärd:</p>
       <div className="flex flex-wrap gap-2">
-        {balkongTyper.map((t) => (
+        {typVal.map((t) => (
           <button
             key={t.id}
             type="button"
@@ -216,6 +271,98 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
             + {t.etikett}
           </button>
         ))}
+      </div>
+    </div>
+  );
+
+  const egnaTyperSektion = (
+    <div className="rounded-lg border border-border bg-white p-3 space-y-3 sm:p-4">
+      <p className="text-xs font-semibold text-primary-dark">
+        Egna balkongtyper
+      </p>
+      <p className="text-xs text-muted">
+        Skapa en egen typ om standardlistan inte räcker — välj en mall så får
+        balkongen rätt golvval och underhållsdelar.
+      </p>
+      {egnaTyper.length > 0 && (
+        <ul className="space-y-1.5 text-sm">
+          {egnaTyper.map((t) => (
+            <li
+              key={t.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/80 bg-[#fafcfa] px-3 py-2"
+            >
+              <span>
+                <span className="font-medium">{t.etikett}</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  Mall:{" "}
+                  {balkongTyper.find((m) => m.id === t.mallTyp)?.etikett ??
+                    t.mallTyp}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => taBortEgenTyp(t.id)}
+                className="text-xs text-muted hover:text-red-700"
+              >
+                Ta bort
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm sm:col-span-2">
+          <span className="text-xs font-medium text-muted">Namn på typ</span>
+          <input
+            type="text"
+            value={nyEgenEtikett}
+            onChange={(e) => setNyEgenEtikett(e.target.value)}
+            placeholder="T.ex. Utskjutande balkong mot gård"
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                läggTillEgenTyp(false);
+              }
+            }}
+          />
+        </label>
+        <label className="block text-sm sm:col-span-2">
+          <span className="text-xs font-medium text-muted">
+            Mall (delar och golv)
+          </span>
+          <select
+            value={nyEgenMall}
+            onChange={(e) =>
+              setNyEgenMall(e.target.value as BalkongTypId)
+            }
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          >
+            {balkongTyper.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.etikett}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => läggTillEgenTyp(false)}
+          disabled={!nyEgenEtikett.trim()}
+          className="rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]/40 disabled:opacity-50"
+        >
+          Lägg till balkongtyp
+        </button>
+        <button
+          type="button"
+          onClick={() => läggTillEgenTyp(true)}
+          disabled={!nyEgenEtikett.trim()}
+          className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
+        >
+          Skapa typ och lägg till balkong
+        </button>
       </div>
     </div>
   );
@@ -240,11 +387,11 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
       {poster.length > 0 && (
         <ul className="space-y-3">
           {poster.map((post, index) => {
-            const p = normaliseraBalkongPost(post);
-            const golvAlt = hamtaBalkongGolvAlternativ(p.balkongTyp);
-            const delarDef = hamtaBalkongDelar(p.balkongTyp);
-            const typInfo = balkongTyper.find((t) => t.id === p.balkongTyp);
-            const typEtikett = typInfo?.etikett ?? "Balkong";
+            const p = normaliseraBalkongPost(post, egnaTyper);
+            const golvAlt = hamtaBalkongGolvAlternativ(p.balkongTyp, egnaTyper);
+            const delarDef = hamtaBalkongDelar(p.balkongTyp, egnaTyper);
+            const typInfo = typVal.find((t) => t.id === p.balkongTyp);
+            const typEtikett = balkongTypEtikett(p.balkongTyp, egnaTyper);
             return (
               <li
                 key={post.id}
@@ -321,14 +468,15 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
                       value={p.balkongTyp}
                       onChange={(e) =>
                         uppdateraPost(p.id, {
-                          balkongTyp: e.target.value as BalkongTypId,
+                          balkongTyp: e.target.value,
                         })
                       }
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     >
-                      {balkongTyper.map((t) => (
+                      {typVal.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.etikett}
+                          {t.ärEgen ? " (egen)" : ""}
                         </option>
                       ))}
                     </select>
@@ -339,7 +487,7 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
                     )}
                   </label>
 
-                  {balkongVisarKonstruktion(p.balkongTyp) && (
+                  {balkongVisarKonstruktion(p.balkongTyp, egnaTyper) && (
                     <label className="block text-sm sm:col-span-2">
                       <span className="text-xs font-medium text-muted">
                         Konstruktion
@@ -545,10 +693,13 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
                 <div className="mt-4">
                   <BalkongPrisPanel
                     post={p}
+                    egnaTyper={egnaTyper}
                     onChange={(next) =>
                       onChange(
                         poster.map((row) =>
-                          row.id === p.id ? normaliseraBalkongPost(next) : row,
+                          row.id === p.id
+                            ? normaliseraBalkongPost(next, egnaTyper)
+                            : row,
                         ),
                       )
                     }
@@ -561,10 +712,12 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
       )}
 
       {poster.length > 0 && (() => {
-        const summering = summeraBalkongPoster(poster);
-        const kostnad = beraknaBalkongListaPris(poster);
+        const summering = summeraBalkongPoster(poster, egnaTyper);
+        const kostnad = beraknaBalkongListaPris(poster, egnaTyper);
         const rakeLm = parseNummerSumma(
-          poster.map((p) => normaliseraBalkongPost(p).rakeLopmeter),
+          poster.map(
+            (p) => normaliseraBalkongPost(p, egnaTyper).rakeLopmeter,
+          ),
         );
         const raderUtanAntal = summering.filter(
           (r) => r.etikett !== "Antal balkongrader",
@@ -609,6 +762,8 @@ export function BalkongerPanel({ poster, onChange }: BalkongerPanelProps) {
           </>
         );
       })()}
+
+      {egnaTyperSektion}
 
       {poster.length > 0 && läggTillSektion}
     </div>

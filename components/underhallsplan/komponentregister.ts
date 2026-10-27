@@ -111,8 +111,10 @@ import {
   BALKONGER_UNDERKOMPONENT_ID,
   LEGACY_BALKONGANSLUTNING_ID,
   normaliseraBalkongPost,
+  normaliseraEgnaBalkongTyper,
   skapaTomBalkongPost,
   type BalkongPost,
+  type EgnaBalkongTypDef,
 } from "@/components/underhallsplan/balkonger";
 import {
   formateraHissPoster,
@@ -522,6 +524,8 @@ export type KomponentDetaljData = {
   tvattstugaRegister?: TvattstugaRegister;
   /** Balkonger per underkomponent-id */
   balkongRegister?: BalkongRegister;
+  /** Föreningsspecifika balkongtyper (mall styr delar och golv) */
+  egnaBalkongTyper?: EgnaBalkongTypDef[];
   /** Hissar per underkomponent-id (Trapphus) */
   hissRegister?: HissRegister;
   /** Egna hissmärken (Trapphus) */
@@ -1363,9 +1367,10 @@ function skapaTomTakfonsterRegister(mall: KomponentMall): TakfonsterRegister {
 }
 
 function extraheraBalkongPoster(data: KomponentDetaljData): BalkongPost[] {
+  const egna = normaliseraEgnaBalkongTyper(data.egnaBalkongTyper);
   const reg = data.balkongRegister?.[BALKONGER_UNDERKOMPONENT_ID];
   if (reg && reg.length > 0) {
-    return reg.map(normaliseraBalkongPost);
+    return reg.map((p) => normaliseraBalkongPost(p, egna));
   }
 
   const legacyRad = data.underkomponenter.find(
@@ -1396,12 +1401,13 @@ function migreraBalkongRegister(
   );
   if (!listaDef) return data.balkongRegister;
 
+  const egna = normaliseraEgnaBalkongTyper(data.egnaBalkongTyper);
   const befintlig = data.balkongRegister?.[listaDef.id];
   if (befintlig && befintlig.length > 0) {
     return {
       ...skapaTomBalkongRegister(mall),
       ...data.balkongRegister,
-      [listaDef.id]: befintlig.map(normaliseraBalkongPost),
+      [listaDef.id]: befintlig.map((p) => normaliseraBalkongPost(p, egna)),
     };
   }
 
@@ -2421,6 +2427,7 @@ export function synkaKomponentDetaljMedMall(
       ...dataIn.brandskyddBranddorrRegister,
     },
     egnaHissMarken: dataIn.egnaHissMarken ?? [],
+    egnaBalkongTyper: normaliseraEgnaBalkongTyper(dataIn.egnaBalkongTyper),
     takterrassRegister: Object.fromEntries(
       Object.entries({
         ...tom.takterrassRegister,
@@ -2988,8 +2995,9 @@ export function hamtaBalkongPoster(
   data: KomponentDetaljData,
   underId: string,
 ): BalkongPost[] {
+  const egna = normaliseraEgnaBalkongTyper(data.egnaBalkongTyper);
   const poster = data.balkongRegister?.[underId] ?? [];
-  return poster.map(normaliseraBalkongPost);
+  return poster.map((p) => normaliseraBalkongPost(p, egna));
 }
 
 export function uppdateraBalkongPoster(
@@ -2997,12 +3005,23 @@ export function uppdateraBalkongPoster(
   underId: string,
   poster: BalkongPost[],
 ): KomponentDetaljData {
+  const egna = normaliseraEgnaBalkongTyper(data.egnaBalkongTyper);
   return {
     ...data,
     balkongRegister: {
       ...data.balkongRegister,
-      [underId]: poster.map(normaliseraBalkongPost),
+      [underId]: poster.map((p) => normaliseraBalkongPost(p, egna)),
     },
+  };
+}
+
+export function uppdateraEgnaBalkongTyper(
+  data: KomponentDetaljData,
+  typer: EgnaBalkongTypDef[],
+): KomponentDetaljData {
+  return {
+    ...data,
+    egnaBalkongTyper: normaliseraEgnaBalkongTyper(typer),
   };
 }
 
@@ -3405,7 +3424,10 @@ export function formateraKomponentSammanfattning(
     }
     if (def?.detaljPanel === "balkong-lista") {
       const poster = data.balkongRegister?.[rad.id] ?? [];
-      const text = formateraBalkongPoster(poster);
+      const text = formateraBalkongPoster(
+        poster,
+        normaliseraEgnaBalkongTyper(data.egnaBalkongTyper),
+      );
       if (text) delar.push(`${rad.etikett}: ${text}`);
       continue;
     }
