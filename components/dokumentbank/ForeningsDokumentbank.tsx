@@ -50,10 +50,7 @@ import {
   oppnaForeningsDokumentPreview,
 } from "@/components/dokumentbank/forening-dokument-visning";
 import { lasFilSomText } from "@/components/dokumentbank/forening-dokument-fil-lager";
-import {
-  byggEgenkontrollText,
-  skapaVvsEgenkontroll,
-} from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { skapaForeningsDokumentEgenkontroll } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 
@@ -157,9 +154,10 @@ function SkapaEgenkontrollKopiaForm({
   return (
     <div className="mt-2 space-y-3 rounded-lg border border-primary/30 bg-[#f7fbf8] p-3">
       <p className="text-xs font-medium text-muted">
-        Föreningen kan direkt granska och anpassa alla kontrollpunkter. Entreprenör
-        och BankID-signering fylls i senare — det är entreprenörens ansvar enligt
-        avtal.
+        Föreningen granskar kontrollplanen här. Huvudentreprenören har
+        huvudansvar för att ifyllnad, avvikelser och BankID-signering blir
+        kompletta — det görs under Granska och redigera, inte i
+        förhandsgranska (som är skrivskyddad).
       </p>
       <label className="block text-xs text-muted">
         Projektnamn / dokumenttitel
@@ -654,7 +652,9 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                       }
                       className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
                     >
-                      Skapa kopia
+                      {arEgenkontrollMallId(mall.id)
+                        ? "Skapa egenkontroll"
+                        : "Skapa kopia"}
                     </button>
                   </div>
                 </div>
@@ -821,34 +821,13 @@ export function ForeningsDokumentbank() {
         underArbetsledareNamn: "",
         utforareNamn: [] as string[],
       };
-      const egenkontroll = skapaVvsEgenkontroll({
-        huvudentreprenorNamn: input.huvudentreprenorNamn,
-        huvudArbetsledareNamn: input.huvudArbetsledareNamn,
-        underentreprenorNamn: input.underentreprenorNamn,
-        underArbetsledareNamn: input.underArbetsledareNamn,
-        utforareNamn: input.utforareNamn,
+      const bas = skapaForeningsDokumentEgenkontroll(mall, {
+        docTitel,
+        egenkontrollInput: input,
       });
-      const bas: ForeningsDokument = {
-        id: skapaForeningsDokumentId(),
-        mallId: mall.id,
-        mallTitel: mall.titel,
-        mallFilnamn: mall.filnamn,
-        titel: docTitel,
-        status: "utkast",
-        skapadDatum: nu,
-        uppdateradDatum: nu,
-        notering: "",
-        omrade: mall.omrade,
-        dokumentKalla: "mall",
-        layoutTema,
-        koppladeProjektId: [],
-        egenkontroll,
-        entreprenor: {
-          ...tomDokumentEntreprenor(),
-          namn: input.huvudentreprenorNamn,
-        },
-      };
-      bas.innehall = byggEgenkontrollText(bas, egenkontroll);
+      if (layoutTema !== STANDARD_DOKUMENT_LAYOUT) {
+        bas.layoutTema = layoutTema;
+      }
       sparaNyttDokument(bas);
       return;
     }

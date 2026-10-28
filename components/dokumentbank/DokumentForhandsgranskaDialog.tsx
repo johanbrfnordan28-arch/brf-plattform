@@ -172,8 +172,10 @@ export function DokumentForhandsgranskaDialog({
           )}
           {arEgenkontroll && (
             <p className="w-full text-xs text-muted sm:w-auto sm:flex-1">
-              Egenkontroll skapas via &quot;Skapa kopia&quot; i listan (med
-              entreprenör och utförare) — då får du alla kontrollpunkter.
+              Förhandsgranska är skrivskyddad. Klicka{" "}
+              <strong>Skapa egenkontroll</strong> i listan (eller{" "}
+              <strong>Skapa i projektet</strong> under projektets mapp
+              Egenkontroller in) för att redigera och spara kontroller.
             </p>
           )}
           <button

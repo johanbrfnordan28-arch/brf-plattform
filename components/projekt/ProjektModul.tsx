@@ -45,12 +45,20 @@ import {
 } from "@/components/projekt/projekt";
 import { ProjektDokumentImportPanel } from "@/components/projekt/ProjektDokumentImportPanel";
 import {
-  laggForeningsDokumentIProjekt,
+  importeraDokumentTillProjekt,
   lasProjektLista,
 } from "@/components/dokumentbank/dokument-projekt-koppling";
+import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
+import {
+  arEgenkontrollDokument,
+  byggEgenkontrollText,
+  skapaVvsEgenkontroll,
+} from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { ProjektEgenkontrollRedigera } from "@/components/projekt/ProjektEgenkontrollRedigera";
 import {
   lasForeningsDokument,
   laddaNedDokument,
+  type ForeningsDokument,
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import { hamtaMall } from "@/components/dokumentbank/mallar";
 import {
@@ -95,6 +103,12 @@ export function ProjektModul() {
   const [importFranBankKey, setImportFranBankKey] = useState<string | null>(
     null,
   );
+  const [redigerarEgenkontroll, setRedigerarEgenkontroll] = useState<{
+    projektId: string;
+    projektTitel: string;
+    mappId: string;
+    foreningsDokumentId: string;
+  } | null>(null);
 
   const standardMappEtiketter = useMemo(
     () =>
@@ -408,6 +422,21 @@ export function ProjektModul() {
       }
     }
     if (doc.kalla === "bank" && doc.bankId) {
+      if (arEgenkontrollMallId(doc.bankId)) {
+        const docTitel = doc.filnamn
+          .replace(/\.(txt|pdf)$/i, "")
+          .replace(/_/g, " ");
+        const ek = skapaVvsEgenkontroll({
+          huvudentreprenorNamn: "",
+          utforareNamn: [],
+        });
+        const stub: ForeningsDokument = {
+          titel: docTitel,
+          mallId: doc.bankId,
+        } as ForeningsDokument;
+        laddaNedDokument(doc.filnamn, byggEgenkontrollText(stub, ek));
+        return;
+      }
       const mall = hamtaMall(doc.bankId);
       if (mall?.textInnehall) {
         laddaNedDokument(
@@ -418,24 +447,37 @@ export function ProjektModul() {
     }
   }
 
+  function kanRedigeraEgenkontroll(doc: ProjektDokument): boolean {
+    if (doc.kalla !== "foreningsdokument" || !doc.foreningsDokumentId) {
+      return false;
+    }
+    const fd = lasForeningsDokument().dokument.find(
+      (d) => d.id === doc.foreningsDokumentId,
+    );
+    return Boolean(fd && arEgenkontrollDokument(fd));
+  }
+
   function laggTillImporteratDokument(
     projektId: string,
     mappId: string,
     dokument: ProjektDokument,
   ) {
-    if (
-      dokument.kalla === "foreningsdokument" &&
-      dokument.foreningsDokumentId
-    ) {
-      const fd = lasForeningsDokument().dokument.find(
-        (d) => d.id === dokument.foreningsDokumentId,
+    const struktureradImport =
+      (dokument.kalla === "foreningsdokument" &&
+        dokument.foreningsDokumentId) ||
+      (dokument.kalla === "bank" &&
+        dokument.bankId &&
+        arEgenkontrollMallId(dokument.bankId));
+
+    if (struktureradImport) {
+      const result = importeraDokumentTillProjekt(
+        projektId,
+        mappId,
+        dokument,
       );
-      if (fd) {
-        const result = laggForeningsDokumentIProjekt(projektId, mappId, fd);
-        if (result.ok) setProjekt(lasProjektLista());
-        setImportFranBankKey(null);
-        return;
-      }
+      if (result.ok) setProjekt(lasProjektLista());
+      setImportFranBankKey(null);
+      return;
     }
 
     setProjekt((current) =>
@@ -942,7 +984,24 @@ export function ProjektModul() {
                                               " · dokumentbank"}
                                           </p>
                                         </div>
-                                        <div className="flex gap-1">
+                                        <div className="flex flex-wrap gap-1">
+                                          {kanRedigeraEgenkontroll(doc) && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setRedigerarEgenkontroll({
+                                                  projektId: p.id,
+                                                  projektTitel: p.titel,
+                                                  mappId: mapp.id,
+                                                  foreningsDokumentId:
+                                                    doc.foreningsDokumentId!,
+                                                })
+                                              }
+                                              className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-white"
+                                            >
+                                              Redigera egenkontroll
+                                            </button>
+                                          )}
                                           {(doc.kalla === "bank" ||
                                             doc.kalla === "foreningsdokument") && (
                                             <button
@@ -1012,15 +1071,28 @@ export function ProjektModul() {
                                 {importFranBankKey === uploadKey && (
                                   <ProjektDokumentImportPanel
                                     onStang={() => setImportFranBankKey(null)}
-                                    onLaggTill={(dok) =>
-                                      laggTillImporteratDokument(
-                                        p.id,
-                                        mapp.id,
-                                        dok,
-                                      )
-                                    }
+                                    projektId={p.id}
+                                    mappId={mapp.id}
+                                    projektTitel={p.titel}
+                                    onImportKlar={() => {
+                                      setProjekt(lasProjektLista());
+                                      setImportFranBankKey(null);
+                                    }}
                                   />
                                 )}
+                                {redigerarEgenkontroll?.projektId === p.id &&
+                                  redigerarEgenkontroll.mappId === mapp.id && (
+                                    <ProjektEgenkontrollRedigera
+                                      foreningsDokumentId={
+                                        redigerarEgenkontroll.foreningsDokumentId
+                                      }
+                                      projektId={p.id}
+                                      projektTitel={p.titel}
+                                      onStang={() =>
+                                        setRedigerarEgenkontroll(null)
+                                      }
+                                    />
+                                  )}
                               </div>
                             )}
                           </li>

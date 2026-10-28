@@ -13,11 +13,16 @@ Styrelsen kan tidigt granska och anpassa kontrollpunkterna (lägga till, ta bort
 och formulera krav) — även innan entreprenör är tilldelad. Det är er kontrollplan
 mot entreprenören; själva ifyllnaden och attesten är entreprenörens ansvar.
 
-ENTREPRENÖRENS ANSVAR
+ENTREPRENÖRENS ANSVAR OCH HUVUDANSVAR
+Huvudentreprenören har huvudansvar för att egenkontrollen är fullständig, att alla
+aktuella kontrollpunkter är bedömda (utfört eller avvikelse), att avvikelser är
+dokumenterade och att kommunikation och återkoppling med beställare och
+projektledare är spårbar i tid innan arbetet godkänns som slutligt underlag.
+
 Entreprenören ska utföra arbetet enligt handling, BBR och AMA VVS & AF, genomföra
 egenkontroll, dokumentera avvikelser och lämna ifylld egenkontroll till föreningen.
 Endast entreprenörens utförare bockar i Utfört/Avvikelse; arbetsledare och
-eventuell underentreprenör signerar därefter.
+eventuell underentreprenör signerar därefter med BankID.
 
 KRAV PÅ BANKID (STARKT REKOMMENDERAT)
 Föreningen bör kräva att färdig egenkontroll signeras med BankID av:

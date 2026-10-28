@@ -22,6 +22,10 @@ import {
   skapaSignerareId,
   synkaAvvikelseNummer,
   tomAvvikelseDetalj,
+  avvikelseDetaljerKomplett,
+  formateraIsoSomDatumTid,
+  franDatetimeLocal,
+  tillDatetimeLocalValue,
   type EgenkontrollPunkt,
   type EgenkontrollSignerare,
   type EgenkontrollSignerareRoll,
@@ -39,6 +43,7 @@ type Props = {
   dokument: ForeningsDokument;
   onSpara: (patch: Partial<ForeningsDokument>) => void;
   onStang: () => void;
+  projektKontext?: { projektId: string; projektTitel: string };
 };
 
 function initEgenkontroll(dok: ForeningsDokument): EgenkontrollState {
@@ -53,6 +58,7 @@ export function ForeningsDokumentEgenkontrollPanel({
   dokument,
   onSpara,
   onStang,
+  projektKontext,
 }: Props) {
   const [titel, setTitel] = useState(dokument.titel);
   const [status, setStatus] = useState<DokumentStatus>(dokument.status);
@@ -329,13 +335,25 @@ export function ForeningsDokumentEgenkontrollPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-primary/25 bg-[#eef6f0]/70 p-3 text-xs leading-relaxed text-primary-dark">
-        <strong>För föreningen:</strong> granska alla kontrollpunkter nedan — ni
-        kan ändra text, lägga till och ta bort krav även innan entreprenör finns.
-        <strong className="mt-2 block">För entreprenören:</strong> ifyllnad
-        (Utfört/Avvikelse) och signering med BankID är entreprenörens ansvar.
-        Föreningen bör kräva signerad egenkontroll med datum och tid innan ni
-        godkänner underlaget.
+      <div className="space-y-2">
+        {projektKontext && (
+          <p className="rounded-lg border border-primary/30 bg-[#eef6f0] px-3 py-2 text-xs text-primary-dark">
+            Sparas i projektet{" "}
+            <strong>{projektKontext.projektTitel}</strong> — klicka{" "}
+            <strong>Spara</strong> efter varje redigering så att kontrollerna
+            ligger kvar i projektet.
+          </p>
+        )}
+        <div className="rounded-lg border border-primary/25 bg-[#eef6f0]/70 p-3 text-xs leading-relaxed text-primary-dark">
+          <strong>Förhandsgranska</strong> visar endast läsning. Här under{" "}
+          <strong>Granska och redigera</strong> fyller ni i kontrollerna.
+          <strong className="mt-2 block">För föreningen:</strong> granska och
+          anpassa kontrollplanen — även innan entreprenör finns.
+          <strong className="mt-2 block">Huvudentreprenörens huvudansvar:</strong>{" "}
+          att egenkontrollen är fullständig, att avvikelser är kommunicerade och
+          återkopplade med spårbar tid mot beställare och projektledare, samt
+          att BankID-signering är klar innan underlaget lämnas in.
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -620,11 +638,13 @@ export function ForeningsDokumentEgenkontrollPanel({
             Avvikelser och reservationer
           </p>
           <p className="text-xs text-amber-950">
-            Beskriv varför fullt utförande inte kunnat ske, vilken reservation
-            som gäller och när projektledare eller ansvarig chef informerades.
+            Huvudentreprenören ska dokumentera orsak och reservation, tidpunkt
+            för kommunikation med beställare/ombud och projektledare, samt
+            skriftlig återkoppling från båda — med datum och tid för spårbarhet.
           </p>
           {avvikelsePunkter.map((p) => {
             const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
+            const komplett = avvikelseDetaljerKomplett(p);
             return (
               <div
                 key={p.id}
@@ -659,19 +679,112 @@ export function ForeningsDokumentEgenkontrollPanel({
                     className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
                   />
                 </label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="block text-xs text-muted">
+                    Tid — kommunicerat med beställare/ombud
+                    <input
+                      type="datetime-local"
+                      value={tillDatetimeLocalValue(
+                        a.tidBeställareKommunikation,
+                      )}
+                      onChange={(e) =>
+                        uppdateraAvvikelse(p.id, {
+                          tidBeställareKommunikation: franDatetimeLocal(
+                            e.target.value,
+                          ),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted">
+                    Tid — kommunicerat med projektledare
+                    <input
+                      type="datetime-local"
+                      value={tillDatetimeLocalValue(
+                        a.tidProjektledareKommunikation,
+                      )}
+                      onChange={(e) =>
+                        uppdateraAvvikelse(p.id, {
+                          tidProjektledareKommunikation: franDatetimeLocal(
+                            e.target.value,
+                          ),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                </div>
                 <label className="mt-2 block text-xs text-muted">
-                  Datum — kommunicerat med beställare eller beställarens ombud
-                  <input
-                    type="date"
-                    value={a.datumBeställareInformed}
+                  Återkoppling från beställare/ombud
+                  <textarea
+                    value={a.beställareÅterkoppling}
                     onChange={(e) =>
                       uppdateraAvvikelse(p.id, {
-                        datumBeställareInformed: e.target.value,
+                        beställareÅterkoppling: e.target.value,
+                      })
+                    }
+                    rows={2}
+                    className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="mt-2 block text-xs text-muted">
+                  Tid — återkoppling mottagen från beställare/ombud
+                  <input
+                    type="datetime-local"
+                    value={tillDatetimeLocalValue(a.tidBeställareÅterkoppling)}
+                    onChange={(e) =>
+                      uppdateraAvvikelse(p.id, {
+                        tidBeställareÅterkoppling: franDatetimeLocal(
+                          e.target.value,
+                        ),
+                      })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
+                  />
+                  {a.tidBeställareÅterkoppling && (
+                    <span className="mt-0.5 block text-[11px] text-muted">
+                      Registrerat:{" "}
+                      {formateraIsoSomDatumTid(a.tidBeställareÅterkoppling)}
+                    </span>
+                  )}
+                </label>
+                <label className="mt-2 block text-xs text-muted">
+                  Återkoppling från projektledare
+                  <textarea
+                    value={a.projektledareÅterkoppling}
+                    onChange={(e) =>
+                      uppdateraAvvikelse(p.id, {
+                        projektledareÅterkoppling: e.target.value,
+                      })
+                    }
+                    rows={2}
+                    className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <label className="mt-2 block text-xs text-muted">
+                  Tid — återkoppling mottagen från projektledare
+                  <input
+                    type="datetime-local"
+                    value={tillDatetimeLocalValue(
+                      a.tidProjektledareÅterkoppling,
+                    )}
+                    onChange={(e) =>
+                      uppdateraAvvikelse(p.id, {
+                        tidProjektledareÅterkoppling: franDatetimeLocal(
+                          e.target.value,
+                        ),
                       })
                     }
                     className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
                   />
                 </label>
+                {!komplett && (
+                  <p className="mt-2 text-xs font-medium text-red-800">
+                    Alla fält ovan krävs innan egenkontrollen kan signeras och
+                    anses komplett (huvudentreprenörens ansvar).
+                  </p>
+                )}
               </div>
             );
           })}

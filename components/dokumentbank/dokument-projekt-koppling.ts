@@ -1,4 +1,9 @@
-import type { DokumentMallOmrade } from "@/components/dokumentbank/mallar";
+import { hamtaMall, type DokumentMallOmrade } from "@/components/dokumentbank/mallar";
+import {
+  arEgenkontrollDokument,
+  skapaForeningsDokumentEgenkontroll,
+} from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import {
   lasForeningsDokument,
   sparaForeningsDokument,
@@ -46,9 +51,137 @@ export function foreslagenMappForOmrade(
       return "underlag";
     case "styrelse":
       return "byggmotesprotokoll";
+    case "egenkontroll":
+      return "egenkontroller-in";
     default:
       return "underlag";
   }
+}
+
+export function arEgenkontrollProjektMapp(mappId: string): boolean {
+  return mappId === "egenkontroller-in" || mappId === "egenkontroller-signerad";
+}
+
+function titelFranProjektDokument(dok: ProjektDokument): string {
+  const base = dok.filnamn.replace(/\.(txt|pdf)$/i, "").replace(/_/g, " ");
+  return base.trim() || "Egenkontroll VVS";
+}
+
+/** Skapar föreningens egenkontrolldokument vid behov och kopplar till projektmappen. */
+export function skapaOchLaggEgenkontrollIProjekt(
+  projektId: string,
+  mappId: string,
+  opts: {
+    titel: string;
+    mallId?: string;
+    befintligForeningsDokumentId?: string;
+    entreprenorNamn?: string;
+  },
+): { ok: true; projDok: ProjektDokument } | { ok: false; fel: string } {
+  const lista = lasProjektLista();
+  const projekt = lista.find((p) => p.id === projektId);
+  if (!projekt) return { ok: false, fel: "Projektet hittades inte." };
+
+  const entreprenorNamn =
+    opts.entreprenorNamn?.trim() ||
+    projekt.entreprenorNamn?.trim() ||
+    "";
+
+  if (opts.befintligForeningsDokumentId) {
+    const fd = lasForeningsDokument().dokument.find(
+      (d) => d.id === opts.befintligForeningsDokumentId,
+    );
+    if (!fd || !arEgenkontrollDokument(fd)) {
+      return { ok: false, fel: "Egenkontrolldokumentet hittades inte." };
+    }
+    const result = laggForeningsDokumentIProjekt(projektId, mappId, fd);
+    if (!result.ok) return result;
+    const mapp = lasProjektLista().find((p) => p.id === projektId)?.mappar[
+      mappId
+    ];
+    const projDok = mapp?.dokument.find(
+      (d) => d.foreningsDokumentId === fd.id,
+    );
+    if (!projDok) return { ok: false, fel: "Kunde inte läsa projektets dokument." };
+    return { ok: true, projDok };
+  }
+
+  const mallId = opts.mallId ?? "";
+  if (!arEgenkontrollMallId(mallId)) {
+    return { ok: false, fel: "Ogiltig egenkontrollmall." };
+  }
+  const mall = hamtaMall(mallId);
+  if (!mall) return { ok: false, fel: "Mallen hittades inte." };
+
+  const fdok = skapaForeningsDokumentEgenkontroll(mall, {
+    docTitel: opts.titel.trim() || mall.titel,
+    koppladeProjektId: [projektId],
+    egenkontrollInput: {
+      huvudentreprenorNamn: entreprenorNamn,
+      huvudArbetsledareNamn: "",
+      underentreprenorNamn: "",
+      underArbetsledareNamn: "",
+      utforareNamn: [],
+    },
+  });
+
+  const fdState = lasForeningsDokument();
+  sparaForeningsDokument({
+    ...fdState,
+    dokument: [fdok, ...fdState.dokument],
+  });
+
+  const result = laggForeningsDokumentIProjekt(projektId, mappId, fdok);
+  if (!result.ok) return result;
+
+  const uppdaterad = lasProjektLista().find((p) => p.id === projektId);
+  const mapp = uppdaterad?.mappar[mappId];
+  const projDok = mapp?.dokument.find(
+    (d) => d.foreningsDokumentId === fdok.id,
+  );
+  if (!projDok) return { ok: false, fel: "Kunde inte läsa projektets dokument." };
+  return { ok: true, projDok };
+}
+
+export function importeraDokumentTillProjekt(
+  projektId: string,
+  mappId: string,
+  dokument: ProjektDokument,
+): { ok: true; projDok: ProjektDokument } | { ok: false; fel: string } {
+  if (
+    dokument.kalla === "foreningsdokument" &&
+    dokument.foreningsDokumentId
+  ) {
+    const fd = lasForeningsDokument().dokument.find(
+      (d) => d.id === dokument.foreningsDokumentId,
+    );
+    if (!fd) return { ok: false, fel: "Dokumentet hittades inte." };
+    if (arEgenkontrollDokument(fd)) {
+      return skapaOchLaggEgenkontrollIProjekt(projektId, mappId, {
+        titel: fd.titel,
+        befintligForeningsDokumentId: fd.id,
+      });
+    }
+    const result = laggForeningsDokumentIProjekt(projektId, mappId, fd);
+    if (!result.ok) return result;
+    const mapp = lasProjektLista().find((p) => p.id === projektId)?.mappar[
+      mappId
+    ];
+    const projDok = mapp?.dokument[mapp.dokument.length - 1];
+    if (!projDok) return { ok: false, fel: "Kunde inte läsa projektets dokument." };
+    return { ok: true, projDok };
+  }
+
+  if (dokument.kalla === "bank" && dokument.bankId) {
+    if (arEgenkontrollMallId(dokument.bankId)) {
+      return skapaOchLaggEgenkontrollIProjekt(projektId, mappId, {
+        titel: titelFranProjektDokument(dokument),
+        mallId: dokument.bankId,
+      });
+    }
+  }
+
+  return { ok: false, fel: "Importera via projektmodulen för övriga filer." };
 }
 
 export function projektDokumentFranForeningsDokument(

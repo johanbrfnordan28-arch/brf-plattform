@@ -1,4 +1,10 @@
-import type { ForeningsDokument } from "@/components/dokumentbank/forening-dokumenter-lager";
+import { STANDARD_DOKUMENT_LAYOUT } from "@/components/dokumentbank/dokument-layout";
+import type { DokumentMallOmrade } from "@/components/dokumentbank/mallar";
+import {
+  skapaForeningsDokumentId,
+  tomDokumentEntreprenor,
+  type ForeningsDokument,
+} from "@/components/dokumentbank/forening-dokumenter-lager";
 import {
   EGENKONTROLL_VVS_MALL_ID,
   VVS_EGENKONTROLL_PUNKTER,
@@ -18,8 +24,16 @@ export type EgenkontrollAvvikelseDetalj = {
   nr: number;
   orsak: string;
   reservation: string;
-  /** Datum då avvikelsen kommunicerats med beställare eller beställarens ombud */
-  datumBeställareInformed: string;
+  /** ISO — när avvikelsen kommunicerades med beställare/ombud */
+  tidBeställareKommunikation: string;
+  /** ISO — när avvikelsen kommunicerades med projektledare (entreprenör) */
+  tidProjektledareKommunikation: string;
+  /** Återkoppling från beställare/ombud */
+  beställareÅterkoppling: string;
+  tidBeställareÅterkoppling: string;
+  /** Återkoppling från projektledare */
+  projektledareÅterkoppling: string;
+  tidProjektledareÅterkoppling: string;
 };
 
 export type EgenkontrollPunkt = {
@@ -122,8 +136,40 @@ export function tomAvvikelseDetalj(nr = 0): EgenkontrollAvvikelseDetalj {
     nr,
     orsak: "",
     reservation: "",
-    datumBeställareInformed: "",
+    tidBeställareKommunikation: "",
+    tidProjektledareKommunikation: "",
+    beställareÅterkoppling: "",
+    tidBeställareÅterkoppling: "",
+    projektledareÅterkoppling: "",
+    tidProjektledareÅterkoppling: "",
   };
+}
+
+export function formateraIsoSomDatumTid(iso: string): string {
+  if (!iso.trim()) return "—";
+  try {
+    return new Date(iso).toLocaleString("sv-SE");
+  } catch {
+    return iso;
+  }
+}
+
+export function tillDatetimeLocalValue(iso: string): string {
+  if (!iso.trim()) return "";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
+
+export function franDatetimeLocal(value: string): string {
+  if (!value.trim()) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
 }
 
 export function synkaAvvikelseNummer(
@@ -161,11 +207,20 @@ function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
           nr: avvikelseRaw?.nr ?? avvikelseNr ?? 0,
           orsak: avvikelseRaw?.orsak ?? "",
           reservation: avvikelseRaw?.reservation ?? "",
-          datumBeställareInformed:
-            avvikelseRaw?.datumBeställareInformed ??
-            (avvikelseRaw as { datumChefInformed?: string } | undefined)
-              ?.datumChefInformed ??
+          tidBeställareKommunikation:
+            avvikelseRaw?.tidBeställareKommunikation ??
+            (avvikelseRaw as { datumBeställareInformed?: string } | undefined)
+              ?.datumBeställareInformed ??
             "",
+          tidProjektledareKommunikation:
+            avvikelseRaw?.tidProjektledareKommunikation ?? "",
+          beställareÅterkoppling: avvikelseRaw?.beställareÅterkoppling ?? "",
+          tidBeställareÅterkoppling:
+            avvikelseRaw?.tidBeställareÅterkoppling ?? "",
+          projektledareÅterkoppling:
+            avvikelseRaw?.projektledareÅterkoppling ?? "",
+          tidProjektledareÅterkoppling:
+            avvikelseRaw?.tidProjektledareÅterkoppling ?? "",
         }
       : undefined;
   return {
@@ -489,7 +544,12 @@ function formatAvvikelseSektion(punkter: EgenkontrollPunkt[]): string {
       `   Avser kontrollpunkt med avvikelsenummer ${nr} ovan.`,
       `   Orsak (varför fullt utförande ej kunnat ske): ${a.orsak || "—"}`,
       `   Reservation: ${a.reservation || "—"}`,
-      `   Datum — kommunicerat med beställare eller beställarens ombud: ${a.datumBeställareInformed || "—"}`,
+      `   Kommunikation beställare/ombud: ${formateraIsoSomDatumTid(a.tidBeställareKommunikation)}`,
+      `   Kommunikation projektledare: ${formateraIsoSomDatumTid(a.tidProjektledareKommunikation)}`,
+      `   Återkoppling beställare/ombud: ${a.beställareÅterkoppling || "—"}`,
+      `   Tid återkoppling beställare: ${formateraIsoSomDatumTid(a.tidBeställareÅterkoppling)}`,
+      `   Återkoppling projektledare: ${a.projektledareÅterkoppling || "—"}`,
+      `   Tid återkoppling projektledare: ${formateraIsoSomDatumTid(a.tidProjektledareÅterkoppling)}`,
     ].join("\n");
   });
   return `AVVIKELSER OCH RESERVATIONER\n------------------------------\n${rader.join("\n\n")}\n`;
@@ -561,7 +621,10 @@ export function byggEgenkontrollText(
 Förening (beställare): ${forening.foreningsNamn}
 Projekt / dokument: ${dok.titel}
 
-ENTREPRENÖR (ifylls när tilldelning skett)
+ENTREPRENÖRENS HUVUDANSVAR
+Huvudentreprenören ansvarar för att egenkontrollen är fullständig, sanningsenlig
+och att avvikelser är kommunicerade och återkopplade enligt dokumentet.
+
 Huvudentreprenör: ${huvudLabel}
 ${underLabel ? `Underentreprenör: ${underLabel}\n` : ""}
 KONTROLLPLAN — PUNKTER I UTFÖRANDEORDNING
@@ -601,7 +664,12 @@ export function avvikelseDetaljerKomplett(p: EgenkontrollPunkt): boolean {
   return (
     a.orsak.trim().length > 0 &&
     a.reservation.trim().length > 0 &&
-    a.datumBeställareInformed.trim().length > 0 &&
+    a.tidBeställareKommunikation.trim().length > 0 &&
+    a.tidProjektledareKommunikation.trim().length > 0 &&
+    a.beställareÅterkoppling.trim().length > 0 &&
+    a.tidBeställareÅterkoppling.trim().length > 0 &&
+    a.projektledareÅterkoppling.trim().length > 0 &&
+    a.tidProjektledareÅterkoppling.trim().length > 0 &&
     (p.avvikelseNr ?? 0) > 0
   );
 }
@@ -661,6 +729,67 @@ export function harEntreprenorTilldelad(state: EgenkontrollState): boolean {
 
 export function egenkontrollMallIdForSkapa(mallId: string): boolean {
   return mallId === EGENKONTROLL_VVS_MALL_ID;
+}
+
+export type EgenkontrollSkapaInput = {
+  huvudentreprenorNamn: string;
+  huvudArbetsledareNamn: string;
+  underentreprenorNamn: string;
+  underArbetsledareNamn: string;
+  utforareNamn: string[];
+};
+
+export function skapaForeningsDokumentEgenkontroll(
+  mall: {
+    id: string;
+    titel: string;
+    filnamn: string;
+    omrade: DokumentMallOmrade;
+  },
+  opts: {
+    docTitel: string;
+    koppladeProjektId?: string[];
+    egenkontrollInput?: EgenkontrollSkapaInput;
+  },
+): ForeningsDokument {
+  const nu = new Date().toISOString();
+  const docTitel = opts.docTitel.trim() || mall.titel;
+  const input = opts.egenkontrollInput ?? {
+    huvudentreprenorNamn: "",
+    huvudArbetsledareNamn: "",
+    underentreprenorNamn: "",
+    underArbetsledareNamn: "",
+    utforareNamn: [] as string[],
+  };
+  const egenkontroll = skapaVvsEgenkontroll({
+    huvudentreprenorNamn: input.huvudentreprenorNamn,
+    huvudArbetsledareNamn: input.huvudArbetsledareNamn,
+    underentreprenorNamn: input.underentreprenorNamn,
+    underArbetsledareNamn: input.underArbetsledareNamn,
+    utforareNamn: input.utforareNamn,
+  });
+  const bas: ForeningsDokument = {
+    id: skapaForeningsDokumentId(),
+    mallId: mall.id,
+    mallTitel: mall.titel,
+    mallFilnamn: mall.filnamn,
+    titel: docTitel,
+    status: "utkast",
+    skapadDatum: nu,
+    uppdateradDatum: nu,
+    notering: "",
+    omrade: mall.omrade,
+    dokumentKalla: "mall",
+    layoutTema: STANDARD_DOKUMENT_LAYOUT,
+    koppladeProjektId: opts.koppladeProjektId ?? [],
+    egenkontroll,
+    entreprenor: {
+      ...tomDokumentEntreprenor(),
+      namn: input.huvudentreprenorNamn,
+    },
+  };
+  bas.innehall = byggEgenkontrollText(bas, egenkontroll);
+  return bas;
 }
 
 export { EGENKONTROLL_VVS_MALL_ID };
