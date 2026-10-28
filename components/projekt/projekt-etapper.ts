@@ -35,3 +35,31 @@ export function etapperFranText(text: string): ProjektEtapp[] {
 export function etapperTillText(etapper: ProjektEtapp[]): string {
   return etapper.map((e) => e.namn).join("\n");
 }
+
+/** Förhandsval i egenkontroll när projektet saknar egna etapper. */
+export const EGENKONTROLL_ETAPP_FORHANDSVAL: ProjektEtapp[] = [
+  { id: "forhands-etapp-1", namn: "Etapp 1" },
+  { id: "forhands-etapp-2", namn: "Etapp 2" },
+  { id: "forhands-etapp-3", namn: "Etapp 3" },
+  { id: "forhands-etapp-4", namn: "Etapp 4" },
+  { id: "forhands-etapp-hela", namn: "Hela projektet" },
+];
+
+export function etappAlternativForEgenkontroll(
+  projektEtapper: ProjektEtapp[],
+): ProjektEtapp[] {
+  return projektEtapper.length > 0
+    ? projektEtapper
+    : EGENKONTROLL_ETAPP_FORHANDSVAL;
+}
+
+export function matchaEtappILista(
+  etappId: string,
+  etappNamn: string,
+  alternativ: ProjektEtapp[],
+): string {
+  if (etappId && alternativ.some((e) => e.id === etappId)) return etappId;
+  const namn = etappNamn.trim();
+  if (!namn) return "";
+  return alternativ.find((e) => e.namn === namn)?.id ?? "";
+}

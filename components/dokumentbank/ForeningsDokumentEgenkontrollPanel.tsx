@@ -36,7 +36,11 @@ import {
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { lasProjektLista } from "@/components/dokumentbank/dokument-projekt-koppling";
 import { hamtaForeningsDokumentInnehall } from "@/components/dokumentbank/forening-dokument-innehall";
-import type { ProjektEtapp } from "@/components/projekt/projekt";
+import {
+  etappAlternativForEgenkontroll,
+  matchaEtappILista,
+  type ProjektEtapp,
+} from "@/components/projekt/projekt-etapper";
 import { oppnaForeningsDokumentPreview } from "@/components/dokumentbank/forening-dokument-visning";
 import { BankIdEnkelSignering } from "@/components/bankid/BankIdEnkelSignering";
 import {
@@ -177,7 +181,7 @@ export function ForeningsDokumentEgenkontrollPanel({
 
   const entreprenorTilldelad = harEntreprenorTilldelad(ek);
   const fleraAdresser = useMemo(() => fleraKontrollAdresser(ek), [ek]);
-  const valbaraEtapper = useMemo(() => {
+  const projektEtapper = useMemo(() => {
     if (projektKontext?.etapper?.length) return projektKontext.etapper;
     const ids = dokument.koppladeProjektId ?? [];
     for (const pid of ids) {
@@ -186,6 +190,16 @@ export function ForeningsDokumentEgenkontrollPanel({
     }
     return [] as ProjektEtapp[];
   }, [projektKontext, dokument.koppladeProjektId]);
+
+  const etappAlternativ = useMemo(
+    () => etappAlternativForEgenkontroll(projektEtapper),
+    [projektEtapper],
+  );
+
+  const etappSelectVarde = useMemo(
+    () => matchaEtappILista(ek.etappId, ek.etappNamn, etappAlternativ),
+    [ek.etappId, ek.etappNamn, etappAlternativ],
+  );
   const kontrollerKlara = useMemo(
     () => allaAktuellaKontrollerBesvarade(ek),
     [ek],
@@ -485,38 +499,27 @@ export function ForeningsDokumentEgenkontrollPanel({
         </label>
         <label className="block text-xs font-medium text-muted">
           Etapp
-          {valbaraEtapper.length > 0 ? (
-            <select
-              value={ek.etappId}
-              onChange={(e) => {
-                const id = e.target.value;
-                const namn =
-                  valbaraEtapper.find((x) => x.id === id)?.namn ?? "";
-                setEk((prev) => ({ ...prev, etappId: id, etappNamn: namn }));
-              }}
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            >
-              <option value="">— Välj etapp —</option>
-              {valbaraEtapper.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.namn}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={ek.etappNamn}
-              onChange={(e) =>
-                setEk((prev) => ({
-                  ...prev,
-                  etappNamn: e.target.value,
-                  etappId: "",
-                }))
-              }
-              placeholder="Anges i projektet vid start, eller fritt här"
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            />
+          <select
+            value={etappSelectVarde}
+            onChange={(e) => {
+              const id = e.target.value;
+              const namn =
+                etappAlternativ.find((x) => x.id === id)?.namn ?? "";
+              setEk((prev) => ({ ...prev, etappId: id, etappNamn: namn }));
+            }}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          >
+            <option value="">— Välj etapp —</option>
+            {etappAlternativ.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.namn}
+              </option>
+            ))}
+          </select>
+          {projektEtapper.length === 0 && (
+            <span className="mt-1 block text-[11px] text-muted">
+              Förhandsval — egna etapper från projektet ersätter listan.
+            </span>
           )}
         </label>
         <label className="block text-xs font-medium text-muted">
