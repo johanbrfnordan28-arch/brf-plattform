@@ -53,6 +53,15 @@ type RenoveringshistorikKomponentTrädProps = {
   onTaBort: (id: string) => void;
 };
 
+function posterForHelaKomponenten(
+  renoveringar: UtfördRenovering[],
+  komponent: string,
+): UtfördRenovering[] {
+  return renoveringar.filter(
+    (r) => r.komponent === komponent && !r.underkomponentId?.trim(),
+  );
+}
+
 function posterForDel(
   renoveringar: UtfördRenovering[],
   komponent: string,
@@ -115,6 +124,20 @@ export function RenoveringshistorikKomponentTräd({
       }
       return namn;
     });
+  }
+
+  function startaLaggTillHelaKomponenten(komponent: string) {
+    setRedigerarId(null);
+    setAktivDel({
+      komponent,
+      underkomponentId: "",
+      del: "Hela komponenten (entreprenad)",
+    });
+    setDelForm(tomRenoveringDelForm());
+    setNastaArInputs({});
+    setKommandeAtgardOverrides({});
+    setInkluderadeUnderkomponenter([]);
+    setÖppenKomponent(komponent);
   }
 
   function startaLaggTill(del: ValdDel) {
@@ -260,11 +283,12 @@ export function RenoveringshistorikKomponentTräd({
   return (
     <div className="rounded-xl border border-border bg-background/80 p-4 sm:p-5">
       <p className="text-sm font-semibold text-foreground">
-        Välj komponent och underkomponent
+        Kostnader för utförda entreprenader
       </p>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Klicka på en komponent för att se alla underkomponenter. Lägg till eller
-        redigera poster per tillfälle — t.ex. hiss, balkonger etapp 1 och 2.
+        Öppna en komponent. Använd &quot;Hela komponenten&quot; när anbud eller
+        faktura avser hela taket, fasaden eller motsvarande — annars lägg till
+        kostnad per underdel (t.ex. enskild balkong eller hiss).
       </p>
 
       <KomponentAccordionLista className="mt-4">
@@ -272,6 +296,15 @@ export function RenoveringshistorikKomponentTräd({
           const mall = hamtaKomponentMall(namn);
           const ärÖppen = öppenKomponent === namn;
           const antalKomp = renoveringar.filter((r) => r.komponent === namn).length;
+          const helaKomponentPoster = posterForHelaKomponenten(
+            renoveringar,
+            namn,
+          );
+          const formHelaKomponent =
+            aktivDel?.komponent === namn &&
+            aktivDel.underkomponentId === "" &&
+            (!redigerarId ||
+              helaKomponentPoster.some((p) => p.id === redigerarId));
           const rader = komponentDetaljer?.[namn]?.underkomponenter ?? [];
           const synligaUnderkomponenter = [
             ...underkomponenterIRenoveringshistorik(
@@ -301,6 +334,94 @@ export function RenoveringshistorikKomponentTräd({
               isOpen={ärÖppen}
               onToggle={() => öppnaKomponent(namn)}
             >
+              <div className="mb-4 rounded-lg border border-primary/25 bg-[#eef6f0]/40 px-3 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-foreground">
+                    Hela {namn.toLowerCase()} — total entreprenadkostnad
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => startaLaggTillHelaKomponenten(namn)}
+                    className="rounded-lg border border-primary px-2.5 py-1 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                  >
+                    + Lägg till utfört arbete (hela komponenten)
+                  </button>
+                </div>
+                {helaKomponentPoster.length > 0 && (
+                  <ul className="mt-2 space-y-2">
+                    {helaKomponentPoster.map((post) => (
+                      <li
+                        key={post.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/80 bg-white px-2.5 py-2 text-sm"
+                      >
+                        <span>
+                          {post.ar} · {post.titel}
+                          {post.kostnadKr != null && (
+                            <span className="ml-1 font-medium tabular-nums">
+                              {formatKostnad(post.kostnadKr)}
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => öppnaRedigera(post)}
+                            className="text-xs text-primary-dark underline"
+                          >
+                            Redigera
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onTaBort(post.id)}
+                            className="text-xs text-red-700 underline"
+                          >
+                            Ta bort
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {formHelaKomponent &&
+                  aktivDel?.komponent === namn &&
+                  aktivDel.underkomponentId === "" && (
+                    <div className="mt-3">
+                      <RenoveringDelFormular
+                        rubrik={
+                          redigerarId
+                            ? `Redigera — hela ${namn}`
+                            : `Utfört arbete — hela ${namn}`
+                        }
+                        komponentNamn={namn}
+                        form={delForm}
+                        onFormChange={setDelForm}
+                        visaStambyteKlumpsumma={false}
+                        visaBalkongFalt={false}
+                        besiktningRadioName={`bes-hela-${namn}-${redigerarId ?? "ny"}`}
+                        planerade={planerade}
+                        nastaArInputs={nastaArInputs}
+                        onNastaArChange={(id, ar) =>
+                          setNastaArInputs((c) => ({ ...c, [id]: ar }))
+                        }
+                        kommandeAtgardOverrides={kommandeAtgardOverrides}
+                        onKommandeAtgardOverrideChange={(id, override) =>
+                          setKommandeAtgardOverrides((c) => ({
+                            ...c,
+                            [id]: override,
+                          }))
+                        }
+                        underkomponentId=""
+                        inkluderadeUnderkomponenter={inkluderadeUnderkomponenter}
+                        onInkluderadeChange={setInkluderadeUnderkomponenter}
+                        utkastRenovering={utkastPost}
+                        planKostnader={planKostnader}
+                        redigerar={Boolean(redigerarId)}
+                        onSubmit={sparaDelRenovering}
+                        onAvbryt={avbrytForm}
+                      />
+                    </div>
+                  )}
+              </div>
               {synligaUnderkomponenter.length === 0 ? (
                 <p className="text-xs text-muted">
                   Inga underkomponenter definierade — använd formuläret nedan.
@@ -337,7 +458,9 @@ export function RenoveringshistorikKomponentTräd({
                             onClick={() => startaLaggTill(delVal)}
                             className="rounded-lg border border-primary px-2.5 py-1 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
                           >
-                            {ärBalkonger ? "+ Lägg till balkong" : "+ Lägg till här"}
+                            {ärBalkonger
+                              ? "+ Lägg till utfört arbete (balkong)"
+                              : "+ Lägg till utfört arbete"}
                           </button>
                         }
                       >
@@ -404,8 +527,8 @@ export function RenoveringshistorikKomponentTräd({
                               redigerarId
                                 ? `Redigera — ${namn} / ${uk.etikett}`
                                 : ärBalkonger
-                                  ? `Ny balkongrenovering — ${namn}`
-                                  : `Ny renovering — ${namn} / ${uk.etikett}`
+                                  ? `Utfört arbete — balkong, ${namn}`
+                                  : `Utfört arbete — ${namn} / ${uk.etikett}`
                             }
                             komponentNamn={namn}
                             form={delForm}

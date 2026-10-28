@@ -1971,10 +1971,10 @@ export function UnderhallsplanWizard() {
             </>
           ) : (
             <>
-              Planen visar bara de komponenter som finns i er fastighet. Ta bort
-              det som saknas, och lägg till en komponent när den behövs. Då
-              blir listan överskådlig för både en liten och en stor förening.
-              Grundmallen påverkas inte.
+              Planen visar de komponenter ni valde i steg 2. Ta bort det som
+              saknas i fastigheten. Nya huvudkomponenter läggs till i steg 2
+              (Fastighetens delar), inte här. Här fokuserar ni på kommande år,
+              intervall och planerade kostnader.
             </>
           )}
         </p>
@@ -1992,8 +1992,8 @@ export function UnderhallsplanWizard() {
               </li>
               <li>
                 <strong className="text-foreground">Lägg till komponent</strong> —
-                en standarddel som tagits bort, eller en egen del (t.ex.
-                solceller), följer sedan med i hela planen.
+                görs i steg 2. Där väljer ni alla delar som ska ingå innan ni
+                fyller i utförda arbeten och planerat underhåll.
               </li>
               <li>
                 Inne i varje komponent: lägg till eller ta bort underkomponenter
@@ -2115,55 +2115,14 @@ export function UnderhallsplanWizard() {
         </div>
 
         {!arCentralGrundmall && !skrivskyddad && (
-          <div
-            className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
+          <p
+            className={`mt-4 rounded-lg border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3 text-xs leading-relaxed text-muted ${!renoveringarSaved ? "opacity-50" : ""}`}
           >
-            <p className="text-xs text-muted">
-              Lägg till en komponent som finns i fastigheten men saknas i planen.
-              Borttagna standardkomponenter finns kvar här, bara för denna förening.
-            </p>
-            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-              <select
-                value={komponentAttLaggaTill}
-                onChange={(event) => setKomponentAttLaggaTill(event.target.value)}
-                className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-              >
-                <option value="">Välj komponent</option>
-                {komponenterAttLaggaTill.map((namn) => (
-                  <option key={namn} value={namn}>
-                    {namn}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => laggaTillKomponent(komponentAttLaggaTill)}
-                disabled={!komponentAttLaggaTill}
-                className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6] disabled:opacity-50"
-              >
-                Lägg till komponent
-              </button>
-            </div>
-          </div>
+            Saknas en huvudkomponent i planen? Öppna{" "}
+            <strong className="font-medium text-foreground">steg 2 — Fastighetens delar</strong>{" "}
+            och använd &quot;Lägg till komponent&quot; där.
+          </p>
         )}
-
-        <div
-          className={`mt-6 flex flex-col gap-2 sm:flex-row ${!renoveringarSaved ? "pointer-events-none opacity-50" : ""}`}
-        >
-          <input
-            value={customComponent}
-            onChange={(event) => setCustomComponent(event.target.value)}
-            placeholder="Lägg till egen huvudkomponent, t.ex. Solceller"
-            className="min-w-0 flex-1 rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-          />
-          <button
-            type="button"
-            onClick={addCustomComponent}
-            className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-          >
-            Lägg till egen komponent
-          </button>
-        </div>
 
         {renoveringarSaved ? (
           <KomponentRegisterLista

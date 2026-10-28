@@ -13,6 +13,7 @@ import {
   takBelaggningMangdEnhetEtiketter,
   takBelaggningMaterialAlternativ,
   takBelaggningTegelTyper,
+  lackadPlatKulorAlternativ,
   postPatchFranTakMaterialVal,
   takMaterialValIdFranPost,
   type BandlagdPlatMaterial,
@@ -45,6 +46,76 @@ type TakbelaggningPanelProps = {
   /** Steg 2 — dölj AI, schablon och kostnadsrelaterade hjälpytor. */
   steg2Lage?: boolean;
 };
+
+function lackadPlatKulorSelectVarde(kulor: string | undefined): string {
+  const v = kulor?.trim() ?? "";
+  if (!v) return "";
+  if (lackadPlatKulorAlternativ.some((k) => k.id === v)) return v;
+  if (v.startsWith("annan:")) return "annan";
+  return "annan";
+}
+
+function LackadPlatKulorFalt({
+  post,
+  onChange,
+}: {
+  post: TakBelaggningPost;
+  onChange: (patch: Partial<TakBelaggningPost>) => void;
+}) {
+  const selectVal = lackadPlatKulorSelectVarde(post.bandlagdKulor);
+  const annanText =
+    post.bandlagdKulor?.startsWith("annan:") === true
+      ? post.bandlagdKulor.slice("annan:".length)
+      : selectVal === "annan" &&
+          post.bandlagdKulor &&
+          !lackadPlatKulorAlternativ.some((k) => k.id === post.bandlagdKulor)
+        ? post.bandlagdKulor
+        : "";
+
+  return (
+    <div className="mt-3 space-y-2">
+      <label className="block text-sm">
+        <span className="text-xs font-medium text-muted">Kulör (lackad plåt)</span>
+        <select
+          value={selectVal}
+          onChange={(e) => {
+            const id = e.target.value;
+            onChange({
+              bandlagdKulor:
+                id === "annan" ? (annanText ? `annan:${annanText}` : "annan") : id,
+            });
+          }}
+          className="mt-1 w-full max-w-md rounded-lg border border-border bg-white px-3 py-2 text-sm"
+        >
+          <option value="">Välj kulör (valfritt)</option>
+          {lackadPlatKulorAlternativ.map((k) => (
+            <option key={k.id} value={k.id}>
+              {k.etikett}
+            </option>
+          ))}
+        </select>
+      </label>
+      {selectVal === "annan" && (
+        <label className="block text-sm">
+          <span className="text-xs font-medium text-muted">Ange kulör</span>
+          <input
+            type="text"
+            value={annanText}
+            onChange={(e) =>
+              onChange({
+                bandlagdKulor: e.target.value.trim()
+                  ? `annan:${e.target.value}`
+                  : "annan",
+              })
+            }
+            placeholder="t.ex. mörkgrön"
+            className="mt-1 w-full max-w-md rounded-lg border border-border px-3 py-2 text-sm"
+          />
+        </label>
+      )}
+    </div>
+  );
+}
 
 const huvudtyper: {
   id: TakBelaggningHuvudtyp;
@@ -264,6 +335,17 @@ export function TakbelaggningPanel({
                     </label>
                   )}
                   {post.huvudtyp === "plat-bandlagd" &&
+                    (post.bandlagdMaterial ?? "stalplat") === "stalplat" && (
+                      <LackadPlatKulorFalt
+                        post={post}
+                        onChange={(patch) =>
+                          uppdateraBelaggning(
+                            redigeraPost(belaggning, post.id, patch),
+                          )
+                        }
+                      />
+                    )}
+                  {post.huvudtyp === "plat-bandlagd" &&
                     post.bandlagdMaterial === "aluminium" && (
                       <label className="mt-3 flex items-center gap-2 text-sm">
                         <input
@@ -470,6 +552,16 @@ export function TakbelaggningPanel({
                           ),
                         )}
                       </div>
+                      {(post.bandlagdMaterial ?? "stalplat") === "stalplat" && (
+                        <LackadPlatKulorFalt
+                          post={post}
+                          onChange={(patch) =>
+                            uppdateraBelaggning(
+                              redigeraPost(belaggning, post.id, patch),
+                            )
+                          }
+                        />
+                      )}
                       {post.bandlagdMaterial === "aluminium" && (
                         <label className="flex items-center gap-2 text-sm">
                           <input

@@ -147,9 +147,9 @@ export function TakfonsterListaPanel({
           Del 1 — Singelfönster
         </legend>
         <p className="mt-0.5 text-xs leading-relaxed text-muted">
-          Velux har cirka 95 % av takfönstermarknaden — välj standardmått, ange
-          antal och lägg till fler rader vid olika storlekar eller adresser.
-          Eget mått finns sist i storlekslistan.
+          {steg2Lage
+            ? "Välj standardmått, ange antal och lägg till fler rader vid olika storlekar. Eget mått finns sist i listan."
+            : "Välj standardmått (Velux), ange antal och lägg till fler rader vid olika storlekar eller adresser. Eget mått finns sist i storlekslistan."}
         </p>
 
         {d.singel.length === 0 ? (

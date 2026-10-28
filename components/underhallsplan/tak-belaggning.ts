@@ -42,6 +42,8 @@ export type TakBelaggningPost = {
   /** Kulör på tegelpannor, t.ex. röd, svart glaserad. */
   tegelKulor?: string;
   bandlagdMaterial?: BandlagdPlatMaterial;
+  /** Kulör på lackad plåt (stålplåt). */
+  bandlagdKulor?: string;
   /** Gäller bandlagd aluminium — lackerad yta kan målas om. */
   aluminiumLackerad?: boolean;
   korrigeradInfastning?: KorrigeradInfastning;
@@ -66,7 +68,7 @@ const bandlagdMaterial: {
 }[] = [
   {
     id: "stalplat",
-    etikett: "Plåt (målad stålplåt)",
+    etikett: "Plåt lackad",
     kanMalas: true,
     underhall: "Rengöring och ommålning.",
   },
@@ -101,6 +103,28 @@ export {
   tegelTyper as takBelaggningTegelTyper,
   bandlagdMaterial as takBelaggningBandlagdMaterial,
 };
+
+/** Vanliga kulörer på lackad plåt — väljbar i takpartier. */
+export const lackadPlatKulorAlternativ: { id: string; etikett: string }[] = [
+  { id: "rod", etikett: "Röd" },
+  { id: "svart", etikett: "Svart" },
+  { id: "gra", etikett: "Grå" },
+  { id: "gra-gron", etikett: "Grågrön" },
+  { id: "gra-bla", etikett: "Gråblå" },
+  { id: "brun", etikett: "Brun" },
+  { id: "vit", etikett: "Vit" },
+  { id: "annan", etikett: "Annan kulör" },
+];
+
+export function etikettForLackadPlatKulor(kulorId: string | undefined): string {
+  const id = kulorId?.trim() ?? "";
+  if (!id) return "";
+  const fast = lackadPlatKulorAlternativ.find((k) => k.id === id);
+  if (fast && fast.id !== "annan") return fast.etikett;
+  if (id.startsWith("annan:")) return id.slice("annan:".length).trim();
+  if (id === "annan") return "";
+  return id;
+}
 
 /** Alla takmaterial i en lista — för rullgardin i steg 2. */
 export type TakBelaggningMaterialVal = {
@@ -182,6 +206,8 @@ export function postPatchFranTakMaterialVal(
     return {
       huvudtyp: "plat-bandlagd",
       bandlagdMaterial: mat,
+      bandlagdKulor:
+        mat === "stalplat" ? (befintlig?.bandlagdKulor ?? "") : undefined,
       aluminiumLackerad:
         mat === "aluminium" ? befintlig?.aluminiumLackerad : undefined,
     };
@@ -247,6 +273,9 @@ function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBel
       mat === "rostfritt"
         ? mat
         : "stalplat";
+    if (post.bandlagdMaterial === "stalplat") {
+      post.bandlagdKulor = raw.bandlagdKulor?.trim() ?? "";
+    }
     if (post.bandlagdMaterial === "aluminium") {
       post.aluminiumLackerad = raw.aluminiumLackerad === true;
     }
@@ -391,6 +420,10 @@ export function materialEtikettTakBelaggningPost(
       bandlagdMaterial.find((m) => m.id === post.bandlagdMaterial)?.etikett ??
       "Plåt";
     delar.push(mat);
+    if (post.bandlagdMaterial === "stalplat") {
+      const kulor = etikettForLackadPlatKulor(post.bandlagdKulor);
+      if (kulor) delar.push(`kulör ${kulor}`);
+    }
     delar.push("dold infästning på underlag");
   }
   if (postKanMalas(post)) delar.push("målning möjlig");

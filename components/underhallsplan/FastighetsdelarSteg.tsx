@@ -425,11 +425,12 @@ export function FastighetsdelarSteg({
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted">
-        Här lägger du till och tar bort det som finns på huset. För tak,
-        balkonger, fönster, dörrar och fasad fyller du i material och mängder
-        per del (t.ex. koppar tak i m², eller flera balkongtyper). Enklare
-        underdelar får antal, yta eller löpmeter direkt. Det som tas bort syns
-        inte i stegen längre ner.
+        Här lägger du till alla huvudkomponenter som ska ingå i planen — tak,
+        fasad, VVS, hiss och övriga delar. Ta bort det som inte finns på
+        huset. För tak, balkonger, fönster, dörrar och fasad fyller du i
+        material och mängder per del; enklare underdelar får antal, yta eller
+        löpmeter (flera rader om det behövs). Kostnader för redan utförda
+        entreprenader fyller du i steg 3.
       </p>
       {fastighetsdelGrupper.map((grupp) => {
         const delar = grupp.komponenter.filter((namn) =>
@@ -461,10 +462,10 @@ export function FastighetsdelarSteg({
         </p>
       )}
       <div className="rounded-xl border border-dashed border-primary/30 bg-[#eef6f0]/50 px-3 py-3">
-        <p className="text-sm font-medium text-foreground">Lägg till del</p>
+        <p className="text-sm font-medium text-foreground">Lägg till komponent</p>
         <p className="mt-1 text-xs text-muted">
-          Borttagna standarddelar kan läggas till igen. En egen del följer med
-          på samma sätt.
+          Alla delar som ska finnas i planen väljer ni här — borttagna
+          standardkomponenter kan läggas till igen, eller skriv in en egen del.
         </p>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
           {borttagnaStandard.length > 0 && (
@@ -499,7 +500,7 @@ export function FastighetsdelarSteg({
             disabled={!valdDel.trim() && !nyDel.trim()}
             className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6] disabled:opacity-50"
           >
-            Lägg till
+            Lägg till komponent
           </button>
         </div>
       </div>

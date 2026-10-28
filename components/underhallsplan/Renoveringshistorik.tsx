@@ -344,9 +344,12 @@ export function Renoveringshistorik({
   return (
     <div>
       <p className="text-sm leading-relaxed text-muted">
-        Lägg in utförda arbeten med år och kostnad — plus besiktning efter åtgärd
-        och obligatoriska besiktningar (OVK m.m.). Vid sparning förs uppgifterna
-        över till planerat underhåll; i steg 4 justerar du bara kommande år och kostnader.
+        Här registrerar ni kostnader för utförda entreprenader — år, belopp och
+        kort beskrivning. Ni behöver inte dela upp kostnaden per takparti om ni
+        fått ett anbud på hela taket eller en större del: använd knappen för
+        hela komponenten. Besiktning efter åtgärd och obligatoriska besiktningar
+        (OVK m.m.) fylls också i här. Vid sparning förs uppgifterna över till
+        planerat underhåll (steg 4).
       </p>
 
       {!unlocked && (
@@ -697,8 +700,8 @@ export function Renoveringshistorik({
         ) : (
           unlocked && (
             <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
-              Inga renoveringar ännu. Öppna en komponent ovan och lägg till per
-              underkomponent.
+              Inga utförda arbeten ännu. Öppna en komponent ovan och registrera
+              entreprenadkostnad — hela komponenten eller per underdel.
             </p>
           )
         )}
@@ -708,10 +711,12 @@ export function Renoveringshistorik({
           className="rounded-xl border border-dashed border-border bg-background/80 p-4 sm:p-5"
         >
           <p className="text-sm font-semibold text-foreground">
-            Snabb inmatning (valfritt)
+            Snabb inmatning av entreprenadkostnad (valfritt)
           </p>
           <p className="mt-1 text-xs text-muted">
-            Alternativ till trädet ovan — välj komponent och gärna underkomponent.
+            Alternativ till trädet ovan. Välj &quot;Hela komponenten&quot; när
+            fakturan eller anbudet avser hela taket, fasaden eller liknande utan
+            uppdelning per underdel.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="block">
@@ -758,9 +763,8 @@ export function Renoveringshistorik({
                 ))}
               </select>
               <p className="mt-1 text-xs text-muted">
-                Valfritt — fakturor på utfört arbete behöver inte delas per
-                underkomponent. Välj &quot;Hela komponenten&quot; om underlaget
-                bara anger total kostnad.
+                Valfritt. Välj &quot;Hela komponenten&quot; för total
+                entreprenadkostnad (t.ex. hela taket enligt anbud).
               </p>
             </label>
             <label className="block">
@@ -863,7 +867,7 @@ export function Renoveringshistorik({
             type="submit"
             className="mt-4 rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
           >
-            Lägg till renovering
+            Spara utfört arbete
           </button>
         </form>
 

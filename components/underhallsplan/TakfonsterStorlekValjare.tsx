@@ -25,7 +25,7 @@ export function TakfonsterStorlekValjare({
   breddMm,
   hojdMm,
   etikett = "Storlek (Velux, yttre karm)",
-  hjalpText = "Velux dominerar takfönstermarknaden — välj standardmått (yttre karm) eller eget mått sist i listan.",
+  hjalpText = "Välj standardmått (yttre karm) eller eget mått sist i listan.",
   onChange,
 }: TakfonsterStorlekValjareProps) {
   const selectVarde = takfonsterStorlekSelectVarde(storlekId);
