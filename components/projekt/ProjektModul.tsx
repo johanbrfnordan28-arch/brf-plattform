@@ -43,6 +43,20 @@ import {
   type ProjektStorlek,
   type UndermappDefinition,
 } from "@/components/projekt/projekt";
+import { ProjektDokumentImportPanel } from "@/components/projekt/ProjektDokumentImportPanel";
+import {
+  laggForeningsDokumentIProjekt,
+  lasProjektLista,
+} from "@/components/dokumentbank/dokument-projekt-koppling";
+import {
+  lasForeningsDokument,
+  laddaNedDokument,
+} from "@/components/dokumentbank/forening-dokumenter-lager";
+import { hamtaMall } from "@/components/dokumentbank/mallar";
+import {
+  hamtaForeningsDokumentInnehall,
+  skapaInnehallFranMall,
+} from "@/components/dokumentbank/forening-dokument-innehall";
 
 function lasProjekt(): Projekt[] {
   if (typeof window === "undefined") return [];
@@ -78,6 +92,9 @@ export function ProjektModul() {
   const [nyMappNamn, setNyMappNamn] = useState<Record<string, string>>({});
   const [fokuseradMapp, setFokuseradMapp] = useState<string | null>(null);
   const [arshjulMeddelande, setArshjulMeddelande] = useState<string | null>(null);
+  const [importFranBankKey, setImportFranBankKey] = useState<string | null>(
+    null,
+  );
 
   const standardMappEtiketter = useMemo(
     () =>
@@ -380,6 +397,67 @@ export function ProjektModul() {
     setPågåendeUppladdning(null);
   }
 
+  function laddaNedProjektDokument(doc: ProjektDokument) {
+    if (doc.kalla === "foreningsdokument" && doc.foreningsDokumentId) {
+      const fd = lasForeningsDokument().dokument.find(
+        (d) => d.id === doc.foreningsDokumentId,
+      );
+      if (fd) {
+        laddaNedDokument(doc.filnamn, hamtaForeningsDokumentInnehall(fd));
+        return;
+      }
+    }
+    if (doc.kalla === "bank" && doc.bankId) {
+      const mall = hamtaMall(doc.bankId);
+      if (mall?.textInnehall) {
+        laddaNedDokument(
+          doc.filnamn,
+          skapaInnehallFranMall(mall),
+        );
+      }
+    }
+  }
+
+  function laggTillImporteratDokument(
+    projektId: string,
+    mappId: string,
+    dokument: ProjektDokument,
+  ) {
+    if (
+      dokument.kalla === "foreningsdokument" &&
+      dokument.foreningsDokumentId
+    ) {
+      const fd = lasForeningsDokument().dokument.find(
+        (d) => d.id === dokument.foreningsDokumentId,
+      );
+      if (fd) {
+        const result = laggForeningsDokumentIProjekt(projektId, mappId, fd);
+        if (result.ok) setProjekt(lasProjektLista());
+        setImportFranBankKey(null);
+        return;
+      }
+    }
+
+    setProjekt((current) =>
+      current.map((p) => {
+        if (p.id !== projektId) return p;
+        const mapp = p.mappar[mappId];
+        if (!mapp) return p;
+        return normaliseraProjekt({
+          ...p,
+          mappar: {
+            ...p.mappar,
+            [mappId]: {
+              ...mapp,
+              dokument: [...mapp.dokument, dokument],
+            },
+          },
+        });
+      }),
+    );
+    setImportFranBankKey(null);
+  }
+
   function taBortDokument(projektId: string, mappId: string, dokumentId: string) {
     setProjekt((current) =>
       current.map((p) => {
@@ -630,7 +708,63 @@ export function ProjektModul() {
                     <OppnaStangIkon oppen={p.öppen} />
                   </button>
                   {p.öppen && (
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-4 space-y-4">
+                    <div className="rounded-lg border border-primary/20 bg-[#eef6f0]/50 p-3">
+                      <p className="text-xs font-semibold text-primary-dark">
+                        Entreprenör i projektet
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        Används när avtal från dokumentbanken läggs till i detta
+                        projekt — föreningens uppgifter påverkas inte.
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        <input
+                          type="text"
+                          placeholder="Entreprenörens namn"
+                          value={p.entreprenorNamn ?? ""}
+                          onChange={(e) =>
+                            uppdateraProjekt(p.id, {
+                              entreprenorNamn: e.target.value,
+                            })
+                          }
+                          className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Org.nr"
+                          value={p.entreprenorOrgNr ?? ""}
+                          onChange={(e) =>
+                            uppdateraProjekt(p.id, {
+                              entreprenorOrgNr: e.target.value,
+                            })
+                          }
+                          className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Kontaktperson"
+                          value={p.entreprenorKontakt ?? ""}
+                          onChange={(e) =>
+                            uppdateraProjekt(p.id, {
+                              entreprenorKontakt: e.target.value,
+                            })
+                          }
+                          className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        />
+                        <input
+                          type="email"
+                          placeholder="E-post"
+                          value={p.entreprenorEpost ?? ""}
+                          onChange={(e) =>
+                            uppdateraProjekt(p.id, {
+                              entreprenorEpost: e.target.value,
+                            })
+                          }
+                          className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       <label className="flex cursor-pointer items-center gap-2 text-sm">
                         <input
                           type="checkbox"
@@ -649,6 +783,7 @@ export function ProjektModul() {
                       >
                         Ta bort projekt
                       </button>
+                    </div>
                     </div>
                   )}
                 </div>
@@ -801,17 +936,35 @@ export function ProjektModul() {
                                           </p>
                                           <p className="text-xs text-muted">
                                             {doc.uppladdad}
+                                            {doc.kalla === "foreningsdokument" &&
+                                              " · föreningens dokument"}
+                                            {doc.kalla === "bank" &&
+                                              " · dokumentbank"}
                                           </p>
                                         </div>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            taBortDokument(p.id, mapp.id, doc.id)
-                                          }
-                                          className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
-                                        >
-                                          Ta bort
-                                        </button>
+                                        <div className="flex gap-1">
+                                          {(doc.kalla === "bank" ||
+                                            doc.kalla === "foreningsdokument") && (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                laddaNedProjektDokument(doc)
+                                              }
+                                              className="rounded-lg border border-primary px-3 py-1 text-xs font-medium text-primary-dark"
+                                            >
+                                              Ladda ned
+                                            </button>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              taBortDokument(p.id, mapp.id, doc.id)
+                                            }
+                                            className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
+                                          >
+                                            Ta bort
+                                          </button>
+                                        </div>
                                       </li>
                                     ))}
                                   </ul>
@@ -820,7 +973,16 @@ export function ProjektModul() {
                                     Inga dokument i denna mapp.
                                   </p>
                                 )}
-                                <div className="mt-3">
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {importFranBankKey !== uploadKey && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setImportFranBankKey(uploadKey)}
+                                      className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                                    >
+                                      Från dokumentbank
+                                    </button>
+                                  )}
                                   {pågåendeUppladdning !== uploadKey ? (
                                     <button
                                       type="button"
@@ -847,6 +1009,18 @@ export function ProjektModul() {
                                     </label>
                                   )}
                                 </div>
+                                {importFranBankKey === uploadKey && (
+                                  <ProjektDokumentImportPanel
+                                    onStang={() => setImportFranBankKey(null)}
+                                    onLaggTill={(dok) =>
+                                      laggTillImporteratDokument(
+                                        p.id,
+                                        mapp.id,
+                                        dok,
+                                      )
+                                    }
+                                  />
+                                )}
                               </div>
                             )}
                           </li>

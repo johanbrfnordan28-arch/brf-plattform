@@ -1,3 +1,8 @@
+import { ABT_06_ENTREPRENAD_MALL } from "@/components/dokumentbank/mallar/innehall/abt-06-entreprenad";
+import { AB_04_ENTREPRENAD_MALL } from "@/components/dokumentbank/mallar/innehall/ab-04-entreprenad";
+import { ABK_09_KONSULT_MALL } from "@/components/dokumentbank/mallar/innehall/abk-09-konsult";
+import { ENTREPRENAD_AVTAL_MALL_ID } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
+
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
 export type DokumentMallOmrade =
   | "upphandling"
@@ -585,6 +590,34 @@ Kontaktperson: [Namn, telefon, e-post]
 Med vänliga hälsningar
 Styrelsen i [Föreningens namn]
 `,
+  },
+  // ── Entreprenad / konsult (ABT 06, AB 04, ABK 09) ─────────────────────────
+  {
+    id: ENTREPRENAD_AVTAL_MALL_ID["ABT-06"],
+    titel: "Entreprenadkontrakt ABT 06",
+    filnamn: "Entreprenadkontrakt_ABT06.txt",
+    beskrivning:
+      "Totalentreprenad enligt ABT 06 (BKK-struktur). Förening ifylld automatiskt; entreprenör per projekt. BankID 2+2.",
+    omrade: "avtal",
+    textInnehall: ABT_06_ENTREPRENAD_MALL,
+  },
+  {
+    id: ENTREPRENAD_AVTAL_MALL_ID.AB04,
+    titel: "Entreprenadkontrakt AB 04",
+    filnamn: "Entreprenadkontrakt_AB04.txt",
+    beskrivning:
+      "Entreprenad enligt AB 04. Föreningsuppgifter från registret; entreprenör byts per projekt. BankID 2+2.",
+    omrade: "avtal",
+    textInnehall: AB_04_ENTREPRENAD_MALL,
+  },
+  {
+    id: ENTREPRENAD_AVTAL_MALL_ID["ABK-09"],
+    titel: "Konsultkontrakt ABK 09",
+    filnamn: "Konsultkontrakt_ABK09.txt",
+    beskrivning:
+      "Konsult enligt ABK 09. Förening ifylld; konsult/entreprenör per projekt. BankID 2+2.",
+    omrade: "avtal",
+    textInnehall: ABK_09_KONSULT_MALL,
   },
   // ── Avtal ─────────────────────────────────────────────────────────────────
   {

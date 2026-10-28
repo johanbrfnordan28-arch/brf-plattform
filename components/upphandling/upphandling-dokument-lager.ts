@@ -18,8 +18,9 @@ export function upphandlingKategoriDokumentStorageKey(): string {
 
 export type DokumentRef = {
   filnamn: string;
-  källa: "upload" | "bank";
+  källa: "upload" | "bank" | "foreningsdokument";
   bankId?: string;
+  foreningsDokumentId?: string;
 };
 
 export type KategoriDokumentState = {

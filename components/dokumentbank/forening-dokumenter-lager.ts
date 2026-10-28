@@ -1,9 +1,22 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
+import type { EntreprenadAvtalForm } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
+import type { BankIdSignatur } from "@/lib/bankid-signering";
 
 // ── Typer ────────────────────────────────────────────────────────────────────
 
 export type DokumentStatus = "utkast" | "klar" | "arkiverad";
+
+export type DokumentEntreprenor = {
+  namn: string;
+  orgNr: string;
+  kontakt: string;
+  epost: string;
+};
+
+export function tomDokumentEntreprenor(): DokumentEntreprenor {
+  return { namn: "", orgNr: "", kontakt: "", epost: "" };
+}
 
 export const DOKUMENT_STATUS_ETIKETTER: Record<DokumentStatus, string> = {
   utkast: "Utkast",
@@ -27,6 +40,15 @@ export type ForeningsDokument = {
   notering: string;
   /** Kategori / område från mallen */
   omrade: string;
+  /** Ifylld text vid skapande (föreningsuppgifter m.m.) */
+  innehall?: string;
+  /** Projekt som dokumentet är kopplat till */
+  koppladeProjektId?: string[];
+  /** Motpart — ändras per projekt, föreningens namn ligger i texten. */
+  entreprenor?: DokumentEntreprenor;
+  avtalForm?: EntreprenadAvtalForm;
+  entreprenorSignaturer?: BankIdSignatur[];
+  foreningSignaturer?: BankIdSignatur[];
 };
 
 export type ForeningsDokumentState = {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { ContentSection } from "@/components/ContentSection";
 import { DokumentbankPanel } from "@/components/dokumentbank/DokumentbankPanel";
+import { UpphandlingDokumentImportPanel } from "@/components/dokumentbank/UpphandlingDokumentImportPanel";
 import type { DokumentbankMall } from "@/components/dokumentbank/mallar";
 import {
   arInramadUpphandlingsGrupp,
@@ -248,22 +249,33 @@ export function UpphandlingSidaInnehall() {
     }));
   }
 
-  function väljFrånBank(mall: DokumentbankMall) {
-    setSenastValdBank(mall.id);
+  function kopplaRefTillVal(ref: DokumentRef) {
     if (!väljMål) return;
-
-    const ref: DokumentRef = {
-      filnamn: mall.filnamn,
-      källa: "bank",
-      bankId: mall.id,
-    };
-
     if (väljMål.typ === "plats") {
       sättPlatsDokument(väljMål.kategoriId, väljMål.platsId, ref);
     } else {
       sättExtraDokument(väljMål.kategoriId, väljMål.extraId, ref);
     }
     setVäljMål(null);
+  }
+
+  function väljFrånBank(mall: DokumentbankMall) {
+    setSenastValdBank(mall.id);
+    if (!väljMål) return;
+    kopplaRefTillVal({
+      filnamn: mall.filnamn,
+      källa: "bank",
+      bankId: mall.id,
+    });
+  }
+
+  function väljFrånRef(ref: DokumentRef) {
+    setSenastValdBank(
+      ref.foreningsDokumentId
+        ? `fdok-${ref.foreningsDokumentId}`
+        : ref.bankId ?? null,
+    );
+    kopplaRefTillVal(ref);
   }
 
   const kategoriProps = {
@@ -344,6 +356,11 @@ export function UpphandlingSidaInnehall() {
             </p>
           )}
           <DokumentbankPanel onVälj={väljFrånBank} aktivVal={senastValdBank} />
+          <UpphandlingDokumentImportPanel
+            harValtPlats={Boolean(väljMål)}
+            aktivVal={senastValdBank}
+            onVäljRef={väljFrånRef}
+          />
         </div>
       </ContentSection>
     </>
@@ -842,7 +859,13 @@ function DokumentRad({
           <p className="text-sm text-foreground">
             {dokument.filnamn}
             <span className="ml-2 text-xs text-muted">
-              ({dokument.källa === "bank" ? "dokumentbank" : "uppladdad"})
+              (
+              {dokument.källa === "bank"
+                ? "dokumentbank"
+                : dokument.källa === "foreningsdokument"
+                  ? "föreningens dokument"
+                  : "uppladdad"}
+              )
             </span>
           </p>
           <div className="flex gap-2">

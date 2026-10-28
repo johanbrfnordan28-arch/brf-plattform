@@ -146,11 +146,33 @@ export const standardUndermappar: UndermappDefinition[] = [
   },
 ];
 
+export type ProjektDokumentKalla = "upload" | "bank" | "foreningsdokument";
+
 export type ProjektDokument = {
   id: string;
   filnamn: string;
   uppladdad: string;
+  kalla?: ProjektDokumentKalla;
+  bankId?: string;
+  foreningsDokumentId?: string;
 };
+
+function normaliseraProjektDokument(d: ProjektDokument): ProjektDokument {
+  const kalla =
+    d.kalla === "bank" ||
+    d.kalla === "foreningsdokument" ||
+    d.kalla === "upload"
+      ? d.kalla
+      : undefined;
+  return {
+    id: d.id,
+    filnamn: d.filnamn,
+    uppladdad: d.uppladdad,
+    ...(kalla ? { kalla } : {}),
+    ...(d.bankId ? { bankId: d.bankId } : {}),
+    ...(d.foreningsDokumentId ? { foreningsDokumentId: d.foreningsDokumentId } : {}),
+  };
+}
 
 export type UndermappState = {
   öppen: boolean;
@@ -176,6 +198,11 @@ export type Projekt = {
   /** Standard + egna undermappar */
   mappDefinitioner: UndermappDefinition[];
   mappar: Record<string, UndermappState>;
+  /** Vald entreprenör för projektet — fylls in i avtal från dokumentbanken. */
+  entreprenorNamn?: string;
+  entreprenorOrgNr?: string;
+  entreprenorKontakt?: string;
+  entreprenorEpost?: string;
 };
 
 export type { ProjektStorlek };
@@ -216,7 +243,7 @@ function normaliseraMappar(raw: Projekt): {
     if (befintlig) {
       mappar[def.id] = {
         öppen: befintlig.öppen ?? false,
-        dokument: befintlig.dokument ?? [],
+        dokument: (befintlig.dokument ?? []).map(normaliseraProjektDokument),
       };
     }
   }

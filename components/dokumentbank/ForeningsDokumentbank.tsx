@@ -25,6 +25,18 @@ import {
   läggTillEgenDokumentbankMall,
   taBortEgenDokumentbankMall,
 } from "@/components/dokumentbank/dokumentbank-lager";
+import {
+  hamtaForeningsDokumentInnehall,
+  skapaInnehallFranMall,
+} from "@/components/dokumentbank/forening-dokument-innehall";
+import { LaggTillIProjektDialog } from "@/components/dokumentbank/LaggTillIProjektDialog";
+import { ForeningsDokumentRedigeraPanel } from "@/components/dokumentbank/ForeningsDokumentRedigeraPanel";
+import {
+  arEntreprenadAvtalDokument,
+  byggSignaturStatusText,
+} from "@/components/dokumentbank/forening-dokument-avtal";
+import { hamtaAvtalFormForMall } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
+import { tomDokumentEntreprenor } from "@/components/dokumentbank/forening-dokumenter-lager";
 
 // ── Hjälp ─────────────────────────────────────────────────────────────────────
 
@@ -106,6 +118,7 @@ interface MinaDokumentProps {
 function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
   const [redigerarId, setRedigerarId] = useState<string | null>(null);
   const [bekraftaId, setBekraftaId] = useState<string | null>(null);
+  const [laggTillProjektId, setLaggTillProjektId] = useState<string | null>(null);
 
   if (dokument.length === 0) {
     return (
@@ -119,7 +132,9 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
     <div className="space-y-2">
       {dokument.map((dok) => {
         const mall = hamtaMall(dok.mallId);
-        const harInnehall = Boolean(mall?.textInnehall);
+        const harInnehall = Boolean(
+          dok.innehall?.trim() || mall?.textInnehall,
+        );
 
         return (
           <div
@@ -127,67 +142,11 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
             className="rounded-xl border border-border bg-white p-4 shadow-sm"
           >
             {redigerarId === dok.id ? (
-              /* Redigera */
-              <div className="space-y-2">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted">
-                    Dokumentnamn
-                  </label>
-                  <input
-                    type="text"
-                    value={dok.titel}
-                    onChange={(e) =>
-                      onUppdatera(dok.id, { titel: e.target.value })
-                    }
-                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted">
-                    Status
-                  </label>
-                  <select
-                    value={dok.status}
-                    onChange={(e) =>
-                      onUppdatera(dok.id, {
-                        status: e.target.value as DokumentStatus,
-                      })
-                    }
-                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                  >
-                    {(
-                      Object.keys(
-                        DOKUMENT_STATUS_ETIKETTER,
-                      ) as DokumentStatus[]
-                    ).map((s) => (
-                      <option key={s} value={s}>
-                        {DOKUMENT_STATUS_ETIKETTER[s]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted">
-                    Notering
-                  </label>
-                  <input
-                    type="text"
-                    value={dok.notering}
-                    onChange={(e) =>
-                      onUppdatera(dok.id, { notering: e.target.value })
-                    }
-                    placeholder="Egna anteckningar…"
-                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRedigerarId(null)}
-                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
-                >
-                  Klar
-                </button>
-              </div>
+              <ForeningsDokumentRedigeraPanel
+                dokument={dok}
+                onSpara={(patch) => onUppdatera(dok.id, patch)}
+                onStang={() => setRedigerarId(null)}
+              />
             ) : (
               /* Visning */
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -199,6 +158,11 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                     >
                       {DOKUMENT_STATUS_ETIKETTER[dok.status]}
                     </span>
+                    {arEntreprenadAvtalDokument(dok) && (
+                      <span className="rounded-full bg-[#eef6f0] px-2 py-0.5 text-xs text-primary-dark">
+                        {dok.avtalForm ?? "Entreprenad"} · {byggSignaturStatusText(dok)}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 text-xs text-muted">
                     Baserad på: {dok.mallTitel} ·{" "}
@@ -210,13 +174,29 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                   {dok.notering && (
                     <p className="mt-1 text-xs text-muted/80">{dok.notering}</p>
                   )}
+                  {(dok.koppladeProjektId?.length ?? 0) > 0 && (
+                    <p className="mt-1 text-xs text-primary-dark">
+                      Kopplat till {dok.koppladeProjektId!.length} projekt
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLaggTillProjektId(
+                        laggTillProjektId === dok.id ? null : dok.id,
+                      )
+                    }
+                    className="rounded-lg border border-primary px-2.5 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                  >
+                    Lägg till i projekt
+                  </button>
                   {harInnehall && (
                     <button
                       type="button"
                       onClick={() => {
-                        const innehall = mall?.textInnehall ?? "";
+                        const innehall = hamtaForeningsDokumentInnehall(dok);
                         laddaNedDokument(dok.mallFilnamn, innehall);
                       }}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-dark"
@@ -272,6 +252,13 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                   )}
                 </div>
               </div>
+            )}
+            {laggTillProjektId === dok.id && (
+              <LaggTillIProjektDialog
+                dokument={dok}
+                onStang={() => setLaggTillProjektId(null)}
+                onKlar={() => setLaggTillProjektId(null)}
+              />
             )}
           </div>
         );
@@ -343,6 +330,13 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
           </button>
         ))}
       </div>
+
+      {filterOmrade === "avtal" && (
+        <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs text-primary-dark">
+          Avtal enligt ABT 06, AB 04 och ABK 09 fylls i med föreningsuppgifter vid
+          Skapa kopia. Entreprenör anges per projekt. Signering 2+2 med BankID.
+        </p>
+      )}
 
       {/* Mallar per område */}
       {(
@@ -469,6 +463,10 @@ export function ForeningsDokumentbank() {
 
   function skapaKopia(mall: DokumentbankMall, titel: string) {
     const nu = new Date().toISOString();
+    const innehall = mall.textInnehall
+      ? skapaInnehallFranMall(mall, titel.trim() || mall.titel)
+      : undefined;
+    const avtalForm = hamtaAvtalFormForMall(mall.id);
     const nyttDok: ForeningsDokument = {
       id: skapaForeningsDokumentId(),
       mallId: mall.id,
@@ -480,6 +478,16 @@ export function ForeningsDokumentbank() {
       uppdateradDatum: nu,
       notering: "",
       omrade: mall.omrade,
+      ...(innehall ? { innehall } : {}),
+      koppladeProjektId: [],
+      ...(avtalForm
+        ? {
+            avtalForm,
+            entreprenor: tomDokumentEntreprenor(),
+            entreprenorSignaturer: [],
+            foreningSignaturer: [],
+          }
+        : {}),
     };
     const befintliga = lasForeningsDokument();
     sparaForeningsDokument({
