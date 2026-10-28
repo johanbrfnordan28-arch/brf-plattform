@@ -117,6 +117,9 @@ export type EgenkontrollState = {
   omfattningLagenheter: string;
   /** Gemensamma ytor t.ex. tvättstuga (en per rad). */
   omfattningGemensammaYtor: string;
+  /** Koppling till projektets etapp (id + namn för export). */
+  etappId: string;
+  etappNamn: string;
   utforare: EgenkontrollUtforare[];
   kontrollanter: EgenkontrollKontrollant[];
   punkter: EgenkontrollPunkt[];
@@ -543,6 +546,8 @@ export function skapaVvsEgenkontroll(input: {
     kontrollAdresser: "",
     omfattningLagenheter: "",
     omfattningGemensammaYtor: "",
+    etappId: "",
+    etappNamn: "",
     utforare,
     kontrollanter,
     punkter: skapaPunkterFranVvsMall(),
@@ -588,6 +593,8 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
     kontrollAdresser: d.kontrollAdresser ?? "",
     omfattningLagenheter: d.omfattningLagenheter ?? "",
     omfattningGemensammaYtor: d.omfattningGemensammaYtor ?? "",
+    etappId: d.etappId ?? "",
+    etappNamn: d.etappNamn ?? "",
     utforare,
     kontrollanter,
     punkter,
@@ -636,11 +643,9 @@ function formatPunktRad(p: EgenkontrollPunkt, index: number): string {
   const sign = p.attestInitialer.trim()
     ? `    Sign (initialer): ${p.attestInitialer}`
     : "    Sign (initialer): —";
-  const plats = formateraPlatsKort(p);
   const rader = [
     `${index + 1}. ${p.rubrik}`,
     `    ${utfort} Utfört    ${avv} Avvikelse    Datum: ${p.kontrollDatum || "—"}`,
-    `    Avser: ${plats}`,
     sign,
     avvNr,
     `    ${p.beskrivning}`,
@@ -744,6 +749,7 @@ Förening (beställare): ${forening.foreningsNamn}
 Projekt / dokument: ${dok.titel}
 
 OMFATTNING
+Etapp: ${ek.etappNamn.trim() || "—"}
 Adress(er): ${ek.kontrollAdresser.trim() || "—"}
 Lägenheter som ingår: ${ek.omfattningLagenheter.trim() || "—"}
 Gemensamma ytor: ${ek.omfattningGemensammaYtor.trim() || "—"}
@@ -801,27 +807,10 @@ export function avvikelsePlatsKomplett(
 }
 
 export function punktPlatsKomplett(
-  p: EgenkontrollPunkt,
-  state: EgenkontrollState,
+  _p: EgenkontrollPunkt,
+  _state: EgenkontrollState,
 ): boolean {
-  if (p.status === "opåbörjad") return true;
-  const krav = kravSpecifikPlatsForRubrik(p.rubrik);
-  if (!krav && p.platsTyp === "hela") return true;
-  if (p.platsTyp === "lagenhet") {
-    if (!p.lagenhetNr.trim()) return false;
-    if (fleraKontrollAdresser(state) && !p.kontrollAdress.trim()) {
-      return false;
-    }
-    return true;
-  }
-  if (p.platsTyp === "gemensam_yta") {
-    if (!p.ytaBenamning.trim()) return false;
-    if (fleraKontrollAdresser(state) && !p.kontrollAdress.trim()) {
-      return false;
-    }
-    return true;
-  }
-  if (krav) return false;
+  /** Plats anges i omfattning ovan och vid avvikelse — inte per kontrollpunkt. */
   return true;
 }
 

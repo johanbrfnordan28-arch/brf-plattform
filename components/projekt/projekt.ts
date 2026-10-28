@@ -9,6 +9,12 @@ import {
   type ProjektTidsplan,
 } from "@/components/projekt/tidsplan";
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import {
+  normaliseraProjektEtapper,
+  type ProjektEtapp,
+} from "@/components/projekt/projekt-etapper";
+
+export type { ProjektEtapp };
 
 export type { ProjektTidsplan };
 
@@ -203,6 +209,8 @@ export type Projekt = {
   entreprenorOrgNr?: string;
   entreprenorKontakt?: string;
   entreprenorEpost?: string;
+  /** Etappindelning — bestäms vid projektstart (en egenkontroll kan avse en etapp). */
+  etapper?: ProjektEtapp[];
 };
 
 export type { ProjektStorlek };
@@ -263,6 +271,7 @@ export function normaliseraProjekt(raw: Projekt): Projekt {
     ),
     garantibesiktning: normaliseraGarantibesiktning(raw.garantibesiktning),
     tidsplan: normaliseraProjektTidsplan(raw.tidsplan),
+    etapper: normaliseraProjektEtapper(raw.etapper),
     mappDefinitioner,
     mappar,
   };
@@ -274,6 +283,7 @@ export function skapaTomtProjekt(input: {
   beskrivning: string;
   storlek?: ProjektStorlek;
   klaraChecklistaPunkter?: string[];
+  etapper?: ProjektEtapp[];
 }): Projekt {
   const mappDefinitioner = [...standardUndermappar];
   const storlek = input.storlek ?? "litet";
@@ -289,6 +299,7 @@ export function skapaTomtProjekt(input: {
     klaraChecklistaPunkter: input.klaraChecklistaPunkter ?? [],
     garantibesiktning: normaliseraGarantibesiktning(),
     tidsplan: normaliseraProjektTidsplan(),
+    etapper: input.etapper ?? [],
     mappDefinitioner,
     mappar: skapaTomUndermappar(mappDefinitioner),
   });

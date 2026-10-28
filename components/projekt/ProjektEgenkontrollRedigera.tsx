@@ -9,6 +9,7 @@ import {
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { ForeningsDokumentEgenkontrollPanel } from "@/components/dokumentbank/ForeningsDokumentEgenkontrollPanel";
+import { lasProjektLista } from "@/components/dokumentbank/dokument-projekt-koppling";
 
 type Props = {
   foreningsDokumentId: string;
@@ -89,13 +90,16 @@ export function ProjektEgenkontrollRedigera({
     );
   }
 
+  const etapper =
+    lasProjektLista().find((p) => p.id === projektId)?.etapper ?? [];
+
   return (
     <div className="mt-3 rounded-xl border border-primary/30 bg-white p-4 shadow-sm">
       <ForeningsDokumentEgenkontrollPanel
         dokument={dokument}
         onSpara={spara}
         onStang={onStang}
-        projektKontext={{ projektId, projektTitel }}
+        projektKontext={{ projektId, projektTitel, etapper }}
       />
     </div>
   );

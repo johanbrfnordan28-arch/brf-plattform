@@ -56,6 +56,10 @@ import {
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { ProjektEgenkontrollRedigera } from "@/components/projekt/ProjektEgenkontrollRedigera";
 import {
+  etapperFranText,
+  etapperTillText,
+} from "@/components/projekt/projekt-etapper";
+import {
   lasForeningsDokument,
   laddaNedDokument,
   type ForeningsDokument,
@@ -96,6 +100,7 @@ export function ProjektModul() {
   const [nyBeskrivning, setNyBeskrivning] = useState("");
   const [nyStorlek, setNyStorlek] = useState<ProjektStorlek>("litet");
   const [nyKlaraChecklista, setNyKlaraChecklista] = useState<string[]>([]);
+  const [nyEtapperText, setNyEtapperText] = useState("");
   const [pågåendeUppladdning, setPågåendeUppladdning] = useState<string | null>(null);
   const [nyMappNamn, setNyMappNamn] = useState<Record<string, string>>({});
   const [fokuseradMapp, setFokuseradMapp] = useState<string | null>(null);
@@ -322,6 +327,7 @@ export function ProjektModul() {
         nyStorlek,
         nyKlaraChecklista,
       ),
+      etapper: etapperFranText(nyEtapperText),
     });
     setProjekt((current) => sorteraProjekt([nytt, ...current]));
     setNyTitel("");
@@ -329,6 +335,7 @@ export function ProjektModul() {
     setNyBeskrivning("");
     setNyStorlek("litet");
     setNyKlaraChecklista([]);
+    setNyEtapperText("");
     setSkapaOppen(false);
   }
 
@@ -662,6 +669,22 @@ export function ProjektModul() {
                   className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                 />
               </label>
+              <label className="block sm:col-span-2">
+                <span className="text-sm font-medium text-foreground">
+                  Etapper (en rad per etapp)
+                </span>
+                <p className="mt-0.5 text-xs text-muted">
+                  Bestäm etappindelningen när projektet startar. Egenkontroller
+                  kan kopplas till en etapp i listan.
+                </p>
+                <textarea
+                  value={nyEtapperText}
+                  onChange={(e) => setNyEtapperText(e.target.value)}
+                  rows={3}
+                  placeholder={"Etapp 1 — Stam VVS västra trapphus\nEtapp 2 — Lägenheter 1101–1112"}
+                  className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                />
+              </label>
             </div>
             <button
               type="submit"
@@ -751,6 +774,26 @@ export function ProjektModul() {
                   </button>
                   {p.öppen && (
                     <div className="mt-4 space-y-4">
+                    <div className="rounded-lg border border-border bg-white p-3">
+                      <p className="text-xs font-semibold text-foreground">
+                        Etapper i projektet
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        En rad per etapp. Sparas när du lämnar fältet.
+                      </p>
+                      <textarea
+                        key={`etapper-${p.id}-${(p.etapper ?? []).length}`}
+                        defaultValue={etapperTillText(p.etapper ?? [])}
+                        onBlur={(e) =>
+                          uppdateraProjekt(p.id, {
+                            etapper: etapperFranText(e.target.value),
+                          })
+                        }
+                        rows={3}
+                        placeholder="Etapp 1 — …"
+                        className="mt-2 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                      />
+                    </div>
                     <div className="rounded-lg border border-primary/20 bg-[#eef6f0]/50 p-3">
                       <p className="text-xs font-semibold text-primary-dark">
                         Entreprenör i projektet

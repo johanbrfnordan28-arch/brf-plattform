@@ -27,7 +27,6 @@ import {
   fleraKontrollAdresser,
   formateraIsoSomDatumTid,
   franDatetimeLocal,
-  kravSpecifikPlatsForRubrik,
   tillDatetimeLocalValue,
   type EgenkontrollPlatsTyp,
   type EgenkontrollPunkt,
@@ -35,7 +34,9 @@ import {
   type EgenkontrollSignerareRoll,
   type EgenkontrollState,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { lasProjektLista } from "@/components/dokumentbank/dokument-projekt-koppling";
 import { hamtaForeningsDokumentInnehall } from "@/components/dokumentbank/forening-dokument-innehall";
+import type { ProjektEtapp } from "@/components/projekt/projekt";
 import { oppnaForeningsDokumentPreview } from "@/components/dokumentbank/forening-dokument-visning";
 import { BankIdEnkelSignering } from "@/components/bankid/BankIdEnkelSignering";
 import {
@@ -47,7 +48,11 @@ type Props = {
   dokument: ForeningsDokument;
   onSpara: (patch: Partial<ForeningsDokument>) => void;
   onStang: () => void;
-  projektKontext?: { projektId: string; projektTitel: string };
+  projektKontext?: {
+    projektId: string;
+    projektTitel: string;
+    etapper?: ProjektEtapp[];
+  };
 };
 
 function initEgenkontroll(dok: ForeningsDokument): EgenkontrollState {
@@ -172,6 +177,15 @@ export function ForeningsDokumentEgenkontrollPanel({
 
   const entreprenorTilldelad = harEntreprenorTilldelad(ek);
   const fleraAdresser = useMemo(() => fleraKontrollAdresser(ek), [ek]);
+  const valbaraEtapper = useMemo(() => {
+    if (projektKontext?.etapper?.length) return projektKontext.etapper;
+    const ids = dokument.koppladeProjektId ?? [];
+    for (const pid of ids) {
+      const p = lasProjektLista().find((x) => x.id === pid);
+      if (p?.etapper?.length) return p.etapper;
+    }
+    return [] as ProjektEtapp[];
+  }, [projektKontext, dokument.koppladeProjektId]);
   const kontrollerKlara = useMemo(
     () => allaAktuellaKontrollerBesvarade(ek),
     [ek],
@@ -459,8 +473,8 @@ export function ForeningsDokumentEgenkontrollPanel({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-xs font-medium text-muted">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block text-xs font-medium text-muted sm:col-span-1">
           Dokument / projekt
           <input
             type="text"
@@ -468,6 +482,42 @@ export function ForeningsDokumentEgenkontrollPanel({
             onChange={(e) => setTitel(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
           />
+        </label>
+        <label className="block text-xs font-medium text-muted">
+          Etapp
+          {valbaraEtapper.length > 0 ? (
+            <select
+              value={ek.etappId}
+              onChange={(e) => {
+                const id = e.target.value;
+                const namn =
+                  valbaraEtapper.find((x) => x.id === id)?.namn ?? "";
+                setEk((prev) => ({ ...prev, etappId: id, etappNamn: namn }));
+              }}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            >
+              <option value="">— Välj etapp —</option>
+              {valbaraEtapper.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.namn}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={ek.etappNamn}
+              onChange={(e) =>
+                setEk((prev) => ({
+                  ...prev,
+                  etappNamn: e.target.value,
+                  etappId: "",
+                }))
+              }
+              placeholder="Anges i projektet vid start, eller fritt här"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          )}
         </label>
         <label className="block text-xs font-medium text-muted">
           Status
@@ -492,8 +542,9 @@ export function ForeningsDokumentEgenkontrollPanel({
           Omfattning — adresser, lägenheter och ytor
         </p>
         <p className="text-xs text-muted">
-          En egenkontroll kan omfatta flera lägenheter. Vid avvikelse ska
-          entreprenören ange så få lägenheter eller ytor som möjligt.
+          Etapp väljs ovan. Här anges adresser, lägenheter och gemensamma ytor
+          som dokumentet omfattar. Vid avvikelse avgränsas platsen ytterligare
+          i avvikelsesektionen.
         </p>
         <label className="block text-xs text-muted">
           Adress(er) — en rad per adress om flera gäller
@@ -594,21 +645,6 @@ export function ForeningsDokumentEgenkontrollPanel({
               <p className="text-xs font-medium text-muted">
                 Entreprenörens attest (ifylls på plats)
               </p>
-              {kravSpecifikPlatsForRubrik(p.rubrik) && (
-                <p className="mt-1 text-[11px] text-amber-950">
-                  Ange lägenhet eller yta — inte hela uppdraget.
-                </p>
-              )}
-              <PlatsFalt
-                prefix="Kontrollen avser"
-                platsTyp={p.platsTyp}
-                lagenhetNr={p.lagenhetNr}
-                ytaBenamning={p.ytaBenamning}
-                kontrollAdress={p.kontrollAdress}
-                visaAdress={fleraAdresser}
-                tillatHela={!kravSpecifikPlatsForRubrik(p.rubrik)}
-                onChange={(patch) => uppdateraPunkt(p.id, patch)}
-              />
               <div className="mt-2 flex flex-wrap items-end gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
