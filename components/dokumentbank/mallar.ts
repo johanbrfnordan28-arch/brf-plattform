@@ -4,6 +4,8 @@ import { ABK_09_KONSULT_MALL } from "@/components/dokumentbank/mallar/innehall/a
 import { TIDPLAN_ENTREPRENAD_BILAGA } from "@/components/dokumentbank/mallar/innehall/tidsplan-entreprenad-bilaga";
 import { LYFTPLAN_ENTREPRENAD_BILAGA } from "@/components/dokumentbank/mallar/innehall/lyftplan-entreprenad-bilaga";
 import { ENTREPRENAD_AVTAL_MALL_ID } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
+import { EGENKONTROLL_VVS_MALL_ID } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
+import { EGENKONTROLL_VVS_INTRO } from "@/components/dokumentbank/mallar/innehall/egenkontroll-vvs";
 
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
 export type DokumentMallOmrade =
@@ -11,6 +13,7 @@ export type DokumentMallOmrade =
   | "juridik"
   | "avtal"
   | "styrelse"
+  | "egenkontroll"
   | "ovrig";
 
 export type DokumentbankMall = {
@@ -28,6 +31,7 @@ export const OMRADE_ETIKETTER: Record<DokumentMallOmrade, string> = {
   juridik: "Juridik",
   avtal: "Avtal",
   styrelse: "Styrelse & protokoll",
+  egenkontroll: "Egenkontroller",
   ovrig: "Övrigt",
 };
 
@@ -592,6 +596,16 @@ Kontaktperson: [Namn, telefon, e-post]
 Med vänliga hälsningar
 Styrelsen i [Föreningens namn]
 `,
+  },
+  // ── Egenkontroller ─────────────────────────────────────────────────────────
+  {
+    id: EGENKONTROLL_VVS_MALL_ID,
+    titel: "Egenkontroll VVS",
+    filnamn: "Egenkontroll_VVS.txt",
+    beskrivning:
+      "Kontrollpunkter för VVS (provtryckning, montageanvisning, skötselråd, AMA). Signeras i projekt med BankID av utförare och arbetsledare.",
+    omrade: "egenkontroll",
+    textInnehall: EGENKONTROLL_VVS_INTRO,
   },
   // ── Entreprenad / konsult (ABT 06, AB 04, ABK 09) ─────────────────────────
   {

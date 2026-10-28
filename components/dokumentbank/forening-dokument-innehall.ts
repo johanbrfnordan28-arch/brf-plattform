@@ -2,6 +2,13 @@ import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
 import { lasAktivForeningId, lasForeningProfil } from "@/lib/forening-registry";
 import { hamtaMall, type DokumentbankMall } from "@/components/dokumentbank/mallar";
 import {
+  arEgenkontrollDokument,
+  byggEgenkontrollText,
+  hamtaEgenkontroll,
+  normaliseraEgenkontroll,
+  skapaVvsEgenkontroll,
+} from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import {
   tomDokumentEntreprenor,
   type DokumentEntreprenor,
   type ForeningsDokument,
@@ -137,6 +144,17 @@ export function hamtaForeningsDokumentInnehall(
   dok: ForeningsDokument,
   options?: { medSignaturer?: boolean },
 ): string {
+  if (arEgenkontrollDokument(dok)) {
+    const ek =
+      hamtaEgenkontroll(dok) ??
+      normaliseraEgenkontroll(dok.egenkontroll) ??
+      skapaVvsEgenkontroll({
+        huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
+        utforareNamn: [],
+      });
+    return byggEgenkontrollText(dok, ek);
+  }
+
   let text: string;
   if (dok.innehall?.trim()) {
     text = dok.innehall;

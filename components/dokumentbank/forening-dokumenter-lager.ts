@@ -3,6 +3,7 @@ import { safeSetLocalStorage } from "@/lib/localStorage";
 import type { EntreprenadAvtalForm } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
 import type { DokumentLayoutTema } from "@/components/dokumentbank/dokument-layout";
 import type { BankIdSignatur } from "@/lib/bankid-signering";
+import type { EgenkontrollState } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 
 // ── Typer ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ export type ForeningsDokument = {
   /** mall = skapad från mallkatalog, fil = uppladdad fil sparad per förening */
   dokumentKalla?: "mall" | "fil";
   layoutTema?: DokumentLayoutTema;
+  /** Strukturerad egenkontroll (t.ex. VVS) med kontrollpunkter och slutsignering. */
+  egenkontroll?: EgenkontrollState;
 };
 
 export type ForeningsDokumentState = {

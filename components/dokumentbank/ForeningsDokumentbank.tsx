@@ -50,6 +50,11 @@ import {
   oppnaForeningsDokumentPreview,
 } from "@/components/dokumentbank/forening-dokument-visning";
 import { lasFilSomText } from "@/components/dokumentbank/forening-dokument-fil-lager";
+import {
+  byggEgenkontrollText,
+  skapaVvsEgenkontroll,
+} from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 
 // ── Hjälp ─────────────────────────────────────────────────────────────────────
 
@@ -112,6 +117,107 @@ function SkapaKopiaForm({ mall, onSpara, onAvbryt }: SkapaKopiaFormProps) {
           type="button"
           onClick={onAvbryt}
           className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:text-foreground"
+        >
+          Avbryt
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface SkapaEgenkontrollKopiaFormProps {
+  mall: DokumentbankMall;
+  onSpara: (input: {
+    titel: string;
+    huvudentreprenorNamn: string;
+    underentreprenorNamn: string;
+    utforareNamn: string[];
+  }) => void;
+  onAvbryt: () => void;
+}
+
+function SkapaEgenkontrollKopiaForm({
+  mall,
+  onSpara,
+  onAvbryt,
+}: SkapaEgenkontrollKopiaFormProps) {
+  const [titel, setTitel] = useState(mall.titel);
+  const [huvud, setHuvud] = useState("");
+  const [under, setUnder] = useState("");
+  const [utforare1, setUtforare1] = useState("");
+  const [utforare2, setUtforare2] = useState("");
+
+  const kanSkapa = titel.trim() && huvud.trim() && utforare1.trim();
+
+  return (
+    <div className="mt-2 space-y-3 rounded-lg border border-primary/30 bg-[#f7fbf8] p-3">
+      <p className="text-xs font-medium text-muted">
+        Egenkontroll — ange projekt och entreprenörer. En eller två utförare
+        signeras med BankID före arbetsledare.
+      </p>
+      <label className="block text-xs text-muted">
+        Projektnamn / dokumenttitel
+        <input
+          value={titel}
+          onChange={(e) => setTitel(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+        />
+      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="text-xs text-muted">
+          Huvudentreprenör *
+          <input
+            value={huvud}
+            onChange={(e) => setHuvud(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <label className="text-xs text-muted">
+          Underentreprenör
+          <input
+            value={under}
+            onChange={(e) => setUnder(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <label className="text-xs text-muted">
+          Utförare 1 *
+          <input
+            value={utforare1}
+            onChange={(e) => setUtforare1(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <label className="text-xs text-muted">
+          Utförare 2 (valfritt)
+          <input
+            value={utforare2}
+            onChange={(e) => setUtforare2(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={!kanSkapa}
+          onClick={() =>
+            kanSkapa &&
+            onSpara({
+              titel: titel.trim(),
+              huvudentreprenorNamn: huvud.trim(),
+              underentreprenorNamn: under.trim(),
+              utforareNamn: [utforare1.trim(), utforare2.trim()].filter(Boolean),
+            })
+          }
+          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+        >
+          Skapa kopia
+        </button>
+        <button
+          type="button"
+          onClick={onAvbryt}
+          className="rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted"
         >
           Avbryt
         </button>
@@ -378,6 +484,11 @@ interface MallKatalogProps {
     mall: DokumentbankMall,
     titel: string,
     tema: DokumentLayoutTema,
+    egenkontroll?: {
+      huvudentreprenorNamn: string;
+      underentreprenorNamn: string;
+      utforareNamn: string[];
+    },
   ) => void;
 }
 
@@ -456,6 +567,13 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
           vid eller direkt efter kontraktssignering.
         </p>
       )}
+      {filterOmrade === "egenkontroll" && (
+        <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs text-primary-dark">
+          Egenkontroller kopplas till projekt. Entreprenören kan lägga till eller
+          ta bort kontrollpunkter. Signering sker med BankID: utförare först, sedan
+          underentreprenör och sist huvudentreprenörens arbetsledare.
+        </p>
+      )}
 
       {/* Mallar per område */}
       {(
@@ -506,16 +624,35 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                     </button>
                   </div>
                 </div>
-                {skaparKopiaFor === mall.id && (
-                  <SkapaKopiaForm
-                    mall={mall}
-                    onSpara={(titel) => {
-                      onSkapaKopia(mall, titel, STANDARD_DOKUMENT_LAYOUT);
-                      setSkaparKopiaFor(null);
-                    }}
-                    onAvbryt={() => setSkaparKopiaFor(null)}
-                  />
-                )}
+                {skaparKopiaFor === mall.id &&
+                  (arEgenkontrollMallId(mall.id) ? (
+                    <SkapaEgenkontrollKopiaForm
+                      mall={mall}
+                      onSpara={(input) => {
+                        onSkapaKopia(
+                          mall,
+                          input.titel,
+                          STANDARD_DOKUMENT_LAYOUT,
+                          {
+                            huvudentreprenorNamn: input.huvudentreprenorNamn,
+                            underentreprenorNamn: input.underentreprenorNamn,
+                            utforareNamn: input.utforareNamn,
+                          },
+                        );
+                        setSkaparKopiaFor(null);
+                      }}
+                      onAvbryt={() => setSkaparKopiaFor(null)}
+                    />
+                  ) : (
+                    <SkapaKopiaForm
+                      mall={mall}
+                      onSpara={(titel) => {
+                        onSkapaKopia(mall, titel, STANDARD_DOKUMENT_LAYOUT);
+                        setSkaparKopiaFor(null);
+                      }}
+                      onAvbryt={() => setSkaparKopiaFor(null)}
+                    />
+                  ))}
               </div>
             ))}
           </div>
@@ -628,18 +765,56 @@ export function ForeningsDokumentbank() {
     mall: DokumentbankMall,
     titel: string,
     layoutTema: DokumentLayoutTema = STANDARD_DOKUMENT_LAYOUT,
+    egenkontrollInput?: {
+      huvudentreprenorNamn: string;
+      underentreprenorNamn: string;
+      utforareNamn: string[];
+    },
   ) {
     const nu = new Date().toISOString();
-    const innehall = mall.textInnehall
-      ? skapaInnehallFranMall(mall, titel.trim() || mall.titel)
-      : undefined;
+    const docTitel = titel.trim() || mall.titel;
     const avtalForm = hamtaAvtalFormForMall(mall.id);
+
+    if (arEgenkontrollMallId(mall.id) && egenkontrollInput) {
+      const egenkontroll = skapaVvsEgenkontroll({
+        huvudentreprenorNamn: egenkontrollInput.huvudentreprenorNamn,
+        underentreprenorNamn: egenkontrollInput.underentreprenorNamn,
+        utforareNamn: egenkontrollInput.utforareNamn,
+      });
+      const bas: ForeningsDokument = {
+        id: skapaForeningsDokumentId(),
+        mallId: mall.id,
+        mallTitel: mall.titel,
+        mallFilnamn: mall.filnamn,
+        titel: docTitel,
+        status: "utkast",
+        skapadDatum: nu,
+        uppdateradDatum: nu,
+        notering: "",
+        omrade: mall.omrade,
+        dokumentKalla: "mall",
+        layoutTema,
+        koppladeProjektId: [],
+        egenkontroll,
+        entreprenor: {
+          ...tomDokumentEntreprenor(),
+          namn: egenkontrollInput.huvudentreprenorNamn,
+        },
+      };
+      bas.innehall = byggEgenkontrollText(bas, egenkontroll);
+      sparaNyttDokument(bas);
+      return;
+    }
+
+    const innehall = mall.textInnehall
+      ? skapaInnehallFranMall(mall, docTitel)
+      : undefined;
     const nyttDok: ForeningsDokument = {
       id: skapaForeningsDokumentId(),
       mallId: mall.id,
       mallTitel: mall.titel,
       mallFilnamn: mall.filnamn,
-      titel: titel.trim() || mall.titel,
+      titel: docTitel,
       status: "utkast",
       skapadDatum: nu,
       uppdateradDatum: nu,

@@ -34,6 +34,8 @@ import {
 } from "@/lib/bankid-signering";
 import { lasForeningProfil } from "@/lib/forening-registry";
 import { DokumentRedigerareMedPreview } from "@/components/dokumentbank/DokumentRedigerareMedPreview";
+import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { ForeningsDokumentEgenkontrollPanel } from "@/components/dokumentbank/ForeningsDokumentEgenkontrollPanel";
 
 type Props = {
   dokument: ForeningsDokument;
@@ -46,6 +48,16 @@ export function ForeningsDokumentRedigeraPanel({
   onSpara,
   onStang,
 }: Props) {
+  if (arEgenkontrollDokument(dokument)) {
+    return (
+      <ForeningsDokumentEgenkontrollPanel
+        dokument={dokument}
+        onSpara={onSpara}
+        onStang={onStang}
+      />
+    );
+  }
+
   const arAvtal = arEntreprenadAvtalDokument(dokument);
   const [titel, setTitel] = useState(dokument.titel);
   const [status, setStatus] = useState<DokumentStatus>(dokument.status);
