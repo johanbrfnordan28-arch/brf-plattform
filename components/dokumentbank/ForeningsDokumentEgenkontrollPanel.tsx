@@ -8,15 +8,19 @@ import {
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import {
   allaAktuellaKontrollerBesvarade,
+  allaKontrollanterMedAttestHarBankId,
   allaSignerareHarSignatur,
   byggEgenkontrollText,
   EGENKONTROLL_ROLL_ETIKETTER,
+  hamtaKontrollantForInitialer,
   harEnkelBankIdSignatur,
   hamtaEllerSkapaEgenkontrollForDokument,
   harEntreprenorTilldelad,
+  normaliseraInitialer,
   skapaEgenkontrollPunktId,
+  skapaKontrollantId,
   skapaSignerareId,
-  skapaUtforareId,
+  synkaAvvikelseNummer,
   tomAvvikelseDetalj,
   type EgenkontrollPunkt,
   type EgenkontrollSignerare,
@@ -54,12 +58,6 @@ export function ForeningsDokumentEgenkontrollPanel({
   const [status, setStatus] = useState<DokumentStatus>(dokument.status);
   const [notering, setNotering] = useState(dokument.notering);
   const [ek, setEk] = useState<EgenkontrollState>(() => initEgenkontroll(dokument));
-  const [utforare1Namn, setUtforare1Namn] = useState(
-    () => initEgenkontroll(dokument).utforare[0]?.namn ?? "",
-  );
-  const [utforare2Namn, setUtforare2Namn] = useState(
-    () => initEgenkontroll(dokument).utforare[1]?.namn ?? "",
-  );
   const [meddelande, setMeddelande] = useState<string | null>(() => {
     const sparade = dokument.egenkontroll?.punkter?.filter(
       (p) => p.aktuell !== false && p.rubrik?.trim(),
@@ -77,18 +75,23 @@ export function ForeningsDokumentEgenkontrollPanel({
   const [nySignerareRollEtikett, setNySignerareRollEtikett] = useState("");
 
   const entreprenorTilldelad = harEntreprenorTilldelad(ek);
-  const primarUtforare = ek.utforare[0]?.namn?.trim() || "entreprenörens utförare";
-
   const kontrollerKlara = useMemo(
-    () => allaAktuellaKontrollerBesvarade(ek.punkter),
-    [ek.punkter],
+    () => allaAktuellaKontrollerBesvarade(ek),
+    [ek],
   );
 
   function egenkontrollHeltKlar(state: EgenkontrollState): boolean {
     return (
-      allaAktuellaKontrollerBesvarade(state.punkter) &&
+      allaAktuellaKontrollerBesvarade(state) &&
+      allaKontrollanterMedAttestHarBankId(state) &&
       allaSignerareHarSignatur(state)
     );
+  }
+
+  function medSynkadePunkter(
+    punkter: EgenkontrollState["punkter"],
+  ): EgenkontrollState["punkter"] {
+    return synkaAvvikelseNummer(punkter);
   }
 
   function spara(patchEk?: EgenkontrollState, extra?: Partial<ForeningsDokument>) {
@@ -111,7 +114,9 @@ export function ForeningsDokumentEgenkontrollPanel({
   function uppdateraPunkt(id: string, patch: Partial<EgenkontrollPunkt>) {
     setEk((prev) => ({
       ...prev,
-      punkter: prev.punkter.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+      punkter: medSynkadePunkter(
+        prev.punkter.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+      ),
     }));
   }
 
@@ -121,39 +126,44 @@ export function ForeningsDokumentEgenkontrollPanel({
   ) {
     setEk((prev) => ({
       ...prev,
-      punkter: prev.punkter.map((p) => {
-        if (p.id !== id) return p;
-        if (status === "avvikelse") {
+      punkter: medSynkadePunkter(
+        prev.punkter.map((p) => {
+          if (p.id !== id) return p;
+          if (status === "avvikelse") {
+            return {
+              ...p,
+              status: "avvikelse",
+              avvikelse: p.avvikelse ?? tomAvvikelseDetalj(),
+              kontrollDatum: p.kontrollDatum || idagIso(),
+            };
+          }
+          if (status === "utfort") {
+            return {
+              ...p,
+              status: "utfort",
+              avvikelse: undefined,
+              kontrollDatum: p.kontrollDatum || idagIso(),
+            };
+          }
           return {
             ...p,
-            status: "avvikelse",
-            avvikelse: p.avvikelse ?? tomAvvikelseDetalj(),
-            kontrollDatum: p.kontrollDatum || idagIso(),
-          };
-        }
-        if (status === "utfort") {
-          return {
-            ...p,
-            status: "utfort",
+            status: "opåbörjad",
             avvikelse: undefined,
-            kontrollDatum: p.kontrollDatum || idagIso(),
+            avvikelseNr: null,
+            kontrollDatum: "",
           };
-        }
-        return {
-          ...p,
-          status: "opåbörjad",
-          avvikelse: undefined,
-          kontrollDatum: "",
-        };
-      }),
+        }),
+      ),
     }));
   }
 
   function taBortPunkt(id: string) {
     setEk((prev) => ({
       ...prev,
-      punkter: prev.punkter.map((p) =>
-        p.id === id ? { ...p, aktuell: false } : p,
+      punkter: medSynkadePunkter(
+        prev.punkter.map((p) =>
+          p.id === id ? { ...p, aktuell: false } : p,
+        ),
       ),
     }));
   }
@@ -163,7 +173,7 @@ export function ForeningsDokumentEgenkontrollPanel({
     if (!rubrik) return;
     setEk((prev) => ({
       ...prev,
-      punkter: [
+      punkter: medSynkadePunkter([
         ...prev.punkter,
         {
           id: skapaEgenkontrollPunktId(),
@@ -173,43 +183,79 @@ export function ForeningsDokumentEgenkontrollPanel({
           status: "opåbörjad",
           kontrollDatum: "",
           kommentar: "",
+          attestInitialer: "",
+          avvikelseNr: null,
         },
-      ],
+      ]),
     }));
     setNyPunktRubrik("");
     setNyPunktBeskrivning("");
   }
 
-  function synkaUtforareTillState(n1: string, n2: string) {
-    const namn = [n1.trim(), n2.trim()].filter(Boolean).slice(0, 2);
-    setEk((prev) => {
-      const utforare = namn.map((namnRad, i) => ({
-        id: prev.utforare[i]?.id ?? skapaUtforareId(),
-        namn: namnRad,
-      }));
-      let signerare = [...prev.signerare];
-      const utforareSign = signerare.filter((s) => s.roll === "utforare");
-      namn.forEach((namnRad, i) => {
-        if (utforareSign[i]) {
-          signerare = signerare.map((s) =>
-            s.id === utforareSign[i].id ? { ...s, namn: namnRad } : s,
-          );
-        } else {
-          signerare.push({
-            id: skapaSignerareId(),
-            roll: "utforare",
-            rollEtikett: "",
-            namn: namnRad,
-            signaturer: [],
-          });
-        }
-      });
-      if (namn.length < utforareSign.length) {
-        const taBort = utforareSign.slice(namn.length).map((s) => s.id);
-        signerare = signerare.filter((s) => !taBort.includes(s.id));
-      }
-      return { ...prev, utforare, signerare };
-    });
+  function laggTillKontrollant() {
+    setEk((prev) => ({
+      ...prev,
+      kontrollanter: [
+        ...prev.kontrollanter,
+        {
+          id: skapaKontrollantId(),
+          namn: "",
+          initialer: "",
+          signaturer: [],
+        },
+      ],
+    }));
+  }
+
+  function uppdateraKontrollant(
+    id: string,
+    patch: Partial<EgenkontrollState["kontrollanter"][number]>,
+  ) {
+    setEk((prev) => ({
+      ...prev,
+      kontrollanter: prev.kontrollanter.map((k) =>
+        k.id === id
+          ? {
+              ...k,
+              ...patch,
+              initialer:
+                patch.initialer !== undefined
+                  ? normaliseraInitialer(patch.initialer)
+                  : k.initialer,
+            }
+          : k,
+      ),
+    }));
+  }
+
+  function taBortKontrollant(id: string) {
+    setEk((prev) => ({
+      ...prev,
+      kontrollanter: prev.kontrollanter.filter((k) => k.id !== id),
+    }));
+  }
+
+  function signeraKontrollant(kontrollantId: string, signatur: BankIdSignatur) {
+    const target = ek.kontrollanter.find((k) => k.id === kontrollantId);
+    if (!target) return;
+    const result = laggTillBankIdSignatur(
+      target.signaturer,
+      { ...signatur, part: "foretag" },
+      1,
+    );
+    if (!result.ok) {
+      setMeddelande(result.fel);
+      return;
+    }
+    const next: EgenkontrollState = {
+      ...ek,
+      kontrollanter: ek.kontrollanter.map((k) =>
+        k.id === kontrollantId ? { ...k, signaturer: result.signaturer } : k,
+      ),
+    };
+    setEk(next);
+    spara(next);
+    setMeddelande("Signatur registrerad.");
   }
 
   function uppdateraAvvikelse(
@@ -371,9 +417,9 @@ export function ForeningsDokumentEgenkontrollPanel({
             )}
             <div className="mt-3 rounded-lg border border-dashed border-border/80 bg-white p-2">
               <p className="text-xs font-medium text-muted">
-                Entreprenörens attest (ifylls av {primarUtforare})
+                Entreprenörens attest (ifylls på plats)
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-4">
+              <div className="mt-2 flex flex-wrap items-end gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -394,6 +440,31 @@ export function ForeningsDokumentEgenkontrollPanel({
                 />
                 Avvikelse
               </label>
+              {p.status === "avvikelse" && p.avvikelseNr && (
+                <span className="rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-950">
+                  Nr {p.avvikelseNr}
+                </span>
+              )}
+              <label className="text-xs text-muted">
+                Sign
+                <input
+                  type="text"
+                  maxLength={2}
+                  value={p.attestInitialer}
+                  onChange={(e) =>
+                    uppdateraPunkt(p.id, {
+                      attestInitialer: normaliseraInitialer(e.target.value),
+                    })
+                  }
+                  placeholder="AB"
+                  className="ml-1 w-12 rounded-lg border border-border px-2 py-1 text-center text-sm font-semibold uppercase tracking-widest"
+                />
+              </label>
+              {p.attestInitialer && !hamtaKontrollantForInitialer(ek, p.attestInitialer) && (
+                <span className="text-xs text-red-700">
+                  Saknas i kontrollpersonal
+                </span>
+              )}
               <label className="text-xs text-muted">
                 Datum
                 <input
@@ -454,8 +525,9 @@ export function ForeningsDokumentEgenkontrollPanel({
           Entreprenör, utförare och BankID (entreprenörens ansvar)
         </summary>
         <p className="mt-2 text-xs text-muted">
-          Kan fyllas i när entreprenör tilldelats. Signering kräver BankID med
-          datum och tid — det är det underlag föreningen bör arkivera.
+          Ange vilka i personalen som utför kontroller. Varje person får två
+          bokstäver (initialer) som skrivs vid varje punkt och kopplas till
+          personens BankID-signatur nedan.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <label className="text-xs text-muted">
@@ -478,28 +550,67 @@ export function ForeningsDokumentEgenkontrollPanel({
               className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
             />
           </label>
-          <label className="text-xs text-muted">
-            Utförare 1 (bockar i kontroller)
-            <input
-              value={utforare1Namn}
-              onChange={(e) => {
-                setUtforare1Namn(e.target.value);
-                synkaUtforareTillState(e.target.value, utforare2Namn);
-              }}
-              className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
-            />
-          </label>
-          <label className="text-xs text-muted">
-            Utförare 2
-            <input
-              value={utforare2Namn}
-              onChange={(e) => {
-                setUtforare2Namn(e.target.value);
-                synkaUtforareTillState(utforare1Namn, e.target.value);
-              }}
-              className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
-            />
-          </label>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-semibold text-foreground">Kontrollpersonal</p>
+          {ek.kontrollanter.map((k) => (
+            <div
+              key={k.id}
+              className="rounded-lg border border-border bg-white p-3"
+            >
+              <div className="flex flex-wrap gap-2">
+                <label className="text-xs text-muted">
+                  Sign
+                  <input
+                    maxLength={2}
+                    value={k.initialer}
+                    onChange={(e) =>
+                      uppdateraKontrollant(k.id, {
+                        initialer: e.target.value,
+                      })
+                    }
+                    className="ml-1 w-12 rounded-lg border border-border px-2 py-1.5 text-center text-sm font-bold uppercase"
+                  />
+                </label>
+                <label className="min-w-[160px] flex-1 text-xs text-muted">
+                  Namn
+                  <input
+                    value={k.namn}
+                    onChange={(e) =>
+                      uppdateraKontrollant(k.id, { namn: e.target.value })
+                    }
+                    className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => taBortKontrollant(k.id)}
+                  className="self-end text-xs text-muted hover:text-red-600"
+                >
+                  Ta bort
+                </button>
+              </div>
+              <div className="mt-3">
+                <BankIdEnkelSignering
+                  part="foretag"
+                  partEtikett={`${k.initialer || "??"} — ${k.namn || "kontrollpersonal"}`}
+                  forvaltNamn={k.namn}
+                  signaturer={k.signaturer}
+                  disabled={!k.namn.trim() || k.initialer.length < 2}
+                  disabledOrsak="Ange namn och två initialer först."
+                  onSignera={async (sig) => signeraKontrollant(k.id, sig)}
+                />
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={laggTillKontrollant}
+            className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark"
+          >
+            Lägg till kontrollpersonal
+          </button>
         </div>
       </details>
 
@@ -513,13 +624,19 @@ export function ForeningsDokumentEgenkontrollPanel({
             som gäller och när projektledare eller ansvarig chef informerades.
           </p>
           {avvikelsePunkter.map((p) => {
-            const a = p.avvikelse ?? tomAvvikelseDetalj();
+            const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
             return (
               <div
                 key={p.id}
                 className="rounded-lg border border-amber-200 bg-white p-3"
               >
-                <p className="text-sm font-semibold text-foreground">{p.rubrik}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Avvikelse {p.avvikelseNr ?? a.nr} — {p.rubrik}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  Samma nummer som vid kontrollpunkten ovan (beställaren ser vad
+                  avvikelsen avser).
+                </p>
                 <label className="mt-2 block text-xs text-muted">
                   Orsak
                   <textarea
@@ -543,13 +660,13 @@ export function ForeningsDokumentEgenkontrollPanel({
                   />
                 </label>
                 <label className="mt-2 block text-xs text-muted">
-                  Datum — projektledare / ansvarig chef informerad
+                  Datum — kommunicerat med beställare eller beställarens ombud
                   <input
                     type="date"
-                    value={a.datumChefInformed}
+                    value={a.datumBeställareInformed}
                     onChange={(e) =>
                       uppdateraAvvikelse(p.id, {
-                        datumChefInformed: e.target.value,
+                        datumBeställareInformed: e.target.value,
                       })
                     }
                     className="mt-1 w-full rounded-lg border border-border px-2 py-1.5 text-sm"
@@ -563,11 +680,11 @@ export function ForeningsDokumentEgenkontrollPanel({
 
       <div className="space-y-3 rounded-xl border border-border bg-surface/80 p-4">
         <p className="text-sm font-semibold text-foreground">
-          Personer som ska signera med BankID
+          Arbetsledare — BankID (utöver kontrollpersonal ovan)
         </p>
         <p className="text-xs text-muted">
-          Lägg till arbetsledare och utförare när entreprenör är känd. Föreningen
-          granskar att alla roller signerat innan dokumentet godkänns.
+          Underentreprenör och huvudentreprenör signerar här. Kontrollpersonal
+          signerar med sina initialer i sektionen ovan.
         </p>
         <ul className="space-y-1 text-sm">
           {ek.signerare.map((s) => (
@@ -656,8 +773,14 @@ export function ForeningsDokumentEgenkontrollPanel({
         )}
         {!kontrollerKlara && ek.signerare.length > 0 && (
           <p className="text-xs text-amber-950">
-            Entreprenören måste bocka i alla punkter och fylla i avvikelser
-            innan BankID-signering.
+            Entreprenören måste bocka i alla punkter, ange initialer och fylla i
+            numrerade avvikelser innan BankID-signering.
+          </p>
+        )}
+        {!allaKontrollanterMedAttestHarBankId(ek) && kontrollerKlara && (
+          <p className="text-xs text-amber-950">
+            All kontrollpersonal som använt sina initialer måste signera med
+            BankID.
           </p>
         )}
         {ek.signerare.map((s) => {

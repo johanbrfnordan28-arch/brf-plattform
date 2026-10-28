@@ -15,10 +15,11 @@ import { hamtaForeningMallIfyllnad, ifyllForeningsfalt } from "@/components/doku
 export type EgenkontrollPunktStatus = "opåbörjad" | "utfort" | "avvikelse";
 
 export type EgenkontrollAvvikelseDetalj = {
+  nr: number;
   orsak: string;
   reservation: string;
-  /** Datum då projektledare / ansvarig chef fått information */
-  datumChefInformed: string;
+  /** Datum då avvikelsen kommunicerats med beställare eller beställarens ombud */
+  datumBeställareInformed: string;
 };
 
 export type EgenkontrollPunkt = {
@@ -30,7 +31,18 @@ export type EgenkontrollPunkt = {
   status: EgenkontrollPunktStatus;
   kontrollDatum: string;
   kommentar: string;
+  /** Två bokstäver — kopplas till kontrollpersonal nedan */
+  attestInitialer: string;
+  avvikelseNr: number | null;
   avvikelse?: EgenkontrollAvvikelseDetalj;
+};
+
+/** Entreprenörens personal som utför kontroller (initialer + BankID). */
+export type EgenkontrollKontrollant = {
+  id: string;
+  namn: string;
+  initialer: string;
+  signaturer: BankIdSignatur[];
 };
 
 export type EgenkontrollUtforare = {
@@ -66,6 +78,7 @@ export type EgenkontrollState = {
   huvudentreprenorNamn: string;
   underentreprenorNamn: string;
   utforare: EgenkontrollUtforare[];
+  kontrollanter: EgenkontrollKontrollant[];
   punkter: EgenkontrollPunkt[];
   signerare: EgenkontrollSignerare[];
   slutSignering?: EgenkontrollSlutSignering;
@@ -89,12 +102,46 @@ export function skapaUtforareId(): string {
   return `eku-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function skapaKontrollantId(): string {
+  return `ekk-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function normaliseraInitialer(raw: string): string {
+  return raw
+    .replace(/[^a-zA-ZåäöÅÄÖ]/g, "")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function skapaSignerareId(): string {
   return `eks-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function tomAvvikelseDetalj(): EgenkontrollAvvikelseDetalj {
-  return { orsak: "", reservation: "", datumChefInformed: "" };
+export function tomAvvikelseDetalj(nr = 0): EgenkontrollAvvikelseDetalj {
+  return {
+    nr,
+    orsak: "",
+    reservation: "",
+    datumBeställareInformed: "",
+  };
+}
+
+export function synkaAvvikelseNummer(
+  punkter: EgenkontrollPunkt[],
+): EgenkontrollPunkt[] {
+  let nr = 0;
+  return punkter.map((p) => {
+    if (!p.aktuell || p.status !== "avvikelse") {
+      return { ...p, avvikelseNr: null, avvikelse: undefined };
+    }
+    nr += 1;
+    const det = p.avvikelse ?? tomAvvikelseDetalj(nr);
+    return {
+      ...p,
+      avvikelseNr: nr,
+      avvikelse: { ...det, nr },
+    };
+  });
 }
 
 function normaliseraPunktStatus(raw: string | undefined): EgenkontrollPunktStatus {
@@ -106,12 +153,19 @@ function normaliseraPunktStatus(raw: string | undefined): EgenkontrollPunktStatu
 function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
   const status = normaliseraPunktStatus(p.status);
   const avvikelseRaw = p.avvikelse;
+  const avvikelseNr =
+    typeof p.avvikelseNr === "number" ? p.avvikelseNr : null;
   const avvikelse =
     status === "avvikelse"
       ? {
+          nr: avvikelseRaw?.nr ?? avvikelseNr ?? 0,
           orsak: avvikelseRaw?.orsak ?? "",
           reservation: avvikelseRaw?.reservation ?? "",
-          datumChefInformed: avvikelseRaw?.datumChefInformed ?? "",
+          datumBeställareInformed:
+            avvikelseRaw?.datumBeställareInformed ??
+            (avvikelseRaw as { datumChefInformed?: string } | undefined)
+              ?.datumChefInformed ??
+            "",
         }
       : undefined;
   return {
@@ -123,8 +177,46 @@ function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
     status,
     kontrollDatum: p.kontrollDatum ?? "",
     kommentar: p.kommentar ?? "",
+    attestInitialer: normaliseraInitialer(p.attestInitialer ?? ""),
+    avvikelseNr,
     avvikelse,
   };
+}
+
+function normaliseraKontrollanter(
+  raw: unknown,
+  utforare: EgenkontrollUtforare[],
+  signerare: EgenkontrollSignerare[],
+): EgenkontrollKontrollant[] {
+  if (Array.isArray(raw) && raw.length > 0) {
+    return raw
+      .filter((k) => k && typeof k === "object")
+      .map((k) => {
+        const x = k as Partial<EgenkontrollKontrollant>;
+        return {
+          id: x.id ?? skapaKontrollantId(),
+          namn: x.namn ?? "",
+          initialer: normaliseraInitialer(x.initialer ?? ""),
+          signaturer: normaliseraBankIdSignaturer(x.signaturer),
+        };
+      });
+  }
+  const franUtforare = utforare.map((u, i) => {
+    const sig = signerare.filter((s) => s.roll === "utforare")[i];
+    return {
+      id: u.id,
+      namn: u.namn,
+      initialer: normaliseraInitialer(
+        sig?.namn
+          .split(/\s+/)
+          .map((del) => del[0] ?? "")
+          .join("")
+          .slice(0, 2) ?? "",
+      ),
+      signaturer: sig ? normaliseraBankIdSignaturer(sig.signaturer) : [],
+    };
+  });
+  return franUtforare;
 }
 
 function byggSignerareFranSkapa(input: {
@@ -134,17 +226,7 @@ function byggSignerareFranSkapa(input: {
   underArbetsledareNamn?: string;
   utforareNamn: string[];
 }): EgenkontrollSignerare[] {
-  const lista: EgenkontrollSignerare[] = input.utforareNamn
-    .map((namn) => namn.trim())
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((namn) => ({
-      id: skapaSignerareId(),
-      roll: "utforare" as const,
-      rollEtikett: "",
-      namn,
-      signaturer: [],
-    }));
+  const lista: EgenkontrollSignerare[] = [];
 
   const underLed = input.underArbetsledareNamn?.trim();
   if (underLed) {
@@ -252,6 +334,8 @@ export function skapaPunkterFranVvsMall(): EgenkontrollPunkt[] {
     status: "opåbörjad" as const,
     kontrollDatum: "",
     kommentar: "",
+    attestInitialer: "",
+    avvikelseNr: null,
   }));
 }
 
@@ -277,11 +361,19 @@ export function skapaVvsEgenkontroll(input: {
     .slice(0, 2)
     .map((namn) => ({ id: skapaUtforareId(), namn }));
 
+  const kontrollanter: EgenkontrollKontrollant[] = utforare.map((u) => ({
+    id: u.id,
+    namn: u.namn,
+    initialer: "",
+    signaturer: [],
+  }));
+
   return {
     bransch: "vvs",
     huvudentreprenorNamn: input.huvudentreprenorNamn.trim(),
     underentreprenorNamn: input.underentreprenorNamn?.trim() ?? "",
     utforare,
+    kontrollanter,
     punkter: skapaPunkterFranVvsMall(),
     signerare: byggSignerareFranSkapa({
       huvudentreprenorNamn: input.huvudentreprenorNamn,
@@ -298,20 +390,32 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
   const d = raw as Partial<EgenkontrollState>;
   if (d.bransch !== "vvs") return undefined;
 
+  const utforare = Array.isArray(d.utforare) ? d.utforare : [];
   let signerare = normaliseraSignerare(d.signerare);
   if (signerare.length === 0 && d.slutSignering) {
     signerare = migreraSignerareFranLegacy(d);
   }
+  const kontrollanter = normaliseraKontrollanter(
+    d.kontrollanter,
+    utforare,
+    signerare,
+  );
+  if (kontrollanter.length > 0) {
+    signerare = signerare.filter((s) => s.roll !== "utforare");
+  }
 
-  const punkter = Array.isArray(d.punkter)
-    ? d.punkter.map((p) => normaliseraPunkt(p as Partial<EgenkontrollPunkt>))
-    : [];
+  const punkter = synkaAvvikelseNummer(
+    Array.isArray(d.punkter)
+      ? d.punkter.map((p) => normaliseraPunkt(p as Partial<EgenkontrollPunkt>))
+      : [],
+  );
 
   const state: EgenkontrollState = {
     bransch: "vvs",
     huvudentreprenorNamn: d.huvudentreprenorNamn ?? "",
     underentreprenorNamn: d.underentreprenorNamn ?? "",
-    utforare: Array.isArray(d.utforare) ? d.utforare : [],
+    utforare,
+    kontrollanter,
     punkter,
     signerare,
   };
@@ -351,11 +455,20 @@ function formatPunktRad(p: EgenkontrollPunkt, index: number): string {
   if (!p.aktuell) return "";
   const utfort = p.status === "utfort" ? "[x]" : "[ ]";
   const avv = p.status === "avvikelse" ? "[x]" : "[ ]";
+  const avvNr =
+    p.status === "avvikelse" && p.avvikelseNr
+      ? `    Avvikelsenummer: ${p.avvikelseNr}`
+      : "";
+  const sign = p.attestInitialer.trim()
+    ? `    Sign (initialer): ${p.attestInitialer}`
+    : "    Sign (initialer): —";
   const rader = [
     `${index + 1}. ${p.rubrik}`,
     `    ${utfort} Utfört    ${avv} Avvikelse    Datum: ${p.kontrollDatum || "—"}`,
+    sign,
+    avvNr,
     `    ${p.beskrivning}`,
-  ];
+  ].filter(Boolean);
   if (p.amaNot) rader.push(`    AMA: ${p.amaNot}`);
   if (p.kommentar.trim()) rader.push(`    Kommentar: ${p.kommentar}`);
   return rader.join("\n");
@@ -368,13 +481,15 @@ function formatAvvikelseSektion(punkter: EgenkontrollPunkt[]): string {
   if (medAvvikelse.length === 0) {
     return "AVVIKELSER OCH RESERVATIONER\n------------------------------\nInga avvikelser registrerade.\n";
   }
-  const rader = medAvvikelse.map((p, i) => {
-    const a = p.avvikelse ?? tomAvvikelseDetalj();
+  const rader = medAvvikelse.map((p) => {
+    const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
+    const nr = p.avvikelseNr ?? a.nr;
     return [
-      `${i + 1}. ${p.rubrik}`,
+      `AVVIKELSE ${nr} — ${p.rubrik}`,
+      `   Avser kontrollpunkt med avvikelsenummer ${nr} ovan.`,
       `   Orsak (varför fullt utförande ej kunnat ske): ${a.orsak || "—"}`,
       `   Reservation: ${a.reservation || "—"}`,
-      `   Projektledare / ansvarig chef informerad: ${a.datumChefInformed || "—"}`,
+      `   Datum — kommunicerat med beställare eller beställarens ombud: ${a.datumBeställareInformed || "—"}`,
     ].join("\n");
   });
   return `AVVIKELSER OCH RESERVATIONER\n------------------------------\n${rader.join("\n\n")}\n`;
@@ -401,7 +516,29 @@ utförare och arbetsledare innan dokumentet godkänns som slutligt underlag.
     const bank = sig ? sammanfattaBankIdSignaturer(s.signaturer) : "Ej signerad";
     return `${s.namn} · ${roll}\n   BankID: ${bank}\n   Datum och tid: ${tid}`;
   });
-  return `SIGNERING (BankID)\n------------------\n${rader.join("\n\n")}\n`;
+  return `SIGNERING ARBETLEDARE (BankID)\n------------------------------\n${rader.join("\n\n")}\n`;
+}
+
+function formatKontrollantSignering(kontrollanter: EgenkontrollKontrollant[]): string {
+  if (kontrollanter.length === 0) {
+    return `KONTROLLPERSONAL (initialer + BankID)\n-------------------------------------\nIngen personal angiven ännu.\n`;
+  }
+  const fork = kontrollanter
+    .filter((k) => k.initialer.trim())
+    .map((k) => `${k.initialer} = ${k.namn || "—"}`)
+    .join(", ");
+  const rader = kontrollanter.map((k) => {
+    const sig = k.signaturer[0];
+    const tid = sig
+      ? new Date(sig.tidpunkt).toLocaleString("sv-SE")
+      : "—";
+    const bank = sig ? sammanfattaBankIdSignaturer(k.signaturer) : "Ej signerad";
+    return `${k.initialer || "??"} · ${k.namn || "Namn saknas"}\n   BankID: ${bank}\n   Datum och tid: ${tid}`;
+  });
+  return `KONTROLLPERSONAL (initialer kopplade till BankID)
+${fork ? `Förteckning: ${fork}\n` : ""}-------------------------------------
+${rader.join("\n\n")}
+`;
 }
 
 export function byggEgenkontrollText(
@@ -416,8 +553,6 @@ export function byggEgenkontrollText(
     .filter(Boolean)
     .join("\n\n");
 
-  const utforareLabel =
-    ek.utforare.map((u) => u.namn).join(", ") || "Tillkommer vid tilldelning av entreprenör";
   const huvudLabel = ek.huvudentreprenorNamn.trim() || "Ej tilldelad";
   const underLabel = ek.underentreprenorNamn.trim();
 
@@ -428,37 +563,82 @@ Projekt / dokument: ${dok.titel}
 
 ENTREPRENÖR (ifylls när tilldelning skett)
 Huvudentreprenör: ${huvudLabel}
-${underLabel ? `Underentreprenör: ${underLabel}\n` : ""}Utförare som attesterar kontroller: ${utforareLabel}
-
+${underLabel ? `Underentreprenör: ${underLabel}\n` : ""}
 KONTROLLPLAN — PUNKTER I UTFÖRANDEORDNING
-(Anpassad av föreningen; ifylls och attesteras av entreprenören)
+(Anpassad av föreningen; attest med initialer; avvikelse numreras)
 ------------------------------------
 ${punkterText || "(Inga aktuella punkter)"}
 
 ${formatAvvikelseSektion(ek.punkter)}
+${formatKontrollantSignering(ek.kontrollanter)}
 ${formatSignering(ek.signerare)}
 `;
 }
 
+export function hamtaKontrollantForInitialer(
+  state: EgenkontrollState,
+  initialer: string,
+): EgenkontrollKontrollant | undefined {
+  const init = normaliseraInitialer(initialer);
+  if (!init) return undefined;
+  return state.kontrollanter.find((k) => k.initialer === init);
+}
+
+export function initialerAnvandaIAttest(state: EgenkontrollState): string[] {
+  const set = new Set<string>();
+  for (const p of state.punkter) {
+    if (!p.aktuell) continue;
+    if (p.status === "opåbörjad") continue;
+    const init = normaliseraInitialer(p.attestInitialer);
+    if (init) set.add(init);
+  }
+  return [...set];
+}
+
 export function avvikelseDetaljerKomplett(p: EgenkontrollPunkt): boolean {
   if (p.status !== "avvikelse") return true;
-  const a = p.avvikelse ?? tomAvvikelseDetalj();
+  const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
   return (
     a.orsak.trim().length > 0 &&
     a.reservation.trim().length > 0 &&
-    a.datumChefInformed.trim().length > 0
+    a.datumBeställareInformed.trim().length > 0 &&
+    (p.avvikelseNr ?? 0) > 0
   );
 }
 
-export function allaAktuellaKontrollerBesvarade(punkter: EgenkontrollPunkt[]): boolean {
-  const aktuella = punkter.filter((p) => p.aktuell);
+export function punktAttestKomplett(
+  p: EgenkontrollPunkt,
+  state: EgenkontrollState,
+): boolean {
+  if (p.status === "opåbörjad") return false;
+  if (!p.kontrollDatum.trim()) return false;
+  const init = normaliseraInitialer(p.attestInitialer);
+  if (init.length < 2) return false;
+  return Boolean(hamtaKontrollantForInitialer(state, init));
+}
+
+export function allaAktuellaKontrollerBesvarade(
+  state: EgenkontrollState,
+): boolean {
+  const aktuella = state.punkter.filter((p) => p.aktuell);
   if (aktuella.length === 0) return false;
   return aktuella.every(
     (p) =>
       (p.status === "utfort" || p.status === "avvikelse") &&
-      p.kontrollDatum.trim().length > 0 &&
+      punktAttestKomplett(p, state) &&
       avvikelseDetaljerKomplett(p),
   );
+}
+
+export function allaKontrollanterMedAttestHarBankId(
+  state: EgenkontrollState,
+): boolean {
+  const initer = initialerAnvandaIAttest(state);
+  if (initer.length === 0) return true;
+  return initer.every((init) => {
+    const k = hamtaKontrollantForInitialer(state, init);
+    return k && harEnkelBankIdSignatur(k.signaturer);
+  });
 }
 
 export function harEnkelBankIdSignatur(signaturer: BankIdSignatur[]): boolean {
@@ -473,6 +653,7 @@ export function allaSignerareHarSignatur(state: EgenkontrollState): boolean {
 export function harEntreprenorTilldelad(state: EgenkontrollState): boolean {
   return (
     Boolean(state.huvudentreprenorNamn.trim()) ||
+    state.kontrollanter.length > 0 ||
     state.utforare.length > 0 ||
     state.signerare.some((s) => s.roll !== "ovrig")
   );
