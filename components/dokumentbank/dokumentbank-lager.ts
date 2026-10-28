@@ -56,14 +56,16 @@ export function sparaEgnaDokumentbankMallar(
 export function läggTillEgenDokumentbankMall(
   filnamn: string,
   titel?: string,
+  textInnehall?: string,
 ): EgenDokumentbankMall {
   const mall: EgenDokumentbankMall = {
     id: skapaEgenMallId(),
     titel: titel?.trim() || filnamn.replace(/\.[^.]+$/, ""),
     filnamn: filnamn.trim(),
     beskrivning: "Uppladdad av styrelsen i er förenings dokumentbank.",
-    omrade: "upphandling",
+    omrade: "ovrig",
     uppladdad: new Date().toLocaleDateString("sv-SE"),
+    ...(textInnehall?.trim() ? { textInnehall: textInnehall.trim() } : {}),
   };
   const befintliga = lasEgnaDokumentbankMallar();
   sparaEgnaDokumentbankMallar([mall, ...befintliga]);

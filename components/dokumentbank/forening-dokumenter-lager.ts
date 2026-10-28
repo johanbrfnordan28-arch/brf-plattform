@@ -1,6 +1,7 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import type { EntreprenadAvtalForm } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
+import type { DokumentLayoutTema } from "@/components/dokumentbank/dokument-layout";
 import type { BankIdSignatur } from "@/lib/bankid-signering";
 
 // ── Typer ────────────────────────────────────────────────────────────────────
@@ -49,6 +50,9 @@ export type ForeningsDokument = {
   avtalForm?: EntreprenadAvtalForm;
   entreprenorSignaturer?: BankIdSignatur[];
   foreningSignaturer?: BankIdSignatur[];
+  /** mall = skapad från mallkatalog, fil = uppladdad fil sparad per förening */
+  dokumentKalla?: "mall" | "fil";
+  layoutTema?: DokumentLayoutTema;
 };
 
 export type ForeningsDokumentState = {

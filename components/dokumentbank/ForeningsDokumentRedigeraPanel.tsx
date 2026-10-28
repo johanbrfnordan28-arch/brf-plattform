@@ -19,6 +19,12 @@ import {
   byggSignaturStatusText,
   normaliseraAvtalSignering,
 } from "@/components/dokumentbank/forening-dokument-avtal";
+import {
+  DOKUMENT_LAYOUT_ETIKETTER,
+  STANDARD_DOKUMENT_LAYOUT,
+  type DokumentLayoutTema,
+} from "@/components/dokumentbank/dokument-layout";
+import { oppnaForeningsDokumentPreview } from "@/components/dokumentbank/forening-dokument-visning";
 import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
 import { standardPdfUndertecknareBlock } from "@/components/forening/pdf-undertecknare-block";
 import { BankIdAvtalSignering } from "@/components/bankid/BankIdAvtalSignering";
@@ -51,6 +57,9 @@ export function ForeningsDokumentRedigeraPanel({
   const [entreprenor, setEntreprenor] = useState<DokumentEntreprenor>(
     dokument.entreprenor ?? tomDokumentEntreprenor(),
   );
+  const [layoutTema, setLayoutTema] = useState<DokumentLayoutTema>(
+    dokument.layoutTema ?? STANDARD_DOKUMENT_LAYOUT,
+  );
   const [meddelande, setMeddelande] = useState<string | null>(null);
 
   const signering = useMemo(
@@ -68,6 +77,7 @@ export function ForeningsDokumentRedigeraPanel({
       notering,
       innehall,
       entreprenor,
+      layoutTema,
     });
     setMeddelande("Sparat.");
   }
@@ -221,6 +231,25 @@ export function ForeningsDokumentRedigeraPanel({
       )}
 
       <div>
+        <p className="mb-2 text-xs font-medium text-muted">Layout vid förhandsgranskning / PDF</p>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {(Object.keys(DOKUMENT_LAYOUT_ETIKETTER) as DokumentLayoutTema[]).map(
+            (key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setLayoutTema(key)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
+                  layoutTema === key
+                    ? "border-primary bg-[#e2f0e6] text-primary-dark"
+                    : "border-border text-muted"
+                }`}
+              >
+                {DOKUMENT_LAYOUT_ETIKETTER[key].titel}
+              </button>
+            ),
+          )}
+        </div>
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <label className="text-xs font-medium text-muted">Avtalstext</label>
           <button
@@ -290,6 +319,22 @@ export function ForeningsDokumentRedigeraPanel({
         >
           Spara
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            sparaBas();
+            oppnaForeningsDokumentPreview({
+              ...dokument,
+              titel,
+              innehall,
+              entreprenor,
+              layoutTema,
+            });
+          }}
+          className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark"
+        >
+          Förhandsgranska
+        </button>
         {arAvtal && (
           <button
             type="button"
@@ -299,7 +344,7 @@ export function ForeningsDokumentRedigeraPanel({
             }}
             className="rounded-lg border border-primary px-3 py-1.5 text-xs font-medium text-primary-dark"
           >
-            Spara och öppna PDF
+            Spara och öppna PDF (signering)
           </button>
         )}
         <button

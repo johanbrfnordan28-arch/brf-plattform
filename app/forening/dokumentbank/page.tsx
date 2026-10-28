@@ -18,7 +18,7 @@ export default function ForeningDokumentbankPage() {
     <ModulePage
       title="Dokumentbank"
       icon="📁"
-      intro="Välj en mall, skapa er kopia och ladda ned som textfil — klar att fylla i och anpassa. Namnge kopian med projektnamnet så att ni hittar rätt dokument nästa gång."
+      intro="Förhandsgranska mallar med valbar layout, skapa kopior med föreningsuppgifter ifyllda, eller ladda upp egna filer som sparas under Mina dokument."
     >
       <TipsPanel tips={tips.dokumentbank} />
       <ForeningsDokumentbank />

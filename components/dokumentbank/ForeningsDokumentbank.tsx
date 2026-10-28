@@ -37,6 +37,19 @@ import {
 } from "@/components/dokumentbank/forening-dokument-avtal";
 import { hamtaAvtalFormForMall } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
 import { tomDokumentEntreprenor } from "@/components/dokumentbank/forening-dokumenter-lager";
+import { DokumentForhandsgranskaDialog } from "@/components/dokumentbank/DokumentForhandsgranskaDialog";
+import {
+  DOKUMENT_LAYOUT_ETIKETTER,
+  STANDARD_DOKUMENT_LAYOUT,
+  type DokumentLayoutTema,
+} from "@/components/dokumentbank/dokument-layout";
+import { taBortDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
+import { skapaForeningsDokumentFranFil } from "@/components/dokumentbank/forening-dokument-uppladdning";
+import {
+  laddaNedForeningsDokumentFil,
+  oppnaForeningsDokumentPreview,
+} from "@/components/dokumentbank/forening-dokument-visning";
+import { lasFilSomText } from "@/components/dokumentbank/forening-dokument-fil-lager";
 
 // ── Hjälp ─────────────────────────────────────────────────────────────────────
 
@@ -109,27 +122,84 @@ function SkapaKopiaForm({ mall, onSpara, onAvbryt }: SkapaKopiaFormProps) {
 
 // ── Mina dokument ─────────────────────────────────────────────────────────────
 
+function EgetDokumentUppladdning({
+  onSparad,
+}: {
+  onSparad: (dok: ForeningsDokument) => void;
+}) {
+  const [fel, setFel] = useState<string | null>(null);
+  const [laddar, setLaddar] = useState(false);
+
+  async function hanteraFil(fil: File | null) {
+    if (!fil) return;
+    setFel(null);
+    setLaddar(true);
+    try {
+      const result = await skapaForeningsDokumentFranFil(fil);
+      if (!result.ok) {
+        setFel(result.fel);
+        return;
+      }
+      onSparad(result.dokument);
+    } finally {
+      setLaddar(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-dashed border-primary/35 bg-gradient-to-br from-[#eef6f0]/80 to-white p-5">
+      <p className="text-sm font-semibold text-foreground">
+        Ladda upp eget dokument
+      </p>
+      <p className="mt-1 text-sm text-muted">
+        PDF, Word eller text sparas i er förening (webbläsaren). Textfiler kan
+        redigeras och förhandsgranskas med layout.
+      </p>
+      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
+        {laddar ? "Laddar upp…" : "Välj fil att spara"}
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx,.txt,application/pdf,text/plain"
+          className="sr-only"
+          disabled={laddar}
+          onChange={(e) => {
+            void hanteraFil(e.target.files?.[0] ?? null);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      {fel && <p className="mt-2 text-xs text-red-700">{fel}</p>}
+    </div>
+  );
+}
+
 interface MinaDokumentProps {
   dokument: ForeningsDokument[];
   onUppdatera: (id: string, patch: Partial<ForeningsDokument>) => void;
   onTaBort: (id: string) => void;
+  onSparadUppladdning: (dok: ForeningsDokument) => void;
 }
 
-function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
+function MinaDokument({
+  dokument,
+  onUppdatera,
+  onTaBort,
+  onSparadUppladdning,
+}: MinaDokumentProps) {
   const [redigerarId, setRedigerarId] = useState<string | null>(null);
   const [bekraftaId, setBekraftaId] = useState<string | null>(null);
   const [laggTillProjektId, setLaggTillProjektId] = useState<string | null>(null);
 
-  if (dokument.length === 0) {
-    return (
-      <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
-        Inga dokument skapade ännu. Klicka "Skapa kopia" på en mall nedan.
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      <EgetDokumentUppladdning onSparad={onSparadUppladdning} />
+      {dokument.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
+          Inga dokument ännu. Ladda upp en fil ovan eller skapa en kopia under
+          Mallkatalog.
+        </p>
+      ) : null}
+    <div className="space-y-3">
       {dokument.map((dok) => {
         const mall = hamtaMall(dok.mallId);
         const harInnehall = Boolean(
@@ -139,8 +209,30 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
         return (
           <div
             key={dok.id}
-            className="rounded-xl border border-border bg-white p-4 shadow-sm"
+            className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
           >
+            <div className="border-b border-border bg-[#f7fbf8] px-4 py-3 sm:px-5">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground">{dok.titel}</p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {dok.dokumentKalla === "fil"
+                      ? "Uppladdad fil"
+                      : `Mall: ${dok.mallTitel}`}
+                    {" · "}
+                    {OMRADE_ETIKETTER[dok.omrade as DokumentMallOmrade] ??
+                      dok.omrade}
+                  </p>
+                </div>
+                {dok.layoutTema && (
+                  <span className="rounded-full bg-white px-2 py-0.5 text-xs text-primary-dark ring-1 ring-primary/25">
+                    {DOKUMENT_LAYOUT_ETIKETTER[dok.layoutTema]?.titel ??
+                      dok.layoutTema}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="p-4 sm:p-5">
             {redigerarId === dok.id ? (
               <ForeningsDokumentRedigeraPanel
                 dokument={dok}
@@ -149,10 +241,9 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
               />
             ) : (
               /* Visning */
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-foreground">{dok.titel}</p>
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_FARGER[dok.status]}`}
                     >
@@ -164,12 +255,10 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-muted">
-                    Baserad på: {dok.mallTitel} ·{" "}
-                    {OMRADE_ETIKETTER[dok.omrade as DokumentMallOmrade] ??
-                      dok.omrade}
-                    {" · "}
+                  <p className="mt-1 text-xs text-muted">
                     Skapad {formatDatum(dok.skapadDatum)}
+                    {dok.uppdateradDatum !== dok.skapadDatum &&
+                      ` · Uppdaterad ${formatDatum(dok.uppdateradDatum)}`}
                   </p>
                   {dok.notering && (
                     <p className="mt-1 text-xs text-muted/80">{dok.notering}</p>
@@ -180,7 +269,14 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                     </p>
                   )}
                 </div>
-                <div className="flex shrink-0 flex-wrap gap-1">
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => oppnaForeningsDokumentPreview(dok)}
+                    className="rounded-lg border border-primary/60 bg-[#eef6f0] px-2.5 py-1.5 text-xs font-medium text-primary-dark"
+                  >
+                    Förhandsgranska
+                  </button>
                   <button
                     type="button"
                     onClick={() =>
@@ -192,10 +288,16 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                   >
                     Lägg till i projekt
                   </button>
-                  {harInnehall && (
+                  {(harInnehall || dok.dokumentKalla === "fil") && (
                     <button
                       type="button"
                       onClick={() => {
+                        if (
+                          dok.dokumentKalla === "fil" &&
+                          laddaNedForeningsDokumentFil(dok)
+                        ) {
+                          return;
+                        }
                         const innehall = hamtaForeningsDokumentInnehall(dok);
                         laddaNedDokument(dok.mallFilnamn, innehall);
                       }}
@@ -260,9 +362,11 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
                 onKlar={() => setLaggTillProjektId(null)}
               />
             )}
+            </div>
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
@@ -270,11 +374,17 @@ function MinaDokument({ dokument, onUppdatera, onTaBort }: MinaDokumentProps) {
 // ── Mallkatalog ───────────────────────────────────────────────────────────────
 
 interface MallKatalogProps {
-  onSkapaKopia: (mall: DokumentbankMall, titel: string) => void;
+  onSkapaKopia: (
+    mall: DokumentbankMall,
+    titel: string,
+    tema: DokumentLayoutTema,
+  ) => void;
 }
 
 function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
   const [skaparKopiaFor, setSkaparKopiaFor] = useState<string | null>(null);
+  const [forhandsgranskaMall, setForhandsgranskaMall] =
+    useState<DokumentbankMall | null>(null);
   const [filterOmrade, setFilterOmrade] = useState<string>("alla");
   const [egnaLaddadeMallar, setEgnaLaddadeMallar] = useState(
     lasEgnaDokumentbankMallar(),
@@ -287,9 +397,17 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
     return () => window.removeEventListener(DOKUMENTBANK_EGNA_EVENT, hantera);
   }, []);
 
-  function laddaUppEgen(fil: File | null) {
+  async function laddaUppEgen(fil: File | null) {
     if (!fil) return;
-    läggTillEgenDokumentbankMall(fil.name);
+    let text: string | undefined;
+    if (fil.type.startsWith("text/") || /\.txt$/i.test(fil.name)) {
+      try {
+        text = await lasFilSomText(fil);
+      } catch {
+        text = undefined;
+      }
+    }
+    läggTillEgenDokumentbankMall(fil.name, undefined, text);
     setEgnaLaddadeMallar(lasEgnaDokumentbankMallar());
   }
 
@@ -352,37 +470,46 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
           <div className="space-y-2">
             {mallar.map((mall) => (
               <div key={mall.id}>
-                <div className="flex flex-col gap-2 rounded-xl border border-border bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-semibold text-foreground">
                       {mall.titel}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted">
+                    <p className="mt-1 text-sm leading-relaxed text-muted">
                       {mall.beskrivning}
                     </p>
                     {mall.textInnehall && (
-                      <span className="mt-1 inline-block rounded-full bg-[#eef6f0] px-2 py-0.5 text-xs text-primary-dark">
-                        Nedladdningsbar
+                      <span className="mt-2 inline-block rounded-full bg-[#eef6f0] px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                        Textmall · förhandsgranska
                       </span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSkaparKopiaFor(
-                        skaparKopiaFor === mall.id ? null : mall.id,
-                      )
-                    }
-                    className="shrink-0 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-                  >
-                    Skapa kopia
-                  </button>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForhandsgranskaMall(mall)}
+                      className="rounded-lg border border-primary/50 bg-[#eef6f0] px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                    >
+                      Förhandsgranska
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSkaparKopiaFor(
+                          skaparKopiaFor === mall.id ? null : mall.id,
+                        )
+                      }
+                      className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+                    >
+                      Skapa kopia
+                    </button>
+                  </div>
                 </div>
                 {skaparKopiaFor === mall.id && (
                   <SkapaKopiaForm
                     mall={mall}
                     onSpara={(titel) => {
-                      onSkapaKopia(mall, titel);
+                      onSkapaKopia(mall, titel, STANDARD_DOKUMENT_LAYOUT);
                       setSkaparKopiaFor(null);
                     }}
                     onAvbryt={() => setSkaparKopiaFor(null)}
@@ -394,13 +521,26 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
         </div>
       ))}
 
-      {/* Egna uppladdningar */}
-      <div className="rounded-xl border border-dashed border-border bg-surface p-4">
+      {forhandsgranskaMall ? (
+        <DokumentForhandsgranskaDialog
+          mall={forhandsgranskaMall}
+          open
+          onStang={() => setForhandsgranskaMall(null)}
+          onSkapaKopia={(titel, tema) => {
+            onSkapaKopia(forhandsgranskaMall, titel, tema);
+            setForhandsgranskaMall(null);
+          }}
+        />
+      ) : null}
+
+      {/* Egna uppladdningar som mallar */}
+      <div className="rounded-2xl border border-dashed border-border bg-surface p-5">
         <p className="text-sm font-semibold text-foreground">
-          Ladda upp egna mallar
+          Egna mallar i katalogen
         </p>
-        <p className="mt-1 text-xs text-muted">
-          Ladda upp era egna mallfiler till banken — syns bara för er förening.
+        <p className="mt-1 text-sm text-muted">
+          Ladda upp en fil som blir en mall ni kan förhandsgranska och skapa
+          kopior från — sparas per förening.
         </p>
         <label className="mt-3 inline-flex cursor-pointer rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]">
           Välj fil
@@ -409,31 +549,43 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
             accept=".pdf,.doc,.docx,.txt"
             className="sr-only"
             onChange={(e) => {
-              laddaUppEgen(e.target.files?.[0] ?? null);
+              void laddaUppEgen(e.target.files?.[0] ?? null);
               e.target.value = "";
             }}
           />
         </label>
         {egnaLaddadeMallar.length > 0 && (
-          <ul className="mt-3 space-y-1">
+          <ul className="mt-4 space-y-2">
             {egnaLaddadeMallar.map((m) => (
               <li
                 key={m.id}
-                className="flex items-center justify-between gap-2 text-xs text-muted"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-white px-3 py-2"
               >
-                <span>
-                  {m.titel} · {m.uppladdad}
+                <span className="text-sm text-foreground">
+                  {m.titel}{" "}
+                  <span className="text-xs text-muted">· {m.uppladdad}</span>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    taBortEgenDokumentbankMall(m.id);
-                    setEgnaLaddadeMallar(lasEgnaDokumentbankMallar());
-                  }}
-                  className="text-muted hover:text-red-600"
-                >
-                  Ta bort
-                </button>
+                <div className="flex gap-1">
+                  {m.textInnehall && (
+                    <button
+                      type="button"
+                      onClick={() => setForhandsgranskaMall(m)}
+                      className="rounded-lg border border-primary/40 px-2 py-1 text-xs text-primary-dark"
+                    >
+                      Förhandsgranska
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      taBortEgenDokumentbankMall(m.id);
+                      setEgnaLaddadeMallar(lasEgnaDokumentbankMallar());
+                    }}
+                    className="rounded-lg px-2 py-1 text-xs text-muted hover:text-red-600"
+                  >
+                    Ta bort
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -461,7 +613,21 @@ export function ForeningsDokumentbank() {
     return () => window.removeEventListener(FORENINGS_DOK_EVENT, laddaDokument);
   }, []);
 
-  function skapaKopia(mall: DokumentbankMall, titel: string) {
+  function sparaNyttDokument(nyttDok: ForeningsDokument) {
+    const befintliga = lasForeningsDokument();
+    sparaForeningsDokument({
+      ...befintliga,
+      dokument: [nyttDok, ...befintliga.dokument],
+    });
+    laddaDokument();
+    setAktivFlik("mina");
+  }
+
+  function skapaKopia(
+    mall: DokumentbankMall,
+    titel: string,
+    layoutTema: DokumentLayoutTema = STANDARD_DOKUMENT_LAYOUT,
+  ) {
     const nu = new Date().toISOString();
     const innehall = mall.textInnehall
       ? skapaInnehallFranMall(mall, titel.trim() || mall.titel)
@@ -478,6 +644,8 @@ export function ForeningsDokumentbank() {
       uppdateradDatum: nu,
       notering: "",
       omrade: mall.omrade,
+      dokumentKalla: "mall",
+      layoutTema,
       ...(innehall ? { innehall } : {}),
       koppladeProjektId: [],
       ...(avtalForm
@@ -489,13 +657,7 @@ export function ForeningsDokumentbank() {
           }
         : {}),
     };
-    const befintliga = lasForeningsDokument();
-    sparaForeningsDokument({
-      ...befintliga,
-      dokument: [nyttDok, ...befintliga.dokument],
-    });
-    laddaDokument();
-    setAktivFlik("mina");
+    sparaNyttDokument(nyttDok);
   }
 
   function uppdateraDokument(id: string, patch: Partial<ForeningsDokument>) {
@@ -512,6 +674,7 @@ export function ForeningsDokumentbank() {
   }
 
   function taBortDokument(id: string) {
+    taBortDokumentFil(id);
     const state = lasForeningsDokument();
     sparaForeningsDokument({
       ...state,
@@ -571,6 +734,7 @@ export function ForeningsDokumentbank() {
           dokument={dokument}
           onUppdatera={uppdateraDokument}
           onTaBort={taBortDokument}
+          onSparadUppladdning={sparaNyttDokument}
         />
       ) : (
         <MallKatalog onSkapaKopia={skapaKopia} />
