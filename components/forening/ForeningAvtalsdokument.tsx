@@ -16,6 +16,7 @@ import {
 import { formateraBankIdSignatur, type BankIdSignatur } from "@/lib/bankid-signering";
 import { SvenskAdressBlock } from "@/components/forening/SvenskAdressBlock";
 import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
+import type { PdfUndertecknareBlockData } from "@/components/forening/pdf-undertecknare-block";
 import { sparaKundavtal } from "@/components/foreningsinformation/kundavtal-lager";
 import { LEVERANTOR } from "@/lib/leverantor";
 import { ARSAVTAL_RABATT_PROCENT } from "@/lib/prislista";
@@ -53,9 +54,32 @@ export function ForeningAvtalsdokument({
     .map((p) => ({ namn: p.namn, epost: p.epost?.trim() ?? "" }));
 
   function oppnaPdf() {
+    const undertecknare: PdfUndertecknareBlockData = {
+      forening: (part.foretradare ?? [])
+        .filter((p) => p.namn.trim())
+        .slice(0, 2)
+        .map((p) => ({
+          namn: p.namn.trim(),
+          roll: p.roll?.trim() || "Styrelseledamot",
+          epost: p.epost?.trim(),
+        })),
+      entreprenor: [
+        { namn: "Styrelse-Navet", roll: "Leverantör", epost: "" },
+        { namn: "", epost: "" },
+      ],
+      instruktion:
+        "Avtalet signeras med BankID av två behöriga företrädare för föreningen. Personerna nedan ska underteckna enligt PDF:en.",
+    };
+    while (undertecknare.forening.length < 2) {
+      undertecknare.forening.push({ namn: "", roll: "", epost: "" });
+    }
+    undertecknare.mejlForSignering =
+      undertecknare.forening.find((p) => p.epost?.trim())?.epost ?? "";
+
     const ok = oppnaTextSomPdf(
       `Kundavtal ${part.foreningsNamn.trim() || "föreningen"}`,
       avtalText,
+      { undertecknare },
     );
     if (!ok) {
       setSparatMeddelande(

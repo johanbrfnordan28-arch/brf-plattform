@@ -1,4 +1,9 @@
 import {
+  byggPdfUndertecknareHtml,
+  PDF_UNDERTECKNARE_PRINT_CSS,
+  type PdfUndertecknareBlockData,
+} from "@/components/forening/pdf-undertecknare-block";
+import {
   formateraStyrelseKontaktBlock,
   hamtaStyrelseKontakt,
 } from "@/lib/styrelse-kontakt";
@@ -71,6 +76,7 @@ function escapeHtml(value: string): string {
 export function oppnaSchemaGranskningPdf(
   punkter: Record<SigneringRoll, SigneringSchemaPunkt[]>,
   foreningsNamn: string,
+  undertecknare?: PdfUndertecknareBlockData,
 ): boolean {
   const roller: SigneringRoll[] = ["fastighetsskotare", "stadning"];
   const sektioner = roller
@@ -116,6 +122,7 @@ export function oppnaSchemaGranskningPdf(
     p.verktyg { font-family: system-ui, sans-serif; font-size: 0.9rem; }
     button { font: inherit; padding: 0.4rem 0.8rem; }
     @media print { .verktyg { display: none; } body { margin: 0; } }
+    ${PDF_UNDERTECKNARE_PRINT_CSS}
   </style>
 </head>
 <body>
@@ -126,6 +133,7 @@ export function oppnaSchemaGranskningPdf(
   <h1>Ronderings- och städschema</h1>
   <p class="meta">${escapeHtml(foreningsNamn)} · ${escapeHtml(new Date().toLocaleString("sv-SE"))}</p>
   ${sektioner}
+  ${undertecknare ? byggPdfUndertecknareHtml(undertecknare) : ""}
 </body>
 </html>`;
 

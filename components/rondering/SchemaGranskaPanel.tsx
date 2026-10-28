@@ -7,6 +7,12 @@ import {
 } from "@/components/entreprenorer/hus-entreprenorer-lager";
 import { oppnaSchemaGranskningPdf } from "@/components/rondering/exporteraSigneringSchema";
 import { genereraAnbudsformularText, skapaDriftUpphandlingar } from "@/components/rondering/skapa-drift-upphandling";
+import {
+  hamtaForeningUndertecknareForPdf,
+  standardMejlForSignering,
+  standardPdfUndertecknareBlock,
+  type PdfEntreprenorUndertecknare,
+} from "@/components/forening/pdf-undertecknare-block";
 import { hamtaAvtalssignerare } from "@/lib/styrelse-kontakt";
 import {
   BESTAMT_SCHEMA_EVENT,
@@ -36,6 +42,7 @@ export function SchemaGranskaPanel() {
   const [pdfFel, setPdfFel] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [entreprenorer, setEntreprenorer] = useState<HusEntreprenor[]>([]);
+  const [mejlForSignering, setMejlForSignering] = useState("");
 
   const ladda = useCallback(() => {
     setBestamt(lasBestamtSchema());
@@ -49,6 +56,7 @@ export function SchemaGranskaPanel() {
         giltigEpost(p.epost.trim()),
       ),
     );
+    setMejlForSignering(standardMejlForSignering());
     setHydrated(true);
     window.addEventListener("rondering-signering-schema-uppdaterad", ladda);
     window.addEventListener(BESTAMT_SCHEMA_EVENT, ladda);
@@ -75,8 +83,34 @@ export function SchemaGranskaPanel() {
   );
   const andrat = utkastSkiljerSigFranBestamt(bestamt);
 
+  function entreprenorerPaPdf(): PdfEntreprenorUndertecknare[] {
+    const valda = entreprenorer.filter((p) =>
+      valdaEposter.includes(p.epost.trim().toLowerCase()),
+    );
+    if (valda.length === 0) return [];
+    return valda.slice(0, 2).map((p) => ({
+      namn: p.namn.trim() || p.epost,
+      epost: p.epost.trim(),
+      roll: p.kategori?.trim() || "Entreprenör",
+    }));
+  }
+
+  function undertecknarePaPdf() {
+    const block = standardPdfUndertecknareBlock(entreprenorerPaPdf());
+    return {
+      ...block,
+      mejlForSignering: mejlForSignering.trim() || block.mejlForSignering,
+      instruktion:
+        "Schemat gäller som bindande underlag. Entreprenören signerar avtalet först med BankID (två personer). Därefter signerar föreningens representanter. Personerna nedan ska finnas med i PDF:en inför signering.",
+    };
+  }
+
   function granska() {
-    const ok = oppnaSchemaGranskningPdf(utkast, foreningsNamnNu());
+    const ok = oppnaSchemaGranskningPdf(
+      utkast,
+      foreningsNamnNu(),
+      undertecknarePaPdf(),
+    );
     setPdfFel(
       ok
         ? null
@@ -184,6 +218,53 @@ export function SchemaGranskaPanel() {
         Fastighetsskötare: {utkast.fastighetsskotare.length} moment · Städ:{" "}
         {utkast.stadning.length} moment
       </p>
+      {hydrated && (
+        <div className="mt-3 rounded-lg border border-border bg-white/80 px-3 py-3 text-sm">
+          <p className="font-medium text-foreground">
+            Personer längst ner i PDF (BankID)
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            Föreningens representanter hämtas från Föreningsuppgifter (markera
+            vem som signerar avtal). Välj entreprenörer nedan om deras namn ska
+            stå med redan i gransknings-PDF:en — annars lämnas platser tomma
+            tills avtal tilldelas.
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-foreground">
+            {hamtaForeningUndertecknareForPdf().map((p, i) => (
+              <li key={`f-${i}`}>
+                <strong>Förening {i + 1}:</strong>{" "}
+                {p.namn.trim() || "— ej angiven"} ({p.roll || "styrelse"})
+              </li>
+            ))}
+            {entreprenorerPaPdf().length > 0 ? (
+              entreprenorerPaPdf().map((p, i) => (
+                <li key={`e-${i}`}>
+                  <strong>Entreprenör {i + 1}:</strong> {p.namn}
+                  {p.epost ? ` · ${p.epost}` : ""}
+                </li>
+              ))
+            ) : (
+              <li className="text-muted">
+                Entreprenör: välj mottagare längre ner om namn ska förberedas
+                på PDF.
+              </li>
+            )}
+          </ul>
+          <label className="mt-3 block text-xs">
+            <span className="font-medium text-muted">
+              Mejl för undertecknande / inbjudan
+            </span>
+            <input
+              type="email"
+              value={mejlForSignering}
+              onChange={(e) => setMejlForSignering(e.target.value)}
+              placeholder="styrelse@forening.se"
+              className="mt-1 w-full max-w-md rounded-lg border border-border px-3 py-1.5 text-sm"
+            />
+          </label>
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
