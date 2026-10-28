@@ -4,9 +4,7 @@ import { hamtaMall, type DokumentbankMall } from "@/components/dokumentbank/mall
 import {
   arEgenkontrollDokument,
   byggEgenkontrollText,
-  hamtaEgenkontroll,
-  normaliseraEgenkontroll,
-  skapaVvsEgenkontroll,
+  hamtaEllerSkapaEgenkontrollForDokument,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import {
   tomDokumentEntreprenor,
@@ -145,15 +143,7 @@ export function hamtaForeningsDokumentInnehall(
   options?: { medSignaturer?: boolean },
 ): string {
   if (arEgenkontrollDokument(dok)) {
-    const ek =
-      hamtaEgenkontroll(dok) ??
-      normaliseraEgenkontroll(dok.egenkontroll) ??
-      skapaVvsEgenkontroll({
-        huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
-        huvudArbetsledareNamn: "",
-        utforareNamn: [],
-      });
-    return byggEgenkontrollText(dok, ek);
+    return byggEgenkontrollText(dok, hamtaEllerSkapaEgenkontrollForDokument(dok));
   }
 
   let text: string;

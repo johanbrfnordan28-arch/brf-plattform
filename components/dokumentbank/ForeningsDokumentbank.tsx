@@ -55,6 +55,7 @@ import {
   skapaVvsEgenkontroll,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
+import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 
 // ── Hjälp ─────────────────────────────────────────────────────────────────────
 
@@ -151,14 +152,14 @@ function SkapaEgenkontrollKopiaForm({
   const [utforare1, setUtforare1] = useState("");
   const [utforare2, setUtforare2] = useState("");
 
-  const kanSkapa =
-    titel.trim() && huvudForetag.trim() && huvudLedare.trim() && utforare1.trim();
+  const kanSkapa = titel.trim();
 
   return (
     <div className="mt-2 space-y-3 rounded-lg border border-primary/30 bg-[#f7fbf8] p-3">
       <p className="text-xs font-medium text-muted">
-        Utföraren bockar i kontrollerna. Angivna personer signeras längst ned
-        med BankID (datum och tid). Fler personer kan läggas till efter skapande.
+        Föreningen kan direkt granska och anpassa alla kontrollpunkter. Entreprenör
+        och BankID-signering fylls i senare — det är entreprenörens ansvar enligt
+        avtal.
       </p>
       <label className="block text-xs text-muted">
         Projektnamn / dokumenttitel
@@ -168,56 +169,61 @@ function SkapaEgenkontrollKopiaForm({
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
         />
       </label>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="text-xs text-muted">
-          Huvudentreprenör (företag) *
-          <input
-            value={huvudForetag}
-            onChange={(e) => setHuvudForetag(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-          />
-        </label>
-        <label className="text-xs text-muted">
-          Huvudentreprenör — arbetsledare (signerar) *
-          <input
-            value={huvudLedare}
-            onChange={(e) => setHuvudLedare(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-          />
-        </label>
-        <label className="text-xs text-muted">
-          Underentreprenör (företag)
-          <input
-            value={underForetag}
-            onChange={(e) => setUnderForetag(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-          />
-        </label>
-        <label className="text-xs text-muted">
-          Underentreprenör — arbetsledare (signerar)
-          <input
-            value={underLedare}
-            onChange={(e) => setUnderLedare(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-          />
-        </label>
-        <label className="text-xs text-muted">
-          Utförare 1 *
-          <input
-            value={utforare1}
-            onChange={(e) => setUtforare1(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-          />
-        </label>
-        <label className="text-xs text-muted">
-          Utförare 2 (valfritt)
-          <input
-            value={utforare2}
-            onChange={(e) => setUtforare2(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
-          />
-        </label>
-      </div>
+      <details className="rounded-lg border border-border/80 bg-white/80 px-3 py-2">
+        <summary className="cursor-pointer text-xs font-medium text-muted">
+          Förifyll entreprenör och signering (valfritt — kan göras senare)
+        </summary>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <label className="text-xs text-muted">
+            Huvudentreprenör (företag)
+            <input
+              value={huvudForetag}
+              onChange={(e) => setHuvudForetag(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+            />
+          </label>
+          <label className="text-xs text-muted">
+            Huvudentreprenör — arbetsledare (BankID)
+            <input
+              value={huvudLedare}
+              onChange={(e) => setHuvudLedare(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+            />
+          </label>
+          <label className="text-xs text-muted">
+            Underentreprenör (företag)
+            <input
+              value={underForetag}
+              onChange={(e) => setUnderForetag(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+            />
+          </label>
+          <label className="text-xs text-muted">
+            Underentreprenör — arbetsledare (BankID)
+            <input
+              value={underLedare}
+              onChange={(e) => setUnderLedare(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+            />
+          </label>
+          <label className="text-xs text-muted">
+            Utförare 1
+            <input
+              value={utforare1}
+              onChange={(e) => setUtforare1(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+            />
+          </label>
+          <label className="text-xs text-muted">
+            Utförare 2
+            <input
+              value={utforare2}
+              onChange={(e) => setUtforare2(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+            />
+          </label>
+        </div>
+      </details>
       <div className="flex gap-2">
         <button
           type="button"
@@ -332,7 +338,9 @@ function MinaDokument({
       {dokument.map((dok) => {
         const mall = hamtaMall(dok.mallId);
         const harInnehall = Boolean(
-          dok.innehall?.trim() || mall?.textInnehall,
+          dok.innehall?.trim() ||
+            mall?.textInnehall ||
+            arEgenkontrollDokument(dok),
         );
 
         return (
@@ -450,7 +458,9 @@ function MinaDokument({
                     onClick={() => setRedigerarId(dok.id)}
                     className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted hover:text-foreground"
                   >
-                    Redigera
+                    {arEgenkontrollDokument(dok)
+                      ? "Granska och redigera"
+                      : "Redigera"}
                   </button>
                   {bekraftaId === dok.id ? (
                     <div className="flex gap-1">
@@ -594,8 +604,8 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
       )}
       {filterOmrade === "egenkontroll" && (
         <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs text-primary-dark">
-          Kontroller i utförandeordning — utföraren bockar i Utfört/Avvikelse.
-          Avvikelser och signering med BankID (datum och tid) längst i dokumentet.
+          Föreningen anpassar kontrollplanen (även utan entreprenör). Entreprenören
+          fyller i och signerar med BankID när arbetet utförs.
         </p>
       )}
 
@@ -803,13 +813,20 @@ export function ForeningsDokumentbank() {
     const docTitel = titel.trim() || mall.titel;
     const avtalForm = hamtaAvtalFormForMall(mall.id);
 
-    if (arEgenkontrollMallId(mall.id) && egenkontrollInput) {
+    if (arEgenkontrollMallId(mall.id)) {
+      const input = egenkontrollInput ?? {
+        huvudentreprenorNamn: "",
+        huvudArbetsledareNamn: "",
+        underentreprenorNamn: "",
+        underArbetsledareNamn: "",
+        utforareNamn: [] as string[],
+      };
       const egenkontroll = skapaVvsEgenkontroll({
-        huvudentreprenorNamn: egenkontrollInput.huvudentreprenorNamn,
-        huvudArbetsledareNamn: egenkontrollInput.huvudArbetsledareNamn,
-        underentreprenorNamn: egenkontrollInput.underentreprenorNamn,
-        underArbetsledareNamn: egenkontrollInput.underArbetsledareNamn,
-        utforareNamn: egenkontrollInput.utforareNamn,
+        huvudentreprenorNamn: input.huvudentreprenorNamn,
+        huvudArbetsledareNamn: input.huvudArbetsledareNamn,
+        underentreprenorNamn: input.underentreprenorNamn,
+        underArbetsledareNamn: input.underArbetsledareNamn,
+        utforareNamn: input.utforareNamn,
       });
       const bas: ForeningsDokument = {
         id: skapaForeningsDokumentId(),
@@ -828,7 +845,7 @@ export function ForeningsDokumentbank() {
         egenkontroll,
         entreprenor: {
           ...tomDokumentEntreprenor(),
-          namn: egenkontrollInput.huvudentreprenorNamn,
+          namn: input.huvudentreprenorNamn,
         },
       };
       bas.innehall = byggEgenkontrollText(bas, egenkontroll);

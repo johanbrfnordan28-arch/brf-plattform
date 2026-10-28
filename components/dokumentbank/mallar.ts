@@ -603,7 +603,7 @@ Styrelsen i [Föreningens namn]
     titel: "Egenkontroll VVS",
     filnamn: "Egenkontroll_VVS.txt",
     beskrivning:
-      "Kontrollpunkter för VVS (provtryckning, montageanvisning, skötselråd, AMA). Signeras i projekt med BankID av utförare och arbetsledare.",
+      "Föreningen granskar och anpassar kontrollplanen (även före entreprenör). Entreprenören fyller i och signerar med BankID — provtryckning, AMA m.m.",
     omrade: "egenkontroll",
     textInnehall: EGENKONTROLL_VVS_INTRO,
   },

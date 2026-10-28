@@ -242,6 +242,28 @@ function normaliseraSignerare(raw: unknown): EgenkontrollSignerare[] {
     });
 }
 
+export function skapaPunkterFranVvsMall(): EgenkontrollPunkt[] {
+  return VVS_EGENKONTROLL_PUNKTER.map((p) => ({
+    id: skapaEgenkontrollPunktId(),
+    rubrik: p.rubrik,
+    beskrivning: p.beskrivning,
+    amaNot: p.amaNot,
+    aktuell: true,
+    status: "opåbörjad" as const,
+    kontrollDatum: "",
+    kommentar: "",
+  }));
+}
+
+/** Fyller i VVS-standardpunkter om listan saknas (äldre kopior / skapade utan formulär). */
+export function säkerstallEgenkontrollPunkter(
+  state: EgenkontrollState,
+): EgenkontrollState {
+  const aktuella = state.punkter.filter((p) => p.aktuell && p.rubrik.trim());
+  if (aktuella.length > 0) return state;
+  return { ...state, punkter: skapaPunkterFranVvsMall() };
+}
+
 export function skapaVvsEgenkontroll(input: {
   huvudentreprenorNamn: string;
   huvudArbetsledareNamn?: string;
@@ -260,16 +282,7 @@ export function skapaVvsEgenkontroll(input: {
     huvudentreprenorNamn: input.huvudentreprenorNamn.trim(),
     underentreprenorNamn: input.underentreprenorNamn?.trim() ?? "",
     utforare,
-    punkter: VVS_EGENKONTROLL_PUNKTER.map((p) => ({
-      id: skapaEgenkontrollPunktId(),
-      rubrik: p.rubrik,
-      beskrivning: p.beskrivning,
-      amaNot: p.amaNot,
-      aktuell: true,
-      status: "opåbörjad",
-      kontrollDatum: "",
-      kommentar: "",
-    })),
+    punkter: skapaPunkterFranVvsMall(),
     signerare: byggSignerareFranSkapa({
       huvudentreprenorNamn: input.huvudentreprenorNamn,
       huvudArbetsledareNamn: input.huvudArbetsledareNamn ?? "",
@@ -294,7 +307,7 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
     ? d.punkter.map((p) => normaliseraPunkt(p as Partial<EgenkontrollPunkt>))
     : [];
 
-  return {
+  const state: EgenkontrollState = {
     bransch: "vvs",
     huvudentreprenorNamn: d.huvudentreprenorNamn ?? "",
     underentreprenorNamn: d.underentreprenorNamn ?? "",
@@ -302,6 +315,7 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
     punkter,
     signerare,
   };
+  return säkerstallEgenkontrollPunkter(state);
 }
 
 export function arEgenkontrollDokument(dok: ForeningsDokument): boolean {
@@ -309,7 +323,28 @@ export function arEgenkontrollDokument(dok: ForeningsDokument): boolean {
 }
 
 export function hamtaEgenkontroll(dok: ForeningsDokument): EgenkontrollState | undefined {
-  return normaliseraEgenkontroll(dok.egenkontroll);
+  const norm = normaliseraEgenkontroll(dok.egenkontroll);
+  if (norm) return norm;
+  if (!arEgenkontrollMallId(dok.mallId)) return undefined;
+  return skapaVvsEgenkontroll({
+    huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
+    huvudArbetsledareNamn: "",
+    utforareNamn: [],
+  });
+}
+
+/** Vid redigering: alltid komplett state inkl. standardpunkter om de saknades. */
+export function hamtaEllerSkapaEgenkontrollForDokument(
+  dok: ForeningsDokument,
+): EgenkontrollState {
+  return (
+    hamtaEgenkontroll(dok) ??
+    skapaVvsEgenkontroll({
+      huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
+      huvudArbetsledareNamn: "",
+      utforareNamn: [],
+    })
+  );
 }
 
 function formatPunktRad(p: EgenkontrollPunkt, index: number): string {
@@ -346,7 +381,14 @@ function formatAvvikelseSektion(punkter: EgenkontrollPunkt[]): string {
 }
 
 function formatSignering(signerare: EgenkontrollSignerare[]): string {
-  if (signerare.length === 0) return "SIGNERING\n---------\n(inga personer angivna)\n";
+  if (signerare.length === 0) {
+    return `SIGNERING MED BANKID (entreprenörens ansvar)
+----------------------------------------
+Inga undertecknare angivna ännu. Entreprenör och signering tillkommer vid
+tilldelning. Föreningen bör kräva BankID-signatur med datum och tid från
+utförare och arbetsledare innan dokumentet godkänns som slutligt underlag.
+`;
+  }
   const rader = signerare.map((s) => {
     const roll =
       s.roll === "ovrig"
@@ -375,16 +417,21 @@ export function byggEgenkontrollText(
     .join("\n\n");
 
   const utforareLabel =
-    ek.utforare.map((u) => u.namn).join(", ") || "—";
+    ek.utforare.map((u) => u.namn).join(", ") || "Tillkommer vid tilldelning av entreprenör";
+  const huvudLabel = ek.huvudentreprenorNamn.trim() || "Ej tilldelad";
+  const underLabel = ek.underentreprenorNamn.trim();
 
   return `${intro}
 
-Förening: ${forening.foreningsNamn}
-Projekt: ${dok.titel}
-Huvudentreprenör: ${ek.huvudentreprenorNamn}
-${ek.underentreprenorNamn ? `Underentreprenör: ${ek.underentreprenorNamn}\n` : ""}Utförare (bockar i kontroller): ${utforareLabel}
+Förening (beställare): ${forening.foreningsNamn}
+Projekt / dokument: ${dok.titel}
 
-KONTROLLPUNKTER (i utförandeordning)
+ENTREPRENÖR (ifylls när tilldelning skett)
+Huvudentreprenör: ${huvudLabel}
+${underLabel ? `Underentreprenör: ${underLabel}\n` : ""}Utförare som attesterar kontroller: ${utforareLabel}
+
+KONTROLLPLAN — PUNKTER I UTFÖRANDEORDNING
+(Anpassad av föreningen; ifylls och attesteras av entreprenören)
 ------------------------------------
 ${punkterText || "(Inga aktuella punkter)"}
 
@@ -421,6 +468,14 @@ export function harEnkelBankIdSignatur(signaturer: BankIdSignatur[]): boolean {
 export function allaSignerareHarSignatur(state: EgenkontrollState): boolean {
   if (state.signerare.length === 0) return false;
   return state.signerare.every((s) => harEnkelBankIdSignatur(s.signaturer));
+}
+
+export function harEntreprenorTilldelad(state: EgenkontrollState): boolean {
+  return (
+    Boolean(state.huvudentreprenorNamn.trim()) ||
+    state.utforare.length > 0 ||
+    state.signerare.some((s) => s.roll !== "ovrig")
+  );
 }
 
 export function egenkontrollMallIdForSkapa(mallId: string): boolean {

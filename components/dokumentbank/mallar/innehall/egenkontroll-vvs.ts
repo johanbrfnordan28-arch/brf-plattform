@@ -1,17 +1,29 @@
 /** Statisk introtext — strukturerade kontroller lagras i dokumentets egenkontroll-data. */
-export const EGENKONTROLL_VVS_INTRO = `EGENKONTROLL — VVS
-=====================
+export const EGENKONTROLL_VVS_INTRO = `EGENKONTROLL VVS — UNDERLAG TILL BESTÄLLARE (BRF)
+====================================================
 
-Detta dokument utgör entreprenörens egenkontroll av VVS-arbeten i projektet.
-Kontrollen ska styras av entreprenadhandlingar, BBR och — där dessa inte reglerar
-ärendet — Anvisningar för material och arbeten (AMA), särskilt AMA VVS & AF.
+VAD FÖRENINGEN SKA FÅ
+Som beställare ska ni kunna ta del av en tydlig kontrollplan, hur varje moment
+är bedömt (utfört eller avvikelse), eventuella reservationer samt vem som
+signerat med BankID och när. Det stärker spårbarheten inför slutbesiktning,
+ garanti och arkiv.
 
-Kontrollpunkterna följer normalt utförandeordning i projektet. Endast utföraren
-bockar i Utfört eller Avvikelse samt datum för varje punkt. Avvikelser redovisas
-längre ner med orsak, reservation och datum när projektledare eller ansvarig chef
-fått informationen.
+FÖRENINGENS ROLL
+Styrelsen kan tidigt granska och anpassa kontrollpunkterna (lägga till, ta bort
+och formulera krav) — även innan entreprenör är tilldelad. Det är er kontrollplan
+mot entreprenören; själva ifyllnaden och attesten är entreprenörens ansvar.
 
-SIGNERING (BankID)
-Alla angivna personer signerar längst ned med datum och tid. Typiskt: utförare,
-eventuell underentreprenörs arbetsledare och huvudentreprenörens arbetsledare.
+ENTREPRENÖRENS ANSVAR
+Entreprenören ska utföra arbetet enligt handling, BBR och AMA VVS & AF, genomföra
+egenkontroll, dokumentera avvikelser och lämna ifylld egenkontroll till föreningen.
+Endast entreprenörens utförare bockar i Utfört/Avvikelse; arbetsledare och
+eventuell underentreprenör signerar därefter.
+
+KRAV PÅ BANKID (STARKT REKOMMENDERAT)
+Föreningen bör kräva att färdig egenkontroll signeras med BankID av:
+  • den/de som utfört arbetet,
+  • underentreprenörens arbetsledare (vid UE),
+  • huvudentreprenörens arbetsledare.
+Varje signatur ska ha datum och tid. Det binder attesten till en identifierad person
+ och underlättar er granskning.
 `;

@@ -10,6 +10,12 @@ import {
   type DokumentLayoutTema,
 } from "@/components/dokumentbank/dokument-layout";
 import { skapaInnehallFranMall } from "@/components/dokumentbank/forening-dokument-innehall";
+import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
+import {
+  byggEgenkontrollText,
+  skapaVvsEgenkontroll,
+} from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import type { ForeningsDokument } from "@/components/dokumentbank/forening-dokumenter-lager";
 
 type Props = {
   mall: DokumentbankMall;
@@ -34,12 +40,26 @@ export function DokumentForhandsgranskaDialog({
     }
   }, [open, mall.titel]);
 
+  const arEgenkontroll = arEgenkontrollMallId(mall.id);
+
   const text = useMemo(() => {
+    if (arEgenkontroll) {
+      const docTitel = titel.trim() || mall.titel;
+      const ek = skapaVvsEgenkontroll({
+        huvudentreprenorNamn: "[Huvudentreprenör]",
+        huvudArbetsledareNamn: "[Arbetsledare]",
+        underentreprenorNamn: "[Underentreprenör]",
+        underArbetsledareNamn: "[UE arbetsledare]",
+        utforareNamn: ["[Utförare 1]"],
+      });
+      const dok = { titel: docTitel, mallId: mall.id } as ForeningsDokument;
+      return byggEgenkontrollText(dok, ek);
+    }
     if (!mall.textInnehall?.trim()) {
       return "Den här mallen har inget textinnehåll att förhandsgranska. Du kan fortfarande skapa en kopia och ladda upp eget innehåll.";
     }
     return skapaInnehallFranMall(mall, titel);
-  }, [mall, titel]);
+  }, [mall, titel, arEgenkontroll]);
 
   const previewSrcDoc = useMemo(
     () =>
@@ -138,7 +158,7 @@ export function DokumentForhandsgranskaDialog({
           >
             Öppna i ny flik / PDF
           </button>
-          {onSkapaKopia && (
+          {onSkapaKopia && !arEgenkontroll && (
             <button
               type="button"
               onClick={() => {
@@ -149,6 +169,12 @@ export function DokumentForhandsgranskaDialog({
             >
               Skapa kopia med vald layout
             </button>
+          )}
+          {arEgenkontroll && (
+            <p className="w-full text-xs text-muted sm:w-auto sm:flex-1">
+              Egenkontroll skapas via &quot;Skapa kopia&quot; i listan (med
+              entreprenör och utförare) — då får du alla kontrollpunkter.
+            </p>
           )}
           <button
             type="button"
