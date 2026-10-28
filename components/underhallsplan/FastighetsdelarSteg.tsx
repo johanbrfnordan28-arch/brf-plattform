@@ -28,11 +28,14 @@ import {
   måttenhetEtiketter,
   skapaKomponentId,
   skapaTomKomponentDetalj,
+  hamtaMattPartier,
   synkaKomponentDetaljMedMall,
+  uppdateraMattPartier,
   type KomponentDetaljData,
   type Måttenhet,
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
+import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
 type FastighetsdelarStegProps = {
@@ -245,7 +248,6 @@ export function FastighetsdelarSteg({
                   const detaljPanel = def?.detaljPanel;
                   const doljEnkelMatt = skaDoljaEnkelMattISteg2(detaljPanel);
                   const forslag = forslagFranGrund(namn, rad.id, grund);
-                  const enhet = måttenhetEtiketter[rad.måttenhet];
                   const hint =
                     def?.måttHint ?? "Ange antal, yta eller löpmeter.";
                   const data = detaljFor(namn);
@@ -275,44 +277,53 @@ export function FastighetsdelarSteg({
                         </button>
                       </div>
                       {!doljEnkelMatt && (
-                        <div className="mt-2 grid gap-2 sm:grid-cols-[9rem_1fr]">
-                          <label className="block text-xs text-muted">
-                            Mått
+                        <div className="mt-2">
+                          <label className="mb-2 block w-36 text-xs text-muted">
+                            Enhet
                             <select
                               value={rad.måttenhet}
-                              onChange={(e) =>
-                                uppdateraRad(namn, rad.id, {
-                                  måttenhet: e.target.value as Måttenhet,
-                                  aktiv: true,
-                                })
-                              }
-                              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+                              onChange={(e) => {
+                                const måttenhet = e.target
+                                  .value as Måttenhet;
+                                const d = detaljFor(namn);
+                                sparaDetalj(
+                                  namn,
+                                  uppdateraMattPartier(
+                                    d,
+                                    rad.id,
+                                    hamtaMattPartier(d, rad.id, rad),
+                                    måttenhet,
+                                  ),
+                                );
+                              }}
+                              className="mt-0.5 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
                             >
                               {(
                                 Object.keys(måttenhetEtiketter) as Måttenhet[]
                               ).map((key) => (
                                 <option key={key} value={key}>
-                                  {måttenhetEtiketter[key].etikett}
+                                  {måttenhetEtiketter[key].etikett} (
+                                  {måttenhetEtiketter[key].enhet})
                                 </option>
                               ))}
                             </select>
                           </label>
-                          <label className="block text-xs text-muted">
-                            {enhet.etikett} ({enhet.enhet})
-                            <input
-                              type="number"
-                              min={0}
-                              step={rad.måttenhet === "antal" ? 1 : 0.1}
-                              value={rad.värde}
-                              onChange={(e) =>
-                                uppdateraRad(namn, rad.id, {
-                                  värde: e.target.value,
-                                  aktiv: true,
-                                })
-                              }
-                              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
-                            />
-                          </label>
+                          <UnderkomponentMattPartierPanel
+                            etikett={rad.etikett}
+                            måttenhet={rad.måttenhet}
+                            partier={hamtaMattPartier(data, rad.id, rad)}
+                            onChange={(partier) =>
+                              sparaDetalj(
+                                namn,
+                                uppdateraMattPartier(
+                                  detaljFor(namn),
+                                  rad.id,
+                                  partier,
+                                  rad.måttenhet,
+                                ),
+                              )
+                            }
+                          />
                         </div>
                       )}
                       {detaljPanel && (

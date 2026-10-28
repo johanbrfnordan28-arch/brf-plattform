@@ -9,6 +9,7 @@ import {
   uppdateraFasadAtgardPrisRegister,
 } from "@/components/underhallsplan/fasad-atgard-pris";
 import { TakbelaggningPanel } from "@/components/underhallsplan/TakbelaggningPanel";
+import { TakfonsterListaPanel } from "@/components/underhallsplan/TakfonsterListaPanel";
 import {
   hamtaFonsterDorrPoster,
   hamtaFasadAtgardData,
@@ -24,6 +25,8 @@ import {
   uppdateraFasadSockelPoster,
   uppdateraFonsterDorrPoster,
   uppdateraTakBelaggningData,
+  hamtaTakfonsterData,
+  uppdateraTakfonsterData,
   type KomponentDetaljData,
   type UnderkomponentDetaljPanel,
   type UnderkomponentRad,
@@ -38,6 +41,7 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "dorr-lista",
   "fasadmaterial-val",
   "fasad-sockel-val",
+  "takfonster-lista",
 ]);
 
 export function skaDoljaEnkelMattISteg2(
@@ -103,6 +107,22 @@ export function FastighetsdelUnderkomponentDetalj({
                 r.id === rad.id ? { ...r, ...patch, aktiv: true } : r,
               ),
             })
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "takfonster-lista") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <TakfonsterListaPanel
+          data={hamtaTakfonsterData(data, rad.id)}
+          foreningsAdresser={foreningsAdresser}
+          grund={grund}
+          steg2Lage
+          onChange={(takfonster) =>
+            onChange(uppdateraTakfonsterData(data, rad.id, takfonster))
           }
         />
       </div>

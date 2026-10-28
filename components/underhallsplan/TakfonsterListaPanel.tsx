@@ -28,6 +28,8 @@ type TakfonsterListaPanelProps = {
   onChange: (data: TakfonsterData) => void;
   foreningsAdresser?: string[];
   grund?: Grunduppgifter;
+  /** Steg 2 — antal och storlek, utan prisfält. */
+  steg2Lage?: boolean;
 };
 
 function TakfonsterAdressFalt({
@@ -108,6 +110,7 @@ export function TakfonsterListaPanel({
   onChange,
   foreningsAdresser = [],
   grund,
+  steg2Lage = false,
 }: TakfonsterListaPanelProps) {
   const d = normaliseraTakfonsterData(data);
   const { totaltKr } = beraknaTakfonsterPris(d);
@@ -189,13 +192,18 @@ export function TakfonsterListaPanel({
 
                   <label className="block text-sm sm:col-span-2">
                     <span className="text-xs font-medium text-muted">
-                      Plats / kommentar (valfritt)
+                      {steg2Lage
+                        ? "Benämning (t.ex. typ 1, typ 2)"
+                        : "Plats / kommentar (valfritt)"}
                     </span>
                     <input
                       type="text"
                       value={post.namn}
                       onChange={(e) =>
                         uppdateraSingel(post.id, { namn: e.target.value })
+                      }
+                      placeholder={
+                        steg2Lage ? `Typ ${index + 1}` : undefined
                       }
                       className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                     />
@@ -220,9 +228,8 @@ export function TakfonsterListaPanel({
                     <span className="text-xs font-medium text-muted">Antal</span>
                     <div className="mt-1 flex items-center gap-2">
                       <input
-                        type="number"
-                        min={0}
-                        step={1}
+                        type="text"
+                        inputMode="numeric"
                         value={post.antal}
                         onChange={(e) =>
                           uppdateraSingel(post.id, { antal: e.target.value })
@@ -233,29 +240,33 @@ export function TakfonsterListaPanel({
                     </div>
                   </label>
 
-                  <label className="block text-sm">
-                    <span className="text-xs font-medium text-muted">
-                      Enhetspris
-                    </span>
-                    <div className="mt-1 flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        step={100}
-                        value={post.enhetsprisKr}
-                        onChange={(e) =>
-                          uppdateraSingel(post.id, {
-                            enhetsprisKr: e.target.value,
-                          })
-                        }
-                        className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-                      />
-                      <span className="shrink-0 text-xs text-muted">kr/st</span>
-                    </div>
-                  </label>
+                  {!steg2Lage && (
+                    <label className="block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Enhetspris
+                      </span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={100}
+                          value={post.enhetsprisKr}
+                          onChange={(e) =>
+                            uppdateraSingel(post.id, {
+                              enhetsprisKr: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
+                        />
+                        <span className="shrink-0 text-xs text-muted">
+                          kr/st
+                        </span>
+                      </div>
+                    </label>
+                  )}
                 </div>
 
-                {beraknaTakfonsterSingelSumma(post) > 0 && (
+                {!steg2Lage && beraknaTakfonsterSingelSumma(post) > 0 && (
                   <p className="mt-2 text-xs text-muted">
                     Radsumma:{" "}
                     <span className="font-medium text-foreground">
@@ -275,9 +286,11 @@ export function TakfonsterListaPanel({
               singel: [
                 ...d.singel,
                 skapaTomTakfonsterSingelPost(
-                  d.singel.length === 0
-                    ? "Singelfönster 1"
-                    : `Singelfönster ${d.singel.length + 1}`,
+                  steg2Lage
+                    ? `Typ ${d.singel.length + 1}`
+                    : d.singel.length === 0
+                      ? "Singelfönster 1"
+                      : `Singelfönster ${d.singel.length + 1}`,
                 ),
               ],
             })
@@ -293,9 +306,9 @@ export function TakfonsterListaPanel({
           Del 2 — Kombinationer
         </legend>
         <p className="mt-0.5 text-xs leading-relaxed text-muted">
-          Flera fönster monterade i rad som en enhet. Välj antal fönster i rad och
-          modulmått per fönster — total bredd beräknas automatiskt. Prissätt
-          varje kombination med kr/st (hela kombinationen).
+          {steg2Lage
+            ? "Flera fönster monterade i rad som en enhet. Ange antal och storlek per kombination."
+            : "Flera fönster monterade i rad som en enhet. Välj antal fönster i rad och modulmått per fönster — total bredd beräknas automatiskt. Prissätt varje kombination med kr/st (hela kombinationen)."}
         </p>
 
         {d.kombinationer.length === 0 ? (
@@ -425,38 +438,41 @@ export function TakfonsterListaPanel({
                       </div>
                     </label>
 
-                    <label className="block text-sm">
-                      <span className="text-xs font-medium text-muted">
-                        Enhetspris
-                      </span>
-                      <div className="mt-1 flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          step={100}
-                          value={post.enhetsprisKr}
-                          onChange={(e) =>
-                            uppdateraKombination(post.id, {
-                              enhetsprisKr: e.target.value,
-                            })
-                          }
-                          className="w-full rounded-lg border border-border px-3 py-2 text-sm"
-                        />
-                        <span className="shrink-0 text-xs text-muted">
-                          kr/komb.
+                    {!steg2Lage && (
+                      <label className="block text-sm">
+                        <span className="text-xs font-medium text-muted">
+                          Enhetspris
                         </span>
-                      </div>
-                    </label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={100}
+                            value={post.enhetsprisKr}
+                            onChange={(e) =>
+                              uppdateraKombination(post.id, {
+                                enhetsprisKr: e.target.value,
+                              })
+                            }
+                            className="w-full rounded-lg border border-border px-3 py-2 text-sm"
+                          />
+                          <span className="shrink-0 text-xs text-muted">
+                            kr/komb.
+                          </span>
+                        </div>
+                      </label>
+                    )}
                   </div>
 
-                  {beraknaTakfonsterKombinationSumma(post) > 0 && (
-                    <p className="mt-2 text-xs text-muted">
-                      Radsumma:{" "}
-                      <span className="font-medium text-foreground">
-                        {formatKr(beraknaTakfonsterKombinationSumma(post))}
-                      </span>
-                    </p>
-                  )}
+                  {!steg2Lage &&
+                    beraknaTakfonsterKombinationSumma(post) > 0 && (
+                      <p className="mt-2 text-xs text-muted">
+                        Radsumma:{" "}
+                        <span className="font-medium text-foreground">
+                          {formatKr(beraknaTakfonsterKombinationSumma(post))}
+                        </span>
+                      </p>
+                    )}
                 </li>
               );
             })}
@@ -483,7 +499,7 @@ export function TakfonsterListaPanel({
         </button>
       </fieldset>
 
-      {totaltKr > 0 && (
+      {!steg2Lage && totaltKr > 0 && (
         <p className="rounded-lg border border-primary/30 bg-[#eef6f0]/50 px-3 py-2 text-sm">
           <span className="font-semibold text-primary-dark">
             Totalt takfönster: {formatKr(totaltKr)}
@@ -491,7 +507,8 @@ export function TakfonsterListaPanel({
         </p>
       )}
 
-      {(d.singel.length > 0 || d.kombinationer.length > 0) && (
+      {!steg2Lage &&
+        (d.singel.length > 0 || d.kombinationer.length > 0) && (
         <ListaSummeringPanel
           titel="Summering takfönster"
           rader={summeraTakfonsterData(d)}

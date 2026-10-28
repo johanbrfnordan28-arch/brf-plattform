@@ -366,7 +366,10 @@ export function formateraTakfonsterPris(totaltKr: number): string {
   return formatKr(totaltKr);
 }
 
-export function formateraTakfonsterData(data: TakfonsterData): string {
+export function formateraTakfonsterData(
+  data: TakfonsterData,
+  options?: { utanPris?: boolean },
+): string {
   const d = normaliseraTakfonsterData(data);
   const delar: string[] = [];
 
@@ -408,9 +411,11 @@ export function formateraTakfonsterData(data: TakfonsterData): string {
     delar.push(`kombinationer: ${rader.join(", ")}${fler}`);
   }
 
-  const { totaltKr } = beraknaTakfonsterPris(d);
-  const pris = formateraTakfonsterPris(totaltKr);
-  if (pris) delar.push(pris);
+  if (!options?.utanPris) {
+    const { totaltKr } = beraknaTakfonsterPris(d);
+    const pris = formateraTakfonsterPris(totaltKr);
+    if (pris) delar.push(pris);
+  }
 
   return delar.join(" · ");
 }

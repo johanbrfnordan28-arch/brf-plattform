@@ -1,4 +1,6 @@
 import { formateraTakBelaggningPost } from "@/components/underhallsplan/tak-belaggning";
+import { formateraTakfonsterData } from "@/components/underhallsplan/takfonster";
+import { formateraMattPartier } from "@/components/underhallsplan/underkomponent-matt-partier";
 import { formateraFonsterDorrPoster } from "@/components/underhallsplan/fonster-dorrar";
 import { formateraBalkongPoster } from "@/components/underhallsplan/balkonger";
 import { formateraFasadSockelPoster } from "@/components/underhallsplan/fasad-sockel";
@@ -9,7 +11,9 @@ import {
   hamtaFasadSidaMaterialPoster,
   hamtaFasadSockelPoster,
   hamtaFonsterDorrPoster,
+  hamtaMattPartier,
   hamtaTakBelaggningData,
+  hamtaTakfonsterData,
   måttenhetEtiketter,
   type KomponentDetaljData,
   type KomponentMall,
@@ -84,11 +88,20 @@ export function byggSteg2KomponentSammanstallning(
         hamtaFasadSockelPoster(data, rad.id),
       );
       if (text) rader.push(text);
+    } else if (def?.detaljPanel === "takfonster-lista") {
+      const text = formateraTakfonsterData(
+        hamtaTakfonsterData(data, rad.id),
+        { utanPris: true },
+      );
+      if (text) rader.push(text);
     } else {
-      const v = rad.värde.trim();
-      if (v) {
-        const enhet = måttenhetEtiketter[rad.måttenhet].enhet;
-        rader.push(`${v} ${enhet}`);
+      const partier = hamtaMattPartier(data, rad.id, rad);
+      const enhet = måttenhetEtiketter[rad.måttenhet].enhet;
+      const text = formateraMattPartier(partier, enhet);
+      if (text) rader.push(text);
+      else {
+        const v = rad.värde.trim();
+        if (v) rader.push(`${v} ${enhet}`);
       }
     }
 

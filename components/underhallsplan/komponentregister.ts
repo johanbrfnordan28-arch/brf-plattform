@@ -134,6 +134,11 @@ import {
   synkaLegacyVentilationDeltyper,
 } from "@/components/underhallsplan/grunduppgifter-val";
 import {
+  normaliseraMattPartier,
+  vardeFranMattPartier,
+  type UnderkomponentMattParti,
+} from "@/components/underhallsplan/underkomponent-matt-partier";
+import {
   formateraBrandskyddBranddorrar,
   formateraBrandskyddSba,
   normaliseraBrandskyddBranddorrarData,
@@ -538,6 +543,8 @@ export type KomponentDetaljData = {
   medlemstakterrassRegister?: MedlemstakterrassRegister;
   /** Takfönster per underkomponent-id */
   takfonsterRegister?: TakfonsterRegister;
+  /** Flera mätvärden per enkel underkomponent (nock, ränndal m.m.) i steg 2 */
+  mattPartierRegister?: Record<string, UnderkomponentMattParti[]>;
   /** Takbeläggning per underkomponent-id (takyta) */
   takBelaggningRegister?: import("@/components/underhallsplan/tak-belaggning").TakBelaggningRegister;
   /** SBA per underkomponent-id (Brandskydd) */
@@ -2444,6 +2451,7 @@ export function synkaKomponentDetaljMedMall(
       ...tom.takfonsterRegister,
       ...dataIn.takfonsterRegister,
     },
+    mattPartierRegister: dataIn.mattPartierRegister,
     fasadSidaMaterialRegister: Object.fromEntries(
       Object.entries({
         ...tom.fasadSidaMaterialRegister,
@@ -2608,6 +2616,40 @@ export function uppdateraTakfonsterData(
       ...data.takfonsterRegister,
       [underId]: normaliseraTakfonsterData(takfonster),
     },
+  };
+}
+
+export function hamtaMattPartier(
+  data: KomponentDetaljData,
+  underId: string,
+  rad?: UnderkomponentRad,
+): UnderkomponentMattParti[] {
+  return normaliseraMattPartier(
+    data.mattPartierRegister?.[underId],
+    rad?.värde,
+    rad?.etikett,
+  );
+}
+
+export function uppdateraMattPartier(
+  data: KomponentDetaljData,
+  underId: string,
+  partier: UnderkomponentMattParti[],
+  måttenhet: Måttenhet,
+): KomponentDetaljData {
+  const normaliserade = normaliseraMattPartier(partier);
+  const värde = vardeFranMattPartier(normaliserade);
+  return {
+    ...data,
+    mattPartierRegister: {
+      ...data.mattPartierRegister,
+      [underId]: normaliserade,
+    },
+    underkomponenter: data.underkomponenter.map((r) =>
+      r.id === underId
+        ? { ...r, värde, måttenhet, aktiv: true }
+        : r,
+    ),
   };
 }
 
