@@ -4,8 +4,10 @@ import { ABK_09_KONSULT_MALL } from "@/components/dokumentbank/mallar/innehall/a
 import { TIDPLAN_ENTREPRENAD_BILAGA } from "@/components/dokumentbank/mallar/innehall/tidsplan-entreprenad-bilaga";
 import { LYFTPLAN_ENTREPRENAD_BILAGA } from "@/components/dokumentbank/mallar/innehall/lyftplan-entreprenad-bilaga";
 import { ENTREPRENAD_AVTAL_MALL_ID } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
-import { EGENKONTROLL_VVS_MALL_ID } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
-import { EGENKONTROLL_VVS_INTRO } from "@/components/dokumentbank/mallar/innehall/egenkontroll-vvs";
+import {
+  EGENKONTROLL_MALL_DEFS,
+} from "@/components/dokumentbank/mallar/egenkontroll-mallar";
+import { introForBransch } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
 export type DokumentMallOmrade =
@@ -598,15 +600,14 @@ Styrelsen i [Föreningens namn]
 `,
   },
   // ── Egenkontroller ─────────────────────────────────────────────────────────
-  {
-    id: EGENKONTROLL_VVS_MALL_ID,
-    titel: "Egenkontroll VVS",
-    filnamn: "Egenkontroll_VVS.txt",
-    beskrivning:
-      "Föreningen granskar och anpassar kontrollplanen (även före entreprenör). Entreprenören fyller i och signerar med BankID — provtryckning, AMA m.m.",
-    omrade: "egenkontroll",
-    textInnehall: EGENKONTROLL_VVS_INTRO,
-  },
+  ...EGENKONTROLL_MALL_DEFS.map((def) => ({
+    id: def.id,
+    titel: def.titel,
+    filnamn: def.filnamn,
+    beskrivning: def.beskrivning,
+    omrade: "egenkontroll" as const,
+    textInnehall: introForBransch(def.bransch),
+  })),
   // ── Entreprenad / konsult (ABT 06, AB 04, ABK 09) ─────────────────────────
   {
     id: ENTREPRENAD_AVTAL_MALL_ID["ABT-06"],

@@ -52,7 +52,7 @@ import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontr
 import {
   arEgenkontrollDokument,
   byggEgenkontrollText,
-  skapaVvsEgenkontroll,
+  skapaEgenkontrollForMall,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { ProjektEgenkontrollRedigera } from "@/components/projekt/ProjektEgenkontrollRedigera";
 import {
@@ -433,7 +433,7 @@ export function ProjektModul() {
         const docTitel = doc.filnamn
           .replace(/\.(txt|pdf)$/i, "")
           .replace(/_/g, " ");
-        const ek = skapaVvsEgenkontroll({
+        const ek = skapaEgenkontrollForMall(doc.bankId, {
           huvudentreprenorNamn: "",
           utforareNamn: [],
         });

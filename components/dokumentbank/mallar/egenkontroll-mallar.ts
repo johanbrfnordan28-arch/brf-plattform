@@ -1,113 +1,123 @@
-export const EGENKONTROLL_VVS_MALL_ID = "egenkontroll-vvs";
+import { EGENKONTROLL_INTROS } from "@/components/dokumentbank/mallar/innehall/egenkontroll-intros";
+import {
+  EGENKONTROLL_PUNKTER_PER_BRANSCH,
+  punkterForBransch,
+  VVS_EGENKONTROLL_PUNKTER,
+} from "@/components/dokumentbank/mallar/egenkontroll-punkter";
+import type {
+  EgenkontrollBransch,
+  EgenkontrollPunktMall,
+} from "@/components/dokumentbank/mallar/egenkontroll-typer";
+import {
+  ALLA_EGENKONTROLL_BRANSCHER,
+  arGiltigEgenkontrollBransch,
+  EGENKONTROLL_BRANSCH_ETIKETTER,
+} from "@/components/dokumentbank/mallar/egenkontroll-typer";
 
-export function arEgenkontrollMallId(mallId: string): boolean {
-  return mallId === EGENKONTROLL_VVS_MALL_ID;
-}
-
-export type EgenkontrollPunktMall = {
-  rubrik: string;
-  beskrivning: string;
-  amaNot?: string;
-  /** Vid attest bör entreprenören ange lägenhet/yta (inte bara hela uppdraget). */
-  kravSpecifikPlats?: boolean;
+export type { EgenkontrollBransch, EgenkontrollPunktMall };
+export {
+  ALLA_EGENKONTROLL_BRANSCHER,
+  arGiltigEgenkontrollBransch,
+  EGENKONTROLL_BRANSCH_ETIKETTER,
+  VVS_EGENKONTROLL_PUNKTER,
+  punkterForBransch,
 };
 
-/** Ordning enligt normalt utförande i projektet (förhandsgranskning och checklista). */
-export const VVS_EGENKONTROLL_PUNKTER: EgenkontrollPunktMall[] = [
+export const EGENKONTROLL_VVS_MALL_ID = "egenkontroll-vvs";
+export const EGENKONTROLL_EL_MALL_ID = "egenkontroll-el";
+export const EGENKONTROLL_MALNING_MALL_ID = "egenkontroll-malning";
+export const EGENKONTROLL_BYGG_MALL_ID = "egenkontroll-bygg";
+export const EGENKONTROLL_FASAD_MALL_ID = "egenkontroll-fasad";
+export const EGENKONTROLL_TAK_MALL_ID = "egenkontroll-tak";
+export const EGENKONTROLL_BADRUM_STAM_MALL_ID = "egenkontroll-badrum-stam";
+
+export type EgenkontrollMallDef = {
+  id: string;
+  bransch: EgenkontrollBransch;
+  titel: string;
+  filnamn: string;
+  beskrivning: string;
+};
+
+export const EGENKONTROLL_MALL_DEFS: EgenkontrollMallDef[] = [
   {
-    rubrik: "Avstämning mot handling",
+    id: EGENKONTROLL_VVS_MALL_ID,
+    bransch: "vvs",
+    titel: "Egenkontroll VVS",
+    filnamn: "Egenkontroll_VVS.txt",
     beskrivning:
-      "Utfört arbete är avstämt mot aktuell ritning / relationshandling innan och under montage.",
+      "Kontrollplan VVS — provtryckning, infästning, läck ut m.m. Föreningen granskar; entreprenören signerar med BankID.",
   },
   {
-    rubrik: "Material för svensk marknad",
+    id: EGENKONTROLL_EL_MALL_ID,
+    bransch: "el",
+    titel: "Egenkontroll El",
+    filnamn: "Egenkontroll_El.txt",
     beskrivning:
-      "Material och komponenter är avsedda för svenska marknaden, CE-märkta och i övrigt typgodkända (t.ex. P-markning, SITAC) för avsett bruk.",
+      "Elarbeten — behörig auktoriserad installatör, isolationsmätning, jordning och dokumentation enligt elregler.",
   },
   {
-    rubrik: "Påfrestningar i drift",
+    id: EGENKONTROLL_MALNING_MALL_ID,
+    bransch: "malning",
+    titel: "Egenkontroll Målning",
+    filnamn: "Egenkontroll_Malning.txt",
     beskrivning:
-      "Valda produkter och installationssätt är dimensionerade för de temperatur-, tryck- och slitagepåfrestningar som normalt förekommer i föreningens VVS-installationer.",
+      "Målningsarbeten — montageanvisning, skötselråd och dokumenterade torktider mellan skikt.",
   },
   {
-    rubrik: "Tillverkarens montageanvisning",
+    id: EGENKONTROLL_BYGG_MALL_ID,
+    bransch: "bygg",
+    titel: "Egenkontroll Bygg",
+    filnamn: "Egenkontroll_Bygg.txt",
     beskrivning:
-      "Monterat VVS-material är installerat enligt tillverkarens montage- och installationsanvisning (inkl. moment, åtdragningsmoment och stöd).",
-    amaNot: "AMA styr där anvisning saknas — följ prioritet: handling → AMA → tillverkare.",
+      "Byggarbeten — infästning, brand, fuktsäkerhet, torktider och tillverkarens anvisningar.",
   },
   {
-    rubrik: "Infästning vattenledning — vägg",
+    id: EGENKONTROLL_FASAD_MALL_ID,
+    bransch: "fasad",
+    titel: "Egenkontroll Fasad",
+    filnamn: "Egenkontroll_Fasad.txt",
     beskrivning:
-      "Vattenledningar i vägg är infästa enligt handling, AMA och tillverkarens anvisning med hänsyn till expansion och genomföringar.",
-    kravSpecifikPlats: true,
+      "Fasadarbeten — infästning, luftspalt, tätning, torktider och systemdokumentation.",
   },
   {
-    rubrik: "Infästning vattenledning — tak",
+    id: EGENKONTROLL_TAK_MALL_ID,
+    bransch: "tak",
+    titel: "Egenkontroll Tak",
+    filnamn: "Egenkontroll_Tak.txt",
     beskrivning:
-      "Vattenledningar i tak/konstruktion är infästa och stödda enligt handling och AMA med hänsyn till expansion och belastning.",
-    kravSpecifikPlats: true,
+      "Takarbeten — fall, täthet, infästning, torktider och snörasskydd.",
   },
   {
-    rubrik: "Infästning avlopp — vägg",
+    id: EGENKONTROLL_BADRUM_STAM_MALL_ID,
+    bransch: "badrum_stam",
+    titel: "Egenkontroll Badrum och stambyte",
+    filnamn: "Egenkontroll_Badrum_Stam.txt",
     beskrivning:
-      "Avloppsledningar i vägg är infästa enligt handling, AMA och tillverkarens anvisning (lutning, stöd, genomföringar).",
-    kravSpecifikPlats: true,
-  },
-  {
-    rubrik: "Infästning avlopp — tak",
-    beskrivning:
-      "Avloppsledningar i tak/konstruktion är infästa enligt handling och AMA (lutning, stöd, expansion).",
-    kravSpecifikPlats: true,
-  },
-  {
-    rubrik: "Inspektionsluckor inbyggda delar (avlopp och vatten)",
-    beskrivning:
-      "Inbyggda delar har tillgängliga inspektionsluckor för avlopp och vattenledning enligt projektering och tillverkarens krav.",
-    kravSpecifikPlats: true,
-  },
-  {
-    rubrik: "Tekniskt skåp för installationer",
-    beskrivning:
-      "Tekniskt skåp är monterat, tillgängligt och innehåller installationer enligt handling och gällande krav.",
-    kravSpecifikPlats: true,
-  },
-  {
-    rubrik: "Läckindikationsrör (läck ut) — teknikskåp och inbyggda delar",
-    beskrivning:
-      "Läck ut-rör eller motsvarande läckageindikation finns och är kopplat till avlopp enligt föreskrift, både i tekniskt skåp och inbyggda delar.",
-    kravSpecifikPlats: true,
-  },
-  {
-    rubrik: "Stöd, expansion och genomföringar (övrigt)",
-    beskrivning:
-      "Övriga stöd, expansionsmöjligheter och genomföringar är verifierade utöver punktvisa infästningar ovan.",
-    kravSpecifikPlats: true,
-  },
-  {
-    rubrik: "Isolering, brand och ljud",
-    beskrivning:
-      "Isolering, brandtätning och ljudkrav enligt projektering och gällande regler är verifierade på stickprov eller enligt kontrollplan.",
-    amaNot: "AMA VVS & AF kap. om isolering och genomföringar.",
-  },
-  {
-    rubrik: "Provtryckning",
-    beskrivning:
-      "Provtryckning är genomförd, dokumenterad och godkänd enligt gällande regler och projekteringsunderlag. Protokoll finns bilagt eller refereras nedan.",
-    amaNot: "Se AMA VVS & AF — täthet och provning.",
-  },
-  {
-    rubrik: "Funktionsprov",
-    beskrivning:
-      "Funktionsprov av avstängningar, cirkulation, shuntgrupper m.m. är utförda. Eventuella anmärkningar är åtgärdade eller dokumenterade som öppna punkter.",
-  },
-  {
-    rubrik: "Skötsel- och driftinstruktioner",
-    beskrivning:
-      "Skötsel-, drift- och underhållsinstruktioner är framtagna och överlämnade till beställaren (digitalt eller papper enligt överenskommelse).",
-  },
-  {
-    rubrik: "Dokumentation till beställare",
-    beskrivning:
-      "Materialredovisning, provtryckningsprotokoll, instruktioner och ev. relationshandlingar är överlämnade till beställaren.",
+      "Badrum och stambyte — BKR/GVK, Säker Vatten, provtryckning, torktider och våtrumskontroller.",
   },
 ];
+
+const MALL_ID_SET = new Set(EGENKONTROLL_MALL_DEFS.map((m) => m.id));
+
+export function arEgenkontrollMallId(mallId: string): boolean {
+  return MALL_ID_SET.has(mallId);
+}
+
+export function branschFranMallId(mallId: string): EgenkontrollBransch | undefined {
+  return EGENKONTROLL_MALL_DEFS.find((m) => m.id === mallId)?.bransch;
+}
+
+export function introForBransch(bransch: EgenkontrollBransch): string {
+  return EGENKONTROLL_INTROS[bransch] ?? EGENKONTROLL_INTROS.vvs;
+}
+
+export function kravSpecifikPlatsForRubrik(
+  bransch: EgenkontrollBransch,
+  rubrik: string,
+): boolean {
+  const mall = punkterForBransch(bransch).find((m) => m.rubrik === rubrik.trim());
+  return mall?.kravSpecifikPlats === true;
+}
+
+export { EGENKONTROLL_PUNKTER_PER_BRANSCH };

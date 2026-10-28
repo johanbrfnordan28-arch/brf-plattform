@@ -7,10 +7,17 @@ import {
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import {
   EGENKONTROLL_VVS_MALL_ID,
-  VVS_EGENKONTROLL_PUNKTER,
   arEgenkontrollMallId,
+  branschFranMallId,
+  introForBransch,
+  punkterForBransch,
+  type EgenkontrollBransch,
 } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
-import { EGENKONTROLL_VVS_INTRO } from "@/components/dokumentbank/mallar/innehall/egenkontroll-vvs";
+import {
+  arGiltigEgenkontrollBransch,
+  EGENKONTROLL_BRANSCH_ETIKETTER,
+} from "@/components/dokumentbank/mallar/egenkontroll-typer";
+import type { EgenkontrollPunktMall } from "@/components/dokumentbank/mallar/egenkontroll-typer";
 import {
   normaliseraBankIdSignaturer,
   sammanfattaBankIdSignaturer,
@@ -108,7 +115,7 @@ export type EgenkontrollSlutSignering = {
 };
 
 export type EgenkontrollState = {
-  bransch: "vvs";
+  bransch: EgenkontrollBransch;
   huvudentreprenorNamn: string;
   underentreprenorNamn: string;
   /** En rad per adress om flera fastigheter/adresser ingår. */
@@ -190,11 +197,6 @@ export function formateraPlatsKort(input: {
     delar.push("hela uppdraget");
   }
   return delar.length > 0 ? delar.join(" · ") : "—";
-}
-
-export function kravSpecifikPlatsForRubrik(rubrik: string): boolean {
-  const mall = VVS_EGENKONTROLL_PUNKTER.find((m) => m.rubrik === rubrik.trim());
-  return mall?.kravSpecifikPlats === true;
 }
 
 export function tomAvvikelseDetalj(nr = 0): EgenkontrollAvvikelseDetalj {
@@ -316,7 +318,7 @@ function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
   };
 }
 
-function skapaPunktFranMall(mall: (typeof VVS_EGENKONTROLL_PUNKTER)[number]): EgenkontrollPunkt {
+function skapaPunktFranMall(mall: EgenkontrollPunktMall): EgenkontrollPunkt {
   return {
     id: skapaEgenkontrollPunktId(),
     rubrik: mall.rubrik,
@@ -339,25 +341,26 @@ function skapaPunktFranMall(mall: (typeof VVS_EGENKONTROLL_PUNKTER)[number]): Eg
 export function kompletteraOchOrdnaMallPunkter(
   state: EgenkontrollState,
 ): EgenkontrollState {
+  const mallPunkter = punkterForBransch(state.bransch);
   const byRubrik = new Map<string, EgenkontrollPunkt>();
 
   for (const p of state.punkter) {
     const key = p.rubrik.trim();
     if (!key) continue;
-    if (VVS_EGENKONTROLL_PUNKTER.some((m) => m.rubrik === key)) {
+    if (mallPunkter.some((m) => m.rubrik === key)) {
       byRubrik.set(key, p);
     }
   }
 
   const ordered: EgenkontrollPunkt[] = [];
-  for (const mall of VVS_EGENKONTROLL_PUNKTER) {
+  for (const mall of mallPunkter) {
     const hit = byRubrik.get(mall.rubrik);
     ordered.push(hit ?? skapaPunktFranMall(mall));
   }
   for (const p of state.punkter) {
     const key = p.rubrik.trim();
     if (!key) continue;
-    if (!VVS_EGENKONTROLL_PUNKTER.some((m) => m.rubrik === key)) {
+    if (!mallPunkter.some((m) => m.rubrik === key)) {
       ordered.push(p);
     }
   }
@@ -506,26 +509,41 @@ function normaliseraSignerare(raw: unknown): EgenkontrollSignerare[] {
     });
 }
 
-export function skapaPunkterFranVvsMall(): EgenkontrollPunkt[] {
-  return VVS_EGENKONTROLL_PUNKTER.map((p) => skapaPunktFranMall(p));
+export function skapaPunkterFranBranschMall(
+  bransch: EgenkontrollBransch,
+): EgenkontrollPunkt[] {
+  return punkterForBransch(bransch).map((p) => skapaPunktFranMall(p));
 }
 
-/** Fyller i VVS-standardpunkter om listan saknas (äldre kopior / skapade utan formulär). */
+/** @deprecated Använd skapaPunkterFranBranschMall("vvs") */
+export function skapaPunkterFranVvsMall(): EgenkontrollPunkt[] {
+  return skapaPunkterFranBranschMall("vvs");
+}
+
+/** Fyller i standardpunkter om listan saknas (äldre kopior / skapade utan formulär). */
 export function säkerstallEgenkontrollPunkter(
   state: EgenkontrollState,
 ): EgenkontrollState {
   const aktuella = state.punkter.filter((p) => p.aktuell && p.rubrik.trim());
   if (aktuella.length > 0) return state;
-  return { ...state, punkter: skapaPunkterFranVvsMall() };
+  return {
+    ...state,
+    punkter: skapaPunkterFranBranschMall(state.bransch),
+  };
 }
 
-export function skapaVvsEgenkontroll(input: {
+export type EgenkontrollSkapaInput = {
   huvudentreprenorNamn: string;
   huvudArbetsledareNamn?: string;
   underentreprenorNamn?: string;
   underArbetsledareNamn?: string;
   utforareNamn: string[];
-}): EgenkontrollState {
+};
+
+function byggEgenkontrollState(
+  bransch: EgenkontrollBransch,
+  input: EgenkontrollSkapaInput,
+): EgenkontrollState {
   const utforare = input.utforareNamn
     .map((namn) => namn.trim())
     .filter(Boolean)
@@ -540,7 +558,7 @@ export function skapaVvsEgenkontroll(input: {
   }));
 
   return {
-    bransch: "vvs",
+    bransch,
     huvudentreprenorNamn: input.huvudentreprenorNamn.trim(),
     underentreprenorNamn: input.underentreprenorNamn?.trim() ?? "",
     kontrollAdresser: "",
@@ -550,7 +568,7 @@ export function skapaVvsEgenkontroll(input: {
     etappNamn: "",
     utforare,
     kontrollanter,
-    punkter: skapaPunkterFranVvsMall(),
+    punkter: skapaPunkterFranBranschMall(bransch),
     signerare: byggSignerareFranSkapa({
       huvudentreprenorNamn: input.huvudentreprenorNamn,
       huvudArbetsledareNamn: input.huvudArbetsledareNamn ?? "",
@@ -561,10 +579,28 @@ export function skapaVvsEgenkontroll(input: {
   };
 }
 
-export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undefined {
+export function skapaEgenkontrollForMall(
+  mallId: string,
+  input: EgenkontrollSkapaInput,
+): EgenkontrollState {
+  const bransch = branschFranMallId(mallId) ?? "vvs";
+  return byggEgenkontrollState(bransch, input);
+}
+
+/** @deprecated Använd skapaEgenkontrollForMall(EGENKONTROLL_VVS_MALL_ID, …) */
+export function skapaVvsEgenkontroll(input: EgenkontrollSkapaInput): EgenkontrollState {
+  return skapaEgenkontrollForMall(EGENKONTROLL_VVS_MALL_ID, input);
+}
+
+export function normaliseraEgenkontroll(
+  raw: unknown,
+  fallbackBransch?: EgenkontrollBransch,
+): EgenkontrollState | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const d = raw as Partial<EgenkontrollState>;
-  if (d.bransch !== "vvs") return undefined;
+  const bransch = arGiltigEgenkontrollBransch(d.bransch)
+    ? d.bransch
+    : fallbackBransch ?? "vvs";
 
   const utforare = Array.isArray(d.utforare) ? d.utforare : [];
   let signerare = normaliseraSignerare(d.signerare);
@@ -587,7 +623,7 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
   );
 
   const state: EgenkontrollState = {
-    bransch: "vvs",
+    bransch,
     huvudentreprenorNamn: d.huvudentreprenorNamn ?? "",
     underentreprenorNamn: d.underentreprenorNamn ?? "",
     kontrollAdresser: d.kontrollAdresser ?? "",
@@ -608,10 +644,11 @@ export function arEgenkontrollDokument(dok: ForeningsDokument): boolean {
 }
 
 export function hamtaEgenkontroll(dok: ForeningsDokument): EgenkontrollState | undefined {
-  const norm = normaliseraEgenkontroll(dok.egenkontroll);
+  const fallback = branschFranMallId(dok.mallId);
+  const norm = normaliseraEgenkontroll(dok.egenkontroll, fallback);
   if (norm) return norm;
   if (!arEgenkontrollMallId(dok.mallId)) return undefined;
-  return skapaVvsEgenkontroll({
+  return skapaEgenkontrollForMall(dok.mallId, {
     huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
     huvudArbetsledareNamn: "",
     utforareNamn: [],
@@ -624,7 +661,7 @@ export function hamtaEllerSkapaEgenkontrollForDokument(
 ): EgenkontrollState {
   return (
     hamtaEgenkontroll(dok) ??
-    skapaVvsEgenkontroll({
+    skapaEgenkontrollForMall(dok.mallId, {
       huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
       huvudArbetsledareNamn: "",
       utforareNamn: [],
@@ -733,7 +770,7 @@ export function byggEgenkontrollText(
   ek: EgenkontrollState,
 ): string {
   const forening = hamtaForeningMallIfyllnad(dok.titel);
-  const intro = ifyllForeningsfalt(EGENKONTROLL_VVS_INTRO, forening);
+  const intro = ifyllForeningsfalt(introForBransch(ek.bransch), forening);
   const aktuella = ek.punkter.filter((p) => p.aktuell);
   const punkterText = aktuella
     .map((p, i) => formatPunktRad(p, i))
@@ -749,6 +786,7 @@ Förening (beställare): ${forening.foreningsNamn}
 Projekt / dokument: ${dok.titel}
 
 OMFATTNING
+Bransch: ${EGENKONTROLL_BRANSCH_ETIKETTER[ek.bransch] ?? ek.bransch}
 Etapp: ${ek.etappNamn.trim() || "—"}
 Adress(er): ${ek.kontrollAdresser.trim() || "—"}
 Lägenheter som ingår: ${ek.omfattningLagenheter.trim() || "—"}
@@ -889,16 +927,8 @@ export function harEntreprenorTilldelad(state: EgenkontrollState): boolean {
 }
 
 export function egenkontrollMallIdForSkapa(mallId: string): boolean {
-  return mallId === EGENKONTROLL_VVS_MALL_ID;
+  return arEgenkontrollMallId(mallId);
 }
-
-export type EgenkontrollSkapaInput = {
-  huvudentreprenorNamn: string;
-  huvudArbetsledareNamn: string;
-  underentreprenorNamn: string;
-  underArbetsledareNamn: string;
-  utforareNamn: string[];
-};
 
 export function skapaForeningsDokumentEgenkontroll(
   mall: {
@@ -922,13 +952,7 @@ export function skapaForeningsDokumentEgenkontroll(
     underArbetsledareNamn: "",
     utforareNamn: [] as string[],
   };
-  const egenkontroll = skapaVvsEgenkontroll({
-    huvudentreprenorNamn: input.huvudentreprenorNamn,
-    huvudArbetsledareNamn: input.huvudArbetsledareNamn,
-    underentreprenorNamn: input.underentreprenorNamn,
-    underArbetsledareNamn: input.underArbetsledareNamn,
-    utforareNamn: input.utforareNamn,
-  });
+  const egenkontroll = skapaEgenkontrollForMall(mall.id, input);
   const bas: ForeningsDokument = {
     id: skapaForeningsDokumentId(),
     mallId: mall.id,
@@ -953,4 +977,5 @@ export function skapaForeningsDokumentEgenkontroll(
   return bas;
 }
 
-export { EGENKONTROLL_VVS_MALL_ID };
+export { EGENKONTROLL_VVS_MALL_ID, EGENKONTROLL_BRANSCH_ETIKETTER };
+export type { EgenkontrollBransch };

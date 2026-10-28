@@ -32,6 +32,7 @@ import {
   type EgenkontrollPunkt,
   type EgenkontrollSignerare,
   type EgenkontrollSignerareRoll,
+  EGENKONTROLL_BRANSCH_ETIKETTER,
   type EgenkontrollState,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { lasProjektLista } from "@/components/dokumentbank/dokument-projekt-koppling";
@@ -486,6 +487,10 @@ export function ForeningsDokumentEgenkontrollPanel({
           att BankID-signering är klar innan underlaget lämnas in.
         </div>
       </div>
+
+      <p className="text-xs font-medium text-primary-dark">
+        Bransch: {EGENKONTROLL_BRANSCH_ETIKETTER[ek.bransch] ?? ek.bransch}
+      </p>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block text-xs font-medium text-muted sm:col-span-1">

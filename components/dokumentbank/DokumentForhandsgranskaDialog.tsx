@@ -13,7 +13,7 @@ import { skapaInnehallFranMall } from "@/components/dokumentbank/forening-dokume
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import {
   byggEgenkontrollText,
-  skapaVvsEgenkontroll,
+  skapaEgenkontrollForMall,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import type { ForeningsDokument } from "@/components/dokumentbank/forening-dokumenter-lager";
 
@@ -45,7 +45,7 @@ export function DokumentForhandsgranskaDialog({
   const text = useMemo(() => {
     if (arEgenkontroll) {
       const docTitel = titel.trim() || mall.titel;
-      const ek = skapaVvsEgenkontroll({
+      const ek = skapaEgenkontrollForMall(mall.id, {
         huvudentreprenorNamn: "[Huvudentreprenör]",
         huvudArbetsledareNamn: "[Arbetsledare]",
         underentreprenorNamn: "[Underentreprenör]",
