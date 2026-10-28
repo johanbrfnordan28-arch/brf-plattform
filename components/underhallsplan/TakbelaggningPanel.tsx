@@ -35,10 +35,15 @@ type TakbelaggningPanelProps = {
   belaggning: TakBelaggningData;
   måttenhet: Måttenhet;
   värde: string;
-  onBelaggningChange: (next: TakBelaggningData) => void;
+  onBelaggningChange: (
+    next: TakBelaggningData,
+    radPatch?: { måttenhet?: Måttenhet; värde?: string },
+  ) => void;
   onMåttChange: (patch: { måttenhet?: Måttenhet; värde?: string }) => void;
   /** Steg 2 — material väljs i rullgardin i stället för knappar. */
   materialvalAsSelect?: boolean;
+  /** Steg 2 — dölj AI, schablon och kostnadsrelaterade hjälpytor. */
+  steg2Lage?: boolean;
 };
 
 const huvudtyper: {
@@ -114,20 +119,22 @@ export function TakbelaggningPanel({
   onBelaggningChange,
   onMåttChange,
   materialvalAsSelect = false,
+  steg2Lage = false,
 }: TakbelaggningPanelProps) {
   const enhetInfo = måttenhetEtiketter[måttenhet];
   const poster = belaggning.belaggningar;
   const kvmFranDelar = summeraTakBelaggningKvm(belaggning);
 
   function uppdateraBelaggning(next: TakBelaggningData) {
-    onBelaggningChange(next);
     const summaKvm = summeraTakBelaggningKvm(next);
-    if (summaKvm > 0) {
-      onMåttChange({
-        måttenhet: "kvm",
-        värde: String(Math.round(summaKvm * 10) / 10),
-      });
-    }
+    const radPatch =
+      summaKvm > 0
+        ? {
+            måttenhet: "kvm" as Måttenhet,
+            värde: String(Math.round(summaKvm * 10) / 10),
+          }
+        : undefined;
+    onBelaggningChange(next, radPatch);
   }
 
   function laggTill() {
@@ -288,11 +295,8 @@ export function TakbelaggningPanel({
                 <label className="block text-sm">
                   <span className="text-xs font-medium text-muted">Mängd</span>
                   <input
-                    type="number"
-                    min={0}
-                    step={
-                      (post.mangdEnhet ?? "kvm") === "kvm" ? 0.1 : 1
-                    }
+                    type="text"
+                    inputMode="decimal"
                     value={post.mangd ?? ""}
                     onChange={(e) =>
                       uppdateraBelaggning(
@@ -300,6 +304,9 @@ export function TakbelaggningPanel({
                           mangd: e.target.value,
                         }),
                       )
+                    }
+                    placeholder={
+                      (post.mangdEnhet ?? "kvm") === "kvm" ? "t.ex. 850" : "0"
                     }
                     className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                   />
@@ -526,13 +533,15 @@ export function TakbelaggningPanel({
         ) : null}
       </div>
 
-      <YtaOchMaterialAiHjalp
-        typ="Tak"
-        grund={grund}
-        komponentData={data}
-        registerKvm={värde}
-        onApplyKvm={(kvm) => onMåttChange({ värde: kvm })}
-      />
+      {!steg2Lage && (
+        <YtaOchMaterialAiHjalp
+          typ="Tak"
+          grund={grund}
+          komponentData={data}
+          registerKvm={värde}
+          onApplyKvm={(kvm) => onMåttChange({ värde: kvm })}
+        />
+      )}
 
       <label className="block max-w-xs text-sm">
         <span className="text-xs font-medium text-muted">
@@ -541,25 +550,30 @@ export function TakbelaggningPanel({
         {kvmFranDelar > 0 && (
           <span className="mt-0.5 block text-[11px] text-muted">
             Summering från m² per del: {kvmFranDelar.toLocaleString("sv-SE")}{" "}
-            m² — kan justeras manuellt.
+            m²
+            {steg2Lage ? "." : " — kan justeras manuellt."}
           </span>
         )}
         <input
-          type="number"
-          min={0}
-          step={0.1}
+          type="text"
+          inputMode="decimal"
           value={värde}
           onChange={(e) => onMåttChange({ värde: e.target.value })}
           placeholder="m²"
-          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          readOnly={steg2Lage && kvmFranDelar > 0}
+          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm read-only:bg-[#f7f9f8]"
         />
       </label>
 
-      <TakYtaSammanstallning
-        grund={grund}
-        registerTakKvm={värde}
-        onApplyGrundSummaTillRegister={(kvm) => onMåttChange({ värde: kvm })}
-      />
+      {!steg2Lage && (
+        <TakYtaSammanstallning
+          grund={grund}
+          registerTakKvm={värde}
+          onApplyGrundSummaTillRegister={(kvm) =>
+            onMåttChange({ värde: kvm })
+          }
+        />
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   uppdateraHusAktivFasad,
   type FasadVaderstreckId,
 } from "@/components/underhallsplan/fastighets-ytor";
+import { FastighetsdelSammanstallning } from "@/components/underhallsplan/FastighetsdelSammanstallning";
 import {
   FastighetsdelUnderkomponentDetalj,
   skaDoljaEnkelMattISteg2,
@@ -372,6 +373,12 @@ export function FastighetsdelarSteg({
                 ))}
               </div>
             )}
+            <FastighetsdelSammanstallning
+              komponentNamn={namn}
+              data={detaljFor(namn)}
+              grund={grund}
+            />
+
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
               <label className="min-w-0 flex-1 text-xs text-muted">
                 Ny underdel

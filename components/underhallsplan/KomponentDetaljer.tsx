@@ -951,11 +951,22 @@ export function KomponentDetaljer({
                       belaggning={hamtaTakBelaggningData(data, rad.id)}
                       måttenhet={rad.måttenhet}
                       värde={rad.värde}
-                      onBelaggningChange={(belaggning) =>
-                        onChange(
-                          uppdateraTakBelaggningData(data, rad.id, belaggning),
-                        )
-                      }
+                      onBelaggningChange={(belaggning, radPatch) => {
+                        let next = uppdateraTakBelaggningData(
+                          data,
+                          rad.id,
+                          belaggning,
+                        );
+                        if (radPatch) {
+                          next = {
+                            ...next,
+                            underkomponenter: next.underkomponenter.map((r) =>
+                              r.id === rad.id ? { ...r, ...radPatch } : r,
+                            ),
+                          };
+                        }
+                        onChange(next);
+                      }}
                       onMåttChange={(patch) =>
                         uppdateraUnderkomponent(rad.id, patch)
                       }

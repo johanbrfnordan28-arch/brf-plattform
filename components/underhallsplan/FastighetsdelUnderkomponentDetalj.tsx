@@ -83,10 +83,27 @@ export function FastighetsdelUnderkomponentDetalj({
           måttenhet={rad.måttenhet}
           värde={rad.värde}
           materialvalAsSelect
-          onBelaggningChange={(belaggning) =>
-            onChange(uppdateraTakBelaggningData(data, rad.id, belaggning))
+          steg2Lage
+          onBelaggningChange={(belaggning, radPatch) => {
+            let next = uppdateraTakBelaggningData(data, rad.id, belaggning);
+            if (radPatch) {
+              next = {
+                ...next,
+                underkomponenter: next.underkomponenter.map((r) =>
+                  r.id === rad.id ? { ...r, ...radPatch, aktiv: true } : r,
+                ),
+              };
+            }
+            onChange(next);
+          }}
+          onMåttChange={(patch) =>
+            onChange({
+              ...data,
+              underkomponenter: data.underkomponenter.map((r) =>
+                r.id === rad.id ? { ...r, ...patch, aktiv: true } : r,
+              ),
+            })
           }
-          onMåttChange={(patch) => onRadChange(patch)}
         />
       </div>
     );
