@@ -1,6 +1,8 @@
 import { ABT_06_ENTREPRENAD_MALL } from "@/components/dokumentbank/mallar/innehall/abt-06-entreprenad";
 import { AB_04_ENTREPRENAD_MALL } from "@/components/dokumentbank/mallar/innehall/ab-04-entreprenad";
 import { ABK_09_KONSULT_MALL } from "@/components/dokumentbank/mallar/innehall/abk-09-konsult";
+import { TIDPLAN_ENTREPRENAD_BILAGA } from "@/components/dokumentbank/mallar/innehall/tidsplan-entreprenad-bilaga";
+import { LYFTPLAN_ENTREPRENAD_BILAGA } from "@/components/dokumentbank/mallar/innehall/lyftplan-entreprenad-bilaga";
 import { ENTREPRENAD_AVTAL_MALL_ID } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
 
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
@@ -597,7 +599,7 @@ Styrelsen i [Föreningens namn]
     titel: "Entreprenadkontrakt ABT 06",
     filnamn: "Entreprenadkontrakt_ABT06.txt",
     beskrivning:
-      "Totalentreprenad enligt ABT 06 (BKK-struktur). Förening ifylld automatiskt; entreprenör per projekt. BankID 2+2.",
+      "Totalentreprenad ABT 06 — inte samma som AB 04. Kräver bilaga tidsplan + lyftplan vid signering.",
     omrade: "avtal",
     textInnehall: ABT_06_ENTREPRENAD_MALL,
   },
@@ -606,7 +608,7 @@ Styrelsen i [Föreningens namn]
     titel: "Entreprenadkontrakt AB 04",
     filnamn: "Entreprenadkontrakt_AB04.txt",
     beskrivning:
-      "Entreprenad enligt AB 04. Föreningsuppgifter från registret; entreprenör byts per projekt. BankID 2+2.",
+      "Utförandeentreprenad AB 04 — separat från ABT 06. Tidsplan och lyftplan som bilagor.",
     omrade: "avtal",
     textInnehall: AB_04_ENTREPRENAD_MALL,
   },
@@ -618,6 +620,24 @@ Styrelsen i [Föreningens namn]
       "Konsult enligt ABK 09. Förening ifylld; konsult/entreprenör per projekt. BankID 2+2.",
     omrade: "avtal",
     textInnehall: ABK_09_KONSULT_MALL,
+  },
+  {
+    id: "bilaga-tidsplan-entreprenad",
+    titel: "Bilaga tidsplan entreprenad",
+    filnamn: "Bilaga_tidsplan_entreprenad.txt",
+    beskrivning:
+      "Milstolpar kopplade till ABT 06 eller AB 04 — levereras vid eller direkt efter kontrakt.",
+    omrade: "avtal",
+    textInnehall: TIDPLAN_ENTREPRENAD_BILAGA,
+  },
+  {
+    id: "bilaga-lyftplan-entreprenad",
+    titel: "Bilaga lyftplan entreprenad",
+    filnamn: "Bilaga_lyftplan_entreprenad.txt",
+    beskrivning:
+      "Lyft/betalplan — belopp ska spegla utfört arbete enligt tidsplanen.",
+    omrade: "avtal",
+    textInnehall: LYFTPLAN_ENTREPRENAD_BILAGA,
   },
   // ── Avtal ─────────────────────────────────────────────────────────────────
   {

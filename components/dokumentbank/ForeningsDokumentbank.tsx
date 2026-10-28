@@ -451,8 +451,9 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
 
       {filterOmrade === "avtal" && (
         <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs text-primary-dark">
-          Avtal enligt ABT 06, AB 04 och ABK 09 fylls i med föreningsuppgifter vid
-          Skapa kopia. Entreprenör anges per projekt. Signering 2+2 med BankID.
+          ABT 06 (totalentreprenad) och AB 04 (utförande) är separata mallar.
+          Skapa även bilagor tidsplan och lyftplan — de hör ihop och ska levereras
+          vid eller direkt efter kontraktssignering.
         </p>
       )}
 

@@ -33,6 +33,7 @@ import {
   type BankIdSignatur,
 } from "@/lib/bankid-signering";
 import { lasForeningProfil } from "@/lib/forening-registry";
+import { DokumentRedigerareMedPreview } from "@/components/dokumentbank/DokumentRedigerareMedPreview";
 
 type Props = {
   dokument: ForeningsDokument;
@@ -84,12 +85,6 @@ export function ForeningsDokumentRedigeraPanel({
 
   function uppdateraEntreprenor(patch: Partial<DokumentEntreprenor>) {
     setEntreprenor((prev) => ({ ...prev, ...patch }));
-  }
-
-  function synkaForening() {
-    const ny = synkroniseraForeningsfaltInnehall(innehall);
-    setInnehall(ny);
-    setMeddelande("Föreningsuppgifter hämtade från registret (entreprenör oförändrad).");
   }
 
   function oppnaPdf() {
@@ -250,21 +245,29 @@ export function ForeningsDokumentRedigeraPanel({
             ),
           )}
         </div>
-        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-          <label className="text-xs font-medium text-muted">Avtalstext</label>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <label className="text-xs font-medium text-muted">Dokumenttext</label>
           <button
             type="button"
-            onClick={synkaForening}
+            onClick={() => {
+              const ny = synkroniseraForeningsfaltInnehall(innehall);
+              setInnehall(ny);
+              setMeddelande(
+                "Föreningsuppgifter hämtade från registret (entreprenör oförändrad).",
+              );
+            }}
             className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
           >
             Uppdatera föreningsuppgifter från registret
           </button>
         </div>
-        <textarea
-          value={innehall}
-          onChange={(e) => setInnehall(e.target.value)}
-          rows={14}
-          className="w-full rounded-lg border border-border bg-white px-3 py-2 font-mono text-xs leading-relaxed"
+        <DokumentRedigerareMedPreview
+          key={dokument.id}
+          titel={titel.trim() || dokument.titel}
+          meta={dokument.mallTitel}
+          innehall={innehall}
+          tema={layoutTema}
+          onChange={setInnehall}
         />
       </div>
 

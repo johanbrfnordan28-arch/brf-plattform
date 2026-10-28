@@ -147,6 +147,29 @@ export function byggDokumentPreviewHtml(options: ByggDokumentPreviewOptions): st
 </html>`;
 }
 
+/** CSS för formaterad redigering i appen (samma typografi som förhandsgranska). */
+export function dokumentRedigerareCss(tema: DokumentLayoutTema): string {
+  return `
+    .doc-edit-root { ${tema === "klassisk" ? "font-family: Georgia, serif;" : "font-family: system-ui, sans-serif;"} }
+    ${temaCss(tema)}
+    .doc-edit-root .doc-sheet { margin: 0; max-width: none; box-shadow: none; }
+    .doc-edit-root .doc-header { border-radius: 12px 12px 0 0; }
+    .doc-avsnitt-wrap { margin-top: 1rem; border-top: 1px dashed #c5d9cc; padding-top: 1rem; }
+    .doc-avsnitt-rad { margin-bottom: 0.75rem; }
+    .doc-avsnitt-rad textarea {
+      width: 100%; min-height: 4.5rem; resize: vertical;
+      border: 1px solid #d8e4dc; border-radius: 8px; padding: 0.65rem 0.75rem;
+      font-family: inherit; font-size: 0.92rem; line-height: 1.5; color: #1a2e22;
+      background: #fcfdfc;
+    }
+    .doc-avsnitt-rad textarea:focus { outline: 2px solid rgba(90,154,110,0.35); border-color: #5a9a6e; }
+  `;
+}
+
+export function byggDokumentPreviewSrcDoc(options: ByggDokumentPreviewOptions): string {
+  return byggDokumentPreviewHtml({ ...options, printToolbar: false });
+}
+
 export function oppnaDokumentForhandsgranska(
   options: ByggDokumentPreviewOptions,
 ): boolean {
