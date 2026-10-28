@@ -150,6 +150,7 @@ export function hamtaForeningsDokumentInnehall(
       normaliseraEgenkontroll(dok.egenkontroll) ??
       skapaVvsEgenkontroll({
         huvudentreprenorNamn: dok.entreprenor?.namn ?? "",
+        huvudArbetsledareNamn: "",
         utforareNamn: [],
       });
     return byggEgenkontrollText(dok, ek);

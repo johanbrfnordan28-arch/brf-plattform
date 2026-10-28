@@ -12,20 +12,25 @@ import {
 } from "@/lib/bankid-signering";
 import { hamtaForeningMallIfyllnad, ifyllForeningsfalt } from "@/components/dokumentbank/forening-dokument-innehall";
 
-export type EgenkontrollPunktStatus = "opåbörjad" | "ok" | "avvikelse";
+export type EgenkontrollPunktStatus = "opåbörjad" | "utfort" | "avvikelse";
+
+export type EgenkontrollAvvikelseDetalj = {
+  orsak: string;
+  reservation: string;
+  /** Datum då projektledare / ansvarig chef fått information */
+  datumChefInformed: string;
+};
 
 export type EgenkontrollPunkt = {
   id: string;
   rubrik: string;
   beskrivning: string;
   amaNot?: string;
-  /** False = borttagen / ej aktuell */
   aktuell: boolean;
   status: EgenkontrollPunktStatus;
   kontrollDatum: string;
   kommentar: string;
-  /** Namn på den som markerade OK (valfritt) */
-  utförareNamn: string;
+  avvikelse?: EgenkontrollAvvikelseDetalj;
 };
 
 export type EgenkontrollUtforare = {
@@ -33,6 +38,22 @@ export type EgenkontrollUtforare = {
   namn: string;
 };
 
+export type EgenkontrollSignerareRoll =
+  | "utforare"
+  | "underentreprenor_arbetsledare"
+  | "huvudentreprenor_arbetsledare"
+  | "ovrig";
+
+export type EgenkontrollSignerare = {
+  id: string;
+  roll: EgenkontrollSignerareRoll;
+  /** Vid roll ovrig */
+  rollEtikett: string;
+  namn: string;
+  signaturer: BankIdSignatur[];
+};
+
+/** @deprecated Migreras till signerare */
 export type EgenkontrollSlutSignering = {
   utforare1: BankIdSignatur[];
   utforare2: BankIdSignatur[];
@@ -46,7 +67,18 @@ export type EgenkontrollState = {
   underentreprenorNamn: string;
   utforare: EgenkontrollUtforare[];
   punkter: EgenkontrollPunkt[];
-  slutSignering: EgenkontrollSlutSignering;
+  signerare: EgenkontrollSignerare[];
+  slutSignering?: EgenkontrollSlutSignering;
+};
+
+export const EGENKONTROLL_ROLL_ETIKETTER: Record<
+  EgenkontrollSignerareRoll,
+  string
+> = {
+  utforare: "Utförare",
+  underentreprenor_arbetsledare: "Underentreprenör — arbetsledare",
+  huvudentreprenor_arbetsledare: "Huvudentreprenör — arbetsledare",
+  ovrig: "Övrig",
 };
 
 export function skapaEgenkontrollPunktId(): string {
@@ -57,18 +89,164 @@ export function skapaUtforareId(): string {
   return `eku-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function tomSlutSignering(): EgenkontrollSlutSignering {
+export function skapaSignerareId(): string {
+  return `eks-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function tomAvvikelseDetalj(): EgenkontrollAvvikelseDetalj {
+  return { orsak: "", reservation: "", datumChefInformed: "" };
+}
+
+function normaliseraPunktStatus(raw: string | undefined): EgenkontrollPunktStatus {
+  if (raw === "utfort" || raw === "avvikelse" || raw === "opåbörjad") return raw;
+  if (raw === "ok") return "utfort";
+  return "opåbörjad";
+}
+
+function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
+  const status = normaliseraPunktStatus(p.status);
+  const avvikelseRaw = p.avvikelse;
+  const avvikelse =
+    status === "avvikelse"
+      ? {
+          orsak: avvikelseRaw?.orsak ?? "",
+          reservation: avvikelseRaw?.reservation ?? "",
+          datumChefInformed: avvikelseRaw?.datumChefInformed ?? "",
+        }
+      : undefined;
   return {
-    utforare1: [],
-    utforare2: [],
-    underentreprenor: [],
-    huvudentreprenor: [],
+    id: p.id ?? skapaEgenkontrollPunktId(),
+    rubrik: p.rubrik ?? "",
+    beskrivning: p.beskrivning ?? "",
+    amaNot: p.amaNot,
+    aktuell: p.aktuell !== false,
+    status,
+    kontrollDatum: p.kontrollDatum ?? "",
+    kommentar: p.kommentar ?? "",
+    avvikelse,
   };
+}
+
+function byggSignerareFranSkapa(input: {
+  huvudentreprenorNamn: string;
+  huvudArbetsledareNamn: string;
+  underentreprenorNamn?: string;
+  underArbetsledareNamn?: string;
+  utforareNamn: string[];
+}): EgenkontrollSignerare[] {
+  const lista: EgenkontrollSignerare[] = input.utforareNamn
+    .map((namn) => namn.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((namn) => ({
+      id: skapaSignerareId(),
+      roll: "utforare" as const,
+      rollEtikett: "",
+      namn,
+      signaturer: [],
+    }));
+
+  const underLed = input.underArbetsledareNamn?.trim();
+  if (underLed) {
+    lista.push({
+      id: skapaSignerareId(),
+      roll: "underentreprenor_arbetsledare",
+      rollEtikett: "",
+      namn: underLed,
+      signaturer: [],
+    });
+  }
+
+  const huvudLed =
+    input.huvudArbetsledareNamn.trim() || input.huvudentreprenorNamn.trim();
+  if (huvudLed) {
+    lista.push({
+      id: skapaSignerareId(),
+      roll: "huvudentreprenor_arbetsledare",
+      rollEtikett: "",
+      namn: huvudLed,
+      signaturer: [],
+    });
+  }
+  return lista;
+}
+
+function migreraSignerareFranLegacy(
+  d: Partial<EgenkontrollState>,
+): EgenkontrollSignerare[] {
+  const slut = d.slutSignering;
+  if (!slut) return [];
+
+  const utforare = d.utforare ?? [];
+  const out: EgenkontrollSignerare[] = [];
+
+  if (utforare[0]) {
+    out.push({
+      id: skapaSignerareId(),
+      roll: "utforare",
+      rollEtikett: "",
+      namn: utforare[0].namn,
+      signaturer: normaliseraBankIdSignaturer(slut.utforare1),
+    });
+  }
+  if (utforare[1]) {
+    out.push({
+      id: skapaSignerareId(),
+      roll: "utforare",
+      rollEtikett: "",
+      namn: utforare[1].namn,
+      signaturer: normaliseraBankIdSignaturer(slut.utforare2),
+    });
+  }
+  if (d.underentreprenorNamn?.trim()) {
+    out.push({
+      id: skapaSignerareId(),
+      roll: "underentreprenor_arbetsledare",
+      rollEtikett: "",
+      namn: d.underentreprenorNamn.trim(),
+      signaturer: normaliseraBankIdSignaturer(slut.underentreprenor),
+    });
+  }
+  if (d.huvudentreprenorNamn?.trim()) {
+    out.push({
+      id: skapaSignerareId(),
+      roll: "huvudentreprenor_arbetsledare",
+      rollEtikett: "",
+      namn: d.huvudentreprenorNamn.trim(),
+      signaturer: normaliseraBankIdSignaturer(slut.huvudentreprenor),
+    });
+  }
+  return out;
+}
+
+function normaliseraSignerare(raw: unknown): EgenkontrollSignerare[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((s) => s && typeof s === "object")
+    .map((s) => {
+      const x = s as Partial<EgenkontrollSignerare>;
+      const roll =
+        x.roll === "utforare" ||
+        x.roll === "underentreprenor_arbetsledare" ||
+        x.roll === "huvudentreprenor_arbetsledare" ||
+        x.roll === "ovrig"
+          ? x.roll
+          : "ovrig";
+      return {
+        id: x.id ?? skapaSignerareId(),
+        roll,
+        rollEtikett: x.rollEtikett ?? "",
+        namn: x.namn ?? "",
+        signaturer: normaliseraBankIdSignaturer(x.signaturer),
+      };
+    });
 }
 
 export function skapaVvsEgenkontroll(input: {
   huvudentreprenorNamn: string;
+  huvudArbetsledareNamn?: string;
   underentreprenorNamn?: string;
+  underArbetsledareNamn?: string;
   utforareNamn: string[];
 }): EgenkontrollState {
   const utforare = input.utforareNamn
@@ -91,9 +269,14 @@ export function skapaVvsEgenkontroll(input: {
       status: "opåbörjad",
       kontrollDatum: "",
       kommentar: "",
-      utförareNamn: "",
     })),
-    slutSignering: tomSlutSignering(),
+    signerare: byggSignerareFranSkapa({
+      huvudentreprenorNamn: input.huvudentreprenorNamn,
+      huvudArbetsledareNamn: input.huvudArbetsledareNamn ?? "",
+      underentreprenorNamn: input.underentreprenorNamn,
+      underArbetsledareNamn: input.underArbetsledareNamn,
+      utforareNamn: input.utforareNamn,
+    }),
   };
 }
 
@@ -101,19 +284,23 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
   if (!raw || typeof raw !== "object") return undefined;
   const d = raw as Partial<EgenkontrollState>;
   if (d.bransch !== "vvs") return undefined;
-  const slut = d.slutSignering ?? tomSlutSignering();
+
+  let signerare = normaliseraSignerare(d.signerare);
+  if (signerare.length === 0 && d.slutSignering) {
+    signerare = migreraSignerareFranLegacy(d);
+  }
+
+  const punkter = Array.isArray(d.punkter)
+    ? d.punkter.map((p) => normaliseraPunkt(p as Partial<EgenkontrollPunkt>))
+    : [];
+
   return {
     bransch: "vvs",
     huvudentreprenorNamn: d.huvudentreprenorNamn ?? "",
     underentreprenorNamn: d.underentreprenorNamn ?? "",
     utforare: Array.isArray(d.utforare) ? d.utforare : [],
-    punkter: Array.isArray(d.punkter) ? d.punkter : [],
-    slutSignering: {
-      utforare1: normaliseraBankIdSignaturer(slut.utforare1),
-      utforare2: normaliseraBankIdSignaturer(slut.utforare2),
-      underentreprenor: normaliseraBankIdSignaturer(slut.underentreprenor),
-      huvudentreprenor: normaliseraBankIdSignaturer(slut.huvudentreprenor),
-    },
+    punkter,
+    signerare,
   };
 }
 
@@ -127,21 +314,52 @@ export function hamtaEgenkontroll(dok: ForeningsDokument): EgenkontrollState | u
 
 function formatPunktRad(p: EgenkontrollPunkt, index: number): string {
   if (!p.aktuell) return "";
-  const status =
-    p.status === "ok"
-      ? "OK"
-      : p.status === "avvikelse"
-        ? "AVVIKELSE"
-        : "—";
+  const utfort = p.status === "utfort" ? "[x]" : "[ ]";
+  const avv = p.status === "avvikelse" ? "[x]" : "[ ]";
   const rader = [
     `${index + 1}. ${p.rubrik}`,
-    `   Status: ${status}${p.kontrollDatum ? ` · ${p.kontrollDatum}` : ""}`,
-    `   ${p.beskrivning}`,
+    `    ${utfort} Utfört    ${avv} Avvikelse    Datum: ${p.kontrollDatum || "—"}`,
+    `    ${p.beskrivning}`,
   ];
-  if (p.amaNot) rader.push(`   AMA: ${p.amaNot}`);
-  if (p.utförareNamn) rader.push(`   Kontrollerad av: ${p.utförareNamn}`);
-  if (p.kommentar) rader.push(`   Kommentar: ${p.kommentar}`);
+  if (p.amaNot) rader.push(`    AMA: ${p.amaNot}`);
+  if (p.kommentar.trim()) rader.push(`    Kommentar: ${p.kommentar}`);
   return rader.join("\n");
+}
+
+function formatAvvikelseSektion(punkter: EgenkontrollPunkt[]): string {
+  const medAvvikelse = punkter.filter(
+    (p) => p.aktuell && p.status === "avvikelse",
+  );
+  if (medAvvikelse.length === 0) {
+    return "AVVIKELSER OCH RESERVATIONER\n------------------------------\nInga avvikelser registrerade.\n";
+  }
+  const rader = medAvvikelse.map((p, i) => {
+    const a = p.avvikelse ?? tomAvvikelseDetalj();
+    return [
+      `${i + 1}. ${p.rubrik}`,
+      `   Orsak (varför fullt utförande ej kunnat ske): ${a.orsak || "—"}`,
+      `   Reservation: ${a.reservation || "—"}`,
+      `   Projektledare / ansvarig chef informerad: ${a.datumChefInformed || "—"}`,
+    ].join("\n");
+  });
+  return `AVVIKELSER OCH RESERVATIONER\n------------------------------\n${rader.join("\n\n")}\n`;
+}
+
+function formatSignering(signerare: EgenkontrollSignerare[]): string {
+  if (signerare.length === 0) return "SIGNERING\n---------\n(inga personer angivna)\n";
+  const rader = signerare.map((s) => {
+    const roll =
+      s.roll === "ovrig"
+        ? s.rollEtikett.trim() || EGENKONTROLL_ROLL_ETIKETTER.ovrig
+        : EGENKONTROLL_ROLL_ETIKETTER[s.roll];
+    const sig = s.signaturer[0];
+    const tid = sig
+      ? new Date(sig.tidpunkt).toLocaleString("sv-SE")
+      : "—";
+    const bank = sig ? sammanfattaBankIdSignaturer(s.signaturer) : "Ej signerad";
+    return `${s.namn} · ${roll}\n   BankID: ${bank}\n   Datum och tid: ${tid}`;
+  });
+  return `SIGNERING (BankID)\n------------------\n${rader.join("\n\n")}\n`;
 }
 
 export function byggEgenkontrollText(
@@ -156,39 +374,33 @@ export function byggEgenkontrollText(
     .filter(Boolean)
     .join("\n\n");
 
-  const sign = ek.slutSignering;
-  const signBlock = [
-    "",
-    "SLUTSIGNERING (BankID)",
-    "----------------------",
-    ...ek.utforare.map((u, i) => {
-      const sig =
-        i === 0 ? sign.utforare1 : sign.utforare2;
-      return `Utförare ${i + 1} (${u.namn}): ${sammanfattaBankIdSignaturer(sig) || "—"}`;
-    }),
-    ek.underentreprenorNamn
-      ? `Underentreprenör (${ek.underentreprenorNamn}): ${sammanfattaBankIdSignaturer(sign.underentreprenor) || "—"}`
-      : "",
-    `Huvudentreprenör (${ek.huvudentreprenorNamn}): ${sammanfattaBankIdSignaturer(sign.huvudentreprenor) || "—"}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const utforareLabel =
+    ek.utforare.map((u) => u.namn).join(", ") || "—";
 
   return `${intro}
 
 Förening: ${forening.foreningsNamn}
 Projekt: ${dok.titel}
 Huvudentreprenör: ${ek.huvudentreprenorNamn}
-${ek.underentreprenorNamn ? `Underentreprenör: ${ek.underentreprenorNamn}\n` : ""}
-KONTROLLPUNKTER
----------------
+${ek.underentreprenorNamn ? `Underentreprenör: ${ek.underentreprenorNamn}\n` : ""}Utförare (bockar i kontroller): ${utforareLabel}
+
+KONTROLLPUNKTER (i utförandeordning)
+------------------------------------
 ${punkterText || "(Inga aktuella punkter)"}
-${signBlock}
+
+${formatAvvikelseSektion(ek.punkter)}
+${formatSignering(ek.signerare)}
 `;
 }
 
-export function egenkontrollMallIdForSkapa(mallId: string): boolean {
-  return mallId === EGENKONTROLL_VVS_MALL_ID;
+export function avvikelseDetaljerKomplett(p: EgenkontrollPunkt): boolean {
+  if (p.status !== "avvikelse") return true;
+  const a = p.avvikelse ?? tomAvvikelseDetalj();
+  return (
+    a.orsak.trim().length > 0 &&
+    a.reservation.trim().length > 0 &&
+    a.datumChefInformed.trim().length > 0
+  );
 }
 
 export function allaAktuellaKontrollerBesvarade(punkter: EgenkontrollPunkt[]): boolean {
@@ -196,13 +408,23 @@ export function allaAktuellaKontrollerBesvarade(punkter: EgenkontrollPunkt[]): b
   if (aktuella.length === 0) return false;
   return aktuella.every(
     (p) =>
-      p.status !== "opåbörjad" &&
-      p.kontrollDatum.trim().length > 0,
+      (p.status === "utfort" || p.status === "avvikelse") &&
+      p.kontrollDatum.trim().length > 0 &&
+      avvikelseDetaljerKomplett(p),
   );
 }
 
 export function harEnkelBankIdSignatur(signaturer: BankIdSignatur[]): boolean {
   return signaturer.length >= 1;
+}
+
+export function allaSignerareHarSignatur(state: EgenkontrollState): boolean {
+  if (state.signerare.length === 0) return false;
+  return state.signerare.every((s) => harEnkelBankIdSignatur(s.signaturer));
+}
+
+export function egenkontrollMallIdForSkapa(mallId: string): boolean {
+  return mallId === EGENKONTROLL_VVS_MALL_ID;
 }
 
 export { EGENKONTROLL_VVS_MALL_ID };

@@ -130,7 +130,9 @@ interface SkapaEgenkontrollKopiaFormProps {
   onSpara: (input: {
     titel: string;
     huvudentreprenorNamn: string;
+    huvudArbetsledareNamn: string;
     underentreprenorNamn: string;
+    underArbetsledareNamn: string;
     utforareNamn: string[];
   }) => void;
   onAvbryt: () => void;
@@ -142,18 +144,21 @@ function SkapaEgenkontrollKopiaForm({
   onAvbryt,
 }: SkapaEgenkontrollKopiaFormProps) {
   const [titel, setTitel] = useState(mall.titel);
-  const [huvud, setHuvud] = useState("");
-  const [under, setUnder] = useState("");
+  const [huvudForetag, setHuvudForetag] = useState("");
+  const [huvudLedare, setHuvudLedare] = useState("");
+  const [underForetag, setUnderForetag] = useState("");
+  const [underLedare, setUnderLedare] = useState("");
   const [utforare1, setUtforare1] = useState("");
   const [utforare2, setUtforare2] = useState("");
 
-  const kanSkapa = titel.trim() && huvud.trim() && utforare1.trim();
+  const kanSkapa =
+    titel.trim() && huvudForetag.trim() && huvudLedare.trim() && utforare1.trim();
 
   return (
     <div className="mt-2 space-y-3 rounded-lg border border-primary/30 bg-[#f7fbf8] p-3">
       <p className="text-xs font-medium text-muted">
-        Egenkontroll — ange projekt och entreprenörer. En eller två utförare
-        signeras med BankID före arbetsledare.
+        Utföraren bockar i kontrollerna. Angivna personer signeras längst ned
+        med BankID (datum och tid). Fler personer kan läggas till efter skapande.
       </p>
       <label className="block text-xs text-muted">
         Projektnamn / dokumenttitel
@@ -165,18 +170,34 @@ function SkapaEgenkontrollKopiaForm({
       </label>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="text-xs text-muted">
-          Huvudentreprenör *
+          Huvudentreprenör (företag) *
           <input
-            value={huvud}
-            onChange={(e) => setHuvud(e.target.value)}
+            value={huvudForetag}
+            onChange={(e) => setHuvudForetag(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
           />
         </label>
         <label className="text-xs text-muted">
-          Underentreprenör
+          Huvudentreprenör — arbetsledare (signerar) *
           <input
-            value={under}
-            onChange={(e) => setUnder(e.target.value)}
+            value={huvudLedare}
+            onChange={(e) => setHuvudLedare(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <label className="text-xs text-muted">
+          Underentreprenör (företag)
+          <input
+            value={underForetag}
+            onChange={(e) => setUnderForetag(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <label className="text-xs text-muted">
+          Underentreprenör — arbetsledare (signerar)
+          <input
+            value={underLedare}
+            onChange={(e) => setUnderLedare(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
           />
         </label>
@@ -205,8 +226,10 @@ function SkapaEgenkontrollKopiaForm({
             kanSkapa &&
             onSpara({
               titel: titel.trim(),
-              huvudentreprenorNamn: huvud.trim(),
-              underentreprenorNamn: under.trim(),
+              huvudentreprenorNamn: huvudForetag.trim(),
+              huvudArbetsledareNamn: huvudLedare.trim(),
+              underentreprenorNamn: underForetag.trim(),
+              underArbetsledareNamn: underLedare.trim(),
               utforareNamn: [utforare1.trim(), utforare2.trim()].filter(Boolean),
             })
           }
@@ -486,7 +509,9 @@ interface MallKatalogProps {
     tema: DokumentLayoutTema,
     egenkontroll?: {
       huvudentreprenorNamn: string;
+      huvudArbetsledareNamn: string;
       underentreprenorNamn: string;
+      underArbetsledareNamn: string;
       utforareNamn: string[];
     },
   ) => void;
@@ -569,9 +594,8 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
       )}
       {filterOmrade === "egenkontroll" && (
         <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs text-primary-dark">
-          Egenkontroller kopplas till projekt. Entreprenören kan lägga till eller
-          ta bort kontrollpunkter. Signering sker med BankID: utförare först, sedan
-          underentreprenör och sist huvudentreprenörens arbetsledare.
+          Kontroller i utförandeordning — utföraren bockar i Utfört/Avvikelse.
+          Avvikelser och signering med BankID (datum och tid) längst i dokumentet.
         </p>
       )}
 
@@ -635,7 +659,9 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                           STANDARD_DOKUMENT_LAYOUT,
                           {
                             huvudentreprenorNamn: input.huvudentreprenorNamn,
+                            huvudArbetsledareNamn: input.huvudArbetsledareNamn,
                             underentreprenorNamn: input.underentreprenorNamn,
+                            underArbetsledareNamn: input.underArbetsledareNamn,
                             utforareNamn: input.utforareNamn,
                           },
                         );
@@ -767,7 +793,9 @@ export function ForeningsDokumentbank() {
     layoutTema: DokumentLayoutTema = STANDARD_DOKUMENT_LAYOUT,
     egenkontrollInput?: {
       huvudentreprenorNamn: string;
+      huvudArbetsledareNamn: string;
       underentreprenorNamn: string;
+      underArbetsledareNamn: string;
       utforareNamn: string[];
     },
   ) {
@@ -778,7 +806,9 @@ export function ForeningsDokumentbank() {
     if (arEgenkontrollMallId(mall.id) && egenkontrollInput) {
       const egenkontroll = skapaVvsEgenkontroll({
         huvudentreprenorNamn: egenkontrollInput.huvudentreprenorNamn,
+        huvudArbetsledareNamn: egenkontrollInput.huvudArbetsledareNamn,
         underentreprenorNamn: egenkontrollInput.underentreprenorNamn,
+        underArbetsledareNamn: egenkontrollInput.underArbetsledareNamn,
         utforareNamn: egenkontrollInput.utforareNamn,
       });
       const bas: ForeningsDokument = {
