@@ -86,6 +86,15 @@ export const FORENING_MODULER: ForeningModulDef[] = [
     visaPaHubb: false,
   },
   {
+    id: "dokumentbank",
+    title: "Dokumentbank",
+    description:
+      "Mallar och avtal (ABT 06, AB 04, ABK 09 m.m.) — skapa kopior med föreningsuppgifter ifyllda.",
+    path: "/dokumentbank",
+    icon: "📄",
+    visaPaHubb: false,
+  },
+  {
     id: "uppgifter",
     title: "Föreningsuppgifter",
     description:
