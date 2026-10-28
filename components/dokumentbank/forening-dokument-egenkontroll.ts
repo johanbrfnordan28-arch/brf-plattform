@@ -20,8 +20,22 @@ import { hamtaForeningMallIfyllnad, ifyllForeningsfalt } from "@/components/doku
 
 export type EgenkontrollPunktStatus = "opåbörjad" | "utfort" | "avvikelse";
 
+export type EgenkontrollPlatsTyp = "hela" | "lagenhet" | "gemensam_yta";
+
+export const EGENKONTROLL_PLATS_ETIKETTER: Record<EgenkontrollPlatsTyp, string> =
+  {
+    hela: "Hela uppdraget / alla angivna adresser",
+    lagenhet: "Lägenhet",
+    gemensam_yta: "Gemensam yta",
+  };
+
 export type EgenkontrollAvvikelseDetalj = {
   nr: number;
+  /** Avvikelsen ska avse minsta möjliga lägenhet eller yta. */
+  platsTyp: EgenkontrollPlatsTyp;
+  lagenhetNr: string;
+  ytaBenamning: string;
+  kontrollAdress: string;
   orsak: string;
   reservation: string;
   /** ISO — när avvikelsen kommunicerades med beställare/ombud */
@@ -47,6 +61,12 @@ export type EgenkontrollPunkt = {
   kommentar: string;
   /** Två bokstäver — kopplas till kontrollpersonal nedan */
   attestInitialer: string;
+  /** Vilken del kontrollen avser vid attest. */
+  platsTyp: EgenkontrollPlatsTyp;
+  lagenhetNr: string;
+  ytaBenamning: string;
+  /** Adress för denna punkt om flera adresser gäller dokumentet. */
+  kontrollAdress: string;
   avvikelseNr: number | null;
   avvikelse?: EgenkontrollAvvikelseDetalj;
 };
@@ -91,6 +111,12 @@ export type EgenkontrollState = {
   bransch: "vvs";
   huvudentreprenorNamn: string;
   underentreprenorNamn: string;
+  /** En rad per adress om flera fastigheter/adresser ingår. */
+  kontrollAdresser: string;
+  /** Lägenhetsnummer som egenkontrollen omfattar (en per rad eller kommaseparerat). */
+  omfattningLagenheter: string;
+  /** Gemensamma ytor t.ex. tvättstuga (en per rad). */
+  omfattningGemensammaYtor: string;
   utforare: EgenkontrollUtforare[];
   kontrollanter: EgenkontrollKontrollant[];
   punkter: EgenkontrollPunkt[];
@@ -131,9 +157,50 @@ export function skapaSignerareId(): string {
   return `eks-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function normaliseraPlatsTyp(raw: unknown): EgenkontrollPlatsTyp {
+  if (raw === "lagenhet" || raw === "gemensam_yta" || raw === "hela") return raw;
+  return "hela";
+}
+
+export function fleraKontrollAdresser(state: EgenkontrollState): boolean {
+  return (
+    state.kontrollAdresser
+      .split(/\n|,/)
+      .map((s) => s.trim())
+      .filter(Boolean).length > 1
+  );
+}
+
+export function formateraPlatsKort(input: {
+  platsTyp: EgenkontrollPlatsTyp;
+  lagenhetNr: string;
+  ytaBenamning: string;
+  kontrollAdress: string;
+}): string {
+  const delar: string[] = [];
+  if (input.kontrollAdress.trim()) delar.push(input.kontrollAdress.trim());
+  if (input.platsTyp === "lagenhet" && input.lagenhetNr.trim()) {
+    delar.push(`lägenhet ${input.lagenhetNr.trim()}`);
+  } else if (input.platsTyp === "gemensam_yta" && input.ytaBenamning.trim()) {
+    delar.push(input.ytaBenamning.trim());
+  } else if (input.platsTyp === "hela") {
+    delar.push("hela uppdraget");
+  }
+  return delar.length > 0 ? delar.join(" · ") : "—";
+}
+
+export function kravSpecifikPlatsForRubrik(rubrik: string): boolean {
+  const mall = VVS_EGENKONTROLL_PUNKTER.find((m) => m.rubrik === rubrik.trim());
+  return mall?.kravSpecifikPlats === true;
+}
+
 export function tomAvvikelseDetalj(nr = 0): EgenkontrollAvvikelseDetalj {
   return {
     nr,
+    platsTyp: "lagenhet",
+    lagenhetNr: "",
+    ytaBenamning: "",
+    kontrollAdress: "",
     orsak: "",
     reservation: "",
     tidBeställareKommunikation: "",
@@ -205,6 +272,10 @@ function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
     status === "avvikelse"
       ? {
           nr: avvikelseRaw?.nr ?? avvikelseNr ?? 0,
+          platsTyp: normaliseraPlatsTyp(avvikelseRaw?.platsTyp ?? "lagenhet"),
+          lagenhetNr: avvikelseRaw?.lagenhetNr ?? "",
+          ytaBenamning: avvikelseRaw?.ytaBenamning ?? "",
+          kontrollAdress: avvikelseRaw?.kontrollAdress ?? "",
           orsak: avvikelseRaw?.orsak ?? "",
           reservation: avvikelseRaw?.reservation ?? "",
           tidBeställareKommunikation:
@@ -233,9 +304,62 @@ function normaliseraPunkt(p: Partial<EgenkontrollPunkt>): EgenkontrollPunkt {
     kontrollDatum: p.kontrollDatum ?? "",
     kommentar: p.kommentar ?? "",
     attestInitialer: normaliseraInitialer(p.attestInitialer ?? ""),
+    platsTyp: normaliseraPlatsTyp(p.platsTyp),
+    lagenhetNr: p.lagenhetNr ?? "",
+    ytaBenamning: p.ytaBenamning ?? "",
+    kontrollAdress: p.kontrollAdress ?? "",
     avvikelseNr,
     avvikelse,
   };
+}
+
+function skapaPunktFranMall(mall: (typeof VVS_EGENKONTROLL_PUNKTER)[number]): EgenkontrollPunkt {
+  return {
+    id: skapaEgenkontrollPunktId(),
+    rubrik: mall.rubrik,
+    beskrivning: mall.beskrivning,
+    amaNot: mall.amaNot,
+    aktuell: true,
+    status: "opåbörjad",
+    kontrollDatum: "",
+    kommentar: "",
+    attestInitialer: "",
+    platsTyp: "hela",
+    lagenhetNr: "",
+    ytaBenamning: "",
+    kontrollAdress: "",
+    avvikelseNr: null,
+  };
+}
+
+/** Behåller föreningens/entreprenörens data, lägger till nya standardpunkter i mallordning. */
+export function kompletteraOchOrdnaMallPunkter(
+  state: EgenkontrollState,
+): EgenkontrollState {
+  const byRubrik = new Map<string, EgenkontrollPunkt>();
+
+  for (const p of state.punkter) {
+    const key = p.rubrik.trim();
+    if (!key) continue;
+    if (VVS_EGENKONTROLL_PUNKTER.some((m) => m.rubrik === key)) {
+      byRubrik.set(key, p);
+    }
+  }
+
+  const ordered: EgenkontrollPunkt[] = [];
+  for (const mall of VVS_EGENKONTROLL_PUNKTER) {
+    const hit = byRubrik.get(mall.rubrik);
+    ordered.push(hit ?? skapaPunktFranMall(mall));
+  }
+  for (const p of state.punkter) {
+    const key = p.rubrik.trim();
+    if (!key) continue;
+    if (!VVS_EGENKONTROLL_PUNKTER.some((m) => m.rubrik === key)) {
+      ordered.push(p);
+    }
+  }
+
+  return { ...state, punkter: synkaAvvikelseNummer(ordered) };
 }
 
 function normaliseraKontrollanter(
@@ -380,18 +504,7 @@ function normaliseraSignerare(raw: unknown): EgenkontrollSignerare[] {
 }
 
 export function skapaPunkterFranVvsMall(): EgenkontrollPunkt[] {
-  return VVS_EGENKONTROLL_PUNKTER.map((p) => ({
-    id: skapaEgenkontrollPunktId(),
-    rubrik: p.rubrik,
-    beskrivning: p.beskrivning,
-    amaNot: p.amaNot,
-    aktuell: true,
-    status: "opåbörjad" as const,
-    kontrollDatum: "",
-    kommentar: "",
-    attestInitialer: "",
-    avvikelseNr: null,
-  }));
+  return VVS_EGENKONTROLL_PUNKTER.map((p) => skapaPunktFranMall(p));
 }
 
 /** Fyller i VVS-standardpunkter om listan saknas (äldre kopior / skapade utan formulär). */
@@ -427,6 +540,9 @@ export function skapaVvsEgenkontroll(input: {
     bransch: "vvs",
     huvudentreprenorNamn: input.huvudentreprenorNamn.trim(),
     underentreprenorNamn: input.underentreprenorNamn?.trim() ?? "",
+    kontrollAdresser: "",
+    omfattningLagenheter: "",
+    omfattningGemensammaYtor: "",
     utforare,
     kontrollanter,
     punkter: skapaPunkterFranVvsMall(),
@@ -469,12 +585,15 @@ export function normaliseraEgenkontroll(raw: unknown): EgenkontrollState | undef
     bransch: "vvs",
     huvudentreprenorNamn: d.huvudentreprenorNamn ?? "",
     underentreprenorNamn: d.underentreprenorNamn ?? "",
+    kontrollAdresser: d.kontrollAdresser ?? "",
+    omfattningLagenheter: d.omfattningLagenheter ?? "",
+    omfattningGemensammaYtor: d.omfattningGemensammaYtor ?? "",
     utforare,
     kontrollanter,
     punkter,
     signerare,
   };
-  return säkerstallEgenkontrollPunkter(state);
+  return kompletteraOchOrdnaMallPunkter(säkerstallEgenkontrollPunkter(state));
 }
 
 export function arEgenkontrollDokument(dok: ForeningsDokument): boolean {
@@ -517,9 +636,11 @@ function formatPunktRad(p: EgenkontrollPunkt, index: number): string {
   const sign = p.attestInitialer.trim()
     ? `    Sign (initialer): ${p.attestInitialer}`
     : "    Sign (initialer): —";
+  const plats = formateraPlatsKort(p);
   const rader = [
     `${index + 1}. ${p.rubrik}`,
     `    ${utfort} Utfört    ${avv} Avvikelse    Datum: ${p.kontrollDatum || "—"}`,
+    `    Avser: ${plats}`,
     sign,
     avvNr,
     `    ${p.beskrivning}`,
@@ -542,6 +663,7 @@ function formatAvvikelseSektion(punkter: EgenkontrollPunkt[]): string {
     return [
       `AVVIKELSE ${nr} — ${p.rubrik}`,
       `   Avser kontrollpunkt med avvikelsenummer ${nr} ovan.`,
+      `   Plats (minsta omfattning): ${formateraPlatsKort(a)}`,
       `   Orsak (varför fullt utförande ej kunnat ske): ${a.orsak || "—"}`,
       `   Reservation: ${a.reservation || "—"}`,
       `   Kommunikation beställare/ombud: ${formateraIsoSomDatumTid(a.tidBeställareKommunikation)}`,
@@ -621,6 +743,11 @@ export function byggEgenkontrollText(
 Förening (beställare): ${forening.foreningsNamn}
 Projekt / dokument: ${dok.titel}
 
+OMFATTNING
+Adress(er): ${ek.kontrollAdresser.trim() || "—"}
+Lägenheter som ingår: ${ek.omfattningLagenheter.trim() || "—"}
+Gemensamma ytor: ${ek.omfattningGemensammaYtor.trim() || "—"}
+
 ENTREPRENÖRENS HUVUDANSVAR
 Huvudentreprenören ansvarar för att egenkontrollen är fullständig, sanningsenlig
 och att avvikelser är kommunicerade och återkopplade enligt dokumentet.
@@ -658,10 +785,54 @@ export function initialerAnvandaIAttest(state: EgenkontrollState): string[] {
   return [...set];
 }
 
-export function avvikelseDetaljerKomplett(p: EgenkontrollPunkt): boolean {
+export function avvikelsePlatsKomplett(
+  p: EgenkontrollPunkt,
+  state: EgenkontrollState,
+): boolean {
+  if (p.status !== "avvikelse") return true;
+  const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
+  if (a.platsTyp !== "lagenhet" && a.platsTyp !== "gemensam_yta") {
+    return false;
+  }
+  if (a.platsTyp === "lagenhet" && !a.lagenhetNr.trim()) return false;
+  if (a.platsTyp === "gemensam_yta" && !a.ytaBenamning.trim()) return false;
+  if (fleraKontrollAdresser(state) && !a.kontrollAdress.trim()) return false;
+  return true;
+}
+
+export function punktPlatsKomplett(
+  p: EgenkontrollPunkt,
+  state: EgenkontrollState,
+): boolean {
+  if (p.status === "opåbörjad") return true;
+  const krav = kravSpecifikPlatsForRubrik(p.rubrik);
+  if (!krav && p.platsTyp === "hela") return true;
+  if (p.platsTyp === "lagenhet") {
+    if (!p.lagenhetNr.trim()) return false;
+    if (fleraKontrollAdresser(state) && !p.kontrollAdress.trim()) {
+      return false;
+    }
+    return true;
+  }
+  if (p.platsTyp === "gemensam_yta") {
+    if (!p.ytaBenamning.trim()) return false;
+    if (fleraKontrollAdresser(state) && !p.kontrollAdress.trim()) {
+      return false;
+    }
+    return true;
+  }
+  if (krav) return false;
+  return true;
+}
+
+export function avvikelseDetaljerKomplett(
+  p: EgenkontrollPunkt,
+  state: EgenkontrollState,
+): boolean {
   if (p.status !== "avvikelse") return true;
   const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
   return (
+    avvikelsePlatsKomplett(p, state) &&
     a.orsak.trim().length > 0 &&
     a.reservation.trim().length > 0 &&
     a.tidBeställareKommunikation.trim().length > 0 &&
@@ -680,6 +851,7 @@ export function punktAttestKomplett(
 ): boolean {
   if (p.status === "opåbörjad") return false;
   if (!p.kontrollDatum.trim()) return false;
+  if (!punktPlatsKomplett(p, state)) return false;
   const init = normaliseraInitialer(p.attestInitialer);
   if (init.length < 2) return false;
   return Boolean(hamtaKontrollantForInitialer(state, init));
@@ -694,7 +866,7 @@ export function allaAktuellaKontrollerBesvarade(
     (p) =>
       (p.status === "utfort" || p.status === "avvikelse") &&
       punktAttestKomplett(p, state) &&
-      avvikelseDetaljerKomplett(p),
+      avvikelseDetaljerKomplett(p, state),
   );
 }
 

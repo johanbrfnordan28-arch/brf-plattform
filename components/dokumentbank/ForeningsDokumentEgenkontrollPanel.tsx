@@ -23,9 +23,13 @@ import {
   synkaAvvikelseNummer,
   tomAvvikelseDetalj,
   avvikelseDetaljerKomplett,
+  EGENKONTROLL_PLATS_ETIKETTER,
+  fleraKontrollAdresser,
   formateraIsoSomDatumTid,
   franDatetimeLocal,
+  kravSpecifikPlatsForRubrik,
   tillDatetimeLocalValue,
+  type EgenkontrollPlatsTyp,
   type EgenkontrollPunkt,
   type EgenkontrollSignerare,
   type EgenkontrollSignerareRoll,
@@ -52,6 +56,92 @@ function initEgenkontroll(dok: ForeningsDokument): EgenkontrollState {
 
 function idagIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+type PlatsFaltProps = {
+  prefix: string;
+  platsTyp: EgenkontrollPlatsTyp;
+  lagenhetNr: string;
+  ytaBenamning: string;
+  kontrollAdress: string;
+  visaAdress: boolean;
+  tillatHela?: boolean;
+  onChange: (patch: {
+    platsTyp?: EgenkontrollPlatsTyp;
+    lagenhetNr?: string;
+    ytaBenamning?: string;
+    kontrollAdress?: string;
+  }) => void;
+};
+
+function PlatsFalt({
+  prefix,
+  platsTyp,
+  lagenhetNr,
+  ytaBenamning,
+  kontrollAdress,
+  visaAdress,
+  tillatHela = true,
+  onChange,
+}: PlatsFaltProps) {
+  const typer = (
+    Object.keys(EGENKONTROLL_PLATS_ETIKETTER) as EgenkontrollPlatsTyp[]
+  ).filter((t) => tillatHela || t !== "hela");
+
+  return (
+    <div className="mt-2 space-y-2 rounded-lg border border-border/70 bg-[#fafcfb] p-2">
+      <p className="text-xs font-medium text-muted">{prefix}</p>
+      <label className="block text-xs text-muted">
+        Typ
+        <select
+          value={platsTyp}
+          onChange={(e) =>
+            onChange({ platsTyp: e.target.value as EgenkontrollPlatsTyp })
+          }
+          className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+        >
+          {typer.map((t) => (
+            <option key={t} value={t}>
+              {EGENKONTROLL_PLATS_ETIKETTER[t]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {platsTyp === "lagenhet" && (
+        <label className="block text-xs text-muted">
+          Lägenhetsnummer
+          <input
+            value={lagenhetNr}
+            onChange={(e) => onChange({ lagenhetNr: e.target.value })}
+            placeholder="t.ex. 1201"
+            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+          />
+        </label>
+      )}
+      {platsTyp === "gemensam_yta" && (
+        <label className="block text-xs text-muted">
+          Yta
+          <input
+            value={ytaBenamning}
+            onChange={(e) => onChange({ ytaBenamning: e.target.value })}
+            placeholder="t.ex. Tvättstuga, Trapphus B"
+            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+          />
+        </label>
+      )}
+      {visaAdress && platsTyp !== "hela" && (
+        <label className="block text-xs text-muted">
+          Adress för denna kontroll
+          <input
+            value={kontrollAdress}
+            onChange={(e) => onChange({ kontrollAdress: e.target.value })}
+            placeholder="Ange vilken adress som avses"
+            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+          />
+        </label>
+      )}
+    </div>
+  );
 }
 
 export function ForeningsDokumentEgenkontrollPanel({
@@ -81,6 +171,7 @@ export function ForeningsDokumentEgenkontrollPanel({
   const [nySignerareRollEtikett, setNySignerareRollEtikett] = useState("");
 
   const entreprenorTilldelad = harEntreprenorTilldelad(ek);
+  const fleraAdresser = useMemo(() => fleraKontrollAdresser(ek), [ek]);
   const kontrollerKlara = useMemo(
     () => allaAktuellaKontrollerBesvarade(ek),
     [ek],
@@ -136,10 +227,18 @@ export function ForeningsDokumentEgenkontrollPanel({
         prev.punkter.map((p) => {
           if (p.id !== id) return p;
           if (status === "avvikelse") {
+            const bas = p.avvikelse ?? tomAvvikelseDetalj();
             return {
               ...p,
               status: "avvikelse",
-              avvikelse: p.avvikelse ?? tomAvvikelseDetalj(),
+              avvikelse: {
+                ...bas,
+                platsTyp:
+                  p.platsTyp === "gemensam_yta" ? "gemensam_yta" : "lagenhet",
+                lagenhetNr: bas.lagenhetNr || p.lagenhetNr,
+                ytaBenamning: bas.ytaBenamning || p.ytaBenamning,
+                kontrollAdress: bas.kontrollAdress || p.kontrollAdress,
+              },
               kontrollDatum: p.kontrollDatum || idagIso(),
             };
           }
@@ -191,6 +290,10 @@ export function ForeningsDokumentEgenkontrollPanel({
           kommentar: "",
           attestInitialer: "",
           avvikelseNr: null,
+          platsTyp: "hela",
+          lagenhetNr: "",
+          ytaBenamning: "",
+          kontrollAdress: "",
         },
       ]),
     }));
@@ -384,6 +487,60 @@ export function ForeningsDokumentEgenkontrollPanel({
         </label>
       </div>
 
+      <div className="space-y-3 rounded-xl border border-border bg-surface/60 p-4">
+        <p className="text-sm font-semibold text-foreground">
+          Omfattning — adresser, lägenheter och ytor
+        </p>
+        <p className="text-xs text-muted">
+          En egenkontroll kan omfatta flera lägenheter. Vid avvikelse ska
+          entreprenören ange så få lägenheter eller ytor som möjligt.
+        </p>
+        <label className="block text-xs text-muted">
+          Adress(er) — en rad per adress om flera gäller
+          <textarea
+            value={ek.kontrollAdresser}
+            onChange={(e) =>
+              setEk((prev) => ({ ...prev, kontrollAdresser: e.target.value }))
+            }
+            rows={2}
+            placeholder={"Storgatan 1\nStorgatan 3"}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+          />
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs text-muted">
+            Lägenheter som ingår (nummer, en per rad)
+            <textarea
+              value={ek.omfattningLagenheter}
+              onChange={(e) =>
+                setEk((prev) => ({
+                  ...prev,
+                  omfattningLagenheter: e.target.value,
+                }))
+              }
+              rows={3}
+              placeholder={"1101\n1102\n1201"}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+            />
+          </label>
+          <label className="block text-xs text-muted">
+            Gemensamma ytor (en per rad)
+            <textarea
+              value={ek.omfattningGemensammaYtor}
+              onChange={(e) =>
+                setEk((prev) => ({
+                  ...prev,
+                  omfattningGemensammaYtor: e.target.value,
+                }))
+              }
+              rows={3}
+              placeholder={"Tvättstuga\nTeknikrum källare"}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+            />
+          </label>
+        </div>
+      </div>
+
       <div className="space-y-3 rounded-xl border-2 border-primary/20 bg-white p-4">
         <p className="text-sm font-semibold text-foreground">
           Kontrollplan — granskning och redigering (föreningen)
@@ -437,6 +594,21 @@ export function ForeningsDokumentEgenkontrollPanel({
               <p className="text-xs font-medium text-muted">
                 Entreprenörens attest (ifylls på plats)
               </p>
+              {kravSpecifikPlatsForRubrik(p.rubrik) && (
+                <p className="mt-1 text-[11px] text-amber-950">
+                  Ange lägenhet eller yta — inte hela uppdraget.
+                </p>
+              )}
+              <PlatsFalt
+                prefix="Kontrollen avser"
+                platsTyp={p.platsTyp}
+                lagenhetNr={p.lagenhetNr}
+                ytaBenamning={p.ytaBenamning}
+                kontrollAdress={p.kontrollAdress}
+                visaAdress={fleraAdresser}
+                tillatHela={!kravSpecifikPlatsForRubrik(p.rubrik)}
+                onChange={(patch) => uppdateraPunkt(p.id, patch)}
+              />
               <div className="mt-2 flex flex-wrap items-end gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -644,7 +816,8 @@ export function ForeningsDokumentEgenkontrollPanel({
           </p>
           {avvikelsePunkter.map((p) => {
             const a = p.avvikelse ?? tomAvvikelseDetalj(p.avvikelseNr ?? 0);
-            const komplett = avvikelseDetaljerKomplett(p);
+            const komplett = avvikelseDetaljerKomplett(p, ek);
+            const aPlatsTyp = a.platsTyp ?? "lagenhet";
             return (
               <div
                 key={p.id}
@@ -657,6 +830,16 @@ export function ForeningsDokumentEgenkontrollPanel({
                   Samma nummer som vid kontrollpunkten ovan (beställaren ser vad
                   avvikelsen avser).
                 </p>
+                <PlatsFalt
+                  prefix="Avvikelsen avser (minsta omfattning)"
+                  platsTyp={aPlatsTyp}
+                  lagenhetNr={a.lagenhetNr}
+                  ytaBenamning={a.ytaBenamning}
+                  kontrollAdress={a.kontrollAdress}
+                  visaAdress={fleraAdresser}
+                  tillatHela={false}
+                  onChange={(patch) => uppdateraAvvikelse(p.id, patch)}
+                />
                 <label className="mt-2 block text-xs text-muted">
                   Orsak
                   <textarea

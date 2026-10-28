@@ -8,6 +8,13 @@ Som beställare ska ni kunna ta del av en tydlig kontrollplan, hur varje moment
 signerat med BankID och när. Det stärker spårbarheten inför slutbesiktning,
  garanti och arkiv.
 
+OMFATTNING — ADRESS, LÄGENHET OCH YTA
+En egenkontroll kan avse flera adresser och flera lägenheter. Ange adress(er) och
+vilka lägenheter eller gemensamma ytor (t.ex. tvättstuga) som ingår. Vid varje
+kontrollpunkt och särskilt vid avvikelse ska entreprenören ange så smal omfattning
+som möjligt (t.ex. ett lägenhetsnummer). Flera avvikelser i samma lägenhet avser
+samma fysiska plats men numreras var för sig i avvikelselistan.
+
 FÖRENINGENS ROLL
 Styrelsen kan tidigt granska och anpassa kontrollpunkterna (lägga till, ta bort
 och formulera krav) — även innan entreprenör är tilldelad. Det är er kontrollplan

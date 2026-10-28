@@ -8,6 +8,8 @@ export type EgenkontrollPunktMall = {
   rubrik: string;
   beskrivning: string;
   amaNot?: string;
+  /** Vid attest bör entreprenören ange lägenhet/yta (inte bara hela uppdraget). */
+  kravSpecifikPlats?: boolean;
 };
 
 /** Ordning enligt normalt utförande i projektet (förhandsgranskning och checklista). */
@@ -34,9 +36,52 @@ export const VVS_EGENKONTROLL_PUNKTER: EgenkontrollPunktMall[] = [
     amaNot: "AMA styr där anvisning saknas — följ prioritet: handling → AMA → tillverkare.",
   },
   {
-    rubrik: "Stöd, infästning och expansion",
+    rubrik: "Infästning vattenledning — vägg",
     beskrivning:
-      "Rör, armatur och utrustning är stödjda, infästa och utformade med hänsyn till expansion, golv- och vägggenomföringar.",
+      "Vattenledningar i vägg är infästa enligt handling, AMA och tillverkarens anvisning med hänsyn till expansion och genomföringar.",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Infästning vattenledning — tak",
+    beskrivning:
+      "Vattenledningar i tak/konstruktion är infästa och stödda enligt handling och AMA med hänsyn till expansion och belastning.",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Infästning avlopp — vägg",
+    beskrivning:
+      "Avloppsledningar i vägg är infästa enligt handling, AMA och tillverkarens anvisning (lutning, stöd, genomföringar).",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Infästning avlopp — tak",
+    beskrivning:
+      "Avloppsledningar i tak/konstruktion är infästa enligt handling och AMA (lutning, stöd, expansion).",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Inspektionsluckor inbyggda delar (avlopp och vatten)",
+    beskrivning:
+      "Inbyggda delar har tillgängliga inspektionsluckor för avlopp och vattenledning enligt projektering och tillverkarens krav.",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Tekniskt skåp för installationer",
+    beskrivning:
+      "Tekniskt skåp är monterat, tillgängligt och innehåller installationer enligt handling och gällande krav.",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Läckindikationsrör (läck ut) — teknikskåp och inbyggda delar",
+    beskrivning:
+      "Läck ut-rör eller motsvarande läckageindikation finns och är kopplat till avlopp enligt föreskrift, både i tekniskt skåp och inbyggda delar.",
+    kravSpecifikPlats: true,
+  },
+  {
+    rubrik: "Stöd, expansion och genomföringar (övrigt)",
+    beskrivning:
+      "Övriga stöd, expansionsmöjligheter och genomföringar är verifierade utöver punktvisa infästningar ovan.",
+    kravSpecifikPlats: true,
   },
   {
     rubrik: "Isolering, brand och ljud",
