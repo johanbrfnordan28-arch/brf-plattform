@@ -19,6 +19,7 @@ import { FastighetsdelSammanstallning } from "@/components/underhallsplan/Fastig
 import {
   FastighetsdelUnderkomponentDetalj,
   skaDoljaEnkelMattISteg2,
+  steg2UnderdelArStortFormular,
 } from "@/components/underhallsplan/FastighetsdelUnderkomponentDetalj";
 import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import {
@@ -99,6 +100,40 @@ export function FastighetsdelarSteg({
   const [nyDel, setNyDel] = useState("");
   const [valdDel, setValdDel] = useState("");
   const [nyUnder, setNyUnder] = useState<Record<string, string>>({});
+  const [oppnaUnderdel, setOppnaUnderdel] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  function underdelKey(komponent: string, radId: string) {
+    return `${komponent}:${radId}`;
+  }
+
+  function isUnderdelOppen(
+    komponent: string,
+    radId: string,
+    detaljPanel?: ReturnType<
+      typeof hamtaKomponentMall
+    >["underkomponenter"][number]["detaljPanel"],
+  ) {
+    const key = underdelKey(komponent, radId);
+    if (key in oppnaUnderdel) return oppnaUnderdel[key];
+    return !steg2UnderdelArStortFormular(detaljPanel);
+  }
+
+  function toggleUnderdel(
+    komponent: string,
+    radId: string,
+    detaljPanel?: Parameters<typeof steg2UnderdelArStortFormular>[0],
+  ) {
+    const key = underdelKey(komponent, radId);
+    setOppnaUnderdel((current) => {
+      const wasOpen =
+        key in current
+          ? current[key]
+          : !steg2UnderdelArStortFormular(detaljPanel);
+      return { ...current, [key]: !wasOpen };
+    });
+  }
   const kandaDelar = new Set<string>(
     fastighetsdelGrupper.flatMap((grupp) => grupp.komponenter),
   );
@@ -251,13 +286,30 @@ export function FastighetsdelarSteg({
                   const hint =
                     def?.måttHint ?? "Ange antal, yta eller löpmeter.";
                   const data = detaljFor(namn);
+                  const underdelOppen = isUnderdelOppen(
+                    namn,
+                    rad.id,
+                    detaljPanel,
+                  );
                   return (
                     <li
                       key={rad.id}
-                      className="rounded-lg bg-[#f7f9f8] px-3 py-2"
+                      className="rounded-lg border border-border/80 bg-[#f7f9f8] px-2 py-2 sm:px-3"
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
+                      <div className="flex flex-wrap items-start gap-2">
+                        <OppnaStangKnapp
+                          oppen={underdelOppen}
+                          storlek="sm"
+                          onClick={() =>
+                            toggleUnderdel(namn, rad.id, detaljPanel)
+                          }
+                          ariaLabel={
+                            underdelOppen
+                              ? `Stäng ${rad.etikett}`
+                              : `Öppna ${rad.etikett}`
+                          }
+                        />
+                        <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-foreground">
                             {rad.etikett}
                           </p>
@@ -276,7 +328,7 @@ export function FastighetsdelarSteg({
                           Ta bort
                         </button>
                       </div>
-                      {!doljEnkelMatt && (
+                      {underdelOppen && !doljEnkelMatt && (
                         <div className="mt-2">
                           <label className="mb-2 block w-36 text-xs text-muted">
                             Enhet
@@ -326,7 +378,7 @@ export function FastighetsdelarSteg({
                           />
                         </div>
                       )}
-                      {detaljPanel && (
+                      {underdelOppen && detaljPanel && (
                         <FastighetsdelUnderkomponentDetalj
                           komponentNamn={namn}
                           rad={rad}
@@ -345,7 +397,8 @@ export function FastighetsdelarSteg({
                           }
                         />
                       )}
-                      {!doljEnkelMatt &&
+                      {underdelOppen &&
+                        !doljEnkelMatt &&
                         forslag &&
                         forslag !== rad.värde.trim() && (
                         <button
@@ -369,19 +422,35 @@ export function FastighetsdelarSteg({
               </ul>
             )}
             {dolda.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {dolda.map((rad) => (
-                  <button
-                    key={rad.id}
-                    type="button"
-                    onClick={() =>
-                      uppdateraRad(namn, rad.id, { medIPlan: true })
-                    }
-                    className="rounded-full border border-border bg-white px-2.5 py-1 text-xs text-foreground hover:border-primary/40"
-                  >
-                    Lägg till {rad.etikett}
-                  </button>
-                ))}
+              <div className="rounded-lg border border-dashed border-amber-300/80 bg-amber-50/50 px-3 py-3">
+                <p className="text-xs font-semibold text-foreground">
+                  Importera del till planen
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  Dessa underdelar är borttagna från planen. Importera tillbaka
+                  om något tagits bort av misstag eller saknades från början.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {dolda.map((rad) => (
+                    <button
+                      key={rad.id}
+                      type="button"
+                      onClick={() => {
+                        uppdateraRad(namn, rad.id, {
+                          medIPlan: true,
+                          aktiv: true,
+                        });
+                        setOppnaUnderdel((current) => ({
+                          ...current,
+                          [underdelKey(namn, rad.id)]: true,
+                        }));
+                      }}
+                      className="rounded-full border border-primary/40 bg-white px-2.5 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                    >
+                      + Importera {rad.etikett}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             <FastighetsdelSammanstallning
@@ -466,6 +535,8 @@ export function FastighetsdelarSteg({
         <p className="mt-1 text-xs text-muted">
           Alla delar som ska finnas i planen väljer ni här — borttagna
           standardkomponenter kan läggas till igen, eller skriv in en egen del.
+          Underdelar som tagits bort inne i en komponent importeras via
+          &quot;Importera del till planen&quot; när komponenten är öppen.
         </p>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
           {borttagnaStandard.length > 0 && (

@@ -10,6 +10,8 @@ import {
 } from "@/components/underhallsplan/fasad-atgard-pris";
 import { TakbelaggningPanel } from "@/components/underhallsplan/TakbelaggningPanel";
 import { TakfonsterListaPanel } from "@/components/underhallsplan/TakfonsterListaPanel";
+import { TakterrassPanel } from "@/components/underhallsplan/TakterrassPanel";
+import { MedlemstakterrassPanel } from "@/components/underhallsplan/MedlemstakterrassPanel";
 import {
   hamtaFonsterDorrPoster,
   hamtaFasadAtgardData,
@@ -26,7 +28,11 @@ import {
   uppdateraFonsterDorrPoster,
   uppdateraTakBelaggningData,
   hamtaTakfonsterData,
+  hamtaTakterrassPoster,
+  hamtaMedlemstakterrassPoster,
   uppdateraTakfonsterData,
+  uppdateraTakterrassPoster,
+  uppdateraMedlemstakterrassPoster,
   type KomponentDetaljData,
   type UnderkomponentDetaljPanel,
   type UnderkomponentRad,
@@ -42,12 +48,23 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "fasadmaterial-val",
   "fasad-sockel-val",
   "takfonster-lista",
+  "takterrass-val",
+  "medlemstakterrass-val",
 ]);
+
+/** Stora formulär i steg 2 — visas ihopfällda som standard (+ / −). */
+const STORA_FORMULAR_I_STEG2 = UTFORLIGA_PANELER;
 
 export function skaDoljaEnkelMattISteg2(
   detaljPanel?: UnderkomponentDetaljPanel,
 ): boolean {
   return Boolean(detaljPanel && UTFORLIGA_PANELER.has(detaljPanel));
+}
+
+export function steg2UnderdelArStortFormular(
+  detaljPanel?: UnderkomponentDetaljPanel,
+): boolean {
+  return Boolean(detaljPanel && STORA_FORMULAR_I_STEG2.has(detaljPanel));
 }
 
 type FastighetsdelUnderkomponentDetaljProps = {
@@ -123,6 +140,36 @@ export function FastighetsdelUnderkomponentDetalj({
           steg2Lage
           onChange={(takfonster) =>
             onChange(uppdateraTakfonsterData(data, rad.id, takfonster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "takterrass-val") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <TakterrassPanel
+          poster={hamtaTakterrassPoster(data, rad.id)}
+          steg2Lage
+          onChange={(poster) =>
+            onChange(uppdateraTakterrassPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "medlemstakterrass-val") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <MedlemstakterrassPanel
+          poster={hamtaMedlemstakterrassPoster(data, rad.id)}
+          steg2Lage
+          onChange={(poster) =>
+            onChange(
+              uppdateraMedlemstakterrassPoster(data, rad.id, poster),
+            )
           }
         />
       </div>

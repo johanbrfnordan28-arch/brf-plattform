@@ -12,11 +12,13 @@ import {
 type MedlemstakterrassPanelProps = {
   poster: MedlemstakterrassPost[];
   onChange: (poster: MedlemstakterrassPost[]) => void;
+  steg2Lage?: boolean;
 };
 
 export function MedlemstakterrassPanel({
   poster,
   onChange,
+  steg2Lage = false,
 }: MedlemstakterrassPanelProps) {
   function uppdateraPost(id: string, patch: Partial<MedlemstakterrassPost>) {
     onChange(poster.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -97,14 +99,16 @@ export function MedlemstakterrassPanel({
               </div>
             );
           })()}
-          <div className="mt-3">
-            <MedlemstakterrassPrisPanel
-              data={post}
-              onChange={(data) =>
-                uppdateraPost(post.id, { ...post, ...data })
-              }
-            />
-          </div>
+          {!steg2Lage && (
+            <div className="mt-3">
+              <MedlemstakterrassPrisPanel
+                data={post}
+                onChange={(data) =>
+                  uppdateraPost(post.id, { ...post, ...data })
+                }
+              />
+            </div>
+          )}
         </article>
       ))}
 

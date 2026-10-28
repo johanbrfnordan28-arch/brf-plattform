@@ -12,9 +12,14 @@ import {
 type TakterrassPanelProps = {
   poster: TakterrassPost[];
   onChange: (poster: TakterrassPost[]) => void;
+  steg2Lage?: boolean;
 };
 
-export function TakterrassPanel({ poster, onChange }: TakterrassPanelProps) {
+export function TakterrassPanel({
+  poster,
+  onChange,
+  steg2Lage = false,
+}: TakterrassPanelProps) {
   function uppdateraPost(id: string, patch: Partial<TakterrassPost>) {
     onChange(
       poster.map((p) => (p.id === id ? { ...p, ...patch } : p)),
@@ -96,14 +101,16 @@ export function TakterrassPanel({ poster, onChange }: TakterrassPanelProps) {
               </div>
             );
           })()}
-          <div className="mt-3">
-            <TakterrassPrisPanel
-              data={post}
-              onChange={(data) =>
-                uppdateraPost(post.id, { ...post, ...data })
-              }
-            />
-          </div>
+          {!steg2Lage && (
+            <div className="mt-3">
+              <TakterrassPrisPanel
+                data={post}
+                onChange={(data) =>
+                  uppdateraPost(post.id, { ...post, ...data })
+                }
+              />
+            </div>
+          )}
         </article>
       ))}
 

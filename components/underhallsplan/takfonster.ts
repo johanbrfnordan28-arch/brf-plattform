@@ -420,6 +420,44 @@ export function formateraTakfonsterData(
   return delar.join(" · ");
 }
 
+/** Radvis sammanställning i steg 2 (benämning + antal). */
+export function takfonsterSteg2DetaljRader(
+  data: TakfonsterData,
+): { benamning: string; varde: string }[] {
+  const d = normaliseraTakfonsterData(data);
+  const rader: { benamning: string; varde: string }[] = [];
+
+  for (const [i, p] of d.singel.entries()) {
+    if (!p.antal.trim() && !p.storlekId.trim() && !p.breddMm.trim()) continue;
+    const benamning =
+      p.namn.trim() ||
+      takfonsterPlatsEtikett(p) ||
+      `Typ ${i + 1}`;
+    const storlek = takfonsterSingelStorlekEtikett(p);
+    const antal = p.antal.trim() || "—";
+    rader.push({
+      benamning: `${benamning} · ${storlek}`,
+      varde: `${antal} st`,
+    });
+  }
+
+  for (const [i, p] of d.kombinationer.entries()) {
+    if (!p.antal.trim() && !p.modulStorlekId.trim() && !p.fonsterIRad.trim()) {
+      continue;
+    }
+    const benamning =
+      p.namn.trim() || p.adress?.trim() || `Kombination ${i + 1}`;
+    const storlek = takfonsterKombinationStorlekEtikett(p);
+    const antal = p.antal.trim() || "—";
+    rader.push({
+      benamning: `${benamning} · ${storlek}`,
+      varde: `${antal} komb.`,
+    });
+  }
+
+  return rader;
+}
+
 /** @deprecated */
 export const formateraTakfonsterPoster = formateraTakfonsterData;
 
