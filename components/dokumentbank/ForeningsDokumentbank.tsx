@@ -53,6 +53,14 @@ import { lasFilSomText } from "@/components/dokumentbank/forening-dokument-fil-l
 import { skapaForeningsDokumentEgenkontroll } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import { laddaNerAnbudsUtvarderingExcel } from "@/components/dokumentbank/exportera-anbuds-utvardering-excel";
+
+function harAnbudsUtvarderingExcel(mallId: string): boolean {
+  return (
+    mallId === "anbuds-utvardering-standard" ||
+    mallId === "anbudsformular-standard"
+  );
+}
 
 // ── Hjälp ─────────────────────────────────────────────────────────────────────
 
@@ -614,6 +622,13 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
           fyller i och signerar med BankID när arbetet utförs.
         </p>
       )}
+      {filterOmrade === "upphandling" && (
+        <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs text-primary-dark">
+          Anbudsformuläret och utvärderingsmallen hänger ihop. Excel-mallen räknar
+          skillnad i kronor och procent mot lägsta anbud (huvud, optioner och
+          ÄTA-scenario).
+        </p>
+      )}
 
       {/* Mallar per område */}
       {(
@@ -651,6 +666,15 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                     >
                       Förhandsgranska
                     </button>
+                    {harAnbudsUtvarderingExcel(mall.id) && (
+                      <button
+                        type="button"
+                        onClick={() => laddaNerAnbudsUtvarderingExcel()}
+                        className="rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                      >
+                        Ladda ned Excel
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() =>

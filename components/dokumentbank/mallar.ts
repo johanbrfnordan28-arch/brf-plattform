@@ -8,6 +8,7 @@ import {
   EGENKONTROLL_MALL_DEFS,
 } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import { introForBransch } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
+import { ANBUDS_UTVARDERING_MALL } from "@/components/dokumentbank/mallar/innehall/anbuds-utvardering";
 
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
 export type DokumentMallOmrade =
@@ -132,22 +133,41 @@ Prissatt fast ÄTA ska vara relevant för det som ska utföras. På begäran ska
 entreprenören lämna grov kostnadsredovisning (arbete och material) som motiverar
 priset, i den omfattning styrelsen behöver för sitt beslut.
 
-Timpriser ÄTA — fyll i alla yrkesgrupper som kan bli aktuella i projektet:
+Timpriser ÄTA (kr/h, exkl. moms) — fyll i alla yrkesgrupper som kan bli aktuella:
 
-Yrkesgrupp                          Timpris (kr/h)    Jour/OB-tillägg
-Bygg / allmän entreprenad           _____________     _____________
-Rivning                             _____________     _____________
-Mark / anläggning                   _____________     _____________
-Ställning / fallskydd               _____________     _____________
-El                                  _____________     _____________
-VVS                                 _____________     _____________
-Ventilation                         _____________     _____________
-Målning                             _____________     _____________
-Plattsättning                       _____________     _____________
-Golv                                _____________     _____________
-Snickeri / inredning                _____________     _____________
-Övrig yrkesgrupp: _________________ _____________     _____________
-Övrig yrkesgrupp: _________________ _____________     _____________
+Yrkesgrupp                    Dag      Kväll    Helg     Jour/akut
+Bygg / allmän entreprenad     ______   ______   ______   ______
+Rivning                       ______   ______   ______   ______
+Mark / anläggning             ______   ______   ______   ______
+Ställning / fallskydd         ______   ______   ______   ______
+El                            ______   ______   ______   ______
+VVS                           ______   ______   ______   ______
+Ventilation                   ______   ______   ______   ______
+Målning                       ______   ______   ______   ______
+Plattsättning                 ______   ______   ______   ______
+Golv                          ______   ______   ______   ______
+Snickeri / inredning          ______   ______   ______   ______
+Övrig yrkesgrupp: __________ ______   ______   ______   ______
+Övrig yrkesgrupp: __________ ______   ______   ______   ______
+
+TIMMAR FÖR ÄTA-BEDÖMNING (uppskattning)
+Antal timmar per yrkesgrupp som timpriserna avser eller som ska användas vid
+jämförelse av anbud (samma antaganden för alla anbudsgivare):
+
+Yrkesgrupp                    Timmar dag   Timmar kväll   Timmar helg
+Bygg / allmän entreprenad     __________   ____________   ___________
+Rivning                       __________   ____________   ___________
+Mark / anläggning             __________   ____________   ___________
+Ställning / fallskydd         __________   ____________   ___________
+El                            __________   ____________   ___________
+VVS                           __________   ____________   ___________
+Ventilation                   __________   ____________   ___________
+Målning                       __________   ____________   ___________
+Plattsättning                 __________   ____________   ___________
+Golv                          __________   ____________   ___________
+Snickeri / inredning          __________   ____________   ___________
+Övrig yrkesgrupp: __________ __________   ____________   ___________
+Övrig yrkesgrupp: __________ __________   ____________   ___________
 
 Material: á-pris / påslag på material _____________ %   (ange metod)
 Minsta debitering per ÄTA-uppdrag: _____________ kr   (om tillämpligt)
@@ -168,6 +188,15 @@ UNDERSKRIFT
 Ort och datum: __________________________________
 Behörig firmatecknare: __________________________
 `,
+  },
+  {
+    id: "anbuds-utvardering-standard",
+    titel: "Anbudsutvärdering — mall",
+    filnamn: "Anbudsutvardering_mall.txt",
+    beskrivning:
+      "Jämför anbud mot anbudsformuläret — diff i kr och %. Ladda ned Excel för beräkning.",
+    omrade: "upphandling",
+    textInnehall: ANBUDS_UTVARDERING_MALL,
   },
   {
     id: "kontrakt-entreprenad",
