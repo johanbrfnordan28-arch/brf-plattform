@@ -1147,13 +1147,21 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
     normaliseraHandelse({
       id: "std-bokslut",
       titel: "Bokslut & budget",
-      beskrivning: "Ekonomisk plan och budget inför nästa år.",
+      beskrivning:
+        "Bokslut och budget inför nästa verksamhetsår. Budgeten ligger till grund för styrelsens beslut och kan innebära justering av avgiften.",
       kategori: "ekonomi",
       typ: "arlig",
       manad: 11,
       dag: 30,
       startAr: basAr,
       paminnelseDagar: [60, 30, 14],
+      attHantera: [
+        "Slutför bokslut enligt föreningens rutiner (ofta tillsammans med ekonomisk förvaltare eller revisor)",
+        "Ta fram budget för kommande år — vanligtvis ansvarar ordförande och kassör",
+        "Sammanställ underlag: resultat, kassaflöde, planerat underhåll och investeringar",
+        "Besluta om budgeten på styrelsemöte och protokollför beslutet",
+        "Beskriv i budgeten om avgiften ska höjas — som riktlinje brukar KPI (konsumentprisindex) användas",
+      ],
       klar: false,
       skapad: "standard",
       externKalla: "manuell",
@@ -1288,6 +1296,16 @@ export function migreraArshjulHandelser(
         klarDatum: h.klarDatum,
         serieStartDatum: h.datum ?? mall.serieStartDatum,
         paminnelseDagar: h.paminnelseDagar,
+      });
+    }
+    if (h.id === "std-bokslut" && mall) {
+      const gammalBeskrivning =
+        h.beskrivning === "Ekonomisk plan och budget inför nästa år.";
+      return normaliseraHandelse({
+        ...h,
+        beskrivning: gammalBeskrivning ? mall.beskrivning : h.beskrivning,
+        attHantera:
+          (h.attHantera?.length ?? 0) > 0 ? h.attHantera : mall.attHantera,
       });
     }
     if (

@@ -112,7 +112,10 @@ export default function ArshjulPage() {
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>Årsstämma och kallelse</li>
-          <li>Bokslut och budget inför nästa år</li>
+          <li>
+            Bokslut och budget med styrelsebeslut, protokoll och riktlinjer för
+            avgiftshöjning
+          </li>
           <li>OVK och sotning</li>
           <li>Styrelsemöten och protokoll</li>
           <li>Garantibesiktningar från pågående projekt</li>
