@@ -81,7 +81,8 @@ Beskriv vad som ska utföras. Inkludera:
     id: "anbudsformular-standard",
     titel: "Anbudsformulär — standard",
     filnamn: "Anbudsformular_BRF_standard.txt",
-    beskrivning: "Standardformulär för pris, omfattning och referenser.",
+    beskrivning:
+      "Pris, optioner (tillval/osäkerheter), ÄTA med fast pris eller timpriser per yrkesgrupp, referenser.",
     omrade: "upphandling",
     textInnehall: `ANBUDSFORMULÄR — BRF STANDARD
 ==============================
@@ -97,9 +98,59 @@ Kontaktperson: __________________________________
 Telefon: ________________________________________
 E-post: _________________________________________
 
-PRIS (exkl. moms)
-Fast pris för hela uppdraget: _____________ kr
+PRIS HUVUDUPPDRAG (exkl. moms)
+Fast pris för hela uppdraget enligt handlingar: _____________ kr
 Alternativt: Á-prislista bifogas [ ]
+
+OPTIONER (max 5 — valfria tillägg)
+Styrelsen behöver kostnadsuppgifter för att kunna besluta om tillval, alternativa
+lösningar och förmodade tillkommande kostnader där osäkerhet finns. Ange fast
+pris per option. Beskriv kort vad som ingår och, vid osäkerhet, vad som kan
+påverka priset.
+
+Option 1 — Beskrivning: _________________________________________________
+         Pris exkl. moms: _____________ kr   Osäkerhet/antaganden: ___________
+
+Option 2 — Beskrivning: _________________________________________________
+         Pris exkl. moms: _____________ kr   Osäkerhet/antaganden: ___________
+
+Option 3 — Beskrivning: _________________________________________________
+         Pris exkl. moms: _____________ kr   Osäkerhet/antaganden: ___________
+
+Option 4 — Beskrivning: _________________________________________________
+         Pris exkl. moms: _____________ kr   Osäkerhet/antaganden: ___________
+
+Option 5 — Beskrivning: _________________________________________________
+         Pris exkl. moms: _____________ kr   Osäkerhet/antaganden: ___________
+
+ÄTA — ÄNDRING, TILLÄGG OCH AVDRAG (exkl. moms)
+Tillkommande arbeten ska i första hand prissättas som fast pris per ÄTA-uppdrag
+efter skriftlig beställning/godkännande. När fast pris inte kan lämnas i förväg
+ska timpriser enligt tabellen nedan gälla för respektive yrkesgrupp.
+
+Prissatt fast ÄTA ska vara relevant för det som ska utföras. På begäran ska
+entreprenören lämna grov kostnadsredovisning (arbete och material) som motiverar
+priset, i den omfattning styrelsen behöver för sitt beslut.
+
+Timpriser ÄTA — fyll i alla yrkesgrupper som kan bli aktuella i projektet:
+
+Yrkesgrupp                          Timpris (kr/h)    Jour/OB-tillägg
+Bygg / allmän entreprenad           _____________     _____________
+Rivning                             _____________     _____________
+Mark / anläggning                   _____________     _____________
+Ställning / fallskydd               _____________     _____________
+El                                  _____________     _____________
+VVS                                 _____________     _____________
+Ventilation                         _____________     _____________
+Målning                             _____________     _____________
+Plattsättning                       _____________     _____________
+Golv                                _____________     _____________
+Snickeri / inredning                _____________     _____________
+Övrig yrkesgrupp: _________________ _____________     _____________
+Övrig yrkesgrupp: _________________ _____________     _____________
+
+Material: á-pris / påslag på material _____________ %   (ange metod)
+Minsta debitering per ÄTA-uppdrag: _____________ kr   (om tillämpligt)
 
 REFERENSER (minst 2 liknande uppdrag de senaste 5 åren)
 1. Uppdragsgivare: _____________ År: _____ Belopp: _____ kr

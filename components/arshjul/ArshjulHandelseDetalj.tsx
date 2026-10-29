@@ -92,7 +92,7 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
           rows={4}
           placeholder={
             handelse.id === "std-overlamning"
-              ? "En åtgärd per rad. Listan byggs på under året."
+              ? "En punkt per rad — komplettera under året med det nästa styrelse behöver veta."
               : "En sak per rad, t.ex.\nBoka lokal\nSkicka kallelse"
           }
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"

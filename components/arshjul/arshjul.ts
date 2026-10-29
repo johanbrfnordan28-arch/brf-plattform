@@ -1046,13 +1046,23 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-overlamning",
       titel: "Överlämning till ny styrelse",
       beskrivning:
-        "Själva överlämningen. Listan byggs på under året med aktuella åtgärder, avtal och pågående ärenden som den nya styrelsen ska ta över.",
+        "Här samlas allt nästa styrelse behöver: planerade händelser resten av året, pågående ärenden samt beslut och riktlinjer från avgående styrelse. Listan fylls på löpande — överlämningen genomförs vid styrelsebyte efter stämman.",
       kategori: "styrelsemote",
       antal: 1,
       varje: 12,
       enhet: "manad",
       startIso: overlamning,
       paminnelseDagar: [30, 14, 7],
+      attHantera: [
+        "Sammanställ planerade händelser resten av året (årshjul, stämma, OVK, projekt och möten)",
+        "Beskriv beslut och riktlinjer från avgående styrelse (protokoll, budget, arvoden och rutiner)",
+        "Lista pågående ärenden och öppna frågor som nästa styrelse ska driva vidare",
+        "Översikt avtal, försäkring, bank, ekonomisk förvaltning och viktiga leverantörskontakter",
+        "Pågående och planerade projekt samt var underlag finns (dokumentbank, projektmappar)",
+        "Nycklar, behörigheter och inloggningar till system som styrelsen använder",
+        "Genomför överlämningsmöte, gå igenom listan och protokollför",
+        "Bekräfta att nästa styrelse har tillgång till årshjul, dokument och projekt",
+      ],
     }),
     normaliseraHandelse({
       id: "std-ovk-bostad",
@@ -1333,9 +1343,10 @@ export function migreraArshjulHandelser(
     ) {
       const gammalKonstituerande =
         h.beskrivning.startsWith("Första styrelsemötet efter årsstämman");
-      const gammalOverlamning = h.beskrivning.startsWith(
-        "Avgående styrelse lämnar över",
-      );
+      const gammalOverlamning =
+        h.id === "std-overlamning" &&
+        (h.beskrivning.startsWith("Avgående styrelse lämnar över") ||
+          h.beskrivning.startsWith("Själva överlämningen."));
       return normaliseraHandelse({
         ...h,
         beskrivning:

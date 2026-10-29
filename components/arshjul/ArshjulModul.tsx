@@ -496,7 +496,8 @@ export function ArshjulModul() {
           börjar med ett möte per del, så listan inte fylls med hela året på en
           gång. Lägg till fler möten på det första mötet och redigera datumet.
           Konstituerande möte är styrelsemötet efter årsstämman. Överlämningen
-          byggs på under året.
+          samlar planerade händelser, beslut och riktlinjer till nästa styrelse
+          — listan fylls på under året.
         </p>
         <DemoFilSparningNotis />
       </div>
