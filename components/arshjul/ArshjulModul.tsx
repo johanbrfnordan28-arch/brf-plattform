@@ -50,6 +50,7 @@ import {
   type OvkDualConfig,
 } from "@/components/arshjul/arshjul-ovk";
 import { ArshjulHandelseDetalj } from "@/components/arshjul/ArshjulHandelseDetalj";
+import { entreprenorFaltVisningEtikett } from "@/components/arshjul/arshjul-handelse-falt";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 type Vy = "arshjul" | "tidslinje" | "paminnelser";
@@ -1238,7 +1239,8 @@ export function ArshjulModul() {
                       <p className="text-xs text-muted">{beskrivIntervall(h)}</p>
                       {h.leverantor?.trim() ? (
                         <p className="text-xs text-foreground">
-                          Ansvarig inom styrelsen: {h.leverantor.trim()}
+                          {entreprenorFaltVisningEtikett(h.kategori)}:{" "}
+                          {h.leverantor.trim()}
                         </p>
                       ) : null}
                       {(h.attHantera?.length ?? 0) > 0 ? (

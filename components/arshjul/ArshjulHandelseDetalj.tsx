@@ -1,10 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type {
   ArshjulBilaga,
   ArshjulHandelse,
 } from "@/components/arshjul/arshjul";
+import {
+  arshjulArSotning,
+  arshjulUpphandlingsLank,
+  entreprenorFaltEtikett,
+  entreprenorFaltPlaceholder,
+  SOTNING_ENTREPRENOR_INFO,
+} from "@/components/arshjul/arshjul-handelse-falt";
 
 const MAX_FIL_BYTE = 280_000;
 
@@ -59,20 +67,55 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     });
   }
 
+  const upphandling = arshjulUpphandlingsLank(handelse);
+
   return (
     <div className="mt-3 space-y-4 border-t border-border/70 pt-3">
       <label className="block text-sm">
         <span className="font-medium text-foreground">
-          Ansvarig inom styrelsen
+          {entreprenorFaltEtikett(handelse.kategori)}
         </span>
+        {!arshjulArSotning(handelse) && upphandling && (
+          <span className="mt-0.5 block text-xs text-muted">
+            Här anger ni vem som utförde uppdraget senast — underlättar för
+            nästa styrelse.
+          </span>
+        )}
         <input
           value={leverantor}
           onChange={(e) => setLeverantor(e.target.value)}
           onBlur={() => onSpara({ leverantor })}
-          placeholder="Namn eller roll, t.ex. ordförande eller kassör"
+          placeholder={entreprenorFaltPlaceholder(handelse.kategori)}
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
         />
       </label>
+
+      {arshjulArSotning(handelse) && (
+        <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs leading-relaxed text-primary-dark">
+          {SOTNING_ENTREPRENOR_INFO}{" "}
+          <Link
+            href="/forening/foreningsinformation"
+            className="font-medium underline"
+          >
+            Protokoll sparas under Ventilation → Sotning
+          </Link>
+          .
+        </p>
+      )}
+
+      {upphandling && (
+        <div className="rounded-lg border border-primary/30 bg-[#f7fbf8] px-3 py-3">
+          <Link
+            href={upphandling.href}
+            className="inline-flex rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary-dark"
+          >
+            {upphandling.etikett}
+          </Link>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            {upphandling.beskrivning}
+          </p>
+        </div>
+      )}
 
       <label className="block text-sm">
         <span className="font-medium text-foreground">

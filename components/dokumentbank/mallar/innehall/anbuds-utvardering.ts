@@ -14,8 +14,9 @@ huvudpris, optioner (max 5), ÄTA-timpriser (dag, kväll, helg) och timmar för
 ÄTA-bedömning. Skillnader ska vara enkla att läsa i kronor och i procent.
 
 REKOMMENDATION
-Använd Excel-mallen (Ladda ned Excel i dokumentbanken) — där räknas lägsta pris,
-differens i kr och % samt ÄTA-scenario automatiskt.
+Använd Excel-mallen: utvärderingsposterna står lodrätt till vänster, entreprenörerna
+på en vågrät rad överst. Delsummor och SLUTSUMMA längst ner. Placering 1–3 visas
+för slutsumma, huvud+optioner och ÄTA — vinnare på huvudpris kan ändå förlora på ÄTA.
 
 SÅ HÄR GÖR NI (STEG FÖR STEG)
 1. Kontrollera att alla anbud är kompletta enligt anbudsformuläret.
@@ -28,21 +29,21 @@ SÅ HÄR GÖR NI (STEG FÖR STEG)
    tidplan och metod också vägs in (poäng/intervall — fyll i nedan).
 7. Skriv rekommendation till styrelsen med motivering och ev. förbehåll.
 
-JÄMFÖRELSE HUVUDPRIS OCH OPTIONER (exkl. moms)
-Fyll i Excel eller tabellen nedan. Diff kr = pris minus lägsta. Diff % = diff kr / lägsta.
+EXCEL — UTVÄRDERING (exkl. moms)
+Kolumn A: poster lodrätt. Rad 5: företagsnamn. Jämför tre anbud.
 
-Post                    | Anbud A      | Anbud B      | Anbud C      | Lägst
-------------------------|--------------|--------------|--------------|--------
-Huvuduppdrag            | ____________ | ____________ | ____________ |
-Option 1                | ____________ | ____________ | ____________ |
-Option 2                | ____________ | ____________ | ____________ |
-Option 3                | ____________ | ____________ | ____________ |
-Option 4                | ____________ | ____________ | ____________ |
-Option 5                | ____________ | ____________ | ____________ |
-Summa (huvud + optioner)| ____________ | ____________ | ____________ |
+— Huvuduppdrag och optioner —
+Huvuduppdrag / Option 1–5
+Delsumma huvud + optioner
 
-ÄTA-SCENARIO (timpris × timmar enligt anbudsformuläret)
-Samma timmar för alla anbud — olika timpriser ger jämförbar ÄTA-kostnad.
+— ÄTA-scenario —
+ÄTA-scenario totalt (detalj på bladet ÄTA-scenario)
+
+— Slutsumma —
+SLUTSUMMA = delsummor ovan
+
+Placering (1 = lägst): slutsumma | huvud + optioner | ÄTA-scenario
+Rekommenderad entreprenör och motivering fylls i Excel efter helhetsbedömning.
 
 Övriga bedömningskriterier (om ni inte enbart väger pris):
 Referenser / erfarenhet: _________________________________________________

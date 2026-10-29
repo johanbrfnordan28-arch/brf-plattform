@@ -80,7 +80,10 @@ export type ArshjulHandelse = {
   skapad: string;
   externKalla?: "underhallsplan" | "projekt" | "manuell";
   externId?: string;
-  /** Ansvarig person eller roll inom styrelsen. */
+  /**
+   * Styrelsemöten m.m.: ansvarig inom styrelsen.
+   * OVK, sotning, energi m.m.: senast anlitad entreprenör/leverantör.
+   */
   leverantor?: string;
   /** Saker som ska hanteras, en rad per punkt. */
   attHantera?: string[];
@@ -1068,7 +1071,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-ovk-bostad",
       titel: "OVK — bostäder",
       beskrivning:
-        "Obligatorisk ventilationskontroll för bostäder. Intervall 3 eller 6 år beroende på ventilationssystem (S/F/FX ofta 6 år, FT/FTX 3 år). Ange planerat år — exakt datum bestäms under året.",
+        "Obligatorisk ventilationskontroll för bostäder. Intervall 3 eller 6 år beroende på ventilationssystem (S/F/FX ofta 6 år, FT/FTX 3 år). Ange senast anlitad entreprenör och planerat år — vid byte, använd Skapa upphandling för enkel anbudsrunda.",
       kategori: "ovk",
       typ: "intervall",
       startAr: basAr,
@@ -1083,7 +1086,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-ovk-butik",
       titel: "OVK — verksamhet",
       beskrivning:
-        "OVK för verksamhetslokaler och butiker — vart 3:e år. Ange planerat år — exakt datum bestäms under året.",
+        "OVK för verksamhetslokaler och butiker — vart 3:e år. Ange senast anlitad entreprenör och planerat år — vid byte, använd Skapa upphandling för enkel anbudsrunda.",
       kategori: "ovk",
       typ: "intervall",
       startAr: basAr,
@@ -1097,7 +1100,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
     normaliseraHandelse({
       id: "std-sotning",
       titel: "Sotning",
-      beskrivning: `Föreslaget intervall: vart ${SOTNING_FORESLAGET_INTERVALL_AR}:e år (vanligt i BRF med eldstäder). Kan vara 1–4 år beroende på eldstad och bränsle — stäm av med skorstensfejarmästaren.`,
+      beskrivning: `Föreslaget intervall: vart ${SOTNING_FORESLAGET_INTERVALL_AR}:e år (vanligt i BRF med eldstäder). Kan vara 1–4 år beroende på eldstad och bränsle — stäm av med skorstensfejarmästaren. Ange senast anlitad sotare. Upphandling behövs sällan; vid egen entreprenör utanför brandförsvarets avtal — kontakta Stockholms brandförsvar.`,
       kategori: "sotning",
       typ: "intervall",
       startAr: basAr,
@@ -1113,7 +1116,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-energi",
       titel: "Energideklaration",
       beskrivning:
-        "Lagkrav — energideklaration vart 10:e år. Planera under aktuellt år; exakt datum och ev. upphandling bestäms senare.",
+        "Lagkrav — energideklaration vart 10:e år. Ange vem som utförde senast. Skapa upphandling när ni ska byta — senaste handlingar och anbudsformulär räcker normalt för att mejla ut och ta in anbud.",
       kategori: "energideklaration",
       typ: "intervall",
       startAr: basAr,
@@ -1128,7 +1131,7 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
       id: "std-radon",
       titel: "Radonmätning",
       beskrivning:
-        "Rekommenderas / krav i många fall vart 10:e år (mätperiod oftast under eldningssäsong).",
+        "Rekommenderas / krav i många fall vart 10:e år (mätperiod oftast under eldningssäsong). Ange senast anlitad utförare — Skapa upphandling vid byte av entreprenör.",
       kategori: "radon",
       typ: "intervall",
       startAr: basAr,
