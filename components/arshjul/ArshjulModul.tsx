@@ -1237,7 +1237,7 @@ export function ArshjulModul() {
                       <p className="text-xs text-muted">{beskrivIntervall(h)}</p>
                       {h.leverantor?.trim() ? (
                         <p className="text-xs text-foreground">
-                          Senast anlitad: {h.leverantor.trim()}
+                          Ansvarig inom styrelsen: {h.leverantor.trim()}
                         </p>
                       ) : null}
                       {(h.attHantera?.length ?? 0) > 0 ? (

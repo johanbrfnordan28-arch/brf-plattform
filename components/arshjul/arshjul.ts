@@ -80,7 +80,7 @@ export type ArshjulHandelse = {
   skapad: string;
   externKalla?: "underhallsplan" | "projekt" | "manuell";
   externId?: string;
-  /** Senast anlitad leverantör eller entreprenör. */
+  /** Ansvarig person eller roll inom styrelsen. */
   leverantor?: string;
   /** Saker som ska hanteras, en rad per punkt. */
   attHantera?: string[];
