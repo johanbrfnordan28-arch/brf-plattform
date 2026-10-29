@@ -1133,13 +1133,23 @@ export function skapaStandardHandelser(basAr = innevarandeAr()): ArshjulHandelse
     normaliseraHandelse({
       id: "std-stamma",
       titel: "Årsstämma",
-      beskrivning: "Kallelse, underlag och protokoll.",
+      beskrivning:
+        "Förberedelserna börjar i januari: datum för stämman, årsredovisning, kallelse och underlag till medlemmarna. Stämman ska normalt hållas senast 31 maj — kallelsefrister i veckor framgår av stadgarna.",
       kategori: "stamma",
       typ: "arlig",
       manad: 4,
       dag: 15,
       startAr: basAr,
       paminnelseDagar: [90, 60, 30, 14],
+      attHantera: [
+        "Besluta datum för årsstämman (påbörja i januari; stämman ska normalt hållas senast 31 maj)",
+        "Följ upp när ekonomisk förvaltare meddelar att årsredovisningen är klar",
+        "Granska årsredovisningen i styrelsen innan den skickas till revisorn",
+        "Skicka kallelse till medlemmarna med årsredovisning, budget och eventuella motioner (tider i veckor enligt stadgarna)",
+        "Skicka valberedningens förslag tillsammans med kallelsen",
+        "Om stämman inte kan hållas på planerat datum — besluta nytt datum och kalla om enligt stadgarna",
+        "Genomför stämman och protokollför",
+      ],
       klar: false,
       skapad: "standard",
       externKalla: "manuell",
@@ -1301,6 +1311,15 @@ export function migreraArshjulHandelser(
     if (h.id === "std-bokslut" && mall) {
       const gammalBeskrivning =
         h.beskrivning === "Ekonomisk plan och budget inför nästa år.";
+      return normaliseraHandelse({
+        ...h,
+        beskrivning: gammalBeskrivning ? mall.beskrivning : h.beskrivning,
+        attHantera:
+          (h.attHantera?.length ?? 0) > 0 ? h.attHantera : mall.attHantera,
+      });
+    }
+    if (h.id === "std-stamma" && mall) {
+      const gammalBeskrivning = h.beskrivning === "Kallelse, underlag och protokoll.";
       return normaliseraHandelse({
         ...h,
         beskrivning: gammalBeskrivning ? mall.beskrivning : h.beskrivning,

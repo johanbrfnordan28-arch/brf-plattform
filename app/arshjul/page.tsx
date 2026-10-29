@@ -111,7 +111,10 @@ export default function ArshjulPage() {
           Vanliga poster som styrelsen lägger in:
         </p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Årsstämma och kallelse</li>
+          <li>
+            Årsstämma från januaribeslut om datum till kallelse, revision och
+            protokoll
+          </li>
           <li>
             Bokslut och budget med styrelsebeslut, protokoll och riktlinjer för
             avgiftshöjning
