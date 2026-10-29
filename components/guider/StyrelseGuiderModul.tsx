@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { KortGuideFilm } from "@/components/guider/KortGuideFilm";
 import { guideFilmer, guideTips } from "@/components/guider/guider";
+import { ProjektutvarderingForm } from "@/components/guider/ProjektutvarderingForm";
 
 type TipsFilter = "alla" | "upphandling" | "entreprenor";
 
@@ -90,6 +91,19 @@ export function StyrelseGuiderModul() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-bold text-foreground">
+          Projektuppföljning — payback
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-muted">
+          Snabb kalkyl i portalen och full år-för-år-uppföljning via Excel-mallen
+          under Dokumentbank → Projektuppföljning.
+        </p>
+        <div className="mt-6">
+          <ProjektutvarderingForm />
+        </div>
       </section>
     </div>
   );

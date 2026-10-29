@@ -307,8 +307,8 @@ export const guideFilmer: GuideFilm[] = [
       "Jämför drift, försäkring och investering före och efter — räkna payback och kassa-plus under avskrivningstiden.",
     scener: [
       {
-        titel: "Baslinje 2–5 år före",
-        text: "Samla vatten, el, värme, försäkringspremier och skadehistorik innan projektet startar — så ni ser trender och kan jämföra.",
+        titel: "Baslinje minst 5 år före",
+        text: "Samla vatten, el, värme, försäkringspremier och skadehistorik (självrisk) minst fem år före projektet — så ni ser trender och kan jämföra.",
       },
       {
         titel: "Efter slutbesiktning",
@@ -408,12 +408,13 @@ export const guideTips: GuideTips[] = [
     ingress:
       "Jämför ekonomi och risker före, under och efter projektet — inklusive entreprenörens ansvarstid. Säkerhet kan inte värderas i kronor men ska alltid bedömas separat.",
     punkter: [
-      "Baslinje 2–5 år före start: samla förbrukning av vatten, el och värme (kWh, m³, fjärrvärme eller motsvarande) så trender syns innan åtgärden.",
-      "Baslinje 2–5 år före start: notera försäkringspremier, självrisker och historik av försäkringsskador — vad kostade skadorna totalt och vad ersattes?",
-      "Baslinje 2–5 år före start: dokumentera drift- och underhållskostnader för berörda delar (t.ex. tak, stammar, fasad) så ni kan jämföra före/efter.",
+      "Baslinje minst 5 år före start: samla förbrukning av vatten, el och värme (kWh, m³, fjärrvärme eller motsvarande) så trender syns innan åtgärden.",
+      "Baslinje minst 5 år före start: notera försäkringspremier, självrisker och historik av försäkringsskador — vad kostade skadorna totalt och vad ersattes?",
+      "Baslinje minst 5 år före start: dokumentera drift- och underhållskostnader för berörda delar (t.ex. tak, stammar, fasad) så ni kan jämföra före/efter.",
       "Finansiering: om likvida medel saknas i kassan bör högre avsättning till underhållsfond planeras minst två år före projektstart — undvik att låsa budgeten sent.",
       "Investeringskostnad: projektkostnad, finansiering, ränta och eventuella tilläggsarbeten — tydligt avgränsat i beslutsunderlaget.",
-      "Efter godkänd slutbesiktning: följ upp samma nyckeltal (vatten, el, värme) minst lika länge som ni har baslinje — idealiskt genom hela entreprenörens ansvarstid (10 år).",
+      "Efter godkänd slutbesiktning: följ upp samma nyckeltal minst 10 år (kan förlängas) — vatten, el, värme, premie och skador. Excel-mallen i dokumentbanken stödjer år för år.",
+      "Flera projekt: samma uppföljningsmall kan omfatta t.ex. stambyte etapp 1 och 2 om nyttan bedöms gemensamt.",
       "Payback time (återbetalningstid): räkna när lägre driftkostnader och färre skador har täckt projektets nettokostnad — t.ex. om värme och el minskar med X kr/år, hur många år tar det?",
       "Avskrivning vs payback: ett energiprojekt kan betala sig på t.ex. 5 år medan teknisk avskrivning är 20 år — då blir åren 6–20 ett plus i kassan som kan finansiera nästa åtgärd.",
       "Fördröjd renovering: skjuter ni på åtgärden växer ofta både skadekostnad och investeringsbehov — ta med det i jämförelsen mellan ”göra nu” och ”vänta”.",

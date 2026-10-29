@@ -9,6 +9,7 @@ import {
 } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import { introForBransch } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import { ANBUDS_UTVARDERING_MALL } from "@/components/dokumentbank/mallar/innehall/anbuds-utvardering";
+import { PROJEKT_UPPFOLJNING_MALL } from "@/components/dokumentbank/mallar/innehall/projekt-uppföljning";
 
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
 export type DokumentMallOmrade =
@@ -197,6 +198,15 @@ Behörig firmatecknare: __________________________
       "Jämför anbud mot anbudsformuläret — diff i kr och %. Ladda ned Excel för beräkning.",
     omrade: "upphandling",
     textInnehall: ANBUDS_UTVARDERING_MALL,
+  },
+  {
+    id: "projekt-uppföljning-payback",
+    titel: "Projektuppföljning — payback och nytta",
+    filnamn: "Projektuppföljning_payback.txt",
+    beskrivning:
+      "Före minst 5 år, efter upp till 10+ år — vatten, el, värme, försäkring, skador. Excel för payback.",
+    omrade: "ovrig",
+    textInnehall: PROJEKT_UPPFOLJNING_MALL,
   },
   {
     id: "kontrakt-entreprenad",

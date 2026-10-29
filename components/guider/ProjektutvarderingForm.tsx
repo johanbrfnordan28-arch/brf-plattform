@@ -13,6 +13,7 @@ import {
   type ProjektutvarderingEkonomi,
   type ProjektutvarderingState,
 } from "@/components/guider/projektutvardering-lager";
+import { laddaNerProjektUppfoljningExcel } from "@/components/dokumentbank/exportera-projekt-uppföljning-excel";
 
 const checklistaTips = guideTips.find((t) => t.id === "projektutvardering");
 
@@ -225,11 +226,22 @@ export function ProjektutvarderingForm() {
           Projektutvärdering — formulär
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Fyll i siffror för vatten, el, värme, försäkring och drift. Formuläret
-          räknar payback time, kassa-plus efter avskrivning och påminner om
-          säkerhet och försäkringsrisker. Uppföljning bör sträcka sig 2–5 år före
-          och genom entreprenörens ansvarstid (10 år efter godkänd slutbesiktning).
+          Fyll i siffror för vatten, el, värme, försäkringspremie, skador/självrisk
+          och drift. Formuläret räknar payback och kassa-plus. Baslinje bör vara
+          minst 5 år före projektet; uppföljning efter upp till 10 år (kan
+          förlängas). Samma uppföljning kan omfatta flera relaterade projekt.
         </p>
+        <button
+          type="button"
+          onClick={() =>
+            laddaNerProjektUppfoljningExcel(
+              state.projektNamn.trim() || undefined,
+            )
+          }
+          className="mt-3 rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+        >
+          Ladda ned Excel-mall (år för år)
+        </button>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -306,7 +318,20 @@ export function ProjektutvarderingForm() {
                 <input
                   value={state.projektNamn}
                   onChange={(e) => uppdatera({ projektNamn: e.target.value })}
-                  placeholder="T.ex. Stambyte etapp 2"
+                  placeholder="T.ex. Takbyte 2026"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="font-medium text-foreground">
+                  Relaterade projekt (valfritt)
+                </span>
+                <input
+                  value={state.relateradeProjekt}
+                  onChange={(e) =>
+                    uppdatera({ relateradeProjekt: e.target.value })
+                  }
+                  placeholder="T.ex. Stambyte etapp 1 och 2 i samma uppföljning"
                   className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                 />
               </label>
@@ -334,9 +359,29 @@ export function ProjektutvarderingForm() {
                   }
                   className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                 >
-                  {[2, 3, 4, 5].map((ar) => (
+                  {[5, 6, 7, 8, 9, 10].map((ar) => (
                     <option key={ar} value={ar}>
                       {ar} år före projekt
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm">
+                <span className="font-medium text-foreground">
+                  Uppföljning efter (år)
+                </span>
+                <select
+                  value={state.uppföljningArEfter}
+                  onChange={(e) =>
+                    uppdatera({
+                      uppföljningArEfter: Number(e.target.value),
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                >
+                  {[10, 12, 15, 20, 25].map((ar) => (
+                    <option key={ar} value={ar}>
+                      {ar} år efter slutbesiktning
                     </option>
                   ))}
                 </select>
@@ -345,8 +390,8 @@ export function ProjektutvarderingForm() {
             {resultat.ansvarstidSlutAr && (
               <p className="text-xs text-primary-dark">
                 Entreprenörens ansvarstid löper till cirka{" "}
-                {resultat.ansvarstidSlutAr} — följ upp samma nyckeltal under
-                denna period.
+                {resultat.ansvarstidSlutAr} — följ upp samma nyckeltal minst{" "}
+                {state.uppföljningArEfter} år eller genom ansvarstiden.
               </p>
             )}
           </Sektion>
@@ -451,11 +496,15 @@ export function ProjektutvarderingForm() {
 
           <Sektion
             id="efter"
-            titel="Ekonomi efter — uppföljning per år"
+            titel={`Ekonomi efter — målvärde / senaste år (uppfölj ${state.uppföljningArEfter} år)`}
             sammanfattning={formatKr(resultat.efterTotaltKr) + " totalt"}
             oppen={oppnaSektioner.efter}
             onVaxla={vaxlaSektion}
           >
+            <p className="text-xs text-muted">
+              För år-för-år efter slutbesiktning — använd Excel-mallen. Här anger
+              ni steady state eller senaste uppföljningsår för payback.
+            </p>
             <EkonomiFalt
               titel="Efter godkänd slutbesiktning"
               data={state.efter}

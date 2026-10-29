@@ -14,8 +14,13 @@ export type ProjektutvarderingEkonomi = {
 
 export type ProjektutvarderingState = {
   projektNamn: string;
+  /** Fler projekt i samma uppföljning, t.ex. etapper. */
+  relateradeProjekt: string;
   slutbesiktningDatum: string;
+  /** Historik före projekt — minst 5 år rekommenderas. */
   baslinjeAr: number;
+  /** Uppföljning efter slutbesiktning — standard 10, kan förlängas. */
+  uppföljningArEfter: number;
   fore: ProjektutvarderingEkonomi;
   efter: ProjektutvarderingEkonomi;
   investeringskostnadKr: number;
@@ -42,8 +47,10 @@ export function tomProjektutvardering(): ProjektutvarderingState {
   };
   return {
     projektNamn: "",
+    relateradeProjekt: "",
     slutbesiktningDatum: "",
-    baslinjeAr: 3,
+    baslinjeAr: 5,
+    uppföljningArEfter: 10,
     fore: { ...noll },
     efter: { ...noll },
     investeringskostnadKr: 0,
@@ -82,8 +89,13 @@ export function normaliseraProjektutvardering(raw: unknown): ProjektutvarderingS
   const d = raw as Partial<ProjektutvarderingState>;
   return {
     projektNamn: String(d.projektNamn ?? ""),
+    relateradeProjekt: String(d.relateradeProjekt ?? ""),
     slutbesiktningDatum: String(d.slutbesiktningDatum ?? ""),
-    baslinjeAr: Math.min(5, Math.max(2, Number(d.baslinjeAr) || 3)),
+    baslinjeAr: Math.min(10, Math.max(5, Number(d.baslinjeAr) || 5)),
+    uppföljningArEfter: Math.min(
+      25,
+      Math.max(10, Number(d.uppföljningArEfter) || 10),
+    ),
     fore: normaliseraEkonomi(d.fore),
     efter: normaliseraEkonomi(d.efter),
     investeringskostnadKr: Number(d.investeringskostnadKr) || 0,

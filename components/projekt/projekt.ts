@@ -104,7 +104,8 @@ export const standardUndermappar: UndermappDefinition[] = [
   {
     id: "utvardering",
     titel: "Utvärdering",
-    beskrivning: "Utvärdering av entreprenör och projektutfall.",
+    beskrivning:
+      "Payback och nytta — spara uppföljning (före/efter), Excel och entreprenörsutvärdering.",
     ärStandard: true,
   },
   {

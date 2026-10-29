@@ -54,12 +54,27 @@ import { skapaForeningsDokumentEgenkontroll } from "@/components/dokumentbank/fo
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { laddaNerAnbudsUtvarderingExcel } from "@/components/dokumentbank/exportera-anbuds-utvardering-excel";
+import { laddaNerProjektUppfoljningExcel } from "@/components/dokumentbank/exportera-projekt-uppföljning-excel";
 
 function harAnbudsUtvarderingExcel(mallId: string): boolean {
   return (
     mallId === "anbuds-utvardering-standard" ||
     mallId === "anbudsformular-standard"
   );
+}
+
+function harProjektUppfoljningExcel(mallId: string): boolean {
+  return mallId === "projekt-uppföljning-payback";
+}
+
+function laddaExcelForMall(mallId: string): void {
+  if (harAnbudsUtvarderingExcel(mallId)) {
+    laddaNerAnbudsUtvarderingExcel();
+    return;
+  }
+  if (harProjektUppfoljningExcel(mallId)) {
+    laddaNerProjektUppfoljningExcel();
+  }
 }
 
 // ── Hjälp ─────────────────────────────────────────────────────────────────────
@@ -666,10 +681,11 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                     >
                       Förhandsgranska
                     </button>
-                    {harAnbudsUtvarderingExcel(mall.id) && (
+                    {(harAnbudsUtvarderingExcel(mall.id) ||
+                      harProjektUppfoljningExcel(mall.id)) && (
                       <button
                         type="button"
-                        onClick={() => laddaNerAnbudsUtvarderingExcel()}
+                        onClick={() => laddaExcelForMall(mall.id)}
                         className="rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
                       >
                         Ladda ned Excel
