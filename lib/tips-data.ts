@@ -132,17 +132,17 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "📥",
       titel: "Skapa kopia av en mall",
-      text: "Bläddra i Mallkatalog, klicka Skapa kopia och döp den till projektnamnet — t.ex. \"Kontrakt takbyte 2025\". Sedan laddar du ned och fyller i.",
+      text: "I Mallkatalog: Skapa kopia och namn efter projektet så det framgår vad det gäller och vilket år — t.ex. Takbyte 2026 eller Stambyte 2025. Redigera kopian under Mina dokument.",
     },
     {
       ikon: "✏️",
-      titel: "Namnge och håll koll",
-      text: "Kopior sparas under Mina dokument med status (Utkast / Klar / Arkiverad) och notering — hitta rätt dokument snabbt vid nästa revision.",
+      titel: "Redigerbar kopia",
+      text: "Varje kopia är ert eget dokument (utkast / klar / arkiverad). När ni lägger till i projekt pekar mappen på samma kopia — ändringar följer med i projektet.",
     },
     {
       ikon: "📁",
-      titel: "Ladda upp egna mallar",
-      text: "Har ni egna styrelsemallar? Ladda upp dem till banken så att de alltid är tillgängliga för hela styrelsen.",
+      titel: "Projekt och undermappar",
+      text: "Lägg till kopior i rätt projekt och undermapp (kontrakt, underlag m.m.). Ni kan också skapa egna undermappar i projektet och placera dokument där.",
     },
   ],
 

@@ -9,6 +9,7 @@ import {
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { ForeningsDokumentEgenkontrollPanel } from "@/components/dokumentbank/ForeningsDokumentEgenkontrollPanel";
+import { ForeningsDokumentRedigeraPanel } from "@/components/dokumentbank/ForeningsDokumentRedigeraPanel";
 import { lasProjektLista } from "@/components/dokumentbank/dokument-projekt-koppling";
 
 type Props = {
@@ -18,24 +19,23 @@ type Props = {
   onStang: () => void;
 };
 
-export function ProjektEgenkontrollRedigera({
+/** Redigerar föreningens dokumentkopia som är knuten till projektet. */
+export function ProjektForeningsDokumentRedigera({
   foreningsDokumentId,
   projektId,
   projektTitel,
   onStang,
 }: Props) {
-  const [dokument, setDokument] = useState<ForeningsDokument | null>(() => {
-    const hit = lasForeningsDokument().dokument.find(
-      (d) => d.id === foreningsDokumentId,
-    );
-    return hit && arEgenkontrollDokument(hit) ? hit : null;
-  });
+  const [dokument, setDokument] = useState<ForeningsDokument | null>(() =>
+    lasForeningsDokument().dokument.find((d) => d.id === foreningsDokumentId) ??
+      null,
+  );
 
   const ladda = useCallback(() => {
     const hit = lasForeningsDokument().dokument.find(
       (d) => d.id === foreningsDokumentId,
     );
-    if (hit && arEgenkontrollDokument(hit)) setDokument(hit);
+    setDokument(hit ?? null);
   }, [foreningsDokumentId]);
 
   useEffect(() => {
@@ -77,8 +77,8 @@ export function ProjektEgenkontrollRedigera({
   if (!dokument) {
     return (
       <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
-        Egenkontrolldokumentet hittades inte. Importera det igen från
-        dokumentbanken eller skapa en ny egenkontroll i projektet.
+        Dokumentet hittades inte. Importera det igen från dokumentbanken eller
+        skapa en ny kopia under Mina dokument.
         <button
           type="button"
           onClick={onStang}
@@ -95,12 +95,23 @@ export function ProjektEgenkontrollRedigera({
 
   return (
     <div className="mt-3 rounded-xl border border-primary/30 bg-white p-4 shadow-sm">
-      <ForeningsDokumentEgenkontrollPanel
-        dokument={dokument}
-        onSpara={spara}
-        onStang={onStang}
-        projektKontext={{ projektId, projektTitel, etapper }}
-      />
+      {arEgenkontrollDokument(dokument) ? (
+        <ForeningsDokumentEgenkontrollPanel
+          dokument={dokument}
+          onSpara={spara}
+          onStang={onStang}
+          projektKontext={{ projektId, projektTitel, etapper }}
+        />
+      ) : (
+        <ForeningsDokumentRedigeraPanel
+          dokument={dokument}
+          onSpara={spara}
+          onStang={onStang}
+        />
+      )}
     </div>
   );
 }
+
+/** @deprecated Använd ProjektForeningsDokumentRedigera */
+export const ProjektEgenkontrollRedigera = ProjektForeningsDokumentRedigera;

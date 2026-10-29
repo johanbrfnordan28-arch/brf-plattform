@@ -108,6 +108,10 @@ export function LaggTillIProjektDialog({
   return (
     <div className="mt-3 rounded-lg border border-primary/30 bg-[#f7fbf8] p-4">
       <p className="text-xs font-medium text-muted">Lägg till i projekt</p>
+      <p className="mt-1 text-xs text-muted">
+        Välj projekt och undermapp. Kopian är redigerbar och knyts till samma
+        dokument i Mina dokument.
+      </p>
       <div className="mt-2 space-y-2">
         <label className="block text-xs text-muted">
           Projekt

@@ -103,11 +103,12 @@ export function DokumentForhandsgranskaDialog({
 
         <div className="grid shrink-0 gap-4 border-b border-border bg-[#f7fbf8]/80 px-4 py-4 sm:grid-cols-2 sm:px-6">
           <label className="block text-xs font-medium text-muted">
-            Namn på er kopia (projektnamn)
+            Projektnamn på kopian (t.ex. Takbyte 2026)
             <input
               type="text"
               value={titel}
               onChange={(e) => setTitel(e.target.value)}
+              placeholder="T.ex. Stambyte 2025"
               className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
             />
           </label>

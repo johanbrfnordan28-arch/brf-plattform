@@ -84,17 +84,19 @@ interface SkapaKopiaFormProps {
 }
 
 function SkapaKopiaForm({ mall, onSpara, onAvbryt }: SkapaKopiaFormProps) {
-  const [titel, setTitel] = useState(mall.titel);
+  const [titel, setTitel] = useState("");
 
   return (
     <div className="mt-2 rounded-lg border border-primary/30 bg-[#f7fbf8] p-3">
       <p className="mb-2 text-xs font-medium text-muted">
-        Namnge din kopia
+        Namnge kopian efter projektet (vad det gäller och år), t.ex. Takbyte 2026
+        eller Stambyte 2025 — inte dokumenttypen först.
       </p>
       <div className="flex gap-2">
         <input
           type="text"
           value={titel}
+          placeholder="T.ex. Takbyte 2026"
           onChange={(e) => setTitel(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && titel.trim()) onSpara(titel);
@@ -160,10 +162,11 @@ function SkapaEgenkontrollKopiaForm({
         förhandsgranska (som är skrivskyddad).
       </p>
       <label className="block text-xs text-muted">
-        Projektnamn / dokumenttitel
+        Projektnamn (t.ex. Takbyte 2026 eller Stambyte 2025)
         <input
           value={titel}
           onChange={(e) => setTitel(e.target.value)}
+          placeholder="T.ex. Takbyte 2026"
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
         />
       </label>
@@ -326,6 +329,11 @@ function MinaDokument({
   return (
     <div className="space-y-4">
       <EgetDokumentUppladdning onSparad={onSparadUppladdning} />
+      <p className="text-sm text-muted">
+        Kopior från mallar är redigerbara här. Lägg till dem i projektets
+        undermappar — samma kopia används i projektet när ni klickar Redigera
+        där.
+      </p>
       {dokument.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
           Inga dokument ännu. Ladda upp en fil ovan eller skapa en kopia under

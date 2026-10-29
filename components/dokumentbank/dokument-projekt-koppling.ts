@@ -1,4 +1,6 @@
+import { skapaInnehallFranMall } from "@/components/dokumentbank/forening-dokument-innehall";
 import { hamtaMall, type DokumentMallOmrade } from "@/components/dokumentbank/mallar";
+import { hamtaAvtalFormForMall } from "@/components/dokumentbank/mallar/entreprenadavtal-mallar";
 import {
   arEgenkontrollDokument,
   skapaForeningsDokumentEgenkontroll,
@@ -6,6 +8,7 @@ import {
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import {
   lasForeningsDokument,
+  skapaForeningsDokumentId,
   sparaForeningsDokument,
   tomDokumentEntreprenor,
   type DokumentEntreprenor,
@@ -65,6 +68,46 @@ export function arEgenkontrollProjektMapp(mappId: string): boolean {
 function titelFranProjektDokument(dok: ProjektDokument): string {
   const base = dok.filnamn.replace(/\.(txt|pdf)$/i, "").replace(/_/g, " ");
   return base.trim() || "Egenkontroll VVS";
+}
+
+/** Skapar redigerbar föreningskopia från mall (ej egenkontroll). */
+export function skapaForeningsKopiaFranMall(
+  mallId: string,
+  docTitel: string,
+  koppladeProjektId: string[] = [],
+): ForeningsDokument | null {
+  if (arEgenkontrollMallId(mallId)) return null;
+  const mall = hamtaMall(mallId);
+  if (!mall) return null;
+  const nu = new Date().toISOString();
+  const titel = docTitel.trim() || mall.titel;
+  const avtalForm = hamtaAvtalFormForMall(mall.id);
+  const innehall = mall.textInnehall
+    ? skapaInnehallFranMall(mall, titel)
+    : undefined;
+  return {
+    id: skapaForeningsDokumentId(),
+    mallId: mall.id,
+    mallTitel: mall.titel,
+    mallFilnamn: mall.filnamn,
+    titel,
+    status: "utkast",
+    skapadDatum: nu,
+    uppdateradDatum: nu,
+    notering: "",
+    omrade: mall.omrade,
+    dokumentKalla: "mall",
+    ...(innehall ? { innehall } : {}),
+    koppladeProjektId,
+    ...(avtalForm
+      ? {
+          avtalForm,
+          entreprenor: tomDokumentEntreprenor(),
+          entreprenorSignaturer: [],
+          foreningSignaturer: [],
+        }
+      : {}),
+  };
 }
 
 /** Skapar föreningens egenkontrolldokument vid behov och kopplar till projektmappen. */
@@ -179,6 +222,32 @@ export function importeraDokumentTillProjekt(
         mallId: dokument.bankId,
       });
     }
+    const projekt = lasProjektLista().find((p) => p.id === projektId);
+    const docTitel =
+      projekt?.titel.trim() || titelFranProjektDokument(dokument);
+    const fdok = skapaForeningsKopiaFranMall(dokument.bankId, docTitel, [
+      projektId,
+    ]);
+    if (!fdok) {
+      return { ok: false, fel: "Mallen kunde inte kopieras." };
+    }
+    const fdState = lasForeningsDokument();
+    sparaForeningsDokument({
+      ...fdState,
+      dokument: [fdok, ...fdState.dokument],
+    });
+    const result = laggForeningsDokumentIProjekt(projektId, mappId, fdok);
+    if (!result.ok) return result;
+    const mapp = lasProjektLista().find((p) => p.id === projektId)?.mappar[
+      mappId
+    ];
+    const projDok = mapp?.dokument.find(
+      (d) => d.foreningsDokumentId === fdok.id,
+    );
+    if (!projDok) {
+      return { ok: false, fel: "Kunde inte läsa projektets dokument." };
+    }
+    return { ok: true, projDok };
   }
 
   return { ok: false, fel: "Importera via projektmodulen för övriga filer." };

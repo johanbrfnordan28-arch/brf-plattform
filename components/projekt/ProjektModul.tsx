@@ -50,7 +50,6 @@ import {
 } from "@/components/dokumentbank/dokument-projekt-koppling";
 import { arEgenkontrollMallId } from "@/components/dokumentbank/mallar/egenkontroll-mallar";
 import {
-  arEgenkontrollDokument,
   byggEgenkontrollText,
   skapaEgenkontrollForMall,
 } from "@/components/dokumentbank/forening-dokument-egenkontroll";
@@ -108,7 +107,7 @@ export function ProjektModul() {
   const [importFranBankKey, setImportFranBankKey] = useState<string | null>(
     null,
   );
-  const [redigerarEgenkontroll, setRedigerarEgenkontroll] = useState<{
+  const [redigerarForeningsDokument, setRedigerarForeningsDokument] = useState<{
     projektId: string;
     projektTitel: string;
     mappId: string;
@@ -454,14 +453,13 @@ export function ProjektModul() {
     }
   }
 
-  function kanRedigeraEgenkontroll(doc: ProjektDokument): boolean {
+  function harRedigerbarForeningsKopia(doc: ProjektDokument): boolean {
     if (doc.kalla !== "foreningsdokument" || !doc.foreningsDokumentId) {
       return false;
     }
-    const fd = lasForeningsDokument().dokument.find(
+    return lasForeningsDokument().dokument.some(
       (d) => d.id === doc.foreningsDokumentId,
     );
-    return Boolean(fd && arEgenkontrollDokument(fd));
   }
 
   function laggTillImporteratDokument(
@@ -1028,11 +1026,11 @@ export function ProjektModul() {
                                           </p>
                                         </div>
                                         <div className="flex flex-wrap gap-1">
-                                          {kanRedigeraEgenkontroll(doc) && (
+                                          {harRedigerbarForeningsKopia(doc) && (
                                             <button
                                               type="button"
                                               onClick={() =>
-                                                setRedigerarEgenkontroll({
+                                                setRedigerarForeningsDokument({
                                                   projektId: p.id,
                                                   projektTitel: p.titel,
                                                   mappId: mapp.id,
@@ -1042,7 +1040,7 @@ export function ProjektModul() {
                                               }
                                               className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-white"
                                             >
-                                              Redigera egenkontroll
+                                              Redigera
                                             </button>
                                           )}
                                           {(doc.kalla === "bank" ||
@@ -1123,16 +1121,17 @@ export function ProjektModul() {
                                     }}
                                   />
                                 )}
-                                {redigerarEgenkontroll?.projektId === p.id &&
-                                  redigerarEgenkontroll.mappId === mapp.id && (
+                                {redigerarForeningsDokument?.projektId === p.id &&
+                                  redigerarForeningsDokument.mappId ===
+                                    mapp.id && (
                                     <ProjektEgenkontrollRedigera
                                       foreningsDokumentId={
-                                        redigerarEgenkontroll.foreningsDokumentId
+                                        redigerarForeningsDokument.foreningsDokumentId
                                       }
                                       projektId={p.id}
                                       projektTitel={p.titel}
                                       onStang={() =>
-                                        setRedigerarEgenkontroll(null)
+                                        setRedigerarForeningsDokument(null)
                                       }
                                     />
                                   )}

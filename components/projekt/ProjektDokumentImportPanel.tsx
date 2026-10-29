@@ -68,10 +68,10 @@ export function ProjektDokumentImportPanel({
 
   function importeraMall(mall: DokumentbankMall) {
     setFel(null);
-    const docTitel = `${projektTitel} — ${mall.titel}`;
+    const docTitel = projektTitel.trim() || mall.titel;
     const result = importeraDokumentTillProjekt(projektId, mappId, {
       id: `tmp-${Date.now()}`,
-      filnamn: `${docTitel.replace(/\s+/g, "_")}.txt`,
+      filnamn: `${docTitel.replace(/\s+/g, "_")}__${mall.id}.txt`,
       uppladdad: new Date().toLocaleDateString("sv-SE"),
       kalla: "bank",
       bankId: mall.id,
