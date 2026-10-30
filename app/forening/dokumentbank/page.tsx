@@ -18,7 +18,7 @@ export default function ForeningDokumentbankPage() {
     <ModulePage
       title="Dokumentbank"
       icon="📁"
-      intro="Förhandsgranska mallar, skapa redigerbara kopior (namnge t.ex. Takbyte 2026 eller Stambyte 2025), lägg dem i projektets undermappar och ladda upp egna filer under Mina dokument."
+      intro="Välj Föreningens dokument eller Mallkatalog. Skapa redigerbara kopior (t.ex. Takbyte 2026), spara bara i föreningen eller även i ett projekt — och ladda upp egna filer."
     >
       <TipsPanel tips={tips.dokumentbank} />
       <ForeningsDokumentbank />

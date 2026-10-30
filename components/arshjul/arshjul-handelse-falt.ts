@@ -1,5 +1,10 @@
 import type { ArshjulHandelse, ArshjulKategori } from "@/components/arshjul/arshjul";
-import { besiktningTjanster } from "@/components/foreningsinformation/besiktning-upphandling";
+import {
+  besiktningTjanster,
+  laggTillEgetProtokoll,
+  skapaBesiktningUpphandling,
+  type BesiktningTjanstId,
+} from "@/components/foreningsinformation/besiktning-upphandling";
 import { kategoriId } from "@/components/upphandling/kategorier";
 
 /** Styrelsemöten, stämma, ekonomi m.m. — ansvarig inom styrelsen. */
@@ -55,6 +60,75 @@ export function entreprenorFaltVisningEtikett(kategori: ArshjulKategori): string
 
 export function arshjulArSotning(h: ArshjulHandelse): boolean {
   return h.kategori === "sotning" || h.id === "std-sotning";
+}
+
+export function arshjulArOvk(h: ArshjulHandelse): boolean {
+  return h.kategori === "ovk";
+}
+
+/** OVK i årshjulet — ingen dagordning/BankID, bara senaste och nästa besiktning. */
+export function arshjulVisaForenkladBesiktning(h: ArshjulHandelse): boolean {
+  return arshjulArOvk(h);
+}
+
+export function besiktningTjanstIdFranArshjul(
+  h: ArshjulHandelse,
+): BesiktningTjanstId | null {
+  const idMap: Record<string, BesiktningTjanstId> = {
+    "std-ovk-bostad": "ovk",
+    "std-ovk-butik": "ovk",
+    "std-energi": "energideklaration",
+    "std-radon": "radon",
+  };
+  if (idMap[h.id]) return idMap[h.id];
+  if (h.kategori === "ovk") return "ovk";
+  if (h.kategori === "energideklaration") return "energideklaration";
+  if (h.kategori === "radon") return "radon";
+  return null;
+}
+
+export function arshjulNastaBesiktningAr(h: ArshjulHandelse): number | null {
+  const intervall = h.intervallAr;
+  if (!intervall || intervall < 1) return h.startAr ?? null;
+  let senastAr = h.senastKlarAr;
+  if (!senastAr && h.besiktningSenastDatum?.trim()) {
+    const ar = Number(h.besiktningSenastDatum.slice(0, 4));
+    if (Number.isFinite(ar)) senastAr = ar;
+  }
+  if (senastAr) return senastAr + intervall;
+  return h.startAr ?? null;
+}
+
+/** Skickar med senaste OVK från årshjulet som protokoll och skapar upphandling. */
+export function skapaUpphandlingFranArshjul(
+  h: ArshjulHandelse,
+): { ok: true; titel: string; href: string } | { ok: false; fel: string } {
+  const tjanstId = besiktningTjanstIdFranArshjul(h);
+  if (!tjanstId) return { ok: false, fel: "Upphandling finns inte för den här händelsen." };
+
+  if (h.leverantor?.trim() || h.besiktningSenastDatum?.trim()) {
+    const nasta = arshjulNastaBesiktningAr(h);
+    laggTillEgetProtokoll(tjanstId, {
+      datum: h.besiktningSenastDatum?.trim() || String(h.senastKlarAr ?? ""),
+      utforsAv: h.leverantor?.trim() ?? "",
+      sammanfattning: [
+        "Senaste OVK enligt årshjulet.",
+        nasta ? `Nästa planerat år: ${nasta}.` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+    });
+  }
+
+  const result = skapaBesiktningUpphandling(tjanstId, []);
+  if (!result.ok) return result;
+  const tjanst = besiktningTjanster.find((t) => t.id === tjanstId);
+  const key = tjanst ? kategoriId(tjanst.kategoriNamn) : "ovk";
+  return {
+    ok: true,
+    titel: result.titel,
+    href: `/forening/upphandling#kategori-${key}`,
+  };
 }
 
 /** Förenklad upphandling (senaste protokoll + anbudsformulär) — inte sotning. */

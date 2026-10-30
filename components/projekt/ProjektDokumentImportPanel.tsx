@@ -133,7 +133,7 @@ export function ProjektDokumentImportPanel({
               : "text-muted"
           }`}
         >
-          Mina dokument
+          Föreningens dokument
         </button>
         <button
           type="button"

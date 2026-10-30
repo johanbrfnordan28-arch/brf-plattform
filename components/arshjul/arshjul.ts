@@ -1,4 +1,10 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import {
+  normaliseraArshjulSignering,
+  type ArshjulDokumentSignering,
+} from "@/components/arshjul/arshjul-dokument-signering";
+
+export type { ArshjulDokumentSignering };
 
 export type ArshjulKategori =
   | "styrelsemote"
@@ -85,12 +91,16 @@ export type ArshjulHandelse = {
    * OVK, sotning, energi m.m.: senast anlitad entreprenör/leverantör.
    */
   leverantor?: string;
+  /** Senaste besiktning (OVK m.m.) — ISO-datum. */
+  besiktningSenastDatum?: string;
   /** Saker som ska hanteras, en rad per punkt. */
   attHantera?: string[];
   /** Dagordningar och liknande, sparade i webbläsaren. */
   bilagor?: ArshjulBilaga[];
-  /** Förberett för senare BankID-godkännande. Ingen signering sker här. */
+  /** @deprecated Använd signering — behålls för äldre data. */
   bankid?: ArshjulBankidForberedelse;
+  /** BankID kopplat till bilaga: läsning, undertecknare, signaturer, sparat dokument. */
+  signering?: ArshjulDokumentSignering;
 };
 
 export type ArshjulBilaga = {
@@ -377,10 +387,20 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
         : undefined,
     utanFastDatum: Boolean(raw.utanFastDatum),
     leverantor: raw.leverantor?.trim() || undefined,
+    besiktningSenastDatum:
+      typeof raw.besiktningSenastDatum === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(raw.besiktningSenastDatum.trim())
+        ? raw.besiktningSenastDatum.trim()
+        : undefined,
     attHantera: rensaAttHantera(raw.attHantera),
     bilagor: rensaBilagor(raw.bilagor),
     bankid: rensaBankid(raw.bankid),
+    signering: rensaSignering(raw.signering),
   };
+}
+
+function rensaSignering(value: unknown): ArshjulDokumentSignering | undefined {
+  return normaliseraArshjulSignering(value);
 }
 
 function rensaAttHantera(value: unknown): string[] | undefined {

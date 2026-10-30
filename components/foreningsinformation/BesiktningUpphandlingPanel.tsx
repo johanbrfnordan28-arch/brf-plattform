@@ -8,6 +8,8 @@ import {
   allaProtokoll,
   BESIKTNING_UPPHANDLING_EVENT,
   besiktningTjanst,
+  genereraBesiktningAnbudsformularText,
+  genereraBesiktningUnderlagText,
   hamtaBesiktningPost,
   laggTillEgetProtokoll,
   skapaBesiktningBestallning,
@@ -219,6 +221,32 @@ export function BesiktningUpphandlingPanel({ tjanstId, uppladdadeFilnamn }: Prop
           </Link>
         )}
       </div>
+
+      {skapad && (
+        <div className="rounded-lg border border-border bg-white p-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Förhandsgranska underlag (FFU och anbudsformulär)
+            </p>
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs font-medium text-primary-dark">
+                Visa FFU — förfrågningsunderlag
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-[#f7f9f8] p-2 text-xs text-muted">
+                {genereraBesiktningUnderlagText(tjanstId, uppladdadeFilnamn)}
+              </pre>
+            </details>
+            <details className="mt-2">
+              <summary className="cursor-pointer text-xs font-medium text-primary-dark">
+                Visa anbudsformulär (det entreprenören fyller i)
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-[#f7f9f8] p-2 text-xs text-muted">
+                {genereraBesiktningAnbudsformularText(tjanstId, uppladdadeFilnamn)}
+              </pre>
+            </details>
+          </div>
+        </div>
+      )}
 
       {skapad && (
         <div className="rounded-lg border border-border bg-white p-4">

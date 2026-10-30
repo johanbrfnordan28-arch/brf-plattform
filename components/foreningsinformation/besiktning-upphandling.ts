@@ -1,7 +1,6 @@
 import { kategoriId } from "@/components/upphandling/kategorier";
 import {
   lasForenkladUpphandling,
-  ovkIntervallAr,
   radonKraverAtgard,
 } from "@/components/upphandling/forenklad-upphandling-lager";
 import {
@@ -10,7 +9,10 @@ import {
   sparaUpphandlingLager,
   uppdateraKategoriMeta,
 } from "@/components/upphandling/upphandling-lager";
-import { ovkIntervallArForVentilation } from "@/components/underhallsplan/grunduppgifter-val";
+import {
+  OVK_INTERVALL_VERKSAMHET_AR,
+  ovkIntervallBostadHint,
+} from "@/components/underhallsplan/besiktningar";
 import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 import { foreningStorageKey } from "@/lib/foreningStorage";
@@ -411,6 +413,18 @@ export function taBortEgetProtokoll(tjanst: BesiktningTjanstId, id: string): voi
   skrivPost(tjanst, post);
 }
 
+/** Standardtext om OVK-intervall — bostäder efter system, verksamhet 3 år. */
+export function ovkIntervallInformationsText(ventilationssystem: string): string {
+  const system = ventilationssystem.trim();
+  const bostadRad = ovkIntervallBostadHint(system);
+  return [
+    "OVK-intervall varierar beroende på ventilationssystem (Boverkets föreskrifter BFS 2011:16, OVK):",
+    "• Bostäder/lägenheter: FT/FTX oftast vart 3:e år, F/S/FX och självdrag oftast vart 6:e år.",
+    `• ${bostadRad}`,
+    `• Verksamhetslokaler (butik, kontor m.m.): alltid vart ${OVK_INTERVALL_VERKSAMHET_AR}:e år, oavsett ventilationstyp.`,
+  ].join("\n");
+}
+
 function formateraProtokoll(protokoll: TidigareProtokoll[]): string {
   if (protokoll.length === 0) {
     return "Inga tidigare protokoll är registrerade. Lägg in dem i mappen innan anbud begärs, så anbudsgivaren ser senaste resultat.";
@@ -447,11 +461,7 @@ function formateraFastighetsblock(): string {
   if (grund.lokalyta.trim()) rader.push(`Lokalyta: ${grund.lokalyta.trim()} m²`);
   if (grund.uppvarmning.trim()) rader.push(`Uppvärmning: ${grund.uppvarmning.trim()}`);
   if (grund.ventilationssystem.trim()) {
-    const exakt = ovkIntervallArForVentilation(grund.ventilationssystem);
-    const intervall = exakt ?? ovkIntervallAr(grund.ventilationssystem);
-    rader.push(
-      `Ventilationssystem: ${grund.ventilationssystem.trim()} (OVK-intervall bostäder ${intervall} år)`,
-    );
+    rader.push(`Ventilationssystem: ${grund.ventilationssystem.trim()}`);
   }
   return rader.join("\n");
 }
@@ -474,6 +484,14 @@ export function genereraBesiktningUnderlagText(
     "",
     "Föreningens uppgifter är hämtade från föreningens grunduppgifter.",
     formateraFastighetsblock(),
+    ...(tjanstId === "ovk"
+      ? [
+          "",
+          ovkIntervallInformationsText(
+            hamtaSynkadPlanGrund()?.ventilationssystem ?? "",
+          ),
+        ]
+      : []),
     "",
     "Uppdrag",
     tjanst.omfattning,
@@ -502,6 +520,14 @@ export function genereraBesiktningAnbudsformularText(
     "",
     "Formuläret är skapat utifrån föreningens uppgifter och tidigare protokoll.",
     formateraFastighetsblock(),
+    ...(tjanstId === "ovk"
+      ? [
+          "",
+          ovkIntervallInformationsText(
+            hamtaSynkadPlanGrund()?.ventilationssystem ?? "",
+          ),
+        ]
+      : []),
     "",
     "Tidigare protokoll som anbudet ska förhålla sig till",
     formateraProtokoll(allaProtokoll(tjanstId, uppladdadeFilnamn)),
@@ -517,9 +543,23 @@ export function genereraBesiktningAnbudsformularText(
     "Organisationsnummer:",
     "Kontaktperson:",
     "E-post:",
-    "Pris (kr, exkl. moms):",
+    "Pris huvuduppdrag OVK (kr, exkl. moms):",
     "Föreslaget utförandedatum:",
     kompetens,
+    "",
+    ...(tjanstId === "ovk"
+      ? [
+          "Tillkommande kostnader (exkl. moms) — fyll i alla som kan bli aktuella:",
+          "Ombesikning vid underkänt, pris per lägenhet (kr/lgh): __________",
+          "Antal lägenheter i anbudet (st): __________",
+          "Timpris åtgärder/åtgärdspaket (kr/h, dag): __________",
+          "Timpris kväll/helg (kr/h): __________ / __________",
+          "Rensning ventilationskanaler — fast pris eller kr/löpmeter: __________",
+          "Beskrivning av vad kanalrensning omfattar: __________",
+          "Minsta debitering per tillfälle (kr): __________",
+          "",
+        ]
+      : []),
     "Kommentar till tidigare protokoll:",
   ].join("\n");
 }

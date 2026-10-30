@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
+import { ovkIntervallInformationsText } from "@/components/foreningsinformation/besiktning-upphandling";
 import {
   ARENDE_STATUS_ETIKETTER,
   ARENDE_STATUS_FARGER,
   ENERGIKLASSER,
   FORENKLAD_EVENT,
   lasForenkladUpphandling,
-  ovkIntervallAr,
   radonKraverAtgard,
   skapaEgetArendeId,
   sparaForenkladUpphandling,
@@ -218,12 +218,11 @@ interface OvkKortProps {
 }
 
 function OvkKort({ data, ventilationssystem, onChange }: OvkKortProps) {
-  const intervall = ovkIntervallAr(ventilationssystem);
   const v = ventilationssystem.trim();
   const sammanfattning = [
     v ? `Ventilation: ${v}` : null,
-    `OVK-intervall: ${intervall} år (Boverkets föreskrifter)`,
     data.nastaDatum ? `Nästa OVK: ${data.nastaDatum}` : null,
+    data.senastGodkantDatum ? `Senast godkänd: ${data.senastGodkantDatum}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -240,6 +239,9 @@ function OvkKort({ data, ventilationssystem, onChange }: OvkKortProps) {
       status={data.status}
       sammanfattning={sammanfattning}
     >
+      <div className="sm:col-span-2 rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2.5 text-xs leading-relaxed text-primary-dark whitespace-pre-line">
+        {ovkIntervallInformationsText(ventilationssystem)}
+      </div>
       <div>
         <label className={labelKlass}>Nästa OVK-datum</label>
         <input
@@ -277,11 +279,6 @@ function OvkKort({ data, ventilationssystem, onChange }: OvkKortProps) {
         notering={data.notering}
         onChange={set}
       />
-      <div className="sm:col-span-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs text-muted">
-        OVK-intervall varierar beroende på ventilationssystem:{" "}
-        <strong>FT / FTX = 3 år</strong>, <strong>F / S / självdrag = 6 år</strong>{" "}
-        (Boverkets föreskrifter BFS 2011:16, OVK).
-      </div>
     </ArendeKort>
   );
 }

@@ -50,10 +50,12 @@ import {
   type OvkDualConfig,
 } from "@/components/arshjul/arshjul-ovk";
 import { ArshjulHandelseDetalj } from "@/components/arshjul/ArshjulHandelseDetalj";
+import { ArshjulSigneradeVy } from "@/components/arshjul/ArshjulSigneradeVy";
+import { lasSigneradeArshjulDokument } from "@/components/arshjul/arshjul-dokument-signering";
 import { entreprenorFaltVisningEtikett } from "@/components/arshjul/arshjul-handelse-falt";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
-type Vy = "arshjul" | "tidslinje" | "paminnelser";
+type Vy = "arshjul" | "tidslinje" | "paminnelser" | "signerade";
 
 function lasHandelser(): ArshjulHandelse[] {
   if (typeof window === "undefined") return [];
@@ -130,6 +132,7 @@ export function ArshjulModul() {
   const [handelser, setHandelser] = useState<ArshjulHandelse[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [vy, setVy] = useState<Vy>("arshjul");
+  const antalSignerade = lasSigneradeArshjulDokument().length;
   const [valtAr, setValtAr] = useState(innevarandeAr);
   const [tidslinjeSlutAr, setTidslinjeSlutAr] = useState(
     innevarandeAr + ARSHJUL_PLANERING_AR,
@@ -509,6 +512,10 @@ export function ArshjulModul() {
             ["arshjul", "Årshjul"],
             ["tidslinje", "Tidslinje"],
             ["paminnelser", `Påminnelser (${paminnelser.length})`],
+            [
+              "signerade",
+              `Signerade dokument${antalSignerade > 0 ? ` (${antalSignerade})` : ""}`,
+            ],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -1248,9 +1255,13 @@ export function ArshjulModul() {
                           {h.attHantera?.length} saker att hantera
                         </p>
                       ) : null}
-                      {h.bankid?.forberedd ? (
+                      {h.signering?.klar ? (
                         <p className="text-xs text-primary-dark">
-                          Förberedd för BankID-godkännande
+                          BankID-signerat dokument sparat
+                        </p>
+                      ) : h.signering?.lasningBekraftad ? (
+                        <p className="text-xs text-amber-900">
+                          Väntar på BankID-signering
                         </p>
                       ) : null}
                     </div>
@@ -1410,6 +1421,8 @@ export function ArshjulModul() {
           </div>
         </div>
       )}
+
+      {vy === "signerade" && <ArshjulSigneradeVy />}
 
       {vy === "tidslinje" && (
         <div className="space-y-4">

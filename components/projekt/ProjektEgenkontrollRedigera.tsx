@@ -78,7 +78,7 @@ export function ProjektForeningsDokumentRedigera({
     return (
       <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
         Dokumentet hittades inte. Importera det igen från dokumentbanken eller
-        skapa en ny kopia under Mina dokument.
+        skapa en ny kopia under Föreningens dokument.
         <button
           type="button"
           onClick={onStang}

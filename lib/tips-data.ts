@@ -132,7 +132,7 @@ export const tips: Record<string, TipsPunkt[]> = {
     {
       ikon: "📥",
       titel: "Skapa kopia av en mall",
-      text: "I Mallkatalog: Skapa kopia och namn efter projektet så det framgår vad det gäller och vilket år — t.ex. Takbyte 2026 eller Stambyte 2025. Redigera kopian under Mina dokument.",
+      text: "I Mallkatalog: Skapa kopia och namn efter projektet (t.ex. Takbyte 2026). Välj om den bara ska till föreningens dokument eller även in i ett projekt. Redigera under Föreningens dokument.",
     },
     {
       ikon: "✏️",
