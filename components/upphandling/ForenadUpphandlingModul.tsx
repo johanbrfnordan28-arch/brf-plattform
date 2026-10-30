@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { ovkIntervallInformationsText } from "@/components/foreningsinformation/besiktning-upphandling";
+import { BesiktningAnbudMejlPanel } from "@/components/upphandling/BesiktningAnbudMejlPanel";
 import {
   ARENDE_STATUS_ETIKETTER,
   ARENDE_STATUS_FARGER,
@@ -648,10 +649,13 @@ export function ForenadUpphandlingModul() {
   return (
     <div className="space-y-6">
       <p className="text-sm leading-relaxed text-muted">
-        Upphandling med tidigare protokoll, anbudsformulär och beställning skapas
-        i Styrning och Dokument, i mapparna OVK, energideklaration och radon.
-        När den är skapad ligger den under Konsulter och specialisttjänster, så
-        anbudsformuläret kan mejlas till anbudsgivare.
+        Under varje kontroll kan ni skapa anbudsunderlag (FFU och anbudsformulär som
+        PDF) och mejla förfrågan till entreprenörer. Beställning till vinnande anbud
+        hanteras i Styrning och Dokument. Samma underlag finns även under{" "}
+        <a href="#kategori-ovk" className="font-medium text-primary-dark underline">
+          Fullständig upphandling → OVK
+        </a>
+        .
       </p>
 
       {/* Fastighetsinformation */}
@@ -668,11 +672,14 @@ export function ForenadUpphandlingModul() {
             ventilationssystem={grund?.ventilationssystem ?? ""}
             onChange={uppdateraOvk}
           />
+          <BesiktningAnbudMejlPanel kategoriNamn="OVK" />
           <EnergiKort
             data={state.energideklaration}
             onChange={uppdateraEnergi}
           />
+          <BesiktningAnbudMejlPanel kategoriNamn="Energideklaration" />
           <RadonKort data={state.radon} onChange={uppdateraRadon} />
+          <BesiktningAnbudMejlPanel kategoriNamn="Radonmätning" />
         </div>
       </div>
 

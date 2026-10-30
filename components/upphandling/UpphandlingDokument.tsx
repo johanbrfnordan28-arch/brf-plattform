@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { ContentSection } from "@/components/ContentSection";
 import { DokumentbankPanel } from "@/components/dokumentbank/DokumentbankPanel";
@@ -59,6 +60,7 @@ type VäljMål =
 
 /** Kategorier + dokumentbank i egna sektioner (banken före publicering). */
 export function UpphandlingSidaInnehall() {
+  const pathname = usePathname();
   const [kategorier, setKategorier] = useState<Record<string, KategoriState>>(
     {},
   );
@@ -101,6 +103,29 @@ export function UpphandlingSidaInnehall() {
       window.removeEventListener("upphandling-lager-uppdaterad", onCustom);
     };
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || Object.keys(kategorier).length === 0) return;
+
+    function oppnaKategoriFranHash() {
+      const hash = window.location.hash.replace(/^#/, "");
+      if (!hash.startsWith("kategori-")) return;
+      const key = hash.slice("kategori-".length);
+      setKategorier((current) => {
+        const state = current[key];
+        if (!state) return current;
+        if (state.öppen) return current;
+        return { ...current, [key]: { ...state, öppen: true } };
+      });
+      requestAnimationFrame(() => {
+        document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    oppnaKategoriFranHash();
+    window.addEventListener("hashchange", oppnaKategoriFranHash);
+    return () => window.removeEventListener("hashchange", oppnaKategoriFranHash);
+  }, [hydrated, pathname]);
 
   useEffect(() => {
     if (!hydrated || Object.keys(kategorier).length === 0) return;

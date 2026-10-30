@@ -6,6 +6,7 @@ import {
   lasHusEntreprenorerState,
   type HusEntreprenor,
 } from "@/components/entreprenorer/hus-entreprenorer-lager";
+import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
 import {
   BESIKTNING_UPPHANDLING_EVENT,
   besiktningTjanstForKategori,
@@ -13,6 +14,8 @@ import {
   genereraBesiktningUnderlagText,
   hamtaBesiktningPost,
   ovkIntervallInformationsText,
+  skapaBesiktningUpphandling,
+  sparadeHandlingar,
 } from "@/components/foreningsinformation/besiktning-upphandling";
 import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
@@ -75,7 +78,69 @@ export function BesiktningAnbudMejlPanel({ kategoriNamn }: Props) {
     return genereraBesiktningUnderlagText(tjanst.id);
   }, [tjanst]);
 
-  if (!tjanst || !hydrated || !skapad) return null;
+  if (!tjanst || !hydrated) return null;
+
+  const pdfHandlingar = skapad
+    ? sparadeHandlingar(tjanst.id).filter(
+        (handling) =>
+          handling.typ === "underlag" || handling.typ === "anbudsformular",
+      )
+    : [];
+
+  function oppnaPdf(titel: string, text: string) {
+    const ok = oppnaTextSomPdf(titel, text);
+    if (!ok) {
+      setStatus("Webbläsaren blockerade fönstret. Tillåt popup och försök igen.");
+    }
+  }
+
+  function skapaUnderlag() {
+    const resultat = skapaBesiktningUpphandling(tjanst.id, []);
+    if (!resultat.ok) {
+      setStatus(resultat.fel);
+      return;
+    }
+    setStatus(
+      `${resultat.titel} är skapad. Öppna PDF:erna nedan eller mejla anbudsförfrågan till entreprenörer.`,
+    );
+    const post = hamtaBesiktningPost(tjanst.id);
+    setSkapad(post.upphandlingSkapad);
+    setHarFormular(Boolean(post.anbudsformularText));
+  }
+
+  if (!skapad) {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-primary/40 bg-[#eef6f0]/60 p-4">
+        <p className="text-sm font-semibold text-primary-dark">
+          Anbud till entreprenörer — {tjanst.rubrik}
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          Skapa anbudsunderlaget här för att få FFU och anbudsformulär som PDF, samt
+          möjlighet att mejla förfrågan till valda entreprenörer. Underlaget bygger på
+          tidigare protokoll och föreningens uppgifter (
+          <Link
+            href="/forening/foreningsinformation"
+            className="font-medium text-primary-dark underline"
+          >
+            Styrning och Dokument
+          </Link>
+          ).
+        </p>
+        <button
+          type="button"
+          onClick={skapaUnderlag}
+          className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+        >
+          Skapa anbudsunderlag och PDF
+        </button>
+        {status && (
+          <p className="mt-2 text-sm text-foreground" role="status">
+            {status}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   function vaxlaEpost(epost: string) {
     const nyckel = epost.trim().toLowerCase();
@@ -174,6 +239,28 @@ export function BesiktningAnbudMejlPanel({ kategoriNamn }: Props) {
           </pre>
         </div>
       )}
+
+      <div className="mt-3 space-y-2">
+        <p className="text-xs font-semibold text-foreground">
+          PDF till entreprenörer (spara eller bifoga vid mejl)
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {pdfHandlingar.map((handling) => (
+            <button
+              key={handling.id}
+              type="button"
+              onClick={() => oppnaPdf(handling.titel, handling.text)}
+              className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary-dark"
+            >
+              Öppna {handling.typ === "underlag" ? "FFU" : "anbudsformulär"} som PDF
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted">
+          Utskriften öppnas i nytt fönster — spara som PDF och skicka med mejlet om ni
+          vill bifoga filer.
+        </p>
+      </div>
 
       <div className="mt-3 rounded-lg border border-border bg-white p-3">
         <p className="text-xs font-semibold text-foreground">
