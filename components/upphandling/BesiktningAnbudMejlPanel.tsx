@@ -80,6 +80,8 @@ export function BesiktningAnbudMejlPanel({ kategoriNamn }: Props) {
 
   if (!tjanst || !hydrated) return null;
 
+  const aktivTjanst = tjanst;
+
   const pdfHandlingar = skapad
     ? sparadeHandlingar(tjanst.id).filter(
         (handling) =>
@@ -95,7 +97,7 @@ export function BesiktningAnbudMejlPanel({ kategoriNamn }: Props) {
   }
 
   function skapaUnderlag() {
-    const resultat = skapaBesiktningUpphandling(tjanst.id, []);
+    const resultat = skapaBesiktningUpphandling(aktivTjanst.id, []);
     if (!resultat.ok) {
       setStatus(resultat.fel);
       return;
@@ -103,7 +105,7 @@ export function BesiktningAnbudMejlPanel({ kategoriNamn }: Props) {
     setStatus(
       `${resultat.titel} är skapad. Öppna PDF:erna nedan eller mejla anbudsförfrågan till entreprenörer.`,
     );
-    const post = hamtaBesiktningPost(tjanst.id);
+    const post = hamtaBesiktningPost(aktivTjanst.id);
     setSkapad(post.upphandlingSkapad);
     setHarFormular(Boolean(post.anbudsformularText));
   }
