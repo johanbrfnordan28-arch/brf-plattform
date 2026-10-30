@@ -6,44 +6,33 @@ export const ANBUDS_UTVARDERING_MALL = `ANBUDSUTVÄRDERING — MALL
 Projekt: [Projektets namn]
 Förening: [Föreningens namn]
 Datum för utvärdering: [ÅÅÅÅ-MM-DD]
-Antal anbud: _____
+Antal anbud: _____ (max 10 platser i Excel)
 
 SYFTE
-Jämföra inkomna anbud utifrån samma struktur som «Anbudsformulär — standard»:
-huvudpris, optioner (max 5), ÄTA-timpriser (dag, kväll, helg) och timmar för
-ÄTA-bedömning. Skillnader ska vara enkla att läsa i kronor och i procent.
+Jämföra inkomna anbud mot samma struktur som «Anbudsformulär — standard»:
+krav (Ja/Nej), huvudpris, optioner (max 5), ÄTA-timpriser och timmar,
+materialpåslag, minsta ÄTA-debitering och referenser.
 
 REKOMMENDATION
-Använd Excel-mallen: utvärderingsposterna står lodrätt till vänster, entreprenörerna
-på en vågrät rad överst. Delsummor och SLUTSUMMA längst ner. Placering 1–3 visas
-för slutsumma, huvud+optioner och ÄTA — vinnare på huvudpris kan ändå förlora på ÄTA.
+Ladda ned Excel-mallen. Skriv företagsnamn på bladet Entreprenörer (nr 1–10).
+I jämförelsebladen används kolumnrubriker 1–10 — samma nummer som entreprenörslistan.
+Siffror summeras (delsumma, ÄTA totalt, slutsumma). Krav fylls i med Ja eller Nej.
 
 SÅ HÄR GÖR NI (STEG FÖR STEG)
-1. Kontrollera att alla anbud är kompletta enligt anbudsformuläret.
-2. För in huvudpris och option 1–5 per anbudsgivare (exkl. moms).
-3. För in timpriser ÄTA (dag, kväll, helg) per yrkesgrupp enligt anbuden.
-4. Använd samma antal timmar (dag/kväll/helg) för alla anbud — timmar enligt
-   anbudsformuläret / förfrågningsunderlaget.
-5. Jämför totalsummor: huvud + valda optioner + ÄTA-scenario (om tillämpligt).
-6. Viktning: dokumentera om pris är enda kriterium eller om t.ex. referenser,
-   tidplan och metod också vägs in (poäng/intervall — fyll i nedan).
-7. Skriv rekommendation till styrelsen med motivering och ev. förbehåll.
+1. Kontrollera att varje anbud är komplett enligt anbudsformuläret.
+2. Fyll i nr 1–10 och företagsnamn på bladet Entreprenörer.
+3. För in Ja/Nej för F-skatt, försäkring, ID06 och underentreprenörer per kolumn.
+4. För in huvudpris och option 1–5 (kr, exkl. moms) per kolumn.
+5. Fyll ÄTA-timmar (gemensamt) och ÄTA-timpris per nr och yrkesgrupp — kostnad summeras.
+6. Jämför slutsumma och placering 1–10; bedöm även huvud+optioner och ÄTA var för sig.
+7. Rekommendation till styrelsen — lägst pris är inte alltid rätt val.
 
-EXCEL — UTVÄRDERING (exkl. moms)
-Kolumn A: poster lodrätt. Rad 5: företagsnamn. Jämför tre anbud.
-
-— Huvuduppdrag och optioner —
-Huvuduppdrag / Option 1–5
-Delsumma huvud + optioner
-
-— ÄTA-scenario —
-ÄTA-scenario totalt (detalj på bladet ÄTA-scenario)
-
-— Slutsumma —
-SLUTSUMMA = delsummor ovan
-
-Placering (1 = lägst): slutsumma | huvud + optioner | ÄTA-scenario
-Rekommenderad entreprenör och motivering fylls i Excel efter helhetsbedömning.
+EXCEL — BLAD (översikt)
+Entreprenörer     Namn, org.nr, kontakt, projektledare, referensbelopp per nr
+Utvärdering       Ja/Nej-krav, prisposter, delsummor, slutsumma, placering
+ÄTA-timmar        Timmar dag/kväll/helg per yrkesgrupp (samma för alla)
+ÄTA-timpris       Timpris dag/kväll/helg per yrkesgrupp och nr 1–10
+ÄTA-kostnad       Summa per yrkesgrupp och nr; rad längst ner = ÄTA-scenario totalt
 
 Övriga bedömningskriterier (om ni inte enbart väger pris):
 Referenser / erfarenhet: _________________________________________________
@@ -51,8 +40,8 @@ Tidplan och genomförande: _______________________________________________
 Kvalitet / metod / miljö: ________________________________________________
 
 REKOMMENDATION TILL STYRELSEN
-Rekommenderad anbudsgivare: _____________________________________________
-Motivering (pris, optioner, ÄTA, risker): _______________________________
+Rekommenderat nr (1–10) / företag: ______________________________________
+Motivering (pris, ÄTA, krav Ja/Nej, optioner): ___________________________
 _________________________________________________________________________
 Förbehåll / komplettering krävs: Ja [ ] Nej [ ]  Beskrivning: _____________
 

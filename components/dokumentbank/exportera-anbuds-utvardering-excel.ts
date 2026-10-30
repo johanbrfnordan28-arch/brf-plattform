@@ -1,38 +1,29 @@
 /**
- * Excel (.xls) för anbudsutvärdering — poster lodrätt till vänster,
- * entreprenörer vågrätt överst, delsummeringar och slutsumma längst ner.
+ * Excel (.xls) för anbudsutvärdering — upp till 10 entreprenörer.
+ * Namn på bladet Entreprenörer (nr 1–10); jämförelse kolumner 1–10.
  */
 
-export const ANBUD_ATA_YRKESGRUPPER = [
-  "Bygg / allmän entreprenad",
-  "Rivning",
-  "Mark / anläggning",
-  "Ställning / fallskydd",
-  "El",
-  "VVS",
-  "Ventilation",
-  "Målning",
-  "Plattsättning",
-  "Golv",
-  "Snickeri / inredning",
-  "Övrig yrkesgrupp 1",
-  "Övrig yrkesgrupp 2",
-] as const;
+import {
+  ANBUD_ANTAL_ENTREPRENORER,
+  ANBUD_ATA_YRKESGRUPPER,
+  ANBUD_JA_NEJ_KRAV,
+  ANBUD_OVRIGA_SIFFROR,
+  ANBUD_PRIS_POSTER,
+  anbudExcelKolumner,
+  anbudLagstKolumn,
+  kolumnBokstav,
+} from "@/components/dokumentbank/anbuds-standard";
 
-const ANBUD_KOLUMNER = ["B", "C", "D"] as const;
+export { ANBUD_ATA_YRKESGRUPPER };
 
-/** Excel-radnummer på bladet Utvärdering (1-baserat). */
-const RAD_HUVUD = 7;
-const RAD_OPTION_START = 8;
-const RAD_DELSUMMA_HUVUD = 13;
-const RAD_ATA = 15;
-const RAD_SLUTSUMMA = 17;
-const RAD_PLATS_TOTAL = 20;
-const RAD_PLATS_HUVUD = 21;
-const RAD_PLATS_ATA = 22;
+const ANBUD_KOL = anbudExcelKolumner();
+const COL_LAGST = anbudLagstKolumn();
 
-/** Summa rad på ÄTA-scenario (13 yrkesgrupper från rad 3). */
-const ATA_SUMMA_RAD = 16;
+/** Första datarad yrkesgrupp på ÄTA-bladen (1-baserat). */
+const ATA_DATA_START = 3;
+const ATA_SUMMA_RAD = ATA_DATA_START + ANBUD_ATA_YRKESGRUPPER.length;
+
+type RadRef = { xml: string; r: number };
 
 function xmlEscape(value: string): string {
   return value
@@ -63,173 +54,234 @@ function worksheet(name: string, rows: string[]): string {
 }
 
 function minRangeRad(r: number): string {
-  return `MIN(B${r}:D${r})`;
+  const first = ANBUD_KOL[0];
+  const last = ANBUD_KOL[ANBUD_KOL.length - 1];
+  return `MIN(${first}${r}:${last}${r})`;
 }
 
-/** Prisrad: etikett vänster, tre anbud, lägst. */
-function prisRad(r: number, etikett: string): string {
-  return row([
-    cellString(etikett),
-    cellNumber(0),
-    cellNumber(0),
-    cellNumber(0),
-    cellFormula(`=${minRangeRad(r)}`),
+function tommaAnbudCeller(): string[] {
+  return ANBUD_KOL.map(() => cellString(""));
+}
+
+function tommaAnbudNummer(): string[] {
+  return ANBUD_KOL.map(() => cellNumber(0));
+}
+
+function pushRad(rader: string[], cells: string[]): RadRef {
+  const r = rader.length + 1;
+  rader.push(row(cells));
+  return { xml: rader[rader.length - 1], r };
+}
+
+function sectionRad(rader: string[], etikett: string): void {
+  pushRad(rader, [cellString(etikett), ...tommaAnbudCeller(), cellString("")]);
+}
+
+function prisRad(rader: string[], etikett: string): number {
+  const cells = [cellString(etikett), ...tommaAnbudNummer()];
+  cells.push(cellFormula(`=${minRangeRad(rader.length + 1)}`));
+  return pushRad(rader, cells).r;
+}
+
+function jaNejRad(rader: string[], etikett: string): void {
+  pushRad(rader, [
+    cellString(`${etikett} (Ja/Nej)`),
+    ...ANBUD_KOL.map(() => cellString("")),
+    cellString(""),
   ]);
 }
 
-function sectionRad(etikett: string): string {
-  return row([
-    cellString(etikett),
-    cellString(""),
-    cellString(""),
-    cellString(""),
-    cellString(""),
-  ]);
-}
-
-function sumRad(r: number, etikett: string, from: number, to: number): string {
+function sumRad(
+  rader: string[],
+  etikett: string,
+  fromRow: number,
+  toRow: number,
+): number {
+  const r = rader.length + 1;
   const cells = [cellString(etikett)];
-  for (const col of ANBUD_KOLUMNER) {
-    cells.push(cellFormula(`=SUM(${col}${from}:${col}${to})`));
+  for (const col of ANBUD_KOL) {
+    cells.push(cellFormula(`=SUM(${col}${fromRow}:${col}${toRow})`));
   }
   cells.push(cellFormula(`=${minRangeRad(r)}`));
-  return row(cells);
+  rader.push(row(cells));
+  return r;
 }
 
 function placeringRad(
-  r: number,
+  rader: string[],
   etikett: string,
   sourceRow: number,
-): string {
-  const range = `$B$${sourceRow}:$D$${sourceRow}`;
+): void {
+  const first = ANBUD_KOL[0];
+  const last = ANBUD_KOL[ANBUD_KOL.length - 1];
+  const range = `$${first}$${sourceRow}:$${last}$${sourceRow}`;
   const cells = [cellString(etikett)];
-  for (const col of ANBUD_KOLUMNER) {
+  for (const col of ANBUD_KOL) {
     cells.push(cellFormula(`=RANK(${col}${sourceRow},${range},1)`));
   }
   cells.push(cellString(""));
-  return row(cells);
+  rader.push(row(cells));
 }
 
 function byggInstruktionBlad(): string {
   const rader = [
-    row([cellString("Anbudsutvärdering — layout")]),
+    row([cellString("Anbudsutvärdering — 10 platser (nr 1–10)")]),
     row([cellString("")]),
     row([
       cellString(
-        "Bladet Utvärdering: poster i kolumn A (lodrätt), entreprenörer på rad 5 (vågrätt).",
+        "Blad Entreprenörer: skriv företagsnamn för nr 1–10. I övriga blad används kolumnrubriker 1–10.",
       ),
     ]),
     row([
       cellString(
-        "Delsumma huvud + optioner, därefter ÄTA-scenario, sist SLUTSUMMA längst ner.",
+        "Utvärdering: Ja/Nej-krav, prisposter, ÄTA-scenario, slutsumma och placering 1–10.",
       ),
     ]),
     row([
       cellString(
-        "Placering 1–3: lägst totalpris behöver inte bli rekommendation — jämför även placering huvud och ÄTA.",
-      ),
-    ]),
-    row([
-      cellString(
-        "ÄTA-scenario: timmar vänster, timpriser per entreprenör — summor kopplas till Utvärdering.",
-      ),
-    ]),
-    row([
-      cellString(
-        "Diff i kr/% kan läggas manuellt eller i egna kolumner — fokus är tydliga delsummeringar.",
+        "ÄTA-timmar: samma timmar för alla. ÄTA-timpris: dag/kväll/helg per nr och yrkesgrupp. ÄTA-kostnad: summering.",
       ),
     ]),
   ];
   return worksheet("Instruktion", rader);
 }
 
+function byggEntreprenorerBlad(): string {
+  const rader: string[] = [
+    row([
+      cellString("Nr"),
+      cellString("Företagsnamn"),
+      cellString("Org.nr"),
+      cellString("Kontaktperson"),
+      cellString("Telefon/e-post"),
+      cellString("Projektledare"),
+    ]),
+  ];
+  for (let n = 1; n <= ANBUD_ANTAL_ENTREPRENORER; n += 1) {
+    rader.push(
+      row([
+        cellNumber(n),
+        cellString(""),
+        cellString(""),
+        cellString(""),
+        cellString(""),
+        cellString(""),
+      ]),
+    );
+  }
+  rader.push(row([cellString("")]));
+  rader.push(
+    row([
+      cellString("Referenser (från anbud) — rad per anbud"),
+      cellString("Ref 1 belopp kr"),
+      cellString("Ref 2 belopp kr"),
+    ]),
+  );
+  for (let n = 1; n <= ANBUD_ANTAL_ENTREPRENORER; n += 1) {
+    rader.push(
+      row([cellString(`Nr ${n}`), cellNumber(0), cellNumber(0)]),
+    );
+  }
+  return worksheet("Entreprenörer", rader);
+}
+
 function byggUtvarderingBlad(): string {
-  const header = row([
-    cellString("Utvärderingspost (exkl. moms)"),
-    cellString("Anbud 1 (kr)"),
-    cellString("Anbud 2 (kr)"),
-    cellString("Anbud 3 (kr)"),
-    cellString("Lägst (kr)"),
-  ]);
-  const foretag = row([
-    cellString("Entreprenör / företagsnamn"),
-    cellString(""),
-    cellString(""),
-    cellString(""),
+  const rader: string[] = [];
+  pushRad(rader, [cellString("Projekt"), cellString("")]);
+  pushRad(rader, [cellString("Förening / datum utvärdering"), cellString("")]);
+  pushRad(rader, [
+    cellString("Entreprenörer 1–10 — se blad Entreprenörer"),
     cellString(""),
   ]);
 
-  const rader: string[] = [
-    row([cellString("Projekt"), cellString("")]),
-    row([cellString("Förening / datum"), cellString("")]),
-    row([cellString("")]),
-    header,
-    foretag,
-    sectionRad("— Huvuduppdrag och optioner —"),
-    prisRad(RAD_HUVUD, "Huvuduppdrag"),
-    prisRad(RAD_OPTION_START, "Option 1"),
-    prisRad(RAD_OPTION_START + 1, "Option 2"),
-    prisRad(RAD_OPTION_START + 2, "Option 3"),
-    prisRad(RAD_OPTION_START + 3, "Option 4"),
-    prisRad(RAD_OPTION_START + 4, "Option 5"),
-    sumRad(
-      RAD_DELSUMMA_HUVUD,
-      "Delsumma huvud + optioner",
-      RAD_HUVUD,
-      RAD_OPTION_START + 4,
+  const headerCells = [
+    cellString("Utvärderingspost"),
+    ...Array.from({ length: ANBUD_ANTAL_ENTREPRENORER }, (_, i) =>
+      cellString(String(i + 1)),
     ),
-    sectionRad("— ÄTA-scenario (timpris × timmar) —"),
-    row([
-      cellString("ÄTA-scenario totalt"),
-      cellFormula(`='ÄTA-scenario'!N${ATA_SUMMA_RAD}`),
-      cellFormula(`='ÄTA-scenario'!O${ATA_SUMMA_RAD}`),
-      cellFormula(`='ÄTA-scenario'!P${ATA_SUMMA_RAD}`),
-      cellFormula(`=${minRangeRad(RAD_ATA)}`),
-    ]),
-    sectionRad("— Slutsumma —"),
-    row([
-      cellString("SLUTSUMMA (exkl. moms)"),
-      cellFormula(`=B${RAD_DELSUMMA_HUVUD}+B${RAD_ATA}`),
-      cellFormula(`=C${RAD_DELSUMMA_HUVUD}+C${RAD_ATA}`),
-      cellFormula(`=D${RAD_DELSUMMA_HUVUD}+D${RAD_ATA}`),
-      cellFormula(`=${minRangeRad(RAD_SLUTSUMMA)}`),
-    ]),
-    row([cellString("")]),
-    row([
-      cellString(
-        "Placering (1 = lägst pris). Vinnare på huvud kan ha sämre ÄTA — bedöm alla rader.",
-      ),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-    ]),
-    placeringRad(RAD_PLATS_TOTAL, "Placering — slutsumma", RAD_SLUTSUMMA),
-    placeringRad(
-      RAD_PLATS_HUVUD,
-      "Placering — huvud + optioner",
-      RAD_DELSUMMA_HUVUD,
-    ),
-    placeringRad(RAD_PLATS_ATA, "Placering — ÄTA-scenario", RAD_ATA),
-    row([cellString("")]),
-    row([
-      cellString("Rekommenderad entreprenör (efter helhetsbedömning)"),
-      cellString(""),
-    ]),
-    row([
-      cellString("Motivering (pris, ÄTA, optioner, kvalitet)"),
-      cellString(""),
-    ]),
+    cellString("Lägst"),
   ];
+  pushRad(rader, headerCells);
+
+  sectionRad(rader, "— Krav enligt anbudsformulär (Ja/Nej) —");
+  for (const k of ANBUD_JA_NEJ_KRAV) {
+    jaNejRad(rader, k.etikett);
+  }
+
+  sectionRad(rader, "— Pris huvuduppdrag och optioner (kr, exkl. moms) —");
+  const prisStart = rader.length + 1;
+  const prisRows: number[] = [];
+  for (const p of ANBUD_PRIS_POSTER) {
+    prisRows.push(prisRad(rader, p.etikett));
+  }
+  const radDelsummaHuvud = sumRad(
+    rader,
+    "Delsumma huvud + optioner",
+    prisStart,
+    prisRows[prisRows.length - 1],
+  );
+
+  sectionRad(rader, "— Övriga siffror från anbud (ej i slutsumma) —");
+  for (const o of ANBUD_OVRIGA_SIFFROR) {
+    prisRad(rader, o.etikett);
+  }
+
+  sectionRad(rader, "— ÄTA-scenario (summa alla yrkesgrupper) —");
+  const radAta = rader.length + 1;
+  const ataCells = [cellString("ÄTA-scenario totalt (kr)")];
+  for (let i = 0; i < ANBUD_KOL.length; i += 1) {
+    const col = ANBUD_KOL[i];
+    ataCells.push(cellFormula(`='ÄTA-kostnad'!${col}${ATA_SUMMA_RAD}`));
+  }
+  ataCells.push(cellFormula(`=${minRangeRad(radAta)}`));
+  pushRad(rader, ataCells);
+
+  sectionRad(rader, "— Slutsumma —");
+  const radSlutsumma = rader.length + 1;
+  const slutCells = [cellString("SLUTSUMMA (huvud + optioner + ÄTA-scenario)")];
+  for (const col of ANBUD_KOL) {
+    slutCells.push(
+      cellFormula(`=${col}${radDelsummaHuvud}+${col}${radAta}`),
+    );
+  }
+  slutCells.push(cellFormula(`=${minRangeRad(radSlutsumma)}`));
+  pushRad(rader, slutCells);
+
+  pushRad(rader, [cellString("")]);
+  pushRad(rader, [
+    cellString(
+      "Placering: 1 = lägst. Jämför slutsumma, huvud+optioner och ÄTA — rekommendation kan skilja sig.",
+    ),
+    ...tommaAnbudCeller(),
+    cellString(""),
+  ]);
+  placeringRad(rader, "Placering — slutsumma", radSlutsumma);
+  placeringRad(rader, "Placering — huvud + optioner", radDelsummaHuvud);
+  placeringRad(rader, "Placering — ÄTA-scenario", radAta);
+
+  pushRad(rader, [cellString("")]);
+  pushRad(rader, [
+    cellString("Rekommenderat nr (1–10) efter helhetsbedömning"),
+    cellString(""),
+  ]);
+  pushRad(rader, [
+    cellString("Motivering (pris, ÄTA, krav Ja/Nej, referenser)"),
+    cellString(""),
+  ]);
 
   return worksheet("Utvärdering", rader);
 }
 
-function byggAtaBlad(): string {
+function timprisKolumnForEntreprenor(entreprenorIndex: number, typ: 0 | 1 | 2): string {
+  const base = 2 + entreprenorIndex * 3 + typ;
+  return kolumnBokstav(base);
+}
+
+function byggAtaTimmarBlad(): string {
   const rader: string[] = [
     row([
       cellString(
-        "Timmar (kolumn B–D) gäller alla anbud. Timpriser per entreprenör under.",
+        "Timmar för ÄTA-bedömning — samma för alla entreprenörer (nr 1–10)",
       ),
     ]),
     row([
@@ -237,74 +289,92 @@ function byggAtaBlad(): string {
       cellString("Tim dag"),
       cellString("Tim kväll"),
       cellString("Tim helg"),
-      cellString("Anbud 1 dag"),
-      cellString("Anbud 1 kväll"),
-      cellString("Anbud 1 helg"),
-      cellString("Anbud 2 dag"),
-      cellString("Anbud 2 kväll"),
-      cellString("Anbud 2 helg"),
-      cellString("Anbud 3 dag"),
-      cellString("Anbud 3 kväll"),
-      cellString("Anbud 3 helg"),
-      cellString("Anbud 1 ÄTA"),
-      cellString("Anbud 2 ÄTA"),
-      cellString("Anbud 3 ÄTA"),
     ]),
   ];
-  let rowNum = 3;
+  for (const yg of ANBUD_ATA_YRKESGRUPPER) {
+    rader.push(
+      row([cellString(yg), cellNumber(0), cellNumber(0), cellNumber(0)]),
+    );
+  }
+  return worksheet("ÄTA-timmar", rader);
+}
+
+function byggAtaTimprisBlad(): string {
+  const rader: string[] = [
+    row([
+      cellString(
+        "Timpris kr/h exkl. moms — tre kolumner (dag, kväll, helg) per entreprenörs nr",
+      ),
+    ]),
+  ];
+  const headerRow: string[] = [cellString("Yrkesgrupp")];
+  for (let n = 1; n <= ANBUD_ANTAL_ENTREPRENORER; n += 1) {
+    headerRow.push(cellString(`${n} dag`));
+    headerRow.push(cellString(`${n} kväll`));
+    headerRow.push(cellString(`${n} helg`));
+  }
+  rader.push(row(headerRow));
+
+  for (const yg of ANBUD_ATA_YRKESGRUPPER) {
+    const cells = [cellString(yg)];
+    for (let i = 0; i < ANBUD_ANTAL_ENTREPRENORER * 3; i += 1) {
+      cells.push(cellNumber(0));
+    }
+    rader.push(row(cells));
+  }
+  return worksheet("ÄTA-timpris", rader);
+}
+
+function byggAtaKostnadBlad(): string {
+  const rader: string[] = [
+    row([
+      cellString(
+        "Kostnad per yrkesgrupp och entreprenör (timmar × timpris). Summa rad = ÄTA-scenario totalt.",
+      ),
+    ]),
+    row([
+      cellString("Yrkesgrupp"),
+      ...Array.from({ length: ANBUD_ANTAL_ENTREPRENORER }, (_, i) =>
+        cellString(String(i + 1)),
+      ),
+    ]),
+  ];
+
+  let rowNum = ATA_DATA_START;
   const sumStart = rowNum;
   for (const yg of ANBUD_ATA_YRKESGRUPPER) {
-    const r = rowNum;
-    rader.push(
-      row([
-        cellString(yg),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellNumber(0),
-        cellFormula(`=B${r}*E${r}+C${r}*F${r}+D${r}*G${r}`),
-        cellFormula(`=B${r}*H${r}+C${r}*I${r}+D${r}*J${r}`),
-        cellFormula(`=B${r}*K${r}+C${r}*L${r}+D${r}*M${r}`),
-      ]),
-    );
+    const cells = [cellString(yg)];
+    for (let i = 0; i < ANBUD_ANTAL_ENTREPRENORER; i += 1) {
+      const colDag = timprisKolumnForEntreprenor(i, 0);
+      const colKvall = timprisKolumnForEntreprenor(i, 1);
+      const colHelg = timprisKolumnForEntreprenor(i, 2);
+      cells.push(
+        cellFormula(
+          `='ÄTA-timmar'!B${rowNum}*'ÄTA-timpris'!${colDag}${rowNum}+'ÄTA-timmar'!C${rowNum}*'ÄTA-timpris'!${colKvall}${rowNum}+'ÄTA-timmar'!D${rowNum}*'ÄTA-timpris'!${colHelg}${rowNum}`,
+        ),
+      );
+    }
+    rader.push(row(cells));
     rowNum += 1;
   }
-  rader.push(
-    row([
-      cellString("Summa ÄTA-scenario"),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellString(""),
-      cellFormula(`=SUM(N${sumStart}:N${rowNum - 1})`),
-      cellFormula(`=SUM(O${sumStart}:O${rowNum - 1})`),
-      cellFormula(`=SUM(P${sumStart}:P${rowNum - 1})`),
-    ]),
-  );
-  return worksheet("ÄTA-scenario", rader);
+
+  const sumCells = [cellString("Summa alla yrkesgrupper")];
+  for (const col of ANBUD_KOL) {
+    sumCells.push(cellFormula(`=SUM(${col}${sumStart}:${col}${rowNum - 1})`));
+  }
+  rader.push(row(sumCells));
+
+  return worksheet("ÄTA-kostnad", rader);
 }
 
 export function byggAnbudsUtvarderingExcelXml(): string {
   const blad = [
     byggInstruktionBlad(),
+    byggEntreprenorerBlad(),
     byggUtvarderingBlad(),
-    byggAtaBlad(),
+    byggAtaTimmarBlad(),
+    byggAtaTimprisBlad(),
+    byggAtaKostnadBlad(),
   ].join("");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
