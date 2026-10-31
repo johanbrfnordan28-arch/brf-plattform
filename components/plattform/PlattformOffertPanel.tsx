@@ -1,74 +1,121 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ABK_09_KORT, ABK_09_LANG, offertMejlMedAbk09 } from "@/lib/abk-09";
 import {
-  OFFERT_FORFRAGAN_EVENT,
+  OFFERT_MAXLANGD,
+  OFFERT_STATUS,
+  OFFERT_STATUS_ETIKETT as STATUS_ETIKETT,
   OFFERT_TJANSTER,
-  listaOffertForfragningar,
   mailtoOffertTillKund,
-  uppdateraOffertForfragan,
   type OffertForfragan,
   type OffertForfraganStatus,
   type OffertTjanst,
-} from "@/components/offert/offert-forfragan-lager";
+} from "@/lib/offert-forfragan";
 import { mejlaOffertTillTeam } from "@/lib/offert-mejl-klient";
 import { hamtaOffertKontaktperson } from "@/lib/kontakt-epost";
 
-const STATUS_ETIKETT: Record<OffertForfraganStatus, string> = {
-  ny: "Ny",
-  kontaktad: "Kontaktad",
-  "offert-skickad": "Offert skickad",
-  avslutad: "Avslutad",
-};
+async function patchaForfragan(
+  id: string,
+  patch: {
+    status?: OffertForfraganStatus;
+    internAnteckning?: string;
+    offertSkickad?: boolean;
+  },
+): Promise<OffertForfragan> {
+  const res = await fetch(`/api/plattform/offert/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  const data = (await res.json().catch(() => ({}))) as {
+    forfragan?: OffertForfragan;
+    fel?: string;
+  };
+  if (!res.ok || !data.forfragan) {
+    throw new Error(data.fel || "Kunde inte spara.");
+  }
+  return data.forfragan;
+}
 
 /**
  * Personalvy: inkomna offertförfrågningar och utskick enligt ABK 09.
  */
 export function PlattformOffertPanel() {
   const [lista, setLista] = useState<OffertForfragan[]>([]);
+  const [laddar, setLaddar] = useState(true);
+  const [demoLage, setDemoLage] = useState(false);
+  const [fel, setFel] = useState<string | null>(null);
   const [valdId, setValdId] = useState("");
   const [prisText, setPrisText] = useState("");
   const [giltigTill, setGiltigTill] = useState("");
+  const [anteckning, setAnteckning] = useState("");
   const [mailto, setMailto] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  function ladda(forceId?: string) {
-    const alla = listaOffertForfragningar();
-    setLista(alla);
-    const id = forceId || valdId || alla[0]?.id || "";
-    if (forceId) setValdId(forceId);
-    else if (!valdId && alla[0]) setValdId(alla[0].id);
-    else if (id && !alla.some((r) => r.id === id)) setValdId(alla[0]?.id || "");
-  }
+  const ladda = useCallback(async () => {
+    setFel(null);
+    try {
+      const res = await fetch("/api/plattform/offert", { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as {
+        forfragningar?: OffertForfragan[];
+        demoLage?: boolean;
+        fel?: string;
+      };
+      if (!res.ok) throw new Error(data.fel || "Kunde inte hämta förfrågningar.");
+      const alla = data.forfragningar ?? [];
+      setLista(alla);
+      setDemoLage(Boolean(data.demoLage));
+      setValdId((nu) => (alla.some((r) => r.id === nu) ? nu : alla[0]?.id || ""));
+    } catch (e) {
+      setFel(e instanceof Error ? e.message : "Kunde inte hämta förfrågningar.");
+    } finally {
+      setLaddar(false);
+    }
+  }, []);
 
   useEffect(() => {
-    ladda();
-    function refresh() {
-      ladda();
-    }
-    window.addEventListener(OFFERT_FORFRAGAN_EVENT, refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener(OFFERT_FORFRAGAN_EVENT, refresh);
-      window.removeEventListener("storage", refresh);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void ladda();
+  }, [ladda]);
 
   const vald = lista.find((r) => r.id === valdId);
 
-  function sattStatus(status: OffertForfraganStatus) {
+  useEffect(() => {
+    setAnteckning(vald?.internAnteckning ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valdId]);
+
+  function ersatt(rad: OffertForfragan) {
+    setLista((prev) => prev.map((r) => (r.id === rad.id ? rad : r)));
+  }
+
+  async function sattStatus(status: OffertForfraganStatus) {
     if (!valdId) return;
-    uppdateraOffertForfragan(valdId, { status });
-    setOk(`Status: ${STATUS_ETIKETT[status]}`);
-    ladda(valdId);
+    setFel(null);
+    try {
+      ersatt(await patchaForfragan(valdId, { status }));
+      setOk(`Status: ${STATUS_ETIKETT[status]}`);
+    } catch (e) {
+      setFel(e instanceof Error ? e.message : "Kunde inte spara.");
+    }
+  }
+
+  async function sparaAnteckning() {
+    if (!valdId) return;
+    setFel(null);
+    try {
+      ersatt(await patchaForfragan(valdId, { internAnteckning: anteckning }));
+      setOk("Anteckningen är sparad.");
+    } catch (e) {
+      setFel(e instanceof Error ? e.message : "Kunde inte spara.");
+    }
   }
 
   async function forberedOffert(e: FormEvent) {
     e.preventDefault();
     setMailto(null);
     setOk(null);
+    setFel(null);
     if (!vald) return;
     if (!prisText.trim()) {
       setOk("Ange pris / upplägg innan ni skickar.");
@@ -81,21 +128,20 @@ export function PlattformOffertPanel() {
       prisText: prisText.trim(),
       giltigTill: giltigTill.trim() || undefined,
     });
-    const lank = mailtoOffertTillKund({ forfragan: vald, brodtext });
-    setMailto(lank);
+    setMailto(mailtoOffertTillKund({ forfragan: vald, brodtext }));
     await mejlaOffertTillTeam({
       forfragan: vald,
       prisText: prisText.trim(),
       brodtextTillKund: brodtext,
     });
-    uppdateraOffertForfragan(vald.id, {
-      status: "offert-skickad",
-      senastOffertSkickad: new Date().toISOString(),
-    });
-    setOk(
-      "Offertmejlet är förberett — öppna mejlklienten till kunden. Teamet har fått kopia.",
-    );
-    ladda(vald.id);
+    try {
+      ersatt(await patchaForfragan(vald.id, { offertSkickad: true }));
+      setOk(
+        "Offertmejlet är förberett — öppna mejlklienten till kunden. Teamet har fått kopia.",
+      );
+    } catch (err) {
+      setFel(err instanceof Error ? err.message : "Kunde inte spara status.");
+    }
   }
 
   return (
@@ -104,16 +150,35 @@ export function PlattformOffertPanel() {
         Offertförfrågningar (förvaltning & konsult)
       </h2>
       <p className="mt-1 text-sm text-muted">
-        Syns bara här för inloggad personal. Offert skickas enligt {ABK_09_KORT}
+        Sparas på servern och syns här för all inloggad personal. Offert skickas enligt {ABK_09_KORT}
       </p>
       <p className="mt-2 rounded-lg border border-primary/20 bg-[#eef6f0] px-3 py-2 text-xs text-primary-dark">
         {ABK_09_LANG}
       </p>
 
-      {lista.length === 0 ? (
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-xs text-muted">
+          {laddar ? "Laddar …" : `${lista.length} förfrågningar`}
+        </p>
+        <button
+          type="button"
+          onClick={() => void ladda()}
+          className="text-sm font-medium text-primary-dark hover:underline"
+        >
+          Uppdatera
+        </button>
+      </div>
+      {fel && (
+        <p className="mt-2 text-sm text-red-700" role="alert">
+          {fel}
+        </p>
+      )}
+
+      {laddar ? null : lista.length === 0 ? (
         <p className="mt-4 text-sm text-muted">
-          Inga förfrågningar ännu. När någon fyller i formuläret på /offert
-          visas det här.
+          {demoLage
+            ? "Databasen är inte konfigurerad — förfrågningar kommer bara som mejl."
+            : "Inga förfrågningar ännu. När någon fyller i formuläret på /offert visas det här."}
         </p>
       ) : (
         <div className="mt-4 space-y-6">
@@ -131,7 +196,8 @@ export function PlattformOffertPanel() {
             >
               {lista.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {STATUS_ETIKETT[r.status]} · {r.foreningsNamn} · {r.epost}
+                  {STATUS_ETIKETT[r.status]} · {r.foreningsNamn} · {r.epost} ·{" "}
+                  {r.skapad.slice(0, 10)}
                 </option>
               ))}
             </select>
@@ -172,13 +238,11 @@ export function PlattformOffertPanel() {
                   </p>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(
-                    Object.keys(STATUS_ETIKETT) as OffertForfraganStatus[]
-                  ).map((s) => (
+                  {OFFERT_STATUS.map((s) => (
                     <button
                       key={s}
                       type="button"
-                      onClick={() => sattStatus(s)}
+                      onClick={() => void sattStatus(s)}
                       className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
                         vald.status === s
                           ? "border-primary bg-[#eef6f0] text-primary-dark"
@@ -189,6 +253,32 @@ export function PlattformOffertPanel() {
                     </button>
                   ))}
                 </div>
+                {vald.senastOffertSkickad ? (
+                  <p className="mt-2 text-xs text-muted">
+                    Offert senast förberedd {vald.senastOffertSkickad.slice(0, 10)}
+                  </p>
+                ) : null}
+                <label className="mt-3 block">
+                  <span className="text-xs font-medium text-muted">
+                    Intern anteckning (syns bara för personal)
+                  </span>
+                  <textarea
+                    rows={2}
+                    value={anteckning}
+                    maxLength={OFFERT_MAXLANGD.internAnteckning}
+                    onChange={(e) => setAnteckning(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+                  />
+                </label>
+                {anteckning !== vald.internAnteckning ? (
+                  <button
+                    type="button"
+                    onClick={() => void sparaAnteckning()}
+                    className="mt-1 rounded-lg border border-primary bg-white px-3 py-1 text-xs font-medium text-primary-dark"
+                  >
+                    Spara anteckning
+                  </button>
+                ) : null}
               </div>
 
               <form
