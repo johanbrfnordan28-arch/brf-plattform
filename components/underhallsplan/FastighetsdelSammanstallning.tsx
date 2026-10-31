@@ -98,7 +98,7 @@ export function FastighetsdelSammanstallning({
   const mall = hamtaKomponentMall(komponentNamn);
   const block = byggSteg2KomponentSammanstallning(data, mall, grund);
   const harSynliga = data.underkomponenter.some((r) => r.medIPlan !== false);
-  const [oppen, setOppen] = useState(true);
+  const [oppen, setOppen] = useState(false);
   const [oppnaBlock, setOppnaBlock] = useState<Record<string, boolean>>({});
 
   if (!harSynliga || block.length === 0) return null;

@@ -180,7 +180,7 @@ export function KomponentDetaljer({
     ? allaDeltyper(data, mall)
     : mall.deltyper;
 
-  const [öppnaDeltyper, setÖppnaDeltyper] = useState(true);
+  const [öppnaDeltyper, setÖppnaDeltyper] = useState(false);
   const [nyDeltyp, setNyDeltyp] = useState("");
   const [nyUnder, setNyUnder] = useState("");
   const [öppenUnderkomponentId, setÖppenUnderkomponentId] = useState<string | null>(

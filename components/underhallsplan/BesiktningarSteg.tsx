@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import {
   beraknaBesiktningKostnad,
   beraknaBesiktningKostnadInklIntern,
@@ -110,6 +111,14 @@ export function Besiktningar({
   );
 
   const lockedClass = !unlocked ? "pointer-events-none opacity-50" : "";
+  const [oppnaDetalj, setOppnaDetalj] = useState<Record<string, boolean>>({});
+
+  function toggleBesiktningDetalj(id: BesiktningId) {
+    setOppnaDetalj((current) => ({
+      ...current,
+      [id]: !(current[id] ?? false),
+    }));
+  }
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
@@ -191,13 +200,27 @@ export function Besiktningar({
             planLangdAr,
           );
 
+          const detaljOppen = oppnaDetalj[besiktning.id] ?? false;
+
           return (
             <div
               key={besiktning.id}
               className="rounded-xl border border-border bg-background/80 p-4 sm:p-5"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <span className="font-semibold text-foreground">{besiktning.namn}</span>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <OppnaStangKnapp
+                    oppen={detaljOppen}
+                    storlek="sm"
+                    onClick={() => toggleBesiktningDetalj(besiktning.id)}
+                    ariaLabel={
+                      detaljOppen
+                        ? `Stäng inställningar för ${besiktning.namn}`
+                        : `Öppna inställningar för ${besiktning.namn}`
+                    }
+                  />
+                  <span className="font-semibold text-foreground">{besiktning.namn}</span>
+                </div>
                 <div className="text-right text-sm">
                     {besiktning.id === "ovk" ? (
                       <>
@@ -243,6 +266,7 @@ export function Besiktningar({
                 </div>
               </div>
 
+              {detaljOppen && (
               <div className="mt-4 space-y-4">
                   {besiktning.id === "ovk" ? (
                     <>
@@ -801,7 +825,8 @@ export function Besiktningar({
                       />
                     </label>
                   )}
-                </div>
+              </div>
+              )}
             </div>
           );
         })}

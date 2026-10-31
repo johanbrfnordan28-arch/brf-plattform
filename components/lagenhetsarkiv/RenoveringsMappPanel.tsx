@@ -541,6 +541,14 @@ export function RenoveringsMappPanel({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold text-foreground">{mapp.name}</h4>
+            {(mapp.planeratStart || mapp.planeratSlut || mapp.skapad) && (
+              <p className="mt-0.5 text-xs text-muted">
+                {mapp.skapad && `Skapad ${mapp.skapad}`}
+                {mapp.planeratStart &&
+                  `${mapp.skapad ? " · " : ""}Planerad start ${mapp.planeratStart}`}
+                {mapp.planeratSlut && ` · Planerat slut ${mapp.planeratSlut}`}
+              </p>
+            )}
             <span className="rounded-full bg-muted/10 px-2 py-0.5 text-xs font-medium text-muted">
               {mapp.ar ? `${mapp.ar} · ` : ""}
               {mall.etikett}

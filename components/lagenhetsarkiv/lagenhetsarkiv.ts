@@ -41,6 +41,12 @@ export type RenoveringsMapp = {
   mallId?: RenoveringsMallId;
   /** År då renoveringen utfördes eller planeras. */
   ar?: number;
+  /** När styrelsen skapade mappen (ISO-datum). */
+  skapad?: string;
+  planeratStart?: string;
+  planeratSlut?: string;
+  /** Koppling till renoveringsprojekt i styrelsens checklista. */
+  renoveringsProjektId?: string;
   /** True om mappen lagts till i efterhand (historisk renovering). */
   historisk?: boolean;
   undermappar: RenoveringsUndermapp[];
@@ -185,6 +191,10 @@ export function skapaRenoveringsMapp(
     ar?: number;
     id?: number;
     historisk?: boolean;
+    skapad?: string;
+    planeratStart?: string;
+    planeratSlut?: string;
+    renoveringsProjektId?: string;
   },
 ): RenoveringsMapp {
   const mall = hamtaRenoveringsMall(mallId);
@@ -223,6 +233,10 @@ export function skapaRenoveringsMapp(
     name,
     mallId,
     ar,
+    skapad: options?.skapad,
+    planeratStart: options?.planeratStart,
+    planeratSlut: options?.planeratSlut,
+    renoveringsProjektId: options?.renoveringsProjektId,
     historisk: options?.historisk === true,
     undermappar: startUndermappar,
     egenkontroller: [],

@@ -53,6 +53,7 @@ import {
   lasForeningProfil,
 } from "@/lib/forening-registry";
 import {
+  hamtaAktivtRenoveringsProjekt,
   lasRenoveringsAnmalan,
   MEDLEMMAR_RENOVERING_EVENT,
 } from "@/components/medlemmar/medlemmar-lager";
@@ -165,6 +166,21 @@ export function ApartmentArchiveDemo() {
 
   useEffect(() => {
     if (!hydrated || apartments.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const lgh = params.get("lgh")?.trim();
+    if (!lgh) return;
+    const apt = apartments.find(
+      (a) =>
+        a.lagenhetsnummer === lgh ||
+        formatLagenhetEtikett(a.lagenhetsnummer)
+          .toLowerCase()
+          .includes(lgh.toLowerCase()),
+    );
+    if (apt) valjLagenhetFranSok(apt.id);
+  }, [hydrated, apartments]);
+
+  useEffect(() => {
+    if (!hydrated || apartments.length === 0) return;
     if (skipFirstSave.current) {
       skipFirstSave.current = false;
       return;
@@ -182,7 +198,10 @@ export function ApartmentArchiveDemo() {
 
   useEffect(() => {
     function syncRenoveringstyper() {
-      setValdaRenoveringstyper(lasRenoveringsAnmalan()?.valdaTyper ?? []);
+      const aktiv = hamtaAktivtRenoveringsProjekt();
+      setValdaRenoveringstyper(
+        aktiv?.valdaTyper ?? lasRenoveringsAnmalan()?.valdaTyper ?? [],
+      );
     }
     syncRenoveringstyper();
     window.addEventListener(MEDLEMMAR_RENOVERING_EVENT, syncRenoveringstyper);

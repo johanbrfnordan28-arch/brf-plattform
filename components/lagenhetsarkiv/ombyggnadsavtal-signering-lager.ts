@@ -2,6 +2,8 @@ import {
   lasLagenhetsarkiv,
   sparaLagenhetsarkiv,
 } from "@/components/lagenhetsarkiv/lagenhetsarkiv-lager";
+import { sparaOmbyggnadsavtalDokumentIMapp } from "@/components/medlemmar/renoverings-projekt-arkiv";
+import { uppdateraRenoveringsProjekt } from "@/components/medlemmar/renoverings-projekt-lager";
 import type { MedlemsKravPunkt } from "@/components/lagenhetsarkiv/medlems-krav";
 import {
   allaUndertecknareKlara,
@@ -32,6 +34,9 @@ export type OmbyggnadsavtalSignering = {
   undertecknare: OmbyggnadsavtalUndertecknare[];
   skapad: string;
   status: "vantar" | "signerad";
+  /** Renoveringsmapp där signerat avtal ska sparas. */
+  koppladMappId?: number;
+  renoveringsProjektId?: string;
 };
 
 function storageKey(foreningId: string): string {
@@ -207,6 +212,25 @@ export function signeraOmbyggnadsavtalUndertecknare(
     },
     fallbackAvtal,
   );
+
+  if (allaKlara) {
+    const pdfNamn = ombyggnadsavtalPdfFilnamn(
+      signering.lagenhetsnummer,
+      datum,
+    );
+    if (signering.koppladMappId) {
+      sparaOmbyggnadsavtalDokumentIMapp(
+        signering.apartmentId,
+        signering.koppladMappId,
+        pdfNamn,
+      );
+    }
+    if (signering.renoveringsProjektId) {
+      uppdateraRenoveringsProjekt(signering.renoveringsProjektId, {
+        status: "avtal_signerat",
+      });
+    }
+  }
 
   return { ok: true, signering: uppdaterad };
 }

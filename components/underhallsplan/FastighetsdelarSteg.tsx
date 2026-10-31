@@ -37,6 +37,7 @@ import {
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
 import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
+import { PlanDelSektion } from "@/components/underhallsplan/GrunduppgifterDelSektion";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
 type FastighetsdelarStegProps = {
@@ -96,7 +97,7 @@ export function FastighetsdelarSteg({
   planLangdAr,
 }: FastighetsdelarStegProps) {
   const foreningsAdresser = hamtaByggnadAdresser(grund);
-  const [oppen, setOppen] = useState<string | null>("Tak");
+  const [oppen, setOppen] = useState<string | null>(null);
   const [nyDel, setNyDel] = useState("");
   const [valdDel, setValdDel] = useState("");
   const [nyUnder, setNyUnder] = useState<Record<string, string>>({});
@@ -117,7 +118,7 @@ export function FastighetsdelarSteg({
   ) {
     const key = underdelKey(komponent, radId);
     if (key in oppnaUnderdel) return oppnaUnderdel[key];
-    return !steg2UnderdelArStortFormular(detaljPanel);
+    return false;
   }
 
   function toggleUnderdel(
@@ -127,10 +128,7 @@ export function FastighetsdelarSteg({
   ) {
     const key = underdelKey(komponent, radId);
     setOppnaUnderdel((current) => {
-      const wasOpen =
-        key in current
-          ? current[key]
-          : !steg2UnderdelArStortFormular(detaljPanel);
+      const wasOpen = key in current ? current[key] : false;
       return { ...current, [key]: !wasOpen };
     });
   }
@@ -507,23 +505,26 @@ export function FastighetsdelarSteg({
         );
         if (delar.length === 0) return null;
         return (
-          <section key={grupp.id} className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">
-              {grupp.titel}
-            </h3>
+          <PlanDelSektion
+            key={grupp.id}
+            titel={grupp.titel}
+            intro={`${delar.length} ${delar.length === 1 ? "komponent" : "komponenter"} — öppna och välj den del ni vill fylla i.`}
+          >
             <ul className="space-y-2">
               {delar.map((namn) => delKort(namn, false))}
             </ul>
-          </section>
+          </PlanDelSektion>
         );
       })}
       {tillagdaDelar.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-foreground">Egna delar</h3>
+        <PlanDelSektion
+          titel="Egna delar"
+          intro="Komponenter ni lagt till utöver standardlistan."
+        >
           <ul className="space-y-2">
             {tillagdaDelar.map((namn) => delKort(namn, true))}
           </ul>
-        </section>
+        </PlanDelSektion>
       )}
       {activeComponents.length === 0 && (
         <p className="rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">

@@ -374,10 +374,26 @@ export function byggChecklista(valdaTyper: string[]): {
   sektion: RenoveringsTyp;
   punkter: ChecklistaPunkt[];
 }[] {
+  return byggChecklistaMedGrundmall(valdaTyper, []);
+}
+
+/** Checklista inkl. föreningens egna grundkrav (återanvändbar grundmall). */
+export function byggChecklistaMedGrundmall(
+  valdaTyper: string[],
+  extraGrundkrav: ChecklistaPunkt[],
+): {
+  sektion: RenoveringsTyp;
+  punkter: ChecklistaPunkt[];
+}[] {
   if (valdaTyper.length === 0) return [];
 
+  const grundPunkter = [
+    ...grundkrav.punkter,
+    ...extraGrundkrav.filter((p) => p.text.trim()),
+  ];
+
   const sektioner: { sektion: RenoveringsTyp; punkter: ChecklistaPunkt[] }[] = [
-    { sektion: grundkrav, punkter: grundkrav.punkter },
+    { sektion: grundkrav, punkter: grundPunkter },
   ];
 
   for (const typ of renoveringsTyper) {

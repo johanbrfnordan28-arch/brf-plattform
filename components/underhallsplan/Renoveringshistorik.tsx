@@ -20,6 +20,7 @@ import {
   renoveringHarFordelning,
 } from "@/components/underhallsplan/renovering-fordelning";
 import { forhandsvisaNastaAtgarder } from "@/components/underhallsplan/renovering-planering";
+import { PlanDelSektion } from "@/components/underhallsplan/GrunduppgifterDelSektion";
 import { RenoveringDelFormular } from "@/components/underhallsplan/RenoveringDelFormular";
 import { formateraBalkongRenoveringMeta } from "@/components/underhallsplan/BalkongRenoveringFalt";
 import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkonger";
@@ -370,68 +371,88 @@ export function Renoveringshistorik({
         )}
 
         {onToggleKomponent && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Välj komponenter — stäng av det som inte ingår
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-            {allaKomponenter.map((name) => {
-              const isActive = activeComponents.includes(name);
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => onToggleKomponent(name)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-primary bg-[#e2f0e6] text-primary-dark"
-                      : "border-border bg-background text-foreground hover:border-primary/50"
-                  }`}
-                >
-                  {isActive ? "✓ " : ""}
-                  {name}
-                </button>
-              );
-            })}
+          <PlanDelSektion
+            titel="Välj komponenter"
+            intro="Stäng av det som inte ingår i utförda arbeten."
+          >
+            <div className="flex flex-wrap gap-2">
+              {allaKomponenter.map((name) => {
+                const isActive = activeComponents.includes(name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => onToggleKomponent(name)}
+                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "border-primary bg-[#e2f0e6] text-primary-dark"
+                        : "border-border bg-background text-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {isActive ? "✓ " : ""}
+                    {name}
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </PlanDelSektion>
         )}
 
-        <RenoveringshistorikKomponentTräd
-          komponenter={komponentLista}
-          renoveringar={renoveringar}
-          planStartAr={planStartAr}
-          planKostnader={planKostnader}
-          komponentDetaljer={komponentDetaljer}
-          onLaggTill={(post) => uppdateraRenoveringar([...renoveringar, post])}
-          onUppdatera={uppdateraRenovering}
-          onTaBort={taBortRenovering}
-        />
+        <PlanDelSektion
+          titel="Renoveringar per komponent"
+          intro="Lägg till utförda arbeten och kostnader — underdelar från steg 2."
+        >
+          <RenoveringshistorikKomponentTräd
+            komponenter={komponentLista}
+            renoveringar={renoveringar}
+            planStartAr={planStartAr}
+            planKostnader={planKostnader}
+            komponentDetaljer={komponentDetaljer}
+            onLaggTill={(post) => uppdateraRenoveringar([...renoveringar, post])}
+            onUppdatera={uppdateraRenovering}
+            onTaBort={taBortRenovering}
+          />
+        </PlanDelSektion>
 
         {grund && onKomponentDetaljerChange && (
-          <RenoveringYtaAiSektion
-            grund={grund}
-            activeComponents={activeComponents}
-            komponentDetaljer={komponentDetaljer}
-            onKomponentDetaljerChange={onKomponentDetaljerChange}
-          />
+          <PlanDelSektion
+            titel="Yta och AI-hjälp"
+            intro="Komplettera ytor och mängder utifrån grunduppgifterna."
+          >
+            <RenoveringYtaAiSektion
+              grund={grund}
+              activeComponents={activeComponents}
+              komponentDetaljer={komponentDetaljer}
+              onKomponentDetaljerChange={onKomponentDetaljerChange}
+            />
+          </PlanDelSektion>
         )}
 
         {besiktningar && onBesiktningarChange && (
-          <UtfördaBesiktningarPanel
-            lista={besiktningar}
-            antalLagenheter={antalLagenheter}
-            planLangdAr={planLangdAr}
-            ventilationssystem={ventilationssystem}
-            onChange={onBesiktningarChange}
-          />
+          <PlanDelSektion
+            titel="Utförda besiktningar"
+            intro="Senast utfört år och kostnad för obligatoriska besiktningar."
+          >
+            <UtfördaBesiktningarPanel
+              lista={besiktningar}
+              antalLagenheter={antalLagenheter}
+              planLangdAr={planLangdAr}
+              ventilationssystem={ventilationssystem}
+              onChange={onBesiktningarChange}
+            />
+          </PlanDelSektion>
         )}
 
         {samfallighetsavgift && onSamfallighetsavgiftChange && (
-          <SamfallighetsavgiftPanel
-            avgift={samfallighetsavgift}
-            onChange={onSamfallighetsavgiftChange}
-          />
+          <PlanDelSektion
+            titel="Samfällighetsavgift"
+            intro="Avgifter som ska fördelas i planen."
+          >
+            <SamfallighetsavgiftPanel
+              avgift={samfallighetsavgift}
+              onChange={onSamfallighetsavgiftChange}
+            />
+          </PlanDelSektion>
         )}
 
         {renoveringar.length > 0 && (

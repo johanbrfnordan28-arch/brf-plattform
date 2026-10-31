@@ -43,7 +43,7 @@ export default function ForeningMedlemmarPage() {
       <OppnaStangSektion
         id="renoveringar"
         titel="Renoveringar"
-        intro="Välj vilken renovering medlemmen planerar — då byggs en checklista med grundkrav och tillägg per typ. Grundkraven omfattar bland annat att ventiler ska vara täckta och att byggdamm inte sprids till grannlägenheter eller föreningens ventilationssystem. När alla punkter är godkända kan medlemmen få klartecken att påbörja."
+        intro="Styrelsen väljer lägenhet (lägenhetsnummer), bygger checklista utifrån föreningens grundmall och skapar renoveringsmappar i lägenhetsarkivet. Datum sparas för framtida uppföljning. När checklistan är klar mejlas ombyggnadsavtalet till medlemmarna i lägenheten för BankID-signering — signerat avtal sparas i lägenhetens mapp."
       >
         <RenoveringsAnmalan />
       </OppnaStangSektion>

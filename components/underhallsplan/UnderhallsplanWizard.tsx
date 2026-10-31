@@ -41,6 +41,7 @@ import {
   uppdateraGrundAntalByggnader,
 } from "@/components/underhallsplan/grund-byggnad-adress";
 import { Steg1YtaAiHjalp } from "@/components/underhallsplan/Steg1YtaAiHjalp";
+import { GrunduppgifterDelSektion } from "@/components/underhallsplan/GrunduppgifterDelSektion";
 import { KommandeUnderhallSammanfattning } from "@/components/underhallsplan/KommandeUnderhallSammanfattning";
 import {
   PlanKostnadsparametrarPanel,
@@ -237,6 +238,33 @@ const grundFields: {
   },
 ];
 
+const grundFieldsYtaOchByggnad = grundFields.filter((f) =>
+  (
+    [
+      "boarea",
+      "lokalyta",
+      "antalLagenheter",
+      "byggar",
+      "tomtstorlek",
+      "antalVaningar",
+    ] as GrundFieldKey[]
+  ).includes(f.key),
+);
+
+const grundFieldsTeknikOchBeteckning = grundFields.filter((f) =>
+  (["uppvarmning", "ventilationssystem", "fastighetsbeteckning"] as GrundFieldKey[]).includes(
+    f.key,
+  ),
+);
+
+type GrundDelId =
+  | "plan"
+  | "yta"
+  | "teknik"
+  | "byggnader"
+  | "fasader"
+  | "verksamhet";
+
 const defaultKrPerKvmAr = 45;
 
 const allaForeslagnaKomponenter = [...foreslagnaKomponenter];
@@ -348,6 +376,7 @@ function StegPanel({
   skrivskyddad = false,
   onToggle,
   onStangOchOppna,
+  innehallRemountKey = 0,
   children,
 }: {
   id: WizardStegId;
@@ -365,6 +394,8 @@ function StegPanel({
   skrivskyddad?: boolean;
   onToggle: (id: WizardStegId) => void;
   onStangOchOppna?: (id: WizardStegId) => void;
+  /** Byts när ett steg öppnas — nollställer fällda delar inuti steget. */
+  innehallRemountKey?: number;
   children: React.ReactNode;
 }) {
   const open = alwaysOpen ? true : isOpen;
@@ -438,6 +469,7 @@ function StegPanel({
 
       {open && (
         <div
+          key={innehallRemountKey}
           id={`${id}-innehall`}
           className="mt-6"
           {...(skrivskyddad ? { inert: true } : {})}
@@ -541,6 +573,9 @@ export function UnderhallsplanWizard() {
     standardPlaninstallningar,
   );
   const [grundSaved, setGrundSaved] = useState(false);
+  const [grundDelSparad, setGrundDelSparad] = useState<
+    Partial<Record<GrundDelId, string>>
+  >({});
   const [visarOvk, setVisarOvk] = useState(false);
   const [renoveringarSaved, setRenoveringarSaved] = useState(false);
   const [komponenterSaved, setKomponenterSaved] = useState(false);
@@ -1109,8 +1144,7 @@ export function UnderhallsplanWizard() {
     setGrundSaved(false);
   }
 
-  function saveGrund(event: React.FormEvent) {
-    event.preventDefault();
+  function persistGrundTillLagring(markeraGrundKlart: boolean): boolean {
     let grundNorm = normaliseraGrund(grund);
     const foreningId = lasAktivForeningId();
     let lgh = hamtaAntalLagenheterFranGrund(grundNorm);
@@ -1134,22 +1168,87 @@ export function UnderhallsplanWizard() {
       grund: grundNorm,
       komponentDetaljer: nyaDetaljer,
       besiktningar: nyaBesiktningar,
-      grundSaved: true,
+      grundSaved: markeraGrundKlart,
       sparad: new Date().toISOString(),
     };
     const result = sparaUnderhallsplanState(state);
     if (!result.ok) {
       setSparFel(result.message);
-      return;
+      return false;
     }
     setGrund(grundNorm);
     setKomponentDetaljer(nyaDetaljer);
     setBesiktningar(nyaBesiktningar);
-    setGrundSaved(true);
+    setGrundSaved(markeraGrundKlart);
     setSparadTid(result.sparad);
     setSparFel(null);
     setHarOsparadeAndringar(false);
     markeraGrundinfoPaborjad();
+    return true;
+  }
+
+  function saveGrundDel(delId: GrundDelId) {
+    if (!persistGrundTillLagring(false)) return;
+    const tid = new Date().toLocaleString("sv-SE", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    setGrundDelSparad((prev) => ({ ...prev, [delId]: tid }));
+  }
+
+  function saveGrundKomplett(event?: React.FormEvent) {
+    event?.preventDefault();
+    if (!persistGrundTillLagring(true)) return;
+    const tid = new Date().toLocaleString("sv-SE", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    setGrundDelSparad({
+      plan: tid,
+      yta: tid,
+      teknik: tid,
+      byggnader: tid,
+      fasader: tid,
+      verksamhet: tid,
+    });
+  }
+
+  function renderGrundFalt(
+    fields: typeof grundFields,
+  ) {
+    return fields.map((field) =>
+      field.selectAlternativ ? (
+        <GrunduppgiftSelect
+          key={field.key}
+          label={field.label}
+          hint={field.hint}
+          value={grund[field.key]}
+          alternativ={field.selectAlternativ}
+          placeholder={field.placeholder}
+          showOvk={field.showOvk}
+          onChange={(value) => updateGrund(field.key, value)}
+          onToggleOvk={
+            field.showOvk ? () => setVisarOvk((current) => !current) : undefined
+          }
+          visarOvk={visarOvk}
+          ovkSystemText={grund.ventilationssystem}
+        />
+      ) : (
+        <label key={field.key} className="block">
+          <span className="text-sm font-medium text-foreground">{field.label}</span>
+          <input
+            type={field.type ?? "text"}
+            value={grund[field.key]}
+            onChange={(event) => updateGrund(field.key, event.target.value)}
+            placeholder={field.placeholder}
+            className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+          />
+          {field.hint && (
+            <span className="mt-1 block text-xs text-muted">{field.hint}</span>
+          )}
+        </label>
+      ),
+    );
   }
 
   /** Tar med eller tar bort en del i hela planen. Borttagna kommer inte tillbaka av sig själva. */
@@ -1439,6 +1538,7 @@ export function UnderhallsplanWizard() {
     );
   }, [laddatFranLager, autoAvsattning, planLage]);
   const [openSteg, setOpenSteg] = useState<WizardStegId | null>(null);
+  const [stegInnehallKey, setStegInnehallKey] = useState(0);
   const [stegNavFel, setStegNavFel] = useState<StegNavFel | null>(null);
 
   const stegLasStatus: StegLasStatus =
@@ -1469,6 +1569,7 @@ export function UnderhallsplanWizard() {
       return;
     }
     setStegNavFel(null);
+    setStegInnehallKey((k) => k + 1);
     setOpenSteg(id);
     scrollTillSteg(id);
   }
@@ -1488,6 +1589,7 @@ export function UnderhallsplanWizard() {
 
     // Byt steg direkt — ingen särskild stängning krävs.
     setStegNavFel(null);
+    setStegInnehallKey((k) => k + 1);
     setOpenSteg(id);
     scrollTillSteg(id);
   }
@@ -1501,6 +1603,7 @@ export function UnderhallsplanWizard() {
       blockerarAndra: false,
       skrivskyddad,
       onStangOchOppna: stangOchOppnaSteg,
+      innehallRemountKey: stegInnehallKey,
     };
   }
 
@@ -1708,167 +1811,195 @@ export function UnderhallsplanWizard() {
         {...stegPanelNavProps("grund")}
         summary={
           grundSaved
-            ? "Sparat — öppna igen för att ändra adresser, fasader eller planinställningar."
-            : "Börja med planinställningar, uppgifter och adresser — fasader öppnas när byggnader lagts in."
+            ? "Steg 1 klart — ni kan gå vidare till fastighetens delar (steg 2)."
+            : "Dela upp i mindre delar och spara längs vägen. Avsluta med «Spara hela steg 1»."
         }
       >
-        <form onSubmit={(e) => {
-          saveGrund(e);
-          setOpenSteg(null);
-        }}>
+        <p className="mt-4 text-sm leading-relaxed text-muted">
+          Steg 1 stannar öppet medan ni jobbar. Spara varje del när den känns klar — till
+          exempel efter fastighetsbeteckning — och avsluta med knappen längst ned när allt
+          är ifyllt.
+        </p>
 
         <div className="mt-6 space-y-4">
-          <div className="rounded-xl border border-[#d4e8da] bg-[#eef6f0]/30 p-4 sm:p-5">
-            <p className="text-sm font-semibold text-foreground">Planinställningar</p>
-            <p className="mt-1 text-xs text-muted">
-              Underhållsplanen är normalt 50 år men kan kortas eller förlängas.
-            </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-sm font-medium text-foreground">
-                  Plan startår
-                </span>
-                <input
-                  type="number"
-                  min={2000}
-                  max={2100}
-                  value={planinstallningar.planStartAr}
-                  onChange={(e) =>
-                    uppdateraPlaninstallningar({ planStartAr: e.target.value })
-                  }
-                  className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-medium text-foreground">
-                  Planlängd (år)
-                </span>
-                <input
-                  type="number"
-                  min={minPlanLangdAr}
-                  max={maxPlanLangdAr}
-                  value={planinstallningar.planLangdAr}
-                  onChange={(e) =>
-                    uppdateraPlaninstallningar({ planLangdAr: e.target.value })
-                  }
-                  className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                />
-                <span className="mt-1 block text-xs text-muted">
-                  Standard {standardPlanLangdAr} år. Planperiod: {planStartAr}–
-                  {planStartAr + planLangdAr - 1}.
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <PlanKostnadsparametrarPanel
-            installningar={planinstallningar}
-            onChange={(next) => {
-              setPlaninstallningar(synkaPlaninstallningarIndex(next));
-              setGrundSaved(false);
-              setRenoveringarSaved(false);
-              setBesiktningarSaved(false);
-            }}
-          />
-        </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {grundFields.map((field) =>
-            field.selectAlternativ ? (
-              <GrunduppgiftSelect
-                key={field.key}
-                label={field.label}
-                hint={field.hint}
-                value={grund[field.key]}
-                alternativ={field.selectAlternativ}
-                placeholder={field.placeholder}
-                showOvk={field.showOvk}
-                onChange={(value) => updateGrund(field.key, value)}
-                onToggleOvk={
-                  field.showOvk ? () => setVisarOvk((current) => !current) : undefined
-                }
-                visarOvk={visarOvk}
-                ovkSystemText={grund.ventilationssystem}
-              />
-            ) : (
-              <label key={field.key} className="block">
-                <span className="text-sm font-medium text-foreground">
-                  {field.label}
-                </span>
-                <input
-                  type={field.type ?? "text"}
-                  value={grund[field.key]}
-                  onChange={(event) => updateGrund(field.key, event.target.value)}
-                  placeholder={field.placeholder}
-                  className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-                />
-                {field.hint && (
-                  <span className="mt-1 block text-xs text-muted">{field.hint}</span>
-                )}
-              </label>
-            ),
-          )}
-        </div>
-
-        <GrundByggnadAdressPanel
-          grund={grund}
-          onChange={(next) => {
-            setGrund(next);
-            setGrundSaved(false);
-          }}
-        />
-
-        <GrundFasaderPaminnelse grund={grund} />
-
-        <GrundFasaderPanel
-          grund={grund}
-          onChange={(next) => {
-            setGrund(next);
-            setGrundSaved(false);
-          }}
-        />
-
-        <VerksamhetsLokalerPanel
-          lokaler={grundNorm.lokaler}
-          lokalyta={grund.lokalyta}
-          onChange={(lokaler) => {
-            setGrund((current) => ({ ...current, lokaler }));
-            setGrundSaved(false);
-          }}
-          onLokalytaChange={(lokalyta) => updateGrund("lokalyta", lokalyta)}
-        />
-
-        <GrundFastighetsYtorPanel
-          grund={grund}
-          data={grundNorm.fastighetsYtor}
-          onChange={(fastighetsYtor) => {
-            setGrund((current) => ({ ...current, fastighetsYtor }));
-            setGrundSaved(false);
-          }}
-        />
-
-        <Steg1YtaAiHjalp
-          grund={grund}
-          onGrundChange={(next) => {
-            setGrund(next);
-            setGrundSaved(false);
-          }}
-        />
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
+          <GrunduppgifterDelSektion
+            stegLabel="Del 1 av 6"
+            titel="Planinställningar"
+            intro="Planperiod och kostnadsparametrar som påverkar hela underhållsplanen."
+            sparadVid={grundDelSparad.plan}
+            onSparaDel={() => saveGrundDel("plan")}
           >
-            Spara grunduppgifter
-          </button>
-          {grundSaved && (
-            <p className="text-sm font-medium text-primary-dark">
-              Sparat — gå vidare till fastighetens delar (steg 2).
-            </p>
-          )}
+            <div className="rounded-xl border border-[#d4e8da] bg-[#eef6f0]/30 p-4 sm:p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-medium text-foreground">
+                    Plan startår
+                  </span>
+                  <input
+                    type="number"
+                    min={2000}
+                    max={2100}
+                    value={planinstallningar.planStartAr}
+                    onChange={(e) =>
+                      uppdateraPlaninstallningar({ planStartAr: e.target.value })
+                    }
+                    className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-foreground">
+                    Planlängd (år)
+                  </span>
+                  <input
+                    type="number"
+                    min={minPlanLangdAr}
+                    max={maxPlanLangdAr}
+                    value={planinstallningar.planLangdAr}
+                    onChange={(e) =>
+                      uppdateraPlaninstallningar({ planLangdAr: e.target.value })
+                    }
+                    className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                  <span className="mt-1 block text-xs text-muted">
+                    Standard {standardPlanLangdAr} år. Planperiod: {planStartAr}–
+                    {planStartAr + planLangdAr - 1}.
+                  </span>
+                </label>
+              </div>
+            </div>
+            <PlanKostnadsparametrarPanel
+              installningar={planinstallningar}
+              onChange={(next) => {
+                setPlaninstallningar(synkaPlaninstallningarIndex(next));
+                setGrundSaved(false);
+                setRenoveringarSaved(false);
+                setBesiktningarSaved(false);
+              }}
+            />
+          </GrunduppgifterDelSektion>
+
+          <GrunduppgifterDelSektion
+            stegLabel="Del 2 av 6"
+            titel="Yta, lägenheter och byggnad"
+            intro="Boarea, lokalyta, antal lägenheter och byggnadsdata."
+            sparadVid={grundDelSparad.yta}
+            onSparaDel={() => saveGrundDel("yta")}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              {renderGrundFalt(grundFieldsYtaOchByggnad)}
+            </div>
+          </GrunduppgifterDelSektion>
+
+          <GrunduppgifterDelSektion
+            stegLabel="Del 3 av 6"
+            titel="Uppvärmning, ventilation och fastighetsbeteckning"
+            intro="Teknik som styr OVK-intervall och offerter — spara gärna här innan byggnader och fasader."
+            sparadVid={grundDelSparad.teknik}
+            onSparaDel={() => saveGrundDel("teknik")}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              {renderGrundFalt(grundFieldsTeknikOchBeteckning)}
+            </div>
+          </GrunduppgifterDelSektion>
+
+          <GrunduppgifterDelSektion
+            stegLabel="Del 4 av 6"
+            titel="Byggnader och adresser"
+            intro="Antal hus och adresser — underlag för fasader och komponenter."
+            sparadVid={grundDelSparad.byggnader}
+            onSparaDel={() => saveGrundDel("byggnader")}
+            defaultOpen={false}
+          >
+            <GrundByggnadAdressPanel
+              grund={grund}
+              onChange={(next) => {
+                setGrund(next);
+                setGrundSaved(false);
+              }}
+            />
+          </GrunduppgifterDelSektion>
+
+          <GrunduppgifterDelSektion
+            stegLabel="Del 5 av 6"
+            titel="Fasader"
+            intro="Fasadytor per hus och väderstreck."
+            sparadVid={grundDelSparad.fasader}
+            onSparaDel={() => saveGrundDel("fasader")}
+            defaultOpen={false}
+          >
+            <GrundFasaderPaminnelse grund={grund} />
+            <GrundFasaderPanel
+              grund={grund}
+              onChange={(next) => {
+                setGrund(next);
+                setGrundSaved(false);
+              }}
+            />
+          </GrunduppgifterDelSektion>
+
+          <GrunduppgifterDelSektion
+            stegLabel="Del 6 av 6"
+            titel="Verksamhet, övriga ytor och mätstöd"
+            intro="Lokaler, tak- och markytor samt AI-hjälp för uppskattning."
+            sparadVid={grundDelSparad.verksamhet}
+            onSparaDel={() => saveGrundDel("verksamhet")}
+            defaultOpen={false}
+          >
+            <VerksamhetsLokalerPanel
+              lokaler={grundNorm.lokaler}
+              lokalyta={grund.lokalyta}
+              onChange={(lokaler) => {
+                setGrund((current) => ({ ...current, lokaler }));
+                setGrundSaved(false);
+              }}
+              onLokalytaChange={(lokalyta) => updateGrund("lokalyta", lokalyta)}
+            />
+            <GrundFastighetsYtorPanel
+              grund={grund}
+              data={grundNorm.fastighetsYtor}
+              onChange={(fastighetsYtor) => {
+                setGrund((current) => ({ ...current, fastighetsYtor }));
+                setGrundSaved(false);
+              }}
+            />
+            <Steg1YtaAiHjalp
+              grund={grund}
+              onGrundChange={(next) => {
+                setGrund(next);
+                setGrundSaved(false);
+              }}
+            />
+          </GrunduppgifterDelSektion>
         </div>
-        </form>
+
+        <div className="mt-8 rounded-xl border-2 border-primary/30 bg-[#eef6f0]/50 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-primary-dark">
+            Avsluta steg 1 — grunduppgifter
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            När alla delar ovan är ifyllda och sparade markerar ni hela steg 1 som klart.
+            Då låses steg 2 upp. Steg 1 förblir öppet så ni kan gå tillbaka och justera.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => saveGrundKomplett()}
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-dark"
+            >
+              Spara hela steg 1 och gå vidare
+            </button>
+            {grundSaved ? (
+              <p className="text-sm font-medium text-primary-dark">
+                Steg 1 är klart — öppna steg 2 (Fastighetens delar) när ni vill.
+              </p>
+            ) : (
+              <p className="text-xs text-muted">
+                Delsparning ovan räcker inte för att låsa upp steg 2 — använd knappen här
+                när allt är färdigt.
+              </p>
+            )}
+          </div>
+        </div>
       </StegPanel>
 
       <StegPanel
@@ -2134,7 +2265,6 @@ export function UnderhallsplanWizard() {
             planLangdAr={planLangdAr}
             grund={grund}
             foreningsAdresser={hamtaByggnadAdresser(grundNorm)}
-            oppnaAlla
           />
         ) : (
           <p className="mt-6 rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-muted">
