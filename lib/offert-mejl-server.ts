@@ -1,7 +1,9 @@
 import { skickaMejl, skickaMejlDirekt, type MejlMeddelande, type MejlLeveransVia } from "@/lib/auth/mejl";
 import { hamtaMejlTransportStatus } from "@/lib/auth/mejl-konfiguration";
-import { KONTAKT_EPOST } from "@/lib/kontakt-epost";
+import { hamtaOffertKontaktperson, KONTAKT_EPOST } from "@/lib/kontakt-epost";
 import { databasArKonfigurerad } from "@/lib/db";
+import { byggOffertForfraganMejl } from "@/lib/offert-mejl";
+import type { ValideradOffertForfragan } from "@/lib/offert-forfragan-server";
 
 /** Synliga mottagare när kunden inte väljer kontaktperson. */
 export const OFFERT_EPOST_MOTTAGARE = [
@@ -106,4 +108,16 @@ export async function skickaOffertMejlTillTeam(
     via: levererade > 0 ? via : via,
     varning,
   };
+}
+
+/** Mejlar teamet (vald kontakt + offert@) om en ny förfrågan från /offert. */
+export async function skickaOffertForfraganTillTeam(
+  data: ValideradOffertForfragan,
+): Promise<OffertMejlResultat> {
+  const kontakt = hamtaOffertKontaktperson(data.oonskadKontaktId);
+  const mejl = byggOffertForfraganMejl({
+    ...data,
+    oonskadKontakt: kontakt ? `${kontakt.namn} (${kontakt.epost})` : undefined,
+  });
+  return skickaOffertMejlTillTeam({ ...mejl, replyTo: data.epost }, kontakt?.epost);
 }

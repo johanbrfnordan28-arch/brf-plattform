@@ -26,12 +26,13 @@ export type GallringResultat = {
   inloggningar: number;
   intresseanmalningar: number;
   mejl: number;
+  offertforfragningar: number;
   testforeningarFlyttade: string[];
   testforeningarRaderade: string[];
 };
 
 export async function korGallring(nu = new Date()): Promise<GallringResultat> {
-  const [inloggningar, leads, mejl] = await Promise.all([
+  const [inloggningar, leads, mejl, offerter] = await Promise.all([
     prisma.inloggningsHistorik.deleteMany({
       where: {
         tidpunkt: {
@@ -49,6 +50,13 @@ export async function korGallring(nu = new Date()): Promise<GallringResultat> {
     prisma.mejlOutbox.deleteMany({
       where: {
         skapadTidpunkt: { lt: manaderSedan(GALLRING_MANADER.mejlOutbox, nu) },
+      },
+    }),
+    prisma.offertForfragan.deleteMany({
+      where: {
+        uppdateradTidpunkt: {
+          lt: manaderSedan(GALLRING_MANADER.offertforfragningar, nu),
+        },
       },
     }),
   ]);
@@ -101,6 +109,7 @@ export async function korGallring(nu = new Date()): Promise<GallringResultat> {
     inloggningar: inloggningar.count,
     intresseanmalningar: leads.count,
     mejl: mejl.count,
+    offertforfragningar: offerter.count,
     testforeningarFlyttade,
     testforeningarRaderade,
   };

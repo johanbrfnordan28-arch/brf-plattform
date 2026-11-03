@@ -3,17 +3,16 @@
 import { FormEvent, useState } from "react";
 import { ABK_09_KORT, ABK_09_LANG } from "@/lib/abk-09";
 import {
+  OFFERT_MAXLANGD,
   OFFERT_TJANSTER,
-  skapaOffertForfragan,
   type OffertTjanst,
-} from "@/components/offert/offert-forfragan-lager";
+} from "@/lib/offert-forfragan";
 import { OFFERT_EPOST } from "@/lib/offert-mejl";
 import { OFFERT_KONTAKTPERSONER } from "@/lib/kontakt-epost";
 import type { OffertKontaktpersonId } from "@/lib/kontakt-epost";
-import { mejlaOffertForfraganTillTeam } from "@/lib/offert-mejl-klient";
 
 /**
- * Publikt formulär — sparar förfrågan så personal ser den under /plattform.
+ * Publikt formulär — sparar förfrågan på servern så personal ser den under /plattform.
  */
 export function OffertForfraganForm() {
   const [foreningsNamn, setForeningsNamn] = useState("");
@@ -25,8 +24,10 @@ export function OffertForfraganForm() {
   const [antalLagenheter, setAntalLagenheter] = useState("");
   const [tjanster, setTjanster] = useState<OffertTjanst[]>([]);
   const [meddelande, setMeddelande] = useState("");
+  const [webbplats, setWebbplats] = useState("");
   const [fel, setFel] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
+  const [skickar, setSkickar] = useState(false);
 
   function vaxlaTjanst(t: OffertTjanst) {
     setTjanster((prev) =>
@@ -38,18 +39,33 @@ export function OffertForfraganForm() {
     e.preventDefault();
     setFel(null);
     setOk(false);
+    if (!tjanster.length) {
+      setFel("Välj minst en tjänst.");
+      return;
+    }
+    setSkickar(true);
     try {
-      const rad = skapaOffertForfragan({
-        foreningsNamn,
-        kontaktperson,
-        oonskadKontaktId,
-        epost,
-        telefon,
-        antalLagenheter,
-        tjanster,
-        meddelande,
+      const res = await fetch("/api/offert/forfragan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          foreningsNamn,
+          kontaktperson,
+          oonskadKontaktId,
+          epost,
+          telefon,
+          antalLagenheter,
+          tjanster,
+          meddelande,
+          webbplats,
+        }),
       });
-      await mejlaOffertForfraganTillTeam(rad);
+      const data = (await res.json().catch(() => ({}))) as { fel?: string };
+      if (!res.ok) {
+        throw new Error(
+          data.fel || `Kunde inte skicka. Mejla oss direkt på ${OFFERT_EPOST}.`,
+        );
+      }
       setOk(true);
       setForeningsNamn("");
       setKontaktperson("");
@@ -61,6 +77,8 @@ export function OffertForfraganForm() {
       setMeddelande("");
     } catch (error) {
       setFel(error instanceof Error ? error.message : "Kunde inte skicka.");
+    } finally {
+      setSkickar(false);
     }
   }
 
@@ -81,6 +99,7 @@ export function OffertForfraganForm() {
         <input
           required
           value={foreningsNamn}
+          maxLength={OFFERT_MAXLANGD.foreningsNamn}
           onChange={(e) => setForeningsNamn(e.target.value)}
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
         />
@@ -117,6 +136,7 @@ export function OffertForfraganForm() {
           <input
             required
             value={kontaktperson}
+          maxLength={OFFERT_MAXLANGD.kontaktperson}
             onChange={(e) => setKontaktperson(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
@@ -127,6 +147,7 @@ export function OffertForfraganForm() {
             required
             type="email"
             value={epost}
+          maxLength={OFFERT_MAXLANGD.epost}
             onChange={(e) => setEpost(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
@@ -135,6 +156,7 @@ export function OffertForfraganForm() {
           <span className="font-medium">Telefon (valfritt)</span>
           <input
             value={telefon}
+          maxLength={OFFERT_MAXLANGD.telefon}
             onChange={(e) => setTelefon(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           />
@@ -143,6 +165,7 @@ export function OffertForfraganForm() {
           <span className="font-medium">Antal lägenheter (valfritt)</span>
           <input
             value={antalLagenheter}
+          maxLength={OFFERT_MAXLANGD.antalLagenheter}
             onChange={(e) => setAntalLagenheter(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
             placeholder="t.ex. 48"
@@ -172,6 +195,7 @@ export function OffertForfraganForm() {
         <textarea
           rows={3}
           value={meddelande}
+          maxLength={OFFERT_MAXLANGD.meddelande}
           onChange={(e) => setMeddelande(e.target.value)}
           className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
           placeholder="Kort om behov och tidsplan"
@@ -194,11 +218,23 @@ export function OffertForfraganForm() {
         </p>
       )}
 
+      <input
+        type="text"
+        name="webbplats"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={webbplats}
+        onChange={(e) => setWebbplats(e.target.value)}
+        className="hidden"
+      />
+
       <button
         type="submit"
-        className="brf-knapp-gron px-5 py-2.5 text-sm"
+        disabled={skickar}
+        className="brf-knapp-gron px-5 py-2.5 text-sm disabled:opacity-60"
       >
-        Skicka förfrågan
+        {skickar ? "Skickar …" : "Skicka förfrågan"}
       </button>
     </form>
   );
