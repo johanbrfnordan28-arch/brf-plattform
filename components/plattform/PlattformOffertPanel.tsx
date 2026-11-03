@@ -162,6 +162,12 @@ export function PlattformOffertPanel() {
                     {vald.antalLagenheter}
                   </p>
                 ) : null}
+                {vald.ytaKvm ? (
+                  <p className="mt-1">
+                    <span className="text-muted">Yta: </span>
+                    {vald.ytaKvm} m²
+                  </p>
+                ) : null}
                 <p className="mt-1">
                   <span className="text-muted">Tjänster: </span>
                   {vald.tjanster.join(", ")}

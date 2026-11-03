@@ -42,6 +42,7 @@ export async function mejlaOffertForfraganTillTeam(
     epost: forfragan.epost,
     telefon: forfragan.telefon,
     antalLagenheter: forfragan.antalLagenheter,
+    ytaKvm: forfragan.ytaKvm ?? "",
     tjanster: forfragan.tjanster,
     meddelande: forfragan.meddelande,
     oonskadKontaktId: forfragan.oonskadKontaktId ?? "offert",

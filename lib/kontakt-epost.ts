@@ -32,13 +32,15 @@ export const OFFERT_KONTAKTPERSONER = [
     id: "johan",
     namn: "Johan",
     epost: KONTAKT_EPOST.johan,
-    beskrivning: "Hjälp, vägledning och plattformen",
+    beskrivning:
+      "Hjälp, vägledning, plattformen, teknisk förvaltning, besiktning, projektledning och skadeutredning",
   },
   {
     id: "seif",
     namn: "Seif",
     epost: KONTAKT_EPOST.seif,
-    beskrivning: "Teknisk förvaltning och besiktning",
+    beskrivning:
+      "Teknisk förvaltning, besiktning, projektledning och skadeutredning",
   },
   {
     id: "offert",

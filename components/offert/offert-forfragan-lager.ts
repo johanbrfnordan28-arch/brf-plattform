@@ -31,6 +31,8 @@ export type OffertForfragan = {
   epost: string;
   telefon: string;
   antalLagenheter: string;
+  /** Boarea, lokalyta eller annan yta (m²) — underlag till offert. */
+  ytaKvm?: string;
   tjanster: OffertTjanst[];
   meddelande: string;
   status: OffertForfraganStatus;
@@ -71,7 +73,8 @@ export function skapaOffertForfragan(input: {
   oonskadKontaktId: OffertKontaktpersonId;
   epost: string;
   telefon?: string;
-  antalLagenheter?: string;
+  antalLagenheter: string;
+  ytaKvm?: string;
   tjanster: OffertTjanst[];
   meddelande?: string;
 }): OffertForfragan {
@@ -87,6 +90,11 @@ export function skapaOffertForfragan(input: {
   if (!input.tjanster.length) {
     throw new Error("Välj minst en tjänst.");
   }
+  const antalLagenheter = input.antalLagenheter.trim();
+  const antalNum = Number.parseInt(antalLagenheter, 10);
+  if (!antalLagenheter || !Number.isFinite(antalNum) || antalNum < 1) {
+    throw new Error("Ange antal lägenheter (minst 1).");
+  }
 
   const rad: OffertForfragan = {
     id: skapaId(),
@@ -95,7 +103,8 @@ export function skapaOffertForfragan(input: {
     oonskadKontaktId: input.oonskadKontaktId,
     epost,
     telefon: (input.telefon ?? "").trim(),
-    antalLagenheter: (input.antalLagenheter ?? "").trim(),
+    antalLagenheter,
+    ytaKvm: (input.ytaKvm ?? "").trim(),
     tjanster: input.tjanster,
     meddelande: (input.meddelande ?? "").trim(),
     status: "ny",

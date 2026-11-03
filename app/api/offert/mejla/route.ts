@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       epost?: string;
       telefon?: string;
       antalLagenheter?: string;
+      ytaKvm?: string;
       tjanster?: string[];
       meddelande?: string;
       oonskadKontaktId?: string;
@@ -35,7 +36,18 @@ export async function POST(request: Request) {
       const oonskadKontaktId = body.oonskadKontaktId?.trim() ?? "";
       const valdKontakt = hamtaOffertKontaktperson(oonskadKontaktId);
 
-      if (!foreningsNamn || !kontaktperson || !epost || !tjanster.length) {
+      const antalLagenheter = body.antalLagenheter?.trim() ?? "";
+      const antalNum = Number.parseInt(antalLagenheter, 10);
+
+      if (
+        !foreningsNamn ||
+        !kontaktperson ||
+        !epost ||
+        !tjanster.length ||
+        !antalLagenheter ||
+        !Number.isFinite(antalNum) ||
+        antalNum < 1
+      ) {
         return NextResponse.json(
           { fel: "Ofullständig offertförfrågan." },
           { status: 400 },
@@ -54,7 +66,8 @@ export async function POST(request: Request) {
         kontaktperson,
         epost,
         telefon: body.telefon?.trim() ?? "",
-        antalLagenheter: body.antalLagenheter?.trim() ?? "",
+        antalLagenheter,
+        ytaKvm: body.ytaKvm?.trim() ?? "",
         tjanster,
         meddelande: body.meddelande?.trim() ?? "",
         oonskadKontakt: `${valdKontakt.namn} (${valdKontakt.epost})`,

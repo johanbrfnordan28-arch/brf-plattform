@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ABK_09_KORT } from "@/lib/abk-09";
-import { OFFERT_EPOST, offertMailto } from "@/lib/offert-mejl";
 
 const TJANSTER = [
   {
@@ -91,15 +90,6 @@ export function TekniskForvaltningErbjudande() {
             >
               Begär offert
             </Link>
-            <a
-              href={offertMailto(
-                "Styrelse-Navet — offertförfrågan",
-                "Hej!\n\nFörening:\nAntal lägenheter:\nVi vill ha offert på:\n\n",
-              )}
-              className="rounded-lg border border-primary bg-white px-6 py-3 text-sm font-semibold text-primary-dark transition-colors hover:bg-[#eef6f0] sm:text-base"
-            >
-              Mejla {OFFERT_EPOST}
-            </a>
             <Link
               href="#skapa-forening"
               className="rounded-lg border border-border bg-white px-6 py-3 text-sm font-semibold text-muted transition-colors hover:border-primary/50 hover:text-primary-dark sm:text-base"

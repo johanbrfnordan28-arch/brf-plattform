@@ -23,6 +23,7 @@ export function OffertForfraganForm() {
   const [epost, setEpost] = useState("");
   const [telefon, setTelefon] = useState("");
   const [antalLagenheter, setAntalLagenheter] = useState("");
+  const [ytaKvm, setYtaKvm] = useState("");
   const [tjanster, setTjanster] = useState<OffertTjanst[]>([]);
   const [meddelande, setMeddelande] = useState("");
   const [fel, setFel] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export function OffertForfraganForm() {
         epost,
         telefon,
         antalLagenheter,
+        ytaKvm,
         tjanster,
         meddelande,
       });
@@ -57,6 +59,7 @@ export function OffertForfraganForm() {
       setEpost("");
       setTelefon("");
       setAntalLagenheter("");
+      setYtaKvm("");
       setTjanster([]);
       setMeddelande("");
     } catch (error) {
@@ -140,13 +143,33 @@ export function OffertForfraganForm() {
           />
         </label>
         <label className="block text-sm">
-          <span className="font-medium">Antal lägenheter (valfritt)</span>
+          <span className="font-medium">Antal lägenheter</span>
           <input
+            required
+            type="number"
+            min={1}
+            step={1}
             value={antalLagenheter}
             onChange={(e) => setAntalLagenheter(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
             placeholder="t.ex. 48"
           />
+        </label>
+        <label className="block text-sm sm:col-span-2">
+          <span className="font-medium">Yta (m²) — valfritt</span>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={ytaKvm}
+            onChange={(e) => setYtaKvm(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2"
+            placeholder="t.ex. boarea 3 200 m² eller total yta"
+          />
+          <span className="mt-1 block text-xs text-muted">
+            Hjälper oss bedöma omfattning — boarea, lokalyta eller annan relevant
+            kvm-uppgift.
+          </span>
         </label>
       </div>
 

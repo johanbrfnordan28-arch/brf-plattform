@@ -17,6 +17,7 @@ export function byggOffertForfraganMejl(input: {
   epost: string;
   telefon: string;
   antalLagenheter: string;
+  ytaKvm?: string;
   tjanster: string[];
   meddelande: string;
   oonskadKontakt?: string;
@@ -34,6 +35,7 @@ export function byggOffertForfraganMejl(input: {
       `E-post: ${input.epost}`,
       input.telefon ? `Telefon: ${input.telefon}` : "",
       input.antalLagenheter ? `Antal lägenheter: ${input.antalLagenheter}` : "",
+      input.ytaKvm?.trim() ? `Yta (m²): ${input.ytaKvm.trim()}` : "",
       "",
       `Tjänster: ${input.tjanster.join(", ")}`,
       input.meddelande ? `\nMeddelande:\n${input.meddelande}` : "",
