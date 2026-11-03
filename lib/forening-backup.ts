@@ -31,7 +31,11 @@ export type ForeningBackup = {
   keys: Record<string, string>;
 };
 
-/** Alla localStorage-nycklar för en förening (samma prefix som vid rensning). */
+/**
+ * Alla localStorage-nycklar för en förening (prefix brf-f-{id}--).
+ * Omfattar hela Styrelse-Navet: underhållsplan, årshjul, dokumentbank,
+ * lägenhetsregister, upphandling, rondering m.m. — allt som använder foreningStorageKey.
+ */
 export function samlaForeningLocalStorage(
   foreningId: string,
 ): Record<string, string> {

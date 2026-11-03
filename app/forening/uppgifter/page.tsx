@@ -57,7 +57,8 @@ export default function ForeningUppgifterPage() {
             föreningen efter prövoperioden.
           </li>
           <li>
-            <strong>Säkerhetskopiering</strong> — under{" "}
+            <strong>Säkerhetskopiering</strong> — hela Styrelse-Navet (årshjul,
+            underhållsplan, dokument m.m.) under{" "}
             <Link
               href="/forening/uppgifter#sakerhetskopiering"
               className="font-medium text-primary-dark underline hover:no-underline"

@@ -9,6 +9,13 @@ import {
   sparaBackupTillServerBestEffort,
   valideraForeningBackup,
 } from "@/lib/forening-backup";
+import {
+  FORENING_AATERSTALL_FORKLARING,
+  FORENING_AATERSTALL_KRAV,
+  FORENING_BACKUP_KORT,
+  FORENING_BACKUP_MODULER,
+  modulerFranBackupNycklar,
+} from "@/lib/forening-backup-omfattning";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import {
   arGrundmallForening,
@@ -125,7 +132,7 @@ export function ForeningSakerhetskopieringPanel() {
         return;
       }
       setMeddelande(
-        `Säkerhetskopia sparad på våra servrar: ${data.kopia?.foreningsNamn || foreningsNamn} · ${formatBackupDatum(data.kopia?.exportedAt || backup.exportedAt)}.`,
+        `Säkerhetskopia sparad: ${data.kopia?.foreningsNamn || foreningsNamn} · ${formatBackupDatum(data.kopia?.exportedAt || backup.exportedAt)} · ${data.kopia?.antalNycklar ?? Object.keys(backup.keys).length} dataposter (${modulerFranBackupNycklar(foreningId, backup.keys).join(", ") || "moduler"}).`,
       );
       await laddaKopior(foreningId);
     } catch {
@@ -263,14 +270,62 @@ export function ForeningSakerhetskopieringPanel() {
         Säkerhetskopiering
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        Säkerhetskopior för{" "}
+        {FORENING_BACKUP_KORT} Kopian gäller{" "}
         <strong className="font-medium text-foreground">
           {foreningsNamn || "er förening"}
         </strong>{" "}
-        sparas på våra servrar. Tryck <strong className="font-medium text-foreground">Återställ</strong>{" "}
-        på en tidigare version om något försvinner — sidan laddas om med det
-        sparade läget. Ni kan också ladda upp en tidigare nedladdad fil.
+        och sparas på våra servrar. Tryck{" "}
+        <strong className="font-medium text-foreground">Återställ</strong> på en
+        tidigare version om data försvinner eller skrivs över — hela plattformen
+        för föreningen återställs i webbläsaren. Ni kan också ladda upp en
+        tidigare nedladdad fil.
       </p>
+      <ul className="mt-3 grid gap-1 text-xs text-muted sm:grid-cols-2">
+        {FORENING_BACKUP_MODULER.map((rad) => (
+          <li key={rad} className="flex gap-1.5">
+            <span className="text-primary" aria-hidden>
+              ·
+            </span>
+            <span>{rad}</span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-3 text-sm leading-relaxed text-muted">
+        {FORENING_AATERSTALL_FORKLARING}
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted">
+        {FORENING_AATERSTALL_KRAV.map((rad) => (
+          <li key={rad}>{rad}</li>
+        ))}
+      </ul>
+
+      {!laddarLista && kopior.length > 0 && (
+        <div className="mt-4 rounded-xl border-2 border-amber-300/70 bg-amber-50/90 px-4 py-4">
+          <p className="text-sm font-semibold text-amber-950">
+            Återställ om data försvunnit
+          </p>
+          <p className="mt-1 text-xs text-amber-950/90">
+            Senaste kopia: {formatBackupDatum(kopior[0].exportedAt)} ·{" "}
+            {kopior[0].antalNycklar} dataposter
+          </p>
+          <button
+            type="button"
+            disabled={aterstallerId === kopior[0].id}
+            onClick={() =>
+              void aterstallFranServer(
+                kopior[0].id,
+                `${kopior[0].foreningsNamn} · ${formatBackupDatum(kopior[0].exportedAt)}`,
+              )
+            }
+            className="mt-3 rounded-lg bg-amber-900 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-950 disabled:opacity-50"
+          >
+            {aterstallerId === kopior[0].id
+              ? "Återställer …"
+              : "Återställ senaste säkerhetskopia"}
+          </button>
+        </div>
+      )}
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button

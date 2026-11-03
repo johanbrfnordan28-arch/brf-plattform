@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { sparaBackupTillServerBestEffort } from "@/lib/forening-backup";
+import {
+  byggForeningBackup,
+  sparaBackupTillServerBestEffort,
+} from "@/lib/forening-backup";
+import {
+  FORENING_BACKUP_KORT,
+  FORENING_BACKUP_MODULER,
+  modulerFranBackupNycklar,
+} from "@/lib/forening-backup-omfattning";
 import {
   arGrundmallForening,
   FORENING_AKTIV_EVENT,
@@ -11,18 +19,13 @@ import {
 } from "@/lib/forening-registry";
 
 type Props = {
-  /** T.ex. «underhållsplanen» — visas i texten. */
-  sammanhang?: string;
   className?: string;
 };
 
 /**
- * Fast (sticky) banner — synlig när styrelsen arbetar i modulen.
+ * Fast (sticky) banner — hela plattformens föreningsdata, alla /forening/-moduler.
  */
-export function ForeningSakerhetskopiaFastBanner({
-  sammanhang = "uppgifterna i den här modulen",
-  className = "",
-}: Props) {
+export function ForeningSakerhetskopiaFastBanner({ className = "" }: Props) {
   const [foreningId, setForeningId] = useState("");
   const [sparar, setSparar] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -46,13 +49,23 @@ export function ForeningSakerhetskopiaFastBanner({
   async function sparaNu() {
     setSparar(true);
     setStatus(null);
+    const backup = byggForeningBackup(foreningId);
     const ok = await sparaBackupTillServerBestEffort(foreningId);
     setSparar(false);
-    setStatus(
-      ok
-        ? "Säkerhetskopia sparad på servern."
-        : "Kunde inte spara på servern — öppna Föreningsuppgifter eller ladda ner som fil.",
-    );
+    if (!ok) {
+      setStatus(
+        "Kunde inte spara på servern — öppna Föreningsuppgifter eller ladda ner som fil.",
+      );
+      return;
+    }
+    const moduler = backup
+      ? modulerFranBackupNycklar(foreningId, backup.keys)
+      : [];
+    const modulText =
+      moduler.length > 0
+        ? ` Inkluderade bl.a.: ${moduler.slice(0, 6).join(", ")}${moduler.length > 6 ? " …" : ""}.`
+        : "";
+    setStatus(`Säkerhetskopia sparad på servern (${Object.keys(backup?.keys ?? {}).length} dataposter).${modulText}`);
   }
 
   return (
@@ -61,17 +74,26 @@ export function ForeningSakerhetskopiaFastBanner({
       role="region"
       aria-label="Säkerhetskopiering"
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <p className="text-sm leading-snug text-foreground">
-          <span className="font-semibold text-primary-dark">
-            Säkerhetskopiera {namn}
-          </span>
-          <span className="text-muted">
-            {" "}
-            — {sammanhang} ligger i webbläsaren tills ni sparar en kopia.
-          </span>
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm leading-snug text-foreground">
+            <span className="font-semibold text-primary-dark">
+              Säkerhetskopiera hela {namn}
+            </span>
+            <span className="text-muted"> — {FORENING_BACKUP_KORT}</span>
+          </p>
+          <details className="mt-1.5 text-xs text-muted">
+            <summary className="cursor-pointer font-medium text-primary-dark">
+              Vad ingår i kopian?
+            </summary>
+            <ul className="mt-1.5 list-disc space-y-0.5 pl-4">
+              {FORENING_BACKUP_MODULER.map((rad) => (
+                <li key={rad}>{rad}</li>
+              ))}
+            </ul>
+          </details>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <button
             type="button"
             disabled={sparar}

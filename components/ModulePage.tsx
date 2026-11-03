@@ -1,3 +1,4 @@
+import { ForeningModulBackupBannerGate } from "@/components/forening/ForeningModulBackupBannerGate";
 import { ForeningModulKontakt } from "@/components/forening/ForeningModulKontakt";
 import { PlattformHjalpBanner } from "@/components/plattform/PlattformHjalpBanner";
 import { ModuleBackLink } from "@/components/ModuleBackLink";
@@ -36,6 +37,7 @@ export function ModulePage({ title, icon, intro, children }: ModulePageProps) {
       <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <PlattformHjalpBanner kompakt className="mb-4" />
         <ForeningModulKontakt />
+        <ForeningModulBackupBannerGate />
         <div className="space-y-8">{children}</div>
       </section>
     </main>

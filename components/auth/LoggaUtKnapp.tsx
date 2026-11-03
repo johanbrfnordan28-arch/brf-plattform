@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { sparaBackupTillServerBestEffort } from "@/lib/forening-backup";
+import { FORENING_BACKUP_KORT } from "@/lib/forening-backup-omfattning";
 import {
   arGrundmallForening,
   lasAktivForeningId,
@@ -93,13 +94,14 @@ export function LoggaUtKnapp({ className }: { className?: string }) {
               Säkerhetskopiera innan utloggning?
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Underhållsplan, lägenhetsregister och övriga uppgifter för{" "}
+              {FORENING_BACKUP_KORT} För{" "}
               <strong className="font-medium text-foreground">
                 {dialogForeningsNamn || "er förening"}
               </strong>{" "}
-              ligger i den här webbläsaren. En kopia på servern gör att ni kan{" "}
-              <strong className="font-medium text-foreground">Återställa</strong>{" "}
-              om data försvinner eller skrivs över.
+              inkluderar det årshjul, underhållsplan, dokument, lägenheter,
+              upphandling och övrigt ni lagt in. En kopia på servern gör att ni
+              kan <strong className="font-medium text-foreground">Återställa</strong>{" "}
+              hela läget om något försvinner.
             </p>
             <p className="mt-2 text-sm text-muted">
               <Link
