@@ -42,6 +42,7 @@ import {
 } from "@/components/underhallsplan/grund-byggnad-adress";
 import { Steg1YtaAiHjalp } from "@/components/underhallsplan/Steg1YtaAiHjalp";
 import { GrunduppgifterDelSektion } from "@/components/underhallsplan/GrunduppgifterDelSektion";
+import { UnderhallsplanModulLagLank } from "@/components/underhallsplan/UnderhallsplanModulLagLank";
 import { KommandeUnderhallSammanfattning } from "@/components/underhallsplan/KommandeUnderhallSammanfattning";
 import {
   PlanKostnadsparametrarPanel,
@@ -112,10 +113,9 @@ import {
   parseHeltalFranText,
 } from "@/components/underhallsplan/parse-grundtal";
 import {
-  beraknaForeslagenAvsattningKrPerKvmAr,
+  beraknaForeslagenAvsattningFranPlan,
   begransaAvsattningKrPerKvmAr,
   TYPISK_AVSATTNING_KR_PER_KVM,
-  summaPlaneradeInvesteringar,
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
 import { samlaAllaUnderhallAtgarder } from "@/components/underhallsplan/underhall-budget";
 import {
@@ -1493,16 +1493,12 @@ export function UnderhallsplanWizard() {
       planLangdAr,
       planKostnader,
     );
-    const summa = summaPlaneradeInvesteringar(
+    return beraknaForeslagenAvsattningFranPlan({
       atgarder,
       planStartAr,
       planLangdAr,
-    );
-    return beraknaForeslagenAvsattningKrPerKvmAr(
-      summa,
-      avsattningsYtaM2,
-      planLangdAr,
-    );
+      boareaM2: avsattningsYtaM2,
+    });
   }, [
     laddatFranLager,
     activeComponents,
@@ -1748,10 +1744,11 @@ export function UnderhallsplanWizard() {
           </ul>
         )}
         <p className="mt-3 text-xs text-muted">
-          Underhållsplanen är den långsiktiga 50-årsplanen med budget och
-          livslängder. Börja i steg 1 (grunduppgifter) och gå vidare steg för
-          steg — summeringen i steg 8 är underlaget till styrelsemötet.
+          Planen är ett levande dokument (ofta upp till 50 år) med intervall,
+          besiktningar och avsättning per kvm och år. Steg 7 ger underlag till
+          årsbudgeten; steg 8 är summering inför styrelsemötet.
         </p>
+        <UnderhallsplanModulLagLank />
       </div>
 
       {demoVarning && (
@@ -2379,7 +2376,7 @@ export function UnderhallsplanWizard() {
         isOpen={openSteg === "arsbudget"}
         onToggle={toggleSteg}
         {...stegPanelNavProps("arsbudget")}
-        summary="Underlag till budgeten: avsättning, besiktningar och periodiskt underhåll (kostnadsförs direkt). Planerat underhåll — investeringar i fastigheten — visas separat."
+        summary="Underlag till årsbudgeten (avsättning per kvm/år utifrån intervall, besiktningar, kostnadsfört underhåll). Större renoveringar visas separat som investeringar."
       >
         <UnderhallsplanBudget
           unlocked={besiktningarSaved}

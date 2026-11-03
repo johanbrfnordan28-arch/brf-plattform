@@ -61,6 +61,7 @@ import {
   PLAN_SLUTSIDA_PROFFS,
   PLAN_SLUTSIDA_RAD,
 } from "@/components/underhallsplan/plan-slutsida-rad";
+import { UnderhallsplanModulLagLank } from "@/components/underhallsplan/UnderhallsplanModulLagLank";
 
 type UnderhallsplanSlutsidaProps = {
   unlocked: boolean;
@@ -429,6 +430,12 @@ export function UnderhallsplanSlutsida({
         </p>
       )}
 
+      {unlocked && (
+        <div className="mx-6 mt-6 sm:mx-10 print:hidden">
+          <UnderhallsplanModulLagLank />
+        </div>
+      )}
+
       <div className={`space-y-8 px-6 py-8 sm:px-10 print:px-0 print:py-4 ${lockedClass}`}>
         <PrintSida sidnummer={1} titel="Avsättning och nyckeltal">
           <p className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-4 py-3 text-sm leading-relaxed text-foreground">
@@ -440,7 +447,7 @@ export function UnderhallsplanSlutsida({
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             {FORKLARING_AVSATTNING} Beräknat utifrån bo- och lokalyta (steg 1) och
-            avsättning kr/m²/år (steg 6 — {PLAN_BEGREPP.arsbudgetStegKort}).
+            avsättning kr/m²/år (steg 7 — {PLAN_BEGREPP.arsbudgetStegKort}).
           </p>
 
           <div className="mt-6 rounded-2xl border-2 border-primary/30 bg-[#eef6f0] p-6 sm:p-8">
@@ -474,7 +481,7 @@ export function UnderhallsplanSlutsida({
                   <p className="mt-3 rounded-lg border border-amber-300/70 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
                     Typisk avsättning ligger ofta kring{" "}
                     {TYPISK_AVSATTNING_KR_PER_KVM.lage}–
-                    {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²/år. Justera i steg 6
+                    {TYPISK_AVSATTNING_KR_PER_KVM.hog} kr/m²/år. Justera i steg 7
                     och kontrollera komponentbeloppen nedan om siffran känns
                     orimlig.
                   </p>
@@ -482,7 +489,7 @@ export function UnderhallsplanSlutsida({
               </>
             ) : (
               <p className="text-sm text-amber-950">
-                Ange boarea och lokalyta i steg 1 och avsättning (kr/m²/år) i steg 6 för att
+                Ange boarea och lokalyta i steg 1 och avsättning (kr/m²/år) i steg 7 för att
                 visa beräkningen.
               </p>
             )}

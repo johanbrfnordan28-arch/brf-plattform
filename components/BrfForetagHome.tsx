@@ -50,13 +50,13 @@ const featuredPublic = [
   {
     title: "Underhållsplan",
     description:
-      "Ett levande dokument som uppdateras årligen eller när fastighetens behov förändras. Planen knyter ihop utfört arbete med kommande underhåll och avsättning. Renoveringar kan tas med ända tillbaka till byggnadsåret när fakturor eller annat underlag finns; besiktningar bygger på det senast utförda och planeras framåt. Historiken ger fotfäste när framtida åtgärder och belopp ska läggas in. Över en planperiod på upp till 50 år blir det beslutsunderlag inför stämma, bank och långsiktiga investeringar.",
+      "Ett levande dokument som uppdateras när fastighetens behov förändras — i linje med Boverkets krav på teknisk underhållsplan i ekonomiska planer (50 år, komponenter, åtgärder, tid och kostnad). Planen knyter ihop utfört arbete med kommande underhåll och avsättning. Renoveringar kan tas med ända tillbaka till byggnadsåret när fakturor eller annat underlag finns; besiktningar bygger på det senast utförda och planeras framåt. Historiken ger fotfäste när framtida åtgärder och belopp ska läggas in.",
     anchor: "#moduler",
     icon: "🔧",
     bullets: [
       "Renoveringar sedan byggnadsåret när fakturor eller underlag finns — besiktningar från senaste tillfället",
-      "Historik som stöd när nya kostnader och intervall sätts",
-      "Komponentregister och avsättning som håller över mandatperioder",
+      "Underlag till årsbudgeten: avsättning per kvm, besiktningar och kostnadsfört underhåll",
+      "Större renoveringar med intervall och livscykel — avsättning per kvm och år",
     ],
   },
   {

@@ -131,29 +131,152 @@ export type ForeslagenAvsattning = {
   obegransad: number | null;
   /** Förslag att sätta i planen — aldrig över typiskt max. */
   foreslagen: number | null;
-  /** true om obegränsad ligger över typiskt max. */
+  /** true om obegransad ligger över typiskt max. */
   overTypiskt: boolean;
+  /** Jämn fördelning: summa investering / (yta × planår). */
+  jamnFordelningKrPerKvmAr: number | null;
+  /** Livscykel: summa (snittkostnad / intervall) per åtgärdsström / yta. */
+  livscykelKrPerKvmAr: number | null;
+  /** Total kr/år från livscykelmodellen (före delning på kvm). */
+  arligFranLivscykelKr: number;
 };
 
-export function beraknaForeslagenAvsattningKrPerKvmAr(
-  summaInvesteringKr: number,
+/** Grupperar återkommande investeringar (samma komponent/del). */
+export function avsattningsNyckelForAtgard(a: UnderhallAtgard): string {
+  return [
+    a.komponent,
+    a.del,
+    a.underkomponentId ?? "",
+    a.atgardTyp ?? "",
+  ].join("\0");
+}
+
+/**
+ * Jämn årlig avsättning utifrån komponenternas intervall: varje större åtgärd
+ * motsvarar ungefär kostnad/intervall kr per år (t.ex. 20 års livscykel → spara
+ * hälften av beloppet per år mellan två investeringar).
+ */
+export function beraknaArligAvsattningKrFranLivscykel(
+  investeringAtgarder: UnderhallAtgard[],
+): number {
+  const perStream = new Map<
+    string,
+    { sumKr: number; count: number; intervallAr: number }
+  >();
+  for (const a of investeringAtgarder) {
+    if (a.kostnadKr <= 0) continue;
+    const intervall = a.intervallAr >= 1 ? a.intervallAr : 0;
+    if (intervall <= 0) continue;
+    const key = avsattningsNyckelForAtgard(a);
+    const cur = perStream.get(key) ?? {
+      sumKr: 0,
+      count: 0,
+      intervallAr: intervall,
+    };
+    cur.sumKr += a.kostnadKr;
+    cur.count += 1;
+    cur.intervallAr = intervall;
+    perStream.set(key, cur);
+  }
+  let total = 0;
+  for (const s of perStream.values()) {
+    const snitt = s.count > 0 ? s.sumKr / s.count : 0;
+    total += snitt / s.intervallAr;
+  }
+  return Math.round(total);
+}
+
+export function beraknaKrPerKvmArFranLivscykel(
+  investeringAtgarder: UnderhallAtgard[],
   boareaM2: number,
-  planLangdAr: number,
+): number | null {
+  const arlig = beraknaArligAvsattningKrFranLivscykel(investeringAtgarder);
+  if (arlig <= 0 || boareaM2 <= 0) return null;
+  return Math.max(1, Math.round(arlig / boareaM2));
+}
+
+function slutForeslagenAvsattning(
+  obegransad: number | null,
+  jamnFordelningKrPerKvmAr: number | null,
+  livscykelKrPerKvmAr: number | null,
+  arligFranLivscykelKr: number,
 ): ForeslagenAvsattning {
-  const obegransad = beraknaRekommenderadKrPerKvmAr(
-    summaInvesteringKr,
-    boareaM2,
-    planLangdAr,
-  );
   if (obegransad == null) {
-    return { obegransad: null, foreslagen: null, overTypiskt: false };
+    return {
+      obegransad: null,
+      foreslagen: null,
+      overTypiskt: false,
+      jamnFordelningKrPerKvmAr,
+      livscykelKrPerKvmAr,
+      arligFranLivscykelKr,
+    };
   }
   const overTypiskt = obegransad > TYPISK_AVSATTNING_KR_PER_KVM.max;
   return {
     obegransad,
     foreslagen: begransaAvsattningKrPerKvmAr(obegransad),
     overTypiskt,
+    jamnFordelningKrPerKvmAr,
+    livscykelKrPerKvmAr,
+    arligFranLivscykelKr,
   };
+}
+
+export function beraknaForeslagenAvsattningKrPerKvmAr(
+  summaInvesteringKr: number,
+  boareaM2: number,
+  planLangdAr: number,
+): ForeslagenAvsattning {
+  const jamnFordelningKrPerKvmAr = beraknaRekommenderadKrPerKvmAr(
+    summaInvesteringKr,
+    boareaM2,
+    planLangdAr,
+  );
+  return slutForeslagenAvsattning(
+    jamnFordelningKrPerKvmAr,
+    jamnFordelningKrPerKvmAr,
+    null,
+    0,
+  );
+}
+
+/** Rekommendation: högst av jämn planfördelning och livscykel (intervall) per investering. */
+export function beraknaForeslagenAvsattningFranPlan(input: {
+  atgarder: UnderhallAtgard[];
+  planStartAr: number;
+  planLangdAr: number;
+  boareaM2: number;
+}): ForeslagenAvsattning {
+  const { atgarder, planStartAr, planLangdAr, boareaM2 } = input;
+  const summa = summaPlaneradeInvesteringar(
+    atgarder,
+    planStartAr,
+    planLangdAr,
+  );
+  const jamnFordelningKrPerKvmAr = beraknaRekommenderadKrPerKvmAr(
+    summa,
+    boareaM2,
+    planLangdAr,
+  );
+  const investering = filtreraInvesteringAtgarder(atgarder);
+  const arligFranLivscykelKr =
+    beraknaArligAvsattningKrFranLivscykel(investering);
+  const livscykelKrPerKvmAr = beraknaKrPerKvmArFranLivscykel(
+    investering,
+    boareaM2,
+  );
+  const kandidater = [
+    jamnFordelningKrPerKvmAr ?? 0,
+    livscykelKrPerKvmAr ?? 0,
+  ].filter((n) => n > 0);
+  const obegransad =
+    kandidater.length > 0 ? Math.max(...kandidater) : null;
+  return slutForeslagenAvsattning(
+    obegransad,
+    jamnFordelningKrPerKvmAr,
+    livscykelKrPerKvmAr,
+    arligFranLivscykelKr,
+  );
 }
 
 export function beraknaPlanAvsattning(

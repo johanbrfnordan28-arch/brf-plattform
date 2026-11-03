@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/components/ContentSection";
 import { ModulePage } from "@/components/ModulePage";
+import { PlanLagkravUpplysning } from "@/components/underhallsplan/PlanLagkravUpplysning";
 import { UnderhallsplanProffsUpplysning } from "@/components/underhallsplan/UnderhallsplanProffsUpplysning";
 
 export const metadata: Metadata = {
@@ -18,6 +19,10 @@ export default function UnderhallsplanPage() {
       intro="Underhållsplanen bör tas fram av en professionell part. I föreningens portal blir den sedan ett levande arbetsdokument där styrelse eller förvaltare lägger till och tar bort komponenter — så planen håller för nästa styrelse."
     >
       <UnderhallsplanProffsUpplysning />
+
+      <div className="mt-6">
+        <PlanLagkravUpplysning />
+      </div>
 
       <div className="mt-6 rounded-xl border border-primary/40 bg-[#eef6f0] p-5 sm:p-6">
         <p className="text-sm font-semibold text-primary-dark">

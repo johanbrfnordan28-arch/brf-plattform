@@ -45,7 +45,7 @@ export const PLAN_SLUTSIDA_RAD: PlanSlutsidaRadAvsnitt[] = [
     rubrik: "Balans mellan kostnad, skick och marknad",
     punkter: [
       "Samma åtgärd kan kosta olika mycket beroende på entreprenörens beläggning, säsong och fastighetens förutsättningar. Använd planens kostnader som rimliga nivåer, inte som offert.",
-      "Avsättning kr/m²/år (steg 6) är en jämn buffert — den ska täcka både löpande underhåll och att ni successivt bygger upp för tyngre år.",
+      "Avsättning kr/m²/år (steg 7) bygger på intervall och livscykel i registret — en jämn post i budgeten som successivt täcker större renoveringar, medan K3-avskrivning sker separat i bokföringen.",
     ],
   },
   {
@@ -77,11 +77,11 @@ export const PLAN_SLUTSIDA_RAD: PlanSlutsidaRadAvsnitt[] = [
 /** Checklista för årlig genomgång — utan namn, lämplig att bocka av vid utskrift. */
 export const PLAN_SLUTSIDA_CHECKLISTA: string[] = [
   "Gå igenom planerade tider (föregående sida) — behöver något läggas tidigare eller senare?",
-  "Kontrollera att planen bara innehåller aktuella komponenter — lägg till eller ta bort i steg 3.",
+  "Kontrollera att planen bara innehåller aktuella komponenter — lägg till eller ta bort i steg 2.",
   "Stäm av K3-avskrivningstider i komponentregistret med ekonomisk förvaltare inför årsredovisning.",
   "Stäm av skick efter vinter/väta: tak, fasad, fönster, avlopp, källare.",
   "Uppdatera underhållstillfällen i steg 3 om besiktning eller entreprenör ger ny bedömning.",
-  "Kontrollera att avsättning kr/m²/år fortfarande är rimlig (steg 6).",
+  "Kontrollera att avsättning kr/m²/år fortfarande är rimlig (steg 7).",
   "Säkerställ att obligatoriska besiktningar är bokade eller genomförda.",
   "Vid fukt, läcka eller återkommande skada: utred orsak innan ni beställer «snabb» åtgärd.",
   "Dokumentera ytor/antal och noteringar efter utförda arbeten (steg 2 och 3).",

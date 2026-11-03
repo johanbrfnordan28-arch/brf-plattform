@@ -298,7 +298,7 @@ export const K3_FORKLARING = {
   rubrik: "Komponentvärden (K3)",
   kort: "Från 2026 ska BRF:er tillämpa K3. Här visas uppskattade installationsvärden per komponent — utan detaljerade andelsberäkningar.",
   underlag:
-    "Värdena är uppskattningar för underhållsplanen och vägledning till anläggningsregistret. Slutlig indelning beslutas med ekonomisk förvaltare. Justera eller ta bort komponenter i steg 3.",
+    "Värdena är uppskattningar för underhållsplanen och vägledning till anläggningsregistret. Slutlig indelning beslutas med ekonomisk förvaltare. Justera eller ta bort komponenter i steg 2.",
   skillnad:
     "Installationsvärde (byggår) är skilt från planerat underhåll (när ni åtgärdar).",
 } as const;

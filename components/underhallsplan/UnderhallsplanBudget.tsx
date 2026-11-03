@@ -11,7 +11,7 @@ import type { Samfallighetsavgift } from "@/components/underhallsplan/samfalligh
 import {
   beraknaPlanUtgiftsRader,
   beraknaPlanAvsattning,
-  beraknaForeslagenAvsattningKrPerKvmAr,
+  beraknaForeslagenAvsattningFranPlan,
   filtreraDirektkostnadAtgarder,
   filtreraInvesteringAtgarder,
   TYPISK_AVSATTNING_KR_PER_KVM,
@@ -19,6 +19,8 @@ import {
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
 import {
   FORKLARING_ARSBUDGET_VS_PLAN,
+  FORKLARING_AVSATTNING,
+  FORKLARING_BUDGET_AKTUELLT_AR,
   FORKLARING_DIREKTKOSTNAD,
   FORKLARING_INVESTERING,
   PLAN_BEGREPP,
@@ -195,16 +197,20 @@ export function UnderhallsplanBudget({
 
   const foreslagenAvsattning = useMemo(
     () =>
-      beraknaForeslagenAvsattningKrPerKvmAr(
-        summaInvesteringPlan,
-        boareaM2,
+      beraknaForeslagenAvsattningFranPlan({
+        atgarder: underhallAtgarder,
+        planStartAr,
         planLangdAr,
-      ),
-    [summaInvesteringPlan, boareaM2, planLangdAr],
+        boareaM2,
+      }),
+    [underhallAtgarder, planStartAr, planLangdAr, boareaM2],
   );
 
   const rekommenderadKrPerKvmAr = foreslagenAvsattning.foreslagen;
   const obegransadKrPerKvmAr = foreslagenAvsattning.obegransad;
+  const livscykelKrPerKvmAr = foreslagenAvsattning.livscykelKrPerKvmAr;
+  const jamnFordelningKrPerKvmAr =
+    foreslagenAvsattning.jamnFordelningKrPerKvmAr;
 
   const avsattningUnderRekommendation =
     rekommenderadKrPerKvmAr != null &&
@@ -256,9 +262,12 @@ export function UnderhallsplanBudget({
 
   const lockedClass = !unlocked ? "pointer-events-none opacity-50" : "";
 
+  const budgetAr = planStartAr;
+  const budgetRadIAr = utgiftsRader.find((r) => r.ar === budgetAr);
+
   return (
     <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
-      <p className="text-sm font-semibold text-primary-dark">Steg 6</p>
+      <p className="text-sm font-semibold text-primary-dark">Steg 7</p>
       <h2 className="mt-1 text-xl font-semibold text-foreground">
         {PLAN_BEGREPP.arsbudgetSteg}
       </h2>
@@ -275,11 +284,62 @@ export function UnderhallsplanBudget({
 
       {!unlocked && (
         <p className="mt-4 rounded-lg border border-dashed border-border bg-background px-4 py-3 text-sm text-muted">
-          Spara besiktningarna i steg 4 först, sedan aktiveras steget.
+          Spara besiktningarna i steg 5 först, sedan aktiveras steget.
         </p>
       )}
 
       <div className={`mt-6 space-y-6 ${lockedClass}`}>
+        {budgetRadIAr && (
+          <div className="rounded-xl border-2 border-primary/35 bg-[#eef6f0] px-4 py-4 sm:px-5">
+            <p className="text-sm font-semibold text-primary-dark">
+              Underlag till budget {budgetAr}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              {FORKLARING_BUDGET_AKTUELLT_AR}
+            </p>
+            <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-muted">{PLAN_BEGREPP.avsattning}</dt>
+                <dd className="font-semibold text-foreground">
+                  {komponentArskostnad > 0
+                    ? formatKr(budgetRadIAr.avsattning)
+                    : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{PLAN_BEGREPP.besiktningar}</dt>
+                <dd className="font-semibold text-foreground">
+                  {budgetRadIAr.besiktningar > 0
+                    ? formatKr(budgetRadIAr.besiktningar)
+                    : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{PLAN_BEGREPP.direktkostnaderKort}</dt>
+                <dd className="font-semibold text-foreground">
+                  {budgetRadIAr.direktkostnader > 0
+                    ? formatKr(budgetRadIAr.direktkostnader)
+                    : "—"}
+                </dd>
+              </div>
+              <div className="sm:col-span-2 lg:col-span-1">
+                <dt className="text-muted">{PLAN_BEGREPP.utgifterArsbudget}</dt>
+                <dd className="text-lg font-bold text-primary-dark">
+                  {formatKr(budgetRadIAr.utgifterArsbudget)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{PLAN_BEGREPP.investeringarPlan}</dt>
+                <dd className="font-semibold text-violet-900">
+                  {budgetRadIAr.investeringPlan > 0
+                    ? formatKr(budgetRadIAr.investeringPlan)
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
+
         <div>
           <p className="text-sm font-semibold text-foreground">
             Tabell — underlag till årsbudgeten ({planStartAr}–{planSlutAr})
@@ -305,8 +365,20 @@ export function UnderhallsplanBudget({
               </thead>
               <tbody>
                 {utgiftsRader.map((rad) => (
-                  <tr key={rad.ar} className="border-t border-border">
-                    <td className="px-4 py-2 font-medium text-foreground">{rad.ar}</td>
+                  <tr
+                    key={rad.ar}
+                    className={`border-t border-border ${
+                      rad.ar === budgetAr ? "bg-[#eef6f0]/70" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-2 font-medium text-foreground">
+                      {rad.ar}
+                      {rad.ar === budgetAr ? (
+                        <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-primary-dark">
+                          budgetår
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-2 text-muted">
                       {rad.besiktningPoster.length > 0 ||
                       rad.direktkostnadPoster.length > 0 ? (
@@ -569,15 +641,15 @@ export function UnderhallsplanBudget({
           <p className="text-sm font-semibold text-foreground">
             Avsättning i budgetunderlaget (kr/m² och år)
           </p>
-          <p className="mt-1 text-xs text-muted">
-            Typisk nivå för bostadsrättsföreningar är ungefär{" "}
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            {FORKLARING_AVSATTNING} Typisk nivå för bostadsrättsföreningar är
+            ungefär{" "}
             <strong className="font-medium text-foreground">
               {TYPISK_AVSATTNING_KR_PER_KVM.lage}–{TYPISK_AVSATTNING_KR_PER_KVM.hog}{" "}
               kr/m²/år
             </strong>
             . Kolumnen <em>{PLAN_BEGREPP.investeringarPlan}</em> visar när
-            investeringar i fastigheten (t.ex. fönster- eller takbyte) sker —
-            orimligt höga åtgärdskostnader ska justeras i steg 3/slutsidan, inte
+            större renoveringar sker — justera orimliga belopp i steg 4, inte
             genom att höja avsättningen till flera miljoner per år.
           </p>
 
@@ -593,10 +665,32 @@ export function UnderhallsplanBudget({
               </p>
               {obegransadKrPerKvmAr != null && (
                 <>
+                  {livscykelKrPerKvmAr != null && (
+                    <p className="mt-2 text-sm text-foreground">
+                      Utifrån intervall och livscykel i registret: cirka{" "}
+                      <strong>
+                        {livscykelKrPerKvmAr.toLocaleString("sv-SE")} kr/m²/år
+                      </strong>{" "}
+                      ({formatKr(foreslagenAvsattning.arligFranLivscykelKr)}/år
+                      totalt). Varje större åtgärd motsvarar ungefär
+                      kostnad ÷ intervall per år.
+                    </p>
+                  )}
+                  {jamnFordelningKrPerKvmAr != null &&
+                    jamnFordelningKrPerKvmAr !== livscykelKrPerKvmAr && (
+                      <p className="mt-2 text-sm text-muted">
+                        Om hela summan fördelas jämnt över planperioden: cirka{" "}
+                        {jamnFordelningKrPerKvmAr.toLocaleString("sv-SE")}{" "}
+                        kr/m²/år.
+                      </p>
+                    )}
                   <p className="mt-2 text-sm text-foreground">
-                    Om hela summan fördelas jämnt: cirka{" "}
-                    <strong>{obegransadKrPerKvmAr.toLocaleString("sv-SE")} kr/m²/år</strong>{" "}
-                    ({formatKr(obegransadKrPerKvmAr * boareaM2)}/år).
+                    Förslag som används här:{" "}
+                    <strong>
+                      {obegransadKrPerKvmAr.toLocaleString("sv-SE")} kr/m²/år
+                    </strong>{" "}
+                    ({formatKr(obegransadKrPerKvmAr * boareaM2)}/år) — det
+                    högre av livscykel och jämn fördelning.
                   </p>
                   {foreslagenAvsattning.overTypiskt ? (
                     <p className="mt-2 rounded-lg border border-amber-300/80 bg-amber-50/90 px-3 py-2 text-xs text-amber-950">
@@ -633,7 +727,7 @@ export function UnderhallsplanBudget({
           {summaInvesteringPlan <= 0 && (
             <p className="mt-3 rounded-lg border border-dashed border-amber-300/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
               Inga planerade investeringar med kostnad hittades ännu. Fyll i kostnad
-              och intervall under steg 3 — då kan förslag på avsättning räknas fram
+              och intervall under steg 4 — då kan förslag på avsättning räknas fram
               här (inom typiskt intervall).
             </p>
           )}
@@ -681,7 +775,7 @@ export function UnderhallsplanBudget({
         </div>
 
         <p className="text-sm text-muted">
-          Steg 7 nedan visar slutsidan — samlad presentation av planen för styrelsen.
+          Steg 8 nedan visar slutsidan — samlad presentation av planen för styrelsen.
         </p>
       </div>
     </section>
