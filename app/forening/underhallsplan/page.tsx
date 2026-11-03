@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ModulePage } from "@/components/ModulePage";
 import { TipsPanel } from "@/components/TipsPanel";
 import { UnderhallsplanReklam } from "@/components/pris/UnderhallsplanReklam";
+import { ForeningSakerhetskopiaFastBanner } from "@/components/forening/ForeningSakerhetskopiaFastBanner";
 import { PlanLagkravUpplysning } from "@/components/underhallsplan/PlanLagkravUpplysning";
 import { UnderhallsplanProffsUpplysning } from "@/components/underhallsplan/UnderhallsplanProffsUpplysning";
 import { UnderhallsplanWizard } from "@/components/underhallsplan/UnderhallsplanWizard";
@@ -23,6 +24,7 @@ export default function ForeningUnderhallsplanPage() {
       icon="🔧"
       intro="Underhållsplanen bör tas fram av en professionell part. Därefter är den ett levande dokument där styrelse eller förvaltare lägger till och tar bort komponenter, så planen förblir överskådlig för nästa styrelse."
     >
+      <ForeningSakerhetskopiaFastBanner sammanhang="underhållsplanen och övrig föreningsdata" />
       <PlanLagkravUpplysning />
       <UnderhallsplanProffsUpplysning />
       <div className="mt-6">
