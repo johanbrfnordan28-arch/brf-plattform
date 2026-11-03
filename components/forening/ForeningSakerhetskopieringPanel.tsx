@@ -9,6 +9,11 @@ import {
   sparaBackupTillServerBestEffort,
   valideraForeningBackup,
 } from "@/lib/forening-backup";
+import {
+  AUTOSYNK_STATUS_EVENT,
+  lasAutoSynkLage,
+  type AutoSynkLage,
+} from "@/lib/forening-autosynk";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import {
   arGrundmallForening,
@@ -24,6 +29,7 @@ type KopiaRad = {
   exportedAt: string;
   antalNycklar: number;
   storlekBytes: number;
+  automatisk?: boolean;
 };
 
 function authHeaders(foreningId: string): HeadersInit {
@@ -50,6 +56,7 @@ export function ForeningSakerhetskopieringPanel() {
   const [sparar, setSparar] = useState(false);
   const [laddarLista, setLaddarLista] = useState(false);
   const [aterstallerId, setAterstallerId] = useState<string | null>(null);
+  const [autoLage, setAutoLage] = useState<AutoSynkLage>(lasAutoSynkLage);
   const filInputRef = useRef<HTMLInputElement>(null);
 
   const laddaProfil = useCallback(() => {
@@ -88,6 +95,12 @@ export function ForeningSakerhetskopieringPanel() {
     } finally {
       setLaddarLista(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const uppdatera = () => setAutoLage(lasAutoSynkLage());
+    window.addEventListener(AUTOSYNK_STATUS_EVENT, uppdatera);
+    return () => window.removeEventListener(AUTOSYNK_STATUS_EVENT, uppdatera);
   }, []);
 
   useEffect(() => {
@@ -271,6 +284,18 @@ export function ForeningSakerhetskopieringPanel() {
         på en tidigare version om något försvinner — sidan laddas om med det
         sparade läget. Ni kan också ladda upp en tidigare nedladdad fil.
       </p>
+      <p className="mt-2 text-sm text-muted">
+        <strong className="font-medium text-foreground">Automatisk sparning:</strong>{" "}
+        {autoLage.typ === "ok"
+          ? autoLage.senastSparad
+            ? `på — senast sparad ${formatBackupDatum(autoLage.senastSparad)}. En kopia per dag sparas i 14 dagar, och datan kan hämtas från andra datorer.`
+            : "på — sparas så fort något ändras."
+          : autoLage.typ === "server-nyare" || autoLage.typ === "konflikt"
+            ? "pausad — välj version i rutan längst ned på sidan."
+            : autoLage.typ === "fel"
+              ? autoLage.fel
+              : "inte aktiv i den här webbläsaren (kräver inloggning och databas)."}
+      </p>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button
@@ -325,6 +350,11 @@ export function ForeningSakerhetskopieringPanel() {
                   <div>
                     <p className="font-medium text-foreground">
                       {k.foreningsNamn}
+                      {k.automatisk ? (
+                        <span className="ml-2 rounded bg-surface px-1.5 py-0.5 text-xs font-normal text-muted">
+                          Automatisk
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-xs text-muted">
                       {formatBackupDatum(k.exportedAt)} · {k.antalNycklar}{" "}
