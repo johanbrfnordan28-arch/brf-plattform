@@ -3,6 +3,13 @@ export function delaDokumentIAvsnitt(text: string): string[] {
   const normaliserad = text.replace(/\r\n/g, "\n");
   if (!normaliserad.trim()) return [""];
 
+  if (normaliserad.includes("\n\n")) {
+    const dubbelRadbryt = normaliserad.split(/\n\n+/).map((s) => s.trimEnd());
+    if (dubbelRadbryt.length > 1 && dubbelRadbryt.some((s) => s.trim())) {
+      return dubbelRadbryt;
+    }
+  }
+
   const lines = normaliserad.split("\n");
   const avsnitt: string[] = [];
   let buf: string[] = [];

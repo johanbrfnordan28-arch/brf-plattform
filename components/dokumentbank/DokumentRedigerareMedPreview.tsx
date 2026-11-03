@@ -6,6 +6,7 @@ import {
   sammanfogaDokumentAvsnitt,
 } from "@/components/dokumentbank/dokument-avsnitt";
 import {
+  STYRELSE_NAVET_DOC,
   byggDokumentPreviewSrcDoc,
   dokumentRedigerareCss,
   struktureraDokumentText,
@@ -114,7 +115,9 @@ export function DokumentRedigerareMedPreview({
           <div className="doc-edit-root rounded-xl border border-border bg-[#f7faf8] p-4">
             <style>{dokumentRedigerareCss(tema)}</style>
             <p className="text-xs font-medium text-muted">
-              Redigera avsnitt — samma innehåll som ovan, uppdateras direkt
+              Redigera avsnitt — samma innehåll som ovan, uppdateras direkt.
+              Tom rad mellan stycken i ett avsnitt (Enter två gånger) ger bättre
+              PDF-layout.
             </p>
             <div className="doc-avsnitt-wrap">
               {avsnitt.map((block, index) => (
@@ -136,6 +139,10 @@ export function DokumentRedigerareMedPreview({
                     onChange={(e) => uppdateraAvsnitt(index, e.target.value)}
                     rows={Math.min(12, Math.max(3, block.split("\n").length + 1))}
                   />
+                  <p className="doc-avsnitt-hint">
+                    Dubbel radbrytning = nytt stycke i PDF. Enkel radbrytning =
+                    samma stycke (radbryt).
+                  </p>
                 </div>
               ))}
             </div>
@@ -149,29 +156,29 @@ export function DokumentRedigerareMedPreview({
           </div>
         </>
       ) : (
-        <div className="doc-edit-root overflow-hidden rounded-xl border border-border bg-white">
+        <div className="doc-edit-root doc-tema overflow-hidden rounded-xl border border-border bg-white">
           <style>{dokumentRedigerareCss(tema)}</style>
           <article className="doc-sheet">
-            {tema === "modern" ? (
+            <div className="doc-ram">
               <header className="doc-header">
+                <div className="doc-brand-rad">
+                  <span className="doc-brand-namn">{STYRELSE_NAVET_DOC.namn}</span>
+                  <span className="doc-brand-tag">{STYRELSE_NAVET_DOC.tagline}</span>
+                </div>
                 <h1 className="doc-h1">{titel}</h1>
                 {meta ? <p className="doc-meta">{meta}</p> : null}
               </header>
-            ) : (
-              <>
-                <h1 className="doc-h1">{titel}</h1>
-                {meta ? <p className="doc-meta">{meta}</p> : null}
-              </>
-            )}
-            <div
-              className="doc-body doc-avsnitt-wrap"
-              dangerouslySetInnerHTML={{ __html: formateradHtml }}
-            />
+              <div
+                className="doc-body doc-avsnitt-wrap"
+                dangerouslySetInnerHTML={{ __html: formateradHtml }}
+              />
+            </div>
           </article>
           <div className="border-t border-border bg-[#f7faf8] p-4">
             <p className="mb-2 text-xs text-muted">
-              Redigera hela källtexten (rubriker med === eller numrerade avsnitt
-              formateras som i förhandsgranska)
+              Redigera hela källtexten. Rubriker: rad + rad med === eller ---.
+              Stycken: tom rad mellan textblock. Layout och sidantal som i
+              förhandsgranska ({STYRELSE_NAVET_DOC.namn}).
             </p>
             <textarea
               value={synkatText}

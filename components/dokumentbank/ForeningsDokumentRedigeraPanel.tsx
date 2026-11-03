@@ -238,7 +238,10 @@ export function ForeningsDokumentRedigeraPanel({
       )}
 
       <div>
-        <p className="mb-2 text-xs font-medium text-muted">Layout vid förhandsgranskning / PDF</p>
+        <p className="mb-2 text-xs font-medium text-muted">
+          Layout vid förhandsgranskning / PDF — alla varianter har Styrelse-Navet,
+          ram och sidnummer. Tom rad mellan stycken ger bättre PDF.
+        </p>
         <div className="mb-3 flex flex-wrap gap-2">
           {(Object.keys(DOKUMENT_LAYOUT_ETIKETTER) as DokumentLayoutTema[]).map(
             (key) => (
