@@ -41,6 +41,12 @@ export default function UnderhallsplanPage() {
           >
             Gå direkt till verktyget
           </Link>
+          <Link
+            href="/offert"
+            className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
+          >
+            Begär prisuppgift
+          </Link>
         </div>
       </div>
 

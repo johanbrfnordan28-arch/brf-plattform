@@ -4,6 +4,10 @@ import { OFFERT_EPOST, offertMailto } from "@/lib/offert-mejl";
 
 const TJANSTER = [
   {
+    titel: "Underhållsplan",
+    text: "Professionell framtagning utifrån styrelsens underlag — begär prisuppgift via offert, inga publicerade listpriser.",
+  },
+  {
     titel: "Teknisk förvaltning",
     text: "Löpande driftstöd, uppföljning och tekniska beslut — till fördelaktigt pris anpassat efter er fastighet.",
   },

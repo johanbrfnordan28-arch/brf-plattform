@@ -540,7 +540,7 @@ export function ForeningGrunduppgifterPanel() {
         <section>
           <h3 className="text-sm font-semibold text-foreground">Storlek</h3>
           <p className="mt-1 text-xs text-muted">
-            Synkas till underhållsplanen (används bland annat för prisnivå).
+            Synkas till underhållsplanen och plattformens abonnemangsstorlek.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">

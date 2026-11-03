@@ -31,8 +31,8 @@ export function PublikPrisInfo({ visaRubrik = true }: Props) {
         ))}
       </ul>
       <p className="mt-4 text-sm text-muted">
-        Priset beror på antal lägenheter. Er exakta kostnad visas först när
-        styrelsen fyllt i antalet i underhållsplanen.
+        Priset beror på antal lägenheter. Er exakta kostnad för plattformen
+        visas när styrelsen fyllt i antalet i föreningsuppgifterna.
       </p>
     </div>
   );
