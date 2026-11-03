@@ -50,13 +50,13 @@ const featuredPublic = [
   {
     title: "Underhållsplan",
     description:
-      "En levande 50-årsplan med komponenter, historik och avsättning — så styrelsen alltid har aktuellt beslutsunderlag inför stämma, bank och långsiktiga investeringar.",
+      "Ett levande dokument som uppdateras årligen eller när fastighetens behov förändras. Planen knyter ihop utfört arbete med kommande underhåll och avsättning. Renoveringar kan tas med ända tillbaka till byggnadsåret när fakturor eller annat underlag finns; besiktningar bygger på det senast utförda och planeras framåt. Historiken ger fotfäste när framtida åtgärder och belopp ska läggas in. Över en planperiod på upp till 50 år blir det beslutsunderlag inför stämma, bank och långsiktiga investeringar.",
     anchor: "#moduler",
     icon: "🔧",
     bullets: [
-      "Avsättning och åtgärder i rätt år — inte gissningar i Excel",
-      "Komponentregister med teknisk livslängd och kostnad",
-      "Underlag som håller över mandatperioder",
+      "Renoveringar sedan byggnadsåret när fakturor eller underlag finns — besiktningar från senaste tillfället",
+      "Historik som stöd när nya kostnader och intervall sätts",
+      "Komponentregister och avsättning som håller över mandatperioder",
     ],
   },
   {
