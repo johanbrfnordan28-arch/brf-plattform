@@ -57,15 +57,9 @@ export default function ForeningUppgifterPage() {
             föreningen efter prövoperioden.
           </li>
           <li>
-            <strong>Säkerhetskopiering</strong> — hela Styrelse-Navet (årshjul,
-            underhållsplan, dokument m.m.) under{" "}
-            <Link
-              href="/forening/uppgifter#sakerhetskopiering"
-              className="font-medium text-primary-dark underline hover:no-underline"
-            >
-              Föreningsuppgifter
-            </Link>
-            . Spara regelbundet och tryck Återställ om data försvinner.
+            <strong>Säkerhetskopiering</strong> — spara och återställ via avsnittet
+            nedan. Använd <strong>Logga ut</strong> när ni är klara så får ni spara
+            innan ni lämnar.
           </li>
         </ol>
       </div>

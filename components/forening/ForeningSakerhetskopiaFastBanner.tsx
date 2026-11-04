@@ -1,16 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  byggForeningBackup,
-  sparaBackupTillServerBestEffort,
-} from "@/lib/forening-backup";
-import {
-  FORENING_BACKUP_KORT,
-  FORENING_BACKUP_MODULER,
-  modulerFranBackupNycklar,
-} from "@/lib/forening-backup-omfattning";
+import { sparaBackupTillServerBestEffort } from "@/lib/forening-backup";
+import { FORENING_LOGGA_UT_BACKUP_RAD } from "@/lib/forening-backup-omfattning";
 import {
   arGrundmallForening,
   FORENING_AKTIV_EVENT,
@@ -23,7 +15,7 @@ type Props = {
 };
 
 /**
- * Fast (sticky) banner — hela plattformens föreningsdata, alla /forening/-moduler.
+ * Kompakt rad i modulen — sparar på plats utan att navigera bort.
  */
 export function ForeningSakerhetskopiaFastBanner({ className = "" }: Props) {
   const [foreningId, setForeningId] = useState("");
@@ -40,6 +32,12 @@ export function ForeningSakerhetskopiaFastBanner({ className = "" }: Props) {
     return () => window.removeEventListener(FORENING_AKTIV_EVENT, synkaId);
   }, [synkaId]);
 
+  useEffect(() => {
+    if (!status) return;
+    const t = window.setTimeout(() => setStatus(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [status]);
+
   if (!foreningId || arGrundmallForening(foreningId)) {
     return null;
   }
@@ -49,72 +47,45 @@ export function ForeningSakerhetskopiaFastBanner({ className = "" }: Props) {
   async function sparaNu() {
     setSparar(true);
     setStatus(null);
-    const backup = byggForeningBackup(foreningId);
     const ok = await sparaBackupTillServerBestEffort(foreningId);
     setSparar(false);
     if (!ok) {
-      setStatus(
-        "Kunde inte spara på servern — öppna Föreningsuppgifter eller ladda ner som fil.",
-      );
+      setStatus("Kunde inte spara just nu. Försök igen om en stund.");
       return;
     }
-    const moduler = backup
-      ? modulerFranBackupNycklar(foreningId, backup.keys)
-      : [];
-    const modulText =
-      moduler.length > 0
-        ? ` Inkluderade bl.a.: ${moduler.slice(0, 6).join(", ")}${moduler.length > 6 ? " …" : ""}.`
-        : "";
-    setStatus(`Säkerhetskopia sparad på servern (${Object.keys(backup?.keys ?? {}).length} dataposter).${modulText}`);
+    setStatus("Säkerhetskopia sparad.");
   }
 
   return (
     <div
-      className={`sticky top-14 z-40 -mx-4 border-b border-primary/30 bg-[#e8f3ec]/95 px-4 py-2.5 shadow-sm backdrop-blur-sm sm:-mx-6 sm:px-6 ${className}`}
+      className={`rounded-xl border border-primary/25 bg-[#eef6f0]/80 px-4 py-2.5 sm:px-5 ${className}`}
       role="region"
       aria-label="Säkerhetskopiering"
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm leading-snug text-foreground">
-            <span className="font-semibold text-primary-dark">
-              Säkerhetskopiera hela {namn}
-            </span>
-            <span className="text-muted"> — {FORENING_BACKUP_KORT}</span>
-          </p>
-          <details className="mt-1.5 text-xs text-muted">
-            <summary className="cursor-pointer font-medium text-primary-dark">
-              Vad ingår i kopian?
-            </summary>
-            <ul className="mt-1.5 list-disc space-y-0.5 pl-4">
-              {FORENING_BACKUP_MODULER.map((rad) => (
-                <li key={rad}>{rad}</li>
-              ))}
-            </ul>
-          </details>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1 text-sm text-foreground">
+          <span className="font-semibold text-primary-dark">
+            Säkerhetskopiera {namn}
+          </span>
+          <span className="text-muted"> — spara ert arbete på servern här i modulen.</span>
+          <span className="mt-1 block text-xs text-muted">
+            {FORENING_LOGGA_UT_BACKUP_RAD}
+          </span>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={sparar}
-            onClick={() => void sparaNu()}
-            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark disabled:opacity-50 sm:text-sm"
-          >
-            {sparar ? "Sparar …" : "Spara säkerhetskopia nu"}
-          </button>
-          <Link
-            href="/forening/uppgifter#sakerhetskopiering"
-            className="rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-xs font-semibold text-primary-dark hover:bg-[#eef6f0] sm:text-sm"
-          >
-            Återställ &amp; hantera kopior
-          </Link>
-        </div>
+        <button
+          type="button"
+          disabled={sparar}
+          onClick={() => void sparaNu()}
+          className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark disabled:opacity-50 sm:text-sm"
+        >
+          {sparar ? "Sparar …" : "Spara säkerhetskopia"}
+        </button>
       </div>
-      {status && (
-        <p className="mt-2 text-xs text-primary-dark" role="status">
+      {status ? (
+        <p className="mt-2 text-xs font-medium text-primary-dark" role="status">
           {status}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

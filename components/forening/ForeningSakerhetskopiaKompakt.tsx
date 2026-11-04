@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import {
   aterstallForeningFranBackup,
@@ -101,7 +100,7 @@ export function ForeningSakerhetskopiaKompakt({
           return;
         }
         const bekrafta = window.confirm(
-          "Ladda upp och återställa sparade uppgifter?\n\nNuvarande data ersätts. En automatisk kopia sparas först på servern om det går.",
+          "Hämta tillbaka från fil?\n\nNuvarande uppgifter ersätts. En säkerhetskopia av dagens läge sparas först om det går.",
         );
         if (!bekrafta) return;
         void sparaBackupTillServerBestEffort(foreningId).then(() => {
@@ -136,15 +135,8 @@ export function ForeningSakerhetskopiaKompakt({
         {rubrik}
       </h3>
       <p className="mt-1.5 text-xs leading-relaxed text-muted">
-        Sparar allt ni fyllt i — lägenhetsregister, dokument och moduler. Om
-        något försvinner kan ni ladda upp en tidigare version här eller under{" "}
-        <Link
-          href="/forening/uppgifter#sakerhetskopiering"
-          className="font-medium text-primary-dark underline hover:no-underline"
-        >
-          Föreningsuppgifter → Säkerhetskopiering
-        </Link>
-        .
+        Sparar ert arbete på servern utan att lämna sidan. Ladda upp en sparad
+        fil om ni behöver återställa.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button

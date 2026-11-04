@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { sparaBackupTillServerBestEffort } from "@/lib/forening-backup";
 import { FORENING_BACKUP_KORT } from "@/lib/forening-backup-omfattning";
@@ -60,7 +59,7 @@ export function LoggaUtKnapp({ className }: { className?: string }) {
     setSpararKopia(false);
     if (!ok) {
       setBackupMeddelande(
-        "Kunde inte spara på servern (kontrollera nätverk eller öppna Föreningsuppgifter). Vill du logga ut ändå?",
+        "Kunde inte spara just nu. Försök igen eller logga ut utan att spara.",
       );
       return;
     }
@@ -94,24 +93,13 @@ export function LoggaUtKnapp({ className }: { className?: string }) {
               Säkerhetskopiera innan utloggning?
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              {FORENING_BACKUP_KORT} För{" "}
+              {FORENING_BACKUP_KORT} Det gäller{" "}
               <strong className="font-medium text-foreground">
                 {dialogForeningsNamn || "er förening"}
-              </strong>{" "}
-              inkluderar det årshjul, underhållsplan, dokument, lägenheter,
-              upphandling och övrigt ni lagt in. En kopia på servern gör att ni
-              kan <strong className="font-medium text-foreground">Återställa</strong>{" "}
-              hela läget om något försvinner.
-            </p>
-            <p className="mt-2 text-sm text-muted">
-              <Link
-                href="/forening/uppgifter#sakerhetskopiering"
-                className="font-medium text-primary-dark underline-offset-2 hover:underline"
-                onClick={() => setVisaDialog(false)}
-              >
-                Öppna säkerhetskopiering
-              </Link>{" "}
-              — spara, ladda ner eller återställ tidigare versioner.
+              </strong>
+              . Använd <strong className="font-medium text-foreground">Logga ut</strong>{" "}
+              när ni är klara för dagen — då får ni alltid den här frågan och kan
+              spara innan ni lämnar.
             </p>
 
             {backupMeddelande && (

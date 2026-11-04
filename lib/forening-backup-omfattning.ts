@@ -1,20 +1,19 @@
 /**
- * Vad en föreningssäkerhetskopia omfattar (all localStorage med brf-f-{id}--).
+ * Kundtext och teknisk karta för föreningssäkerhetskopia (localStorage brf-f-{id}--).
  */
 
+/** Kort beskrivning — utan tekniska detaljer. */
 export const FORENING_BACKUP_KORT =
-  "Hela Styrelse-Navet för er förening — allt som lagrats i webbläsaren för ert förenings-id.";
+  "En kopia av ert arbete i Styrelse-Navet sparas på våra servrar.";
 
-/** När återställning från server fungerar — och vad som krävs. */
-export const FORENING_AATERSTALL_FORKLARING =
-  "Om data försvinner i webbläsaren (t.ex. efter fel, oavsiktlig radering eller en uppdatering som rensat lagringen) kan styrelsen återställa senaste sparade kopia. All föreningsdata i kopian skrivs tillbaka och sidan laddas om. Det som sparades efter kopian togs försvinner — därför ska ni spara regelbundet.";
+export const FORENING_LOGGA_UT_BACKUP_RAD =
+  "Tips: avsluta gärna med Logga ut — då får ni möjlighet att spara en säkerhetskopia innan ni lämnar plattformen.";
 
-export const FORENING_AATERSTALL_KRAV = [
-  "Minst en säkerhetskopia sparad på servern (eller en nedladdad JSON-fil) från innan datan försvann.",
-  "Inloggad styrelse för samma förening (eller giltig access-nyckel).",
-  "Databas tillgänglig — annars använd «Ladda upp tidigare version» från fil.",
-] as const;
+/** Endast återställning — visas under Föreningsuppgifter. */
+export const FORENING_AATERSTALL_KORT =
+  "Behöver ni hämta tillbaka sparade uppgifter: tryck Återställ på rätt datum i listan. Sidan laddas om med det sparade läget.";
 
+/** Expanderbar lista under Föreningsuppgifter (frivillig läsning). */
 export const FORENING_BACKUP_MODULER = [
   "Föreningsprofil och grunduppgifter",
   "Underhållsplan (grund, komponenter, renoveringar, besiktningar, budget)",

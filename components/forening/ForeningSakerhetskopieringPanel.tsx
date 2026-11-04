@@ -10,11 +10,9 @@ import {
   valideraForeningBackup,
 } from "@/lib/forening-backup";
 import {
-  FORENING_AATERSTALL_FORKLARING,
-  FORENING_AATERSTALL_KRAV,
+  FORENING_AATERSTALL_KORT,
   FORENING_BACKUP_KORT,
   FORENING_BACKUP_MODULER,
-  modulerFranBackupNycklar,
 } from "@/lib/forening-backup-omfattning";
 import { hamtaServerAccessNyckel } from "@/lib/forening-server-sync";
 import {
@@ -132,7 +130,7 @@ export function ForeningSakerhetskopieringPanel() {
         return;
       }
       setMeddelande(
-        `Säkerhetskopia sparad: ${data.kopia?.foreningsNamn || foreningsNamn} · ${formatBackupDatum(data.kopia?.exportedAt || backup.exportedAt)} · ${data.kopia?.antalNycklar ?? Object.keys(backup.keys).length} dataposter (${modulerFranBackupNycklar(foreningId, backup.keys).join(", ") || "moduler"}).`,
+        `Säkerhetskopia sparad (${formatBackupDatum(data.kopia?.exportedAt || backup.exportedAt)}).`,
       );
       await laddaKopior(foreningId);
     } catch {
@@ -150,14 +148,12 @@ export function ForeningSakerhetskopieringPanel() {
       setFel(resultat.fel || "Kunde inte skapa säkerhetskopia.");
       return;
     }
-    setMeddelande(
-      `Även nedladdad som fil (${resultat.filnamn}). Primär lagring sker på våra servrar.`,
-    );
+    setMeddelande(`Fil nedladdad (${resultat.filnamn}).`);
   }
 
   async function aterstallFranServer(kopiaId: string, etikett: string) {
     const bekrafta = window.confirm(
-      `Återställ säkerhetskopian «${etikett}»?\n\nNuvarande data skrivs över. En automatisk kopia sparas först på servern om det går.`,
+      `Hämta tillbaka «${etikett}»?\n\nNuvarande uppgifter ersätts. En säkerhetskopia av dagens läge sparas först om det går.`,
     );
     if (!bekrafta) return;
 
@@ -232,7 +228,7 @@ export function ForeningSakerhetskopieringPanel() {
         }
         const etikett = `${backup.profil?.namn || backup.foreningId} · ${formatBackupDatum(backup.exportedAt)}`;
         const bekrafta = window.confirm(
-          `Ladda upp och återställ «${etikett}»?\n\nNuvarande data skrivs över. En automatisk kopia sparas först på servern om det går.`,
+          `Hämta tillbaka från fil «${etikett}»?\n\nNuvarande uppgifter ersätts. En säkerhetskopia av dagens läge sparas först om det går.`,
         );
         if (!bekrafta) return;
 
@@ -270,44 +266,39 @@ export function ForeningSakerhetskopieringPanel() {
         Säkerhetskopiering
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        {FORENING_BACKUP_KORT} Kopian gäller{" "}
+        {FORENING_BACKUP_KORT}{" "}
         <strong className="font-medium text-foreground">
-          {foreningsNamn || "er förening"}
-        </strong>{" "}
-        och sparas på våra servrar. Tryck{" "}
-        <strong className="font-medium text-foreground">Återställ</strong> på en
-        tidigare version om data försvinner eller skrivs över — hela plattformen
-        för föreningen återställs i webbläsaren. Ni kan också ladda upp en
-        tidigare nedladdad fil.
+          {foreningsNamn || "Er förening"}
+        </strong>
+        .
       </p>
-      <ul className="mt-3 grid gap-1 text-xs text-muted sm:grid-cols-2">
-        {FORENING_BACKUP_MODULER.map((rad) => (
-          <li key={rad} className="flex gap-1.5">
-            <span className="text-primary" aria-hidden>
-              ·
-            </span>
-            <span>{rad}</span>
-          </li>
-        ))}
-      </ul>
-
-      <p className="mt-3 text-sm leading-relaxed text-muted">
-        {FORENING_AATERSTALL_FORKLARING}
+      <p className="mt-2 text-sm leading-relaxed text-muted">
+        {FORENING_AATERSTALL_KORT}
       </p>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted">
-        {FORENING_AATERSTALL_KRAV.map((rad) => (
-          <li key={rad}>{rad}</li>
-        ))}
-      </ul>
+      <details className="mt-3 text-xs text-muted">
+        <summary className="cursor-pointer font-medium text-primary-dark">
+          Vad ingår i kopian?
+        </summary>
+        <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+          {FORENING_BACKUP_MODULER.map((rad) => (
+            <li key={rad} className="flex gap-1.5">
+              <span className="text-primary" aria-hidden>
+                ·
+              </span>
+              <span>{rad}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       {!laddarLista && kopior.length > 0 && (
-        <div className="mt-4 rounded-xl border-2 border-amber-300/70 bg-amber-50/90 px-4 py-4">
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3">
           <p className="text-sm font-semibold text-amber-950">
-            Återställ om data försvunnit
+            Hämta senaste sparade version
           </p>
-          <p className="mt-1 text-xs text-amber-950/90">
-            Senaste kopia: {formatBackupDatum(kopior[0].exportedAt)} ·{" "}
-            {kopior[0].antalNycklar} dataposter
+          <p className="mt-0.5 text-xs text-amber-950/90">
+            {formatBackupDatum(kopior[0].exportedAt)} — ersätter nuvarande
+            innehåll i er förening.
           </p>
           <button
             type="button"
@@ -382,8 +373,7 @@ export function ForeningSakerhetskopieringPanel() {
                       {k.foreningsNamn}
                     </p>
                     <p className="text-xs text-muted">
-                      {formatBackupDatum(k.exportedAt)} · {k.antalNycklar}{" "}
-                      dataposter
+                      {formatBackupDatum(k.exportedAt)}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
