@@ -34,9 +34,15 @@ const inputKlass =
 type Props = {
   tjanstId: BesiktningTjanstId;
   uppladdadeFilnamn: string[];
+  /** Laddar upp protokollfil till mappen (OVK m.m.). */
+  onLaddaUppProtokollFil?: (fil: File) => void;
 };
 
-export function BesiktningUpphandlingPanel({ tjanstId, uppladdadeFilnamn }: Props) {
+export function BesiktningUpphandlingPanel({
+  tjanstId,
+  uppladdadeFilnamn,
+  onLaddaUppProtokollFil,
+}: Props) {
   const tjanst = besiktningTjanst(tjanstId);
   const [hydrated, setHydrated] = useState(false);
   const [protokoll, setProtokoll] = useState<TidigareProtokoll[]>([]);
@@ -106,11 +112,9 @@ export function BesiktningUpphandlingPanel({ tjanstId, uppladdadeFilnamn }: Prop
           Upphandla {tjanst.rubrik.toLowerCase()}
         </h3>
         <p className="mt-1 text-sm leading-relaxed text-muted">
-          Tidigare protokoll och föreningens uppgifter hämtas hit. Anbudsformuläret
-          skapas utifrån dem. När upphandlingen skapas flyttas den till
-          upphandlingsmodulen så formuläret kan mejlas till anbudsgivare. Vinnande
-          entreprenör signerar beställningen först, därefter föreningen. Handlingarna
-          sparas i den här mappen.
+          Uppgifter från plan och register fylls i automatiskt. Skapa upphandling
+          när ni är redo — underlag och anbudsformulär sparas här och i
+          upphandlingsmodulen.
         </p>
         <p className="mt-2 text-xs text-muted">
           Avtalsundertecknare:{" "}
@@ -125,8 +129,7 @@ export function BesiktningUpphandlingPanel({ tjanstId, uppladdadeFilnamn }: Prop
         <p className="text-sm font-medium text-foreground">Tidigare protokoll</p>
         {protokoll.length === 0 ? (
           <p className="mt-1 text-sm text-muted">
-            Inga protokoll hämtade ännu. Lägg in senaste kontrollen här, eller ladda
-            upp filen längre ner i mappen.
+            Inga protokoll ännu — lägg till uppgifter nedan eller ladda upp fil.
           </p>
         ) : (
           <ul className="mt-2 space-y-2">
@@ -186,13 +189,34 @@ export function BesiktningUpphandlingPanel({ tjanstId, uppladdadeFilnamn }: Prop
               rows={2}
               className={`${inputKlass} sm:col-span-2`}
             />
-            <button
-              type="button"
-              onClick={sparaProtokoll}
-              className="rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0] sm:col-span-2 sm:w-fit"
-            >
-              Lägg till tidigare protokoll
-            </button>
+            <div className="flex flex-wrap gap-2 sm:col-span-2">
+              <button
+                type="button"
+                onClick={sparaProtokoll}
+                className="rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+              >
+                Lägg till tidigare protokoll
+              </button>
+              {onLaddaUppProtokollFil ? (
+                <label className="inline-flex cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark">
+                  Ladda upp protokoll (bilaga)
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,image/*,application/pdf"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const fil = e.target.files?.[0] ?? null;
+                      if (fil) {
+                        setFilnamn(fil.name);
+                        onLaddaUppProtokollFil(fil);
+                        setStatus(`Filen ${fil.name} lades till i mappen.`);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              ) : null}
+            </div>
         </div>
       </div>
 

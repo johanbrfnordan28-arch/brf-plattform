@@ -29,6 +29,7 @@ import {
   hamtaForeningsDokumentInnehall,
   skapaInnehallFranMall,
 } from "@/components/dokumentbank/forening-dokument-innehall";
+import { ForeningInternDokumentHamta } from "@/components/dokumentbank/ForeningInternDokumentHamta";
 import { LaggTillIProjektDialog } from "@/components/dokumentbank/LaggTillIProjektDialog";
 import { ForeningsDokumentRedigeraPanel } from "@/components/dokumentbank/ForeningsDokumentRedigeraPanel";
 import {
@@ -410,6 +411,7 @@ function ForeningensDokument({
   return (
     <div className="space-y-4">
       <EgetDokumentUppladdning onSparad={onSparadUppladdning} />
+      <ForeningInternDokumentHamta className="mt-4" />
       <p className="text-sm text-muted">
         Här ligger styrelsens sparade dokument: redigerbara kopior från
         mallkatalogen och uppladdade filer. Återanvänd dem när ni behöver — eller

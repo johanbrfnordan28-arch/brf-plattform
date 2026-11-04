@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  FORENINGS_DOK_EVENT,
+} from "@/components/dokumentbank/forening-dokumenter-lager";
+import {
+  kopieraForeningsDokumentTillBilaga,
+  listaForeningsDokumentMedFil,
+} from "@/components/dokumentbank/intern-dokument-flode";
 import type { ArshjulHandelse } from "@/components/arshjul/arshjul";
 import {
   arshjulArSotning,
@@ -24,6 +31,18 @@ type Props = {
 export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
   const forenkladOvk = arshjulVisaForenkladBesiktning(handelse);
   const [filFel, setFilFel] = useState<string | null>(null);
+  const [foreningsFiler, setForeningsFiler] = useState(
+    listaForeningsDokumentMedFil(),
+  );
+
+  useEffect(() => {
+    function ladda() {
+      setForeningsFiler(listaForeningsDokumentMedFil());
+    }
+    ladda();
+    window.addEventListener(FORENINGS_DOK_EVENT, ladda);
+    return () => window.removeEventListener(FORENINGS_DOK_EVENT, ladda);
+  }, []);
   const [leverantor, setLeverantor] = useState(handelse.leverantor ?? "");
   const [senastDatum, setSenastDatum] = useState(
     handelse.besiktningSenastDatum ?? "",
@@ -241,6 +260,38 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
             }}
           />
         </label>
+        {foreningsFiler.length > 0 ? (
+          <div className="mt-3">
+            <label className="block text-xs font-medium text-muted">
+              Hämta bilaga från föreningens dokument
+              <select
+                className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
+                defaultValue=""
+                onChange={(e) => {
+                  const dokId = e.target.value;
+                  if (!dokId) return;
+                  const resultat = kopieraForeningsDokumentTillBilaga(dokId);
+                  if (!resultat.ok) {
+                    setFilFel(resultat.fel);
+                    return;
+                  }
+                  setFilFel(null);
+                  onSpara({
+                    bilagor: [...(handelse.bilagor ?? []), resultat.bilaga],
+                  });
+                  e.target.value = "";
+                }}
+              >
+                <option value="">Välj dokument …</option>
+                {foreningsFiler.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.titel}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
         {filFel && (
           <p className="mt-2 text-xs text-red-800" role="alert">
             {filFel}

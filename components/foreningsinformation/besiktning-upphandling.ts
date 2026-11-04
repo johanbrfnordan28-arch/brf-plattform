@@ -298,7 +298,7 @@ export function hamtaInhamtadeProtokoll(
       kalla: "plan",
       datum: String(besiktning.senastUtförtAr),
       utforsAv: "",
-      sammanfattning: `Registrerad i underhållsplanen.${kostnad}${nasta}`,
+      sammanfattning: `Tidigare protokoll.${kostnad}${nasta}`,
     });
   }
 
@@ -312,8 +312,7 @@ export function hamtaInhamtadeProtokoll(
         datum: ovk.senastGodkantDatum || ovk.utfortDatum || "",
         utforsAv: ovk.besiktningsforetag || ovk.leverantor,
         sammanfattning:
-          ovk.notering.trim() ||
-          "Senast godkänd OVK enligt förenklad upphandling.",
+          ovk.notering.trim() || "Tidigare protokoll.",
       });
     }
   }

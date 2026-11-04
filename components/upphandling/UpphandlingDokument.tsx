@@ -256,7 +256,7 @@ export function UpphandlingSidaInnehall() {
           ...current[kategoriKey].extra,
           {
             id: skapaDokumentId(),
-            etikett: "Kompletterande dokument",
+            etikett: "Bilaga (t.ex. tidigare protokoll)",
             dokument: null,
           },
         ],
@@ -629,7 +629,7 @@ function KategoriKort({
             onClick={onLäggTillExtra}
             className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
           >
-            + Lägg till dokument
+            + Lägg till bilaga
           </button>
 
           {hydrated && (
@@ -881,18 +881,7 @@ function DokumentRad({
       <p className="text-sm font-medium text-foreground">{etikett}</p>
       {dokument ? (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-foreground">
-            {dokument.filnamn}
-            <span className="ml-2 text-xs text-muted">
-              (
-              {dokument.källa === "bank"
-                ? "dokumentbank"
-                : dokument.källa === "foreningsdokument"
-                  ? "föreningens dokument"
-                  : "uppladdad"}
-              )
-            </span>
-          </p>
+          <p className="text-sm text-foreground">{dokument.filnamn}</p>
           <div className="flex gap-2">
             <button
               type="button"

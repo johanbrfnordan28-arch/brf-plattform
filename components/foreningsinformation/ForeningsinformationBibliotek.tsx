@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
 import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
@@ -37,6 +37,14 @@ import {
   type ForeningsHuvudmapp,
   type ForeningsUndermapp,
 } from "@/components/foreningsinformation/mappar";
+import {
+  hamtaBibliotekFil,
+  lasBibliotekState,
+  lasInBibliotekFil,
+  sparaBibliotekFil,
+  sparaBibliotekState,
+  taBortBibliotekFil,
+} from "@/components/foreningsinformation/foreningsinformation-bibliotek-lager";
 
 type UppladdatDokument = {
   id: string;
@@ -83,11 +91,38 @@ function initialState(): Record<string, HuvudmappState> {
   );
 }
 
+function slåIhopBibliotekState(
+  sparad: ReturnType<typeof lasBibliotekState>,
+): Record<string, HuvudmappState> {
+  const bas = initialState();
+  if (!sparad) return bas;
+  for (const huvudId of Object.keys(bas)) {
+    const sparadHuvud = sparad[huvudId];
+    if (!sparadHuvud) continue;
+    bas[huvudId] = {
+      öppen: sparadHuvud.öppen ?? bas[huvudId].öppen,
+      undermappar: { ...bas[huvudId].undermappar },
+    };
+    for (const path of Object.keys(bas[huvudId].undermappar)) {
+      const sparadUnder = sparadHuvud.undermappar[path];
+      if (!sparadUnder) continue;
+      bas[huvudId].undermappar[path] = {
+        öppen: sparadUnder.öppen ?? false,
+        dokument: sparadUnder.dokument ?? [],
+      };
+    }
+  }
+  return bas;
+}
+
 export function ForeningsinformationBibliotek() {
   const [huvudmappar, setHuvudmappar] = useState(initialState);
+  const [hydrated, setHydrated] = useState(false);
+  const skipFirstSave = useRef(true);
   const [pågåendeUppladdning, setPågåendeUppladdning] = useState<string | null>(
     null,
   );
+  const [uppladdningsFel, setUppladdningsFel] = useState<string | null>(null);
   const [sotningProtokollAntal, setSotningProtokollAntal] = useState(0);
   const [nyckelKvittenserAntal, setNyckelKvittenserAntal] = useState(0);
   const [utlamnadeNycklarAntal, setUtlamnadeNycklarAntal] = useState(0);
@@ -149,6 +184,21 @@ export function ForeningsinformationBibliotek() {
     return () => window.removeEventListener(HISS_UPPHANDLING_EVENT, lasHiss);
   }, []);
 
+  useEffect(() => {
+    setHuvudmappar(slåIhopBibliotekState(lasBibliotekState()));
+    skipFirstSave.current = true;
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (skipFirstSave.current) {
+      skipFirstSave.current = false;
+      return;
+    }
+    sparaBibliotekState(huvudmappar);
+  }, [huvudmappar, hydrated]);
+
   const totaltDokument = useMemo(
     () =>
       allaUndermappNycklar().reduce((sum, key) => {
@@ -192,13 +242,34 @@ export function ForeningsinformationBibliotek() {
     });
   }
 
-  function läggTillDokument(huvudId: string, underPath: string, fil: File | null) {
+  async function läggTillDokument(
+    huvudId: string,
+    underPath: string,
+    fil: File | null,
+  ) {
     if (!fil) return;
+    setUppladdningsFel(null);
+    const inl = await lasInBibliotekFil(fil);
+    if (!inl.ok) {
+      setUppladdningsFel(inl.fel);
+      return;
+    }
     const dokument: UppladdatDokument = {
       id: skapaForeningsDokumentId(),
       filnamn: fil.name,
       uppladdad: new Date().toLocaleDateString("sv-SE"),
     };
+    const sparat = sparaBibliotekFil(dokument.id, {
+      filnamn: fil.name,
+      mime: fil.type || "application/octet-stream",
+      dataUrl: inl.dataUrl,
+      storlek: fil.size,
+      uppladdad: dokument.uppladdad,
+    });
+    if (!sparat) {
+      setUppladdningsFel("Kunde inte spara filen lokalt.");
+      return;
+    }
     setHuvudmappar((current) => {
       const huvud = current[huvudId];
       const under = huvud.undermappar[underPath];
@@ -214,6 +285,7 @@ export function ForeningsinformationBibliotek() {
       };
     });
     setPågåendeUppladdning(null);
+    window.dispatchEvent(new CustomEvent(BESIKTNING_UPPHANDLING_EVENT));
   }
 
   function taBortDokument(
@@ -221,6 +293,7 @@ export function ForeningsinformationBibliotek() {
     underPath: string,
     dokumentId: string,
   ) {
+    taBortBibliotekFil(dokumentId);
     setHuvudmappar((current) => {
       const huvud = current[huvudId];
       const under = huvud.undermappar[underPath];
@@ -238,6 +311,7 @@ export function ForeningsinformationBibliotek() {
         },
       };
     });
+    window.dispatchEvent(new CustomEvent(BESIKTNING_UPPHANDLING_EVENT));
   }
 
   function antalDokumentHuvud(huvudId: string, huvud: HuvudmappState): number {
@@ -275,6 +349,11 @@ export function ForeningsinformationBibliotek() {
         Totalt {totaltDokument} dokument i biblioteket.
       </p>
       <DemoFilSparningNotis />
+      {uppladdningsFel ? (
+        <p className="text-sm text-red-800" role="alert">
+          {uppladdningsFel}
+        </p>
+      ) : null}
 
       <UtlamnadeNycklarOversikt variant="kompakt" />
 
@@ -291,9 +370,12 @@ export function ForeningsinformationBibliotek() {
             onVisaUppladdning={(underPath) =>
               setPågåendeUppladdning(undermappNyckel(huvud.id, underPath))
             }
-            onUpload={(underPath, fil) =>
-              läggTillDokument(huvud.id, underPath, fil)
-            }
+            onUpload={(underPath, fil) => void läggTillDokument(huvud.id, underPath, fil)}
+            onOppnaFil={(dokId) => {
+              const fil = hamtaBibliotekFil(dokId);
+              if (!fil?.dataUrl) return;
+              window.open(fil.dataUrl, "_blank", "noopener,noreferrer");
+            }}
             onTaBort={(underPath, docId) =>
               taBortDokument(huvud.id, underPath, docId)
             }
@@ -318,6 +400,7 @@ type HuvudmappRadProps = {
   onVisaUppladdning: (underPath: string) => void;
   onUpload: (underPath: string, fil: File | null) => void;
   onTaBort: (underPath: string, dokumentId: string) => void;
+  onOppnaFil: (dokumentId: string) => void;
   sotningProtokollAntal: number;
   onSotningProtokollAntal: (antal: number) => void;
   nyckelKvittenserAntal: number;
@@ -334,6 +417,7 @@ function HuvudmappRad({
   onVisaUppladdning,
   onUpload,
   onTaBort,
+  onOppnaFil,
   sotningProtokollAntal,
   onSotningProtokollAntal,
   nyckelKvittenserAntal,
@@ -400,6 +484,7 @@ function HuvudmappRad({
               onVisaUppladdning={(path) => onVisaUppladdning(path)}
               onUpload={(path, fil) => onUpload(path, fil)}
               onTaBort={(path, docId) => onTaBort(path, docId)}
+              onOppnaFil={onOppnaFil}
               sotningProtokollAntal={sotningProtokollAntal}
               onSotningProtokollAntal={onSotningProtokollAntal}
               nyckelKvittenserAntal={nyckelKvittenserAntal}
@@ -425,6 +510,7 @@ type UndermappRadProps = {
   onVisaUppladdning: (underPath: string) => void;
   onUpload: (underPath: string, fil: File | null) => void;
   onTaBort: (underPath: string, dokumentId: string) => void;
+  onOppnaFil: (dokumentId: string) => void;
   sotningProtokollAntal: number;
   onSotningProtokollAntal: (antal: number) => void;
   nyckelKvittenserAntal: number;
@@ -444,6 +530,7 @@ function UndermappRad({
   onVisaUppladdning,
   onUpload,
   onTaBort,
+  onOppnaFil,
   sotningProtokollAntal,
   onSotningProtokollAntal,
   nyckelKvittenserAntal,
@@ -455,6 +542,8 @@ function UndermappRad({
   const ärNyckelKvittenser = Boolean(under.nyckelKvittenser);
   const besiktning = besiktningTjanstForMapp(under.id);
   const ärHiss = under.id === "hiss";
+  const visarDokumentLista =
+    !ärNyckelKvittenser && !ärDynamisk && !ärGrupp;
   const [besiktningHandlingar, setBesiktningHandlingar] = useState(0);
   const [hissHandlingarAntal, setHissHandlingarAntal] = useState(0);
   const [kundavtal, setKundavtal] = useState<SparatKundavtal | null>(null);
@@ -565,6 +654,7 @@ function UndermappRad({
             <BesiktningUpphandlingPanel
               tjanstId={besiktning.id}
               uppladdadeFilnamn={state.dokument.map((dokument) => dokument.filnamn)}
+              onLaddaUppProtokollFil={(fil) => onUpload(underPath, fil)}
             />
           )}
 
@@ -597,6 +687,7 @@ function UndermappRad({
                     onVisaUppladdning={onVisaUppladdning}
                     onUpload={onUpload}
                     onTaBort={onTaBort}
+                    onOppnaFil={onOppnaFil}
                     sotningProtokollAntal={sotningProtokollAntal}
                     onSotningProtokollAntal={onSotningProtokollAntal}
                     nyckelKvittenserAntal={nyckelKvittenserAntal}
@@ -605,10 +696,15 @@ function UndermappRad({
                 );
               })}
             </ul>
-          ) : (
+          ) : null}
+
+          {visarDokumentLista ? (
             <>
+              <p className="mt-3 text-xs font-medium text-foreground">
+                Dokument i mappen
+              </p>
               {state.dokument.length > 0 || (under.id === "avtal" && kundavtal) ? (
-                <ul className="mt-3 space-y-2">
+                <ul className="mt-2 space-y-2">
                   {under.id === "avtal" && kundavtal ? (
                     <KundavtalRad avtal={kundavtal} />
                   ) : null}
@@ -625,18 +721,27 @@ function UndermappRad({
                           Uppladdad {doc.uppladdad}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => onTaBort(underPath, doc.id)}
-                        className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
-                      >
-                        Ta bort
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onOppnaFil(doc.id)}
+                          className="rounded-lg border border-primary/40 px-3 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                        >
+                          Öppna
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onTaBort(underPath, doc.id)}
+                          className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
+                        >
+                          Ta bort
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-xs text-muted">Inga dokument ännu.</p>
+                <p className="mt-2 text-xs text-muted">Inga dokument ännu.</p>
               )}
 
               <div className="mt-3">
@@ -655,13 +760,16 @@ function UndermappRad({
                       type="file"
                       accept=".pdf,.doc,.docx,image/*,application/pdf"
                       className="sr-only"
-                      onChange={(e) => onUpload(underPath, e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        onUpload(underPath, e.target.files?.[0] ?? null);
+                        e.target.value = "";
+                      }}
                     />
                   </label>
                 )}
               </div>
             </>
-          )}
+          ) : null}
         </div>
       )}
     </li>
