@@ -777,8 +777,9 @@ export function ApartmentArchiveDemo() {
               </select>
             </label>
             <p className="mt-2 text-xs text-muted">
-              Lägenheterna är hopfällda. Välj en adress eller ett våningsplan,
-              eller alla, och öppna gruppen med den gröna knappen.
+              Lägenhetskorten nedan är hopfällda per adress eller våning. Tabellen
+              «Sammanställning» ovan visar alla lägenheter på en gång — öppna
+              enskilda kort med den gröna + knappen här.
             </p>
             {omfattning === "alla" && (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -924,6 +925,7 @@ export function ApartmentArchiveDemo() {
                     onUppdatera={(patch) =>
                       uppdateraLägenhet(apartment.id, (a) => ({ ...a, ...patch }))
                     }
+                    onStangLagenhet={() => setOppenLagenhetsId(null)}
                   />
 
                   <OmbyggnadsavtalPanel
