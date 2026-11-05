@@ -11,13 +11,18 @@ import {
 } from "@/components/dokumentbank/intern-dokument-flode";
 import type { ArshjulHandelse } from "@/components/arshjul/arshjul";
 import {
+  arshjulArEnergideklaration,
+  arshjulArOvk,
+  arshjulArRadon,
   arshjulArSotning,
+  arshjulKräverTioarsIntervall,
   arshjulNastaBesiktningAr,
   arshjulVisaForenkladBesiktning,
   entreprenorFaltEtikett,
   entreprenorFaltPlaceholder,
   SOTNING_ENTREPRENOR_INFO,
 } from "@/components/arshjul/arshjul-handelse-falt";
+import { ENERGI_RADON_LAGKRAV_INTERVALL_AR } from "@/components/underhallsplan/besiktningar";
 import { ArshjulSkapaUpphandlingKnapp } from "@/components/arshjul/ArshjulSkapaUpphandlingKnapp";
 import { ArshjulSigneringPanel } from "@/components/arshjul/ArshjulSigneringPanel";
 
@@ -29,7 +34,7 @@ type Props = {
 };
 
 export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
-  const forenkladOvk = arshjulVisaForenkladBesiktning(handelse);
+  const forenkladBesiktning = arshjulVisaForenkladBesiktning(handelse);
   const [filFel, setFilFel] = useState<string | null>(null);
   const [foreningsFiler, setForeningsFiler] = useState(
     listaForeningsDokumentMedFil(),
@@ -102,28 +107,59 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     });
   }
 
-  if (forenkladOvk) {
+  if (forenkladBesiktning) {
+    const arOvk = arshjulArOvk(handelse);
+    const arEnergi = arshjulArEnergideklaration(handelse);
+    const arRadon = arshjulArRadon(handelse);
+    const intervallVisning = arshjulKräverTioarsIntervall(handelse)
+      ? ENERGI_RADON_LAGKRAV_INTERVALL_AR
+      : (handelse.intervallAr ?? "?");
+    const intro = arOvk
+      ? "OVK i årshjulet: vem som utförde senast, när det gjordes och när nästa kontroll planeras."
+      : arEnergi
+        ? "Energideklaration: ange vem som utförde senast och datum. Intervall är 10 år enligt lag."
+        : arRadon
+          ? "Radonmätning: ange vem som utförde senast och datum. Rekommenderat intervall är 10 år."
+          : "Ange senaste utförare och datum.";
+    const utförareEtikett = arOvk
+      ? "Senast utförd av (besiktningsföretag)"
+      : arEnergi
+        ? "Senast utförd av (energiexpert)"
+        : "Senast utförd av (mätentreprenör / laboratorium)";
+    const utförarePlaceholder = arOvk
+      ? "Certifierat OVK-företag"
+      : arEnergi
+        ? "Ackrediterad energiexpert"
+        : "Företag som utförde mätningen";
+    const datumEtikett = arOvk
+      ? "Senaste OVK (datum)"
+      : arEnergi
+        ? "Senaste energideklaration (datum)"
+        : "Senaste radonmätning (datum)";
+    const nastaRubrik = arOvk
+      ? "Nästa OVK planeras"
+      : arEnergi
+        ? "Nästa energideklaration planeras"
+        : "Nästa radonmätning planeras";
+
     return (
       <div className="mt-3 space-y-4 border-t border-border/70 pt-3">
         <p className="text-xs leading-relaxed text-muted">
-          OVK i årshjulet: vem som utförde senast, när det gjordes och när nästa
-          kontroll planeras. Protokoll och anbud hanteras via upphandling — inte
-          dagordning eller BankID här.
+          {intro} Protokoll och anbud hanteras via upphandling — inte dagordning
+          eller BankID här.
         </p>
         <label className="block text-sm">
-          <span className="font-medium text-foreground">
-            Senast utförd av (besiktningsföretag)
-          </span>
+          <span className="font-medium text-foreground">{utförareEtikett}</span>
           <input
             value={leverantor}
             onChange={(e) => setLeverantor(e.target.value)}
             onBlur={() => sparaSenast({ leverantor })}
-            placeholder="Certifierat OVK-företag"
+            placeholder={utförarePlaceholder}
             className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
           />
         </label>
         <label className="block text-sm">
-          <span className="font-medium text-foreground">Senaste OVK (datum)</span>
+          <span className="font-medium text-foreground">{datumEtikett}</span>
           <input
             type="date"
             value={senastDatum}
@@ -140,11 +176,11 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
           />
         </label>
         <div className="rounded-lg border border-border bg-[#f7f9f8] px-3 py-2 text-sm">
-          <span className="font-medium text-foreground">Nästa OVK planeras</span>
+          <span className="font-medium text-foreground">{nastaRubrik}</span>
           <p className="mt-0.5 text-muted">
             {nastaAr
-              ? `År ${nastaAr} (intervall ${handelse.intervallAr ?? "?"} år från senaste).`
-              : "Ange senaste datum och kontrollera intervall på händelsen."}
+              ? `År ${nastaAr} (intervall ${intervallVisning} år från senaste).`
+              : "Ange senaste datum — intervall följer lag/rekommendation."}
             {handelse.startAr && !nastaAr
               ? ` Planerat startår i årshjulet: ${handelse.startAr}.`
               : ""}

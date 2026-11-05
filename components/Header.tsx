@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
+import { ForeningSakerhetskopiaHeaderKnapp } from "@/components/forening/ForeningSakerhetskopiaHeaderKnapp";
 import { HeaderMobilMeny } from "@/components/HeaderMobilMeny";
 import { arInloggadIMenyn } from "@/lib/forening-behorighet-klient";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
@@ -85,7 +86,10 @@ export function Header() {
             Felanmälan
           </Link>
           {inloggad === true ? (
-            <LoggaUtKnapp />
+            <>
+              <ForeningSakerhetskopiaHeaderKnapp />
+              <LoggaUtKnapp />
+            </>
           ) : inloggad === false ? (
             <>
               {harSkapadTest === false && (

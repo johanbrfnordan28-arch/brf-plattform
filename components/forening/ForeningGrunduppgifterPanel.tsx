@@ -414,17 +414,26 @@ export function ForeningGrunduppgifterPanel() {
             lägenhetsregister, pris och avtal.
           </p>
         </div>
-        <p className="rounded-lg border border-border bg-white px-3 py-2 text-xs text-muted">
-          <span className="font-medium text-foreground">{form.namn || profil.namn}</span>
-          {form.organisationsnummer.trim() ? (
-            <> · org.nr {form.organisationsnummer.trim()}</>
-          ) : (
-            <> · org.nr saknas</>
-          )}
-          {form.antalLagenheter.trim() ? (
-            <> · {form.antalLagenheter.trim()} lägenheter</>
-          ) : null}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="rounded-lg border border-border bg-white px-3 py-2 text-xs text-muted">
+            <span className="font-medium text-foreground">{form.namn || profil.namn}</span>
+            {form.organisationsnummer.trim() ? (
+              <> · org.nr {form.organisationsnummer.trim()}</>
+            ) : (
+              <> · org.nr saknas</>
+            )}
+            {form.antalLagenheter.trim() ? (
+              <> · {form.antalLagenheter.trim()} lägenheter</>
+            ) : null}
+          </p>
+          <button
+            type="button"
+            onClick={spara}
+            className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+          >
+            Spara
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 space-y-6">

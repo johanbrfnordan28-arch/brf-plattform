@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LoggaUtKnapp } from "@/components/auth/LoggaUtKnapp";
+import { ForeningSakerhetskopiaHeaderKnapp } from "@/components/forening/ForeningSakerhetskopiaHeaderKnapp";
 import { useAktivForeningsNamn } from "@/components/forening/useAktivForeningsNamn";
 import { arInloggadIMenyn } from "@/lib/forening-behorighet-klient";
 import {
@@ -146,7 +147,10 @@ export function ForeningHeader() {
             {arKund ? "Kund" : testperiodEtikett(dagarKvar)}
           </span>
           {inloggad ? (
-            <LoggaUtKnapp />
+            <>
+              <ForeningSakerhetskopiaHeaderKnapp />
+              <LoggaUtKnapp />
+            </>
           ) : (
             <Link
               href={arKund ? KUND_LOGIN_PATH : TEST_LOGIN_PATH}

@@ -41,6 +41,18 @@ export const SOTNING_INTERVALL_ALTERNATIV = [1, 2, 3] as const;
 
 export const SBA_INTERVALL_ALTERNATIV = [1] as const;
 
+/** Energideklaration och radon — fast intervall enligt lag/rekommendation. */
+export const ENERGI_RADON_LAGKRAV_INTERVALL_AR = 10;
+
+export function besiktningHarFastLagkravIntervall(id: BesiktningId): boolean {
+  return id === "energideklaration" || id === "radon";
+}
+
+/** Vem som utförde senaste tillfället (steg 3) — ej årlig hiss/SBA-egenkontroll. */
+export function besiktningVisarSenastUtförtAv(b: Besiktning): boolean {
+  return b.id !== "hiss" && b.id !== "sba";
+}
+
 export type Besiktning = {
   id: BesiktningId;
   namn: string;
@@ -48,6 +60,8 @@ export type Besiktning = {
   nastaBesiktningAr: number;
   /** Senaste utförda tillfälle — fylls i steg 2 (utförda arbeten). */
   senastUtförtAr?: number;
+  /** Företag eller utförare senaste tillfälle. */
+  senastUtförtAv?: string;
   /** Faktisk kostnad senaste tillfälle; annars schablon från prismodell. */
   senastKostnadKr?: number;
   aktiv: boolean;
@@ -95,11 +109,35 @@ export function hamtaBesiktningIntervallAlternativ(
   id: BesiktningId,
   planLangdAr: number,
 ): number[] {
+  if (besiktningHarFastLagkravIntervall(id)) {
+    return [ENERGI_RADON_LAGKRAV_INTERVALL_AR];
+  }
   if (id === "sotning") return [...SOTNING_INTERVALL_ALTERNATIV];
   if (id === "ovk") return [...OVK_INTERVALL_BOSTAD_ALTERNATIV];
   if (id === "sba") return [...SBA_INTERVALL_ALTERNATIV];
-  const max = Math.min(planLangdAr, 50);
+  const max = Math.min(Math.max(planLangdAr, 1), 50);
   return Array.from({ length: max }, (_, i) => i + 1);
+}
+
+export function normaliseraLagkravBesiktning(b: Besiktning): Besiktning {
+  if (!besiktningHarFastLagkravIntervall(b.id)) return b;
+  return { ...b, intervallAr: ENERGI_RADON_LAGKRAV_INTERVALL_AR };
+}
+
+export function normaliseraBesiktningLista(
+  lista: Besiktning[],
+  ventilationssystem = "",
+): Besiktning[] {
+  return lista.map((b) => {
+    let next = normaliseraLagkravBesiktning(b);
+    if (next.id === "ovk") {
+      next = normaliseraOvkBesiktning(next, ventilationssystem);
+    }
+    if (next.id === "sba") {
+      next = normaliseraSbaBesiktning(next);
+    }
+    return next;
+  });
 }
 
 /** OVK-intervall bostäder utifrån ventilationssystem i grunduppgifter. */
@@ -308,7 +346,7 @@ export const besiktningMallar: {
     prismodell: "fast",
     defaultIntervall: 10,
     defaultNastaArOffset: 2,
-    intervallHint: "Intervall varierar; ofta vart 10:e år eller vid behov.",
+    intervallHint: "Vart 10:e år enligt rekommendation.",
     defaultPerLagenhetKr: 0,
     defaultPerHissKr: 0,
     defaultAntalHissar: 0,

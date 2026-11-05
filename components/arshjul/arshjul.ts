@@ -328,12 +328,26 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
     : undefined;
 
   const typ = arGiltigTyp(raw.typ) ? raw.typ : "engang";
+  const kategori = arGiltigKategori(raw.kategori) ? raw.kategori : "ovrigt";
+  const handelseId = typeof raw.id === "string" ? raw.id : "";
+
+  let intervallAr =
+    raw.intervallAr != null && raw.intervallAr >= 1 ? raw.intervallAr : undefined;
+  if (
+    typ === "intervall" &&
+    (kategori === "energideklaration" ||
+      kategori === "radon" ||
+      handelseId === "std-energi" ||
+      handelseId === "std-radon")
+  ) {
+    intervallAr = 10;
+  }
 
   return {
     ...raw,
     titel: raw.titel?.trim() ?? "Utan titel",
     beskrivning: raw.beskrivning?.trim() ?? "",
-    kategori: arGiltigKategori(raw.kategori) ? raw.kategori : "ovrigt",
+    kategori,
     typ,
     paminnelseDagar,
     // Serier bockas per tillfälle via klarDatum — gammal serie-klar nollställs.
@@ -348,8 +362,7 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
       raw.startAr != null && raw.startAr >= 1990 && raw.startAr <= 2200
         ? raw.startAr
         : undefined,
-    intervallAr:
-      raw.intervallAr != null && raw.intervallAr >= 1 ? raw.intervallAr : undefined,
+    intervallAr,
     serieAntal:
       raw.serieAntal != null && raw.serieAntal >= 0
         ? Math.min(200, Math.floor(raw.serieAntal))

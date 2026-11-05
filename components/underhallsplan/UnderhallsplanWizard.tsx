@@ -12,6 +12,7 @@ import { KommandeProjektSteg } from "@/components/underhallsplan/KommandeProjekt
 import { UnderhallsplanSlutsida } from "@/components/underhallsplan/UnderhallsplanSlutsida";
 import { PLAN_BEGREPP } from "@/components/underhallsplan/plan-terminologi";
 import {
+  normaliseraBesiktningLista,
   skapaStandardBesiktningar,
   synkaNastaBesiktningFranUtfört,
   tillampaOvkIntervallFromVentilation,
@@ -649,7 +650,12 @@ export function UnderhallsplanWizard() {
     setActiveComponents(synced.activeComponents);
     setBorttagnaKomponenter(borttagna);
     setKomponentDetaljer(synced.register);
-    setBesiktningar(state.besiktningar);
+    setBesiktningar(
+      normaliseraBesiktningLista(
+        state.besiktningar,
+        state.grund.ventilationssystem ?? "",
+      ),
+    );
     setSamfallighetsavgift(normaliseraSamfallighetsavgift(state.samfallighetsavgift));
     setRenoveringarLista(state.renoveringarLista);
     setRenoveringSammanfattning(state.renoveringSammanfattning);
@@ -1437,7 +1443,10 @@ export function UnderhallsplanWizard() {
     appliceraKomponentSynk(active, registerMedHistorik);
     setBesiktningar((current) =>
       synkaNastaBesiktningFranUtfört(
-        tillampaOvkIntervallFromVentilation(current, grund.ventilationssystem),
+        normaliseraBesiktningLista(
+          tillampaOvkIntervallFromVentilation(current, grund.ventilationssystem),
+          grund.ventilationssystem,
+        ),
         planStartAr,
       ),
     );
@@ -1445,6 +1454,7 @@ export function UnderhallsplanWizard() {
     setRenoveringarSaved(true);
     setKomponenterSaved(false);
     setBesiktningarSaved(false);
+    sparaUppdateringar();
   }
 
   function saveKomponenter() {
@@ -1454,11 +1464,17 @@ export function UnderhallsplanWizard() {
 
   function saveBesiktningar() {
     if (!komponenterSaved) return;
+    setBesiktningar((current) =>
+      normaliseraBesiktningLista(current, grund.ventilationssystem),
+    );
     setBesiktningarSaved(true);
+    sparaUppdateringar();
   }
 
   function updateBesiktningar(lista: Besiktning[]) {
-    setBesiktningar(lista);
+    setBesiktningar(
+      normaliseraBesiktningLista(lista, grund.ventilationssystem),
+    );
     setBesiktningarSaved(false);
   }
 

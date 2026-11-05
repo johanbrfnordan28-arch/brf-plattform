@@ -12,8 +12,11 @@ import {
   besiktningKostnadFormel,
   besiktningMallar,
   formatKr,
+  besiktningHarFastLagkravIntervall,
+  ENERGI_RADON_LAGKRAV_INTERVALL_AR,
   hamtaBesiktningIntervallAlternativ,
   ingarEjIForeningensBudget,
+  normaliseraLagkravBesiktning,
   normaliseraOvkBesiktning,
   normaliseraSbaBesiktning,
   OVK_DEFAULT_VERKSAMHET_KR,
@@ -93,7 +96,7 @@ export function Besiktningar({
         if (id === "sba") {
           return normaliseraSbaBesiktning(next);
         }
-        return next;
+        return normaliseraLagkravBesiktning(next);
       }),
     );
   }
@@ -388,46 +391,62 @@ export function Besiktningar({
                         className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                       />
                     </label>
-                    <label className="block">
-                      <span className="text-sm font-medium text-foreground">
-                        Intervall (år)
-                      </span>
-                      <select
-                        value={besiktning.intervallAr}
-                        onChange={(event) =>
-                          uppdatera(besiktning.id, {
-                            intervallAr: Number(event.target.value),
-                          })
-                        }
-                        className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                      >
-                        {intervallAlternativ.map((ar) => (
-                          <option key={ar} value={ar}>
-                            Vart {ar}:e år
-                            {mall?.defaultIntervall === ar ? " (rekomm.)" : ""}
-                          </option>
-                        ))}
-                      </select>
-                      {mall && (
-                        <span className="mt-1 block text-xs text-muted">
-                          Rekommenderat: vart {mall.defaultIntervall}:e år.{" "}
-                          {mall.intervallHint}
+                    {besiktningHarFastLagkravIntervall(besiktning.id) ? (
+                      <div className="block">
+                        <span className="text-sm font-medium text-foreground">
+                          Intervall (år)
                         </span>
-                      )}
-                      {mall && besiktning.intervallAr !== mall.defaultIntervall && (
-                        <button
-                          type="button"
-                          onClick={() =>
+                        <p className="mt-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+                          Vart {ENERGI_RADON_LAGKRAV_INTERVALL_AR}:e år (lagkrav)
+                        </p>
+                        {mall && (
+                          <span className="mt-1 block text-xs text-muted">
+                            {mall.intervallHint}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <label className="block">
+                        <span className="text-sm font-medium text-foreground">
+                          Intervall (år)
+                        </span>
+                        <select
+                          value={besiktning.intervallAr}
+                          onChange={(event) =>
                             uppdatera(besiktning.id, {
-                              intervallAr: mall.defaultIntervall,
+                              intervallAr: Number(event.target.value),
                             })
                           }
-                          className="mt-1 text-xs font-medium text-primary hover:underline"
+                          className="mt-1.5 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                         >
-                          Återställ rekommenderat intervall
-                        </button>
-                      )}
-                    </label>
+                          {intervallAlternativ.map((ar) => (
+                            <option key={ar} value={ar}>
+                              Vart {ar}:e år
+                              {mall?.defaultIntervall === ar ? " (rekomm.)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                        {mall && (
+                          <span className="mt-1 block text-xs text-muted">
+                            Rekommenderat: vart {mall.defaultIntervall}:e år.{" "}
+                            {mall.intervallHint}
+                          </span>
+                        )}
+                        {mall && besiktning.intervallAr !== mall.defaultIntervall && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              uppdatera(besiktning.id, {
+                                intervallAr: mall.defaultIntervall,
+                              })
+                            }
+                            className="mt-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            Återställ rekommenderat intervall
+                          </button>
+                        )}
+                      </label>
+                    )}
                   </div>
                   )}
 

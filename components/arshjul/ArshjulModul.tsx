@@ -42,6 +42,8 @@ import {
   importeraFranProjekt,
   importeraFranUnderhallsplan,
 } from "@/components/arshjul/arshjul-import";
+import { arshjulKräverTioarsIntervall } from "@/components/arshjul/arshjul-handelse-falt";
+import { ENERGI_RADON_LAGKRAV_INTERVALL_AR } from "@/components/underhallsplan/besiktningar";
 import {
   arOvkIntervallHandelse,
   byggOvkHandelser,
@@ -934,26 +936,35 @@ export function ArshjulModul() {
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
                 </label>
-                <label className="block">
-                  <span className="text-sm font-medium">Intervall (år)</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={form.intervallAr ?? 1}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        intervallAr: Number(e.target.value) || 1,
-                      })
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  />
-                  <span className="mt-1 block text-xs text-muted">
-                    Sotning {SOTNING_FORESLAGET_INTERVALL_AR} år · energi 10 år ·
-                    radon 10 år
-                  </span>
-                </label>
+                {arshjulKräverTioarsIntervall(form) ? (
+                  <div className="block">
+                    <span className="text-sm font-medium">Intervall (år)</span>
+                    <p className="mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
+                      Vart {ENERGI_RADON_LAGKRAV_INTERVALL_AR}:e år (lagkrav)
+                    </p>
+                  </div>
+                ) : (
+                  <label className="block">
+                    <span className="text-sm font-medium">Intervall (år)</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={form.intervallAr ?? 1}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          intervallAr: Number(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                    <span className="mt-1 block text-xs text-muted">
+                      Sotning {SOTNING_FORESLAGET_INTERVALL_AR} år · energi och
+                      radon 10 år (fast)
+                    </span>
+                  </label>
+                )}
               </>
             )}
 

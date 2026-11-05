@@ -66,9 +66,25 @@ export function arshjulArOvk(h: ArshjulHandelse): boolean {
   return h.kategori === "ovk";
 }
 
-/** OVK i årshjulet — ingen dagordning/BankID, bara senaste och nästa besiktning. */
+type ArshjulBesiktningRef = Pick<ArshjulHandelse, "kategori" | "id">;
+
+export function arshjulArEnergideklaration(h: ArshjulBesiktningRef): boolean {
+  return h.kategori === "energideklaration" || h.id === "std-energi";
+}
+
+export function arshjulArRadon(h: ArshjulBesiktningRef): boolean {
+  return h.kategori === "radon" || h.id === "std-radon";
+}
+
+export function arshjulKräverTioarsIntervall(h: ArshjulBesiktningRef): boolean {
+  return arshjulArEnergideklaration(h) || arshjulArRadon(h);
+}
+
+/** OVK, energi och radon — senaste utförare och datum, utan mötesflöde. */
 export function arshjulVisaForenkladBesiktning(h: ArshjulHandelse): boolean {
-  return arshjulArOvk(h);
+  return (
+    arshjulArOvk(h) || arshjulArEnergideklaration(h) || arshjulArRadon(h)
+  );
 }
 
 export function besiktningTjanstIdFranArshjul(

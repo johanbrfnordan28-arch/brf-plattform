@@ -5,8 +5,12 @@ import {
   besiktningKostnadFormel,
   besiktningMallar,
   formatKr,
+  besiktningHarFastLagkravIntervall,
+  besiktningVisarSenastUtförtAv,
+  ENERGI_RADON_LAGKRAV_INTERVALL_AR,
   hamtaBesiktningIntervallAlternativ,
   ingarEjIForeningensBudget,
+  normaliseraLagkravBesiktning,
   normaliseraOvkBesiktning,
   OVK_DEFAULT_VERKSAMHET_KR,
   OVK_INTERVALL_VERKSAMHET_AR,
@@ -45,7 +49,7 @@ export function UtfördaBesiktningarPanel({
         if (id === "ovk") {
           return normaliseraOvkBesiktning(next, ventilationssystem);
         }
-        return next;
+        return normaliseraLagkravBesiktning(next);
       }),
     );
   }
@@ -222,7 +226,63 @@ export function UtfördaBesiktningarPanel({
                   </div>
                 )}
 
+                {besiktningHarFastLagkravIntervall(besiktning.id) && (
+                  <p className="text-xs text-muted">
+                    Intervall: vart {ENERGI_RADON_LAGKRAV_INTERVALL_AR}:e år (lagkrav)
+                  </p>
+                )}
+
+                {besiktning.id === "hiss" && (
+                  <label className="block max-w-[12rem] text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Intervall (år)
+                    </span>
+                    <select
+                      value={besiktning.intervallAr}
+                      onChange={(event) =>
+                        uppdatera(besiktning.id, {
+                          intervallAr: Number(event.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border px-2.5 py-1.5 text-sm"
+                    >
+                      {intervallAlternativ.map((ar) => (
+                        <option key={ar} value={ar}>
+                          Vart {ar}:e år
+                          {mall?.defaultIntervall === ar ? " (rekomm.)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
                 <div className="grid gap-3 sm:grid-cols-2">
+                  {besiktningVisarSenastUtförtAv(besiktning) && (
+                    <label className="block text-sm sm:col-span-2">
+                      <span className="text-xs font-medium text-muted">
+                        Senast utförd av (företag / utförare)
+                      </span>
+                      <input
+                        type="text"
+                        value={besiktning.senastUtförtAv ?? ""}
+                        onChange={(event) =>
+                          uppdatera(besiktning.id, {
+                            senastUtförtAv: event.target.value.trim()
+                              ? event.target.value
+                              : undefined,
+                          })
+                        }
+                        placeholder={
+                          besiktning.id === "energideklaration"
+                            ? "Ackrediterad energiexpert"
+                            : besiktning.id === "radon"
+                              ? "Radonmätning / laboratorium"
+                              : "Certifierat företag"
+                        }
+                        className="mt-1 w-full rounded-lg border border-border px-2.5 py-1.5 text-sm"
+                      />
+                    </label>
+                  )}
                   <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">
                       {besiktning.id === "ovk" && besiktning.ovkInkluderaVerksamhet
