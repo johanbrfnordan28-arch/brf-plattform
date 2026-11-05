@@ -6,6 +6,9 @@ import {
 } from "@/components/dokumentbank/dokument-layout";
 import { hamtaForeningsDokumentInnehall } from "@/components/dokumentbank/forening-dokument-innehall";
 import { hamtaDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
+import { arEntreprenadAvtalDokument } from "@/components/dokumentbank/forening-dokument-avtal";
+import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
+import { standardPdfUndertecknareBlock } from "@/components/forening/pdf-undertecknare-block";
 
 export function oppnaForeningsDokumentPreview(dok: ForeningsDokument): boolean {
   const tema: DokumentLayoutTema =
@@ -19,6 +22,26 @@ export function oppnaForeningsDokumentPreview(dok: ForeningsDokument): boolean {
     }
     return false;
   }
+
+  if (arEntreprenadAvtalDokument(dok)) {
+    const entreprenor = dok.entreprenor;
+    const entreprenorPdf = [
+      {
+        namn: entreprenor?.namn ?? "",
+        epost: entreprenor?.epost ?? "",
+        roll: "Entreprenör",
+      },
+      {
+        namn: entreprenor?.kontakt ?? "",
+        epost: "",
+        roll: "Entreprenör",
+      },
+    ];
+    return oppnaTextSomPdf(dok.titel, text, {
+      undertecknare: standardPdfUndertecknareBlock(entreprenorPdf),
+    });
+  }
+
   return oppnaDokumentForhandsgranska({
     titel: dok.titel,
     text,

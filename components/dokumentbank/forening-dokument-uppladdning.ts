@@ -9,14 +9,24 @@ import {
   sparaDokumentFil,
 } from "@/components/dokumentbank/forening-dokument-fil-lager";
 import type { DokumentLayoutTema } from "@/components/dokumentbank/dokument-layout";
+import type { DokumentMallOmrade } from "@/components/dokumentbank/mallar";
 
 export type UppladdningResult =
   | { ok: true; dokument: ForeningsDokument }
   | { ok: false; fel: string };
 
+export type ForeningsDokumentUppladdningMeta = {
+  titel?: string;
+  mallId?: string;
+  mallTitel?: string;
+  mallFilnamn?: string;
+  omrade?: DokumentMallOmrade;
+};
+
 export async function skapaForeningsDokumentFranFil(
   fil: File,
   titel?: string,
+  meta?: ForeningsDokumentUppladdningMeta,
 ): Promise<UppladdningResult> {
   if (fil.size > MAX_UPPLADDAD_FIL_STORLEK) {
     return {
@@ -27,7 +37,8 @@ export async function skapaForeningsDokumentFranFil(
 
   const id = skapaForeningsDokumentId();
   const nu = new Date().toISOString();
-  const namn = titel?.trim() || fil.name.replace(/\.[^.]+$/, "");
+  const namn =
+    meta?.titel?.trim() || titel?.trim() || fil.name.replace(/\.[^.]+$/, "");
   const arText =
     fil.type.startsWith("text/") || /\.txt$/i.test(fil.name);
 
@@ -58,15 +69,15 @@ export async function skapaForeningsDokumentFranFil(
 
   const dokument: ForeningsDokument = {
     id,
-    mallId: "uppladdad-fil",
-    mallTitel: "Eget uppladdat dokument",
-    mallFilnamn: fil.name,
+    mallId: meta?.mallId?.trim() || "uppladdad-fil",
+    mallTitel: meta?.mallTitel?.trim() || "Eget uppladdat dokument",
+    mallFilnamn: meta?.mallFilnamn?.trim() || fil.name,
     titel: namn,
     status: "utkast",
     skapadDatum: nu,
     uppdateradDatum: nu,
     notering: "",
-    omrade: "ovrig",
+    omrade: meta?.omrade ?? "ovrig",
     dokumentKalla: "fil",
     ...(innehall ? { innehall } : {}),
     koppladeProjektId: [],

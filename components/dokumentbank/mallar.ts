@@ -11,6 +11,10 @@ import { introForBransch } from "@/components/dokumentbank/mallar/egenkontroll-m
 import { ANBUDSFORMULAR_STANDARD_MALL } from "@/components/dokumentbank/mallar/innehall/anbuds-formular-standard";
 import { ANBUDS_UTVARDERING_MALL } from "@/components/dokumentbank/mallar/innehall/anbuds-utvardering";
 import { PROJEKT_UPPFOLJNING_MALL } from "@/components/dokumentbank/mallar/innehall/projekt-uppföljning";
+import {
+  ENTREPRENAD_HANDLINGAR_FORKLARING,
+  entreprenadHandlingarForetradeText,
+} from "@/components/dokumentbank/mallar/innehall/entreprenad-handlingar-foretrade";
 
 /** Mallar i dokumentbanken — kan utökas och kopplas till lagring/API senare. */
 export type DokumentMallOmrade =
@@ -29,6 +33,8 @@ export type DokumentbankMall = {
   omrade: DokumentMallOmrade;
   /** Textinnehåll som kan laddas ned som .txt/.md — valfritt. */
   textInnehall?: string;
+  /** Ingen textmall — användaren laddar upp sitt eget dokument (t.ex. AF). */
+  endastUppladdning?: boolean;
 };
 
 export const OMRADE_ETIKETTER: Record<DokumentMallOmrade, string> = {
@@ -142,57 +148,32 @@ GARANTIER
 Garantitid: 2 år från godkänd slutbesiktning
 Ansvarstid: 10 år
 
-BILAGOR
-[ ] Projektbeskrivning
-[ ] Anbudsformulär (godkänt)
-[ ] Försäkringsintyg
-[ ] AB 04 gäller som allmänna bestämmelser
+HANDLINGAR — FÖRETRÄDE VID MOTSÄGELSER
+${ENTREPRENAD_HANDLINGAR_FORKLARING}
 
-UNDERSKRIFTER
-Beställare: _________________________ Datum: _______
-Entreprenör: _______________________ Datum: _______
+${entreprenadHandlingarForetradeText()}
+
+UNDERTECKNANDE
+Signering med BankID — två personer hos vardera part (se PDF).
 `,
   },
   {
-    id: "af-ab04",
-    titel: "AF — administrativa föreskrifter (AB04)",
-    filnamn: "AF_AB04_mall.txt",
-    beskrivning: "För större entreprenader med fullständigt underlag.",
+    id: "af-uppladdning-ab04",
+    titel: "Administrativa föreskrifter (AF) — AB 04",
+    filnamn: "AF_AB04.pdf",
+    beskrivning:
+      "Ladda upp ert AF-dokument för utförandeentreprenad (AB 04). Ingen färdig textmall i plattformen.",
     omrade: "upphandling",
-    textInnehall: `ADMINISTRATIVA FÖRESKRIFTER (AF)
-================================
-Baserade på AB 04 — Allmänna bestämmelser för byggnads-, anläggnings- och
-installationsentreprenader
-
-Projekt: [Projektets namn]
-Förening: [Föreningens namn]
-
-AFB UPPHANDLINGSFÖRESKRIFTER
-Entreprenadform: Utförandeentreprenad
-Ersättningsform: Fast pris (klumpsumma)
-Upphandlingsform: Selektiv upphandling
-
-AFD ENTREPRENADFÖRESKRIFTER VID UTFÖRANDEENTREPRENAD
-AFD.1 Ersättning
-Ersättning utgår som fast pris enligt anbud.
-ÄTA-arbeten regleras enligt prislista i anbud eller löpande räkning om ej annat avtalats.
-
-AFD.2 Arbetstid
-Normal arbetstid: mån–fre kl. 07.00–17.00
-Arbete utanför normal tid kräver beställarens godkännande.
-
-AFD.3 Besiktning
-Slutbesiktning genomförs av beställaren och entreprenören gemensamt.
-Garantibesiktning genomförs 12 månader efter godkänd slutbesiktning.
-
-AFD.4 Säkerhet
-Ställningsgaranti: 10 % av kontraktssumman (gäller till och med garantitidens utgång).
-
-AFD.5 Vite
-Vid försening: 1 % av kontraktssumman per påbörjad vecka, max 15 %.
-
-[Komplettera med projektspecifika föreskrifter]
-`,
+    endastUppladdning: true,
+  },
+  {
+    id: "af-uppladdning-abt06",
+    titel: "Administrativa föreskrifter (AF) — ABT 06",
+    filnamn: "AF_ABT06.pdf",
+    beskrivning:
+      "Ladda upp ert AF-dokument för totalentreprenad (ABT 06). Ingen färdig textmall i plattformen.",
+    omrade: "upphandling",
+    endastUppladdning: true,
   },
   {
     id: "sekretess-anbud",

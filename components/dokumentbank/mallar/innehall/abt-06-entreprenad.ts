@@ -1,3 +1,8 @@
+import {
+  ENTREPRENAD_HANDLINGAR_FORKLARING,
+  entreprenadHandlingarForetradeText,
+} from "@/components/dokumentbank/mallar/innehall/entreprenad-handlingar-foretrade";
+
 /** Entreprenadkontrakt enligt ABT 06 — totalentreprenad (ej AB 04). */
 export const ABT_06_ENTREPRENAD_MALL = `ENTREPRENADKONTRAKT — ABT 06 (TOTALENTREPRENAD)
 =================================================
@@ -58,12 +63,10 @@ Ansvarsförsäkring och eventuell säkerhet enligt ABT 06 kap. 9.
 8. SÄRSKILDA VILLKOR
 [Egna tillägg]
 
-9. BILAGOR (markera det som ingår)
-[ ] Förfrågningsunderlag / projektbeskrivning
-[ ] Ritningar
-[ ] Bilaga tidsplan entreprenad (signeras med kontraktet eller direkt efter)
-[ ] Bilaga lyftplan entreprenad (signeras med kontraktet eller direkt efter)
-[ ] Kontrollplan / egenkontroll
+9. HANDLINGAR — FÖRETRÄDE VID MOTSÄGELSER
+${ENTREPRENAD_HANDLINGAR_FORKLARING}
+
+${entreprenadHandlingarForetradeText()}
 
 Avtal upprättat: [ÅÅÅÅ-MM-DD]
 

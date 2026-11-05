@@ -32,6 +32,7 @@ import {
 import { ForeningInternDokumentHamta } from "@/components/dokumentbank/ForeningInternDokumentHamta";
 import { LaggTillIProjektDialog } from "@/components/dokumentbank/LaggTillIProjektDialog";
 import { ForeningsDokumentRedigeraPanel } from "@/components/dokumentbank/ForeningsDokumentRedigeraPanel";
+import { ForeningsDokumentAvtalSignering } from "@/components/dokumentbank/ForeningsDokumentAvtalSignering";
 import {
   arEntreprenadAvtalDokument,
   byggSignaturStatusText,
@@ -494,6 +495,13 @@ function ForeningensDokument({
                       Kopplat till {dok.koppladeProjektId!.length} projekt
                     </p>
                   )}
+                  {arEntreprenadAvtalDokument(dok) && (
+                    <ForeningsDokumentAvtalSignering
+                      dokument={dok}
+                      onSpara={(patch) => onUppdatera(dok.id, patch)}
+                      kompakt
+                    />
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
                   <button
@@ -601,6 +609,105 @@ function ForeningensDokument({
 
 // ── Mallkatalog ───────────────────────────────────────────────────────────────
 
+function MallUppladdningForm({
+  mall,
+  onSparad,
+  onAvbryt,
+}: {
+  mall: DokumentbankMall;
+  onSparad: (
+    dok: ForeningsDokument,
+    sparaVal: DokumentSparaValType,
+  ) => string | null;
+  onAvbryt: () => void;
+}) {
+  const [titel, setTitel] = useState("");
+  const [fel, setFel] = useState<string | null>(null);
+  const [laddar, setLaddar] = useState(false);
+  const [sparaVal, setSparaVal] = useState<DokumentSparaValType>({
+    typ: "bara-forening",
+  });
+  const filRef = useRef<HTMLInputElement>(null);
+
+  async function laddaUpp() {
+    const fil = filRef.current?.files?.[0];
+    if (!fil) {
+      setFel("Välj en fil att ladda upp.");
+      return;
+    }
+    if (!dokumentSparaValArOk(sparaVal)) {
+      setFel("Välj projekt och mapp om dokumentet ska sparas i både bank och projekt.");
+      return;
+    }
+    setFel(null);
+    setLaddar(true);
+    try {
+      const result = await skapaForeningsDokumentFranFil(fil, titel, {
+        titel: titel.trim() || undefined,
+        mallId: mall.id,
+        mallTitel: mall.titel,
+        mallFilnamn: mall.filnamn,
+        omrade: mall.omrade,
+      });
+      if (!result.ok) {
+        setFel(result.fel);
+        return;
+      }
+      const kopplingsFel = onSparad(result.dokument, sparaVal);
+      if (kopplingsFel) setFel(kopplingsFel);
+      else onAvbryt();
+    } finally {
+      setLaddar(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 space-y-3 rounded-lg border border-primary/30 bg-[#f7fbf8] p-3">
+      <p className="text-xs text-muted">
+        Ladda upp ert eget dokument (PDF eller Word). Ingen textmall skapas i
+        plattformen.
+      </p>
+      <input
+        type="text"
+        value={titel}
+        placeholder={`T.ex. AF ${mall.titel.includes("ABT") ? "ABT 06" : "AB 04"} — Takbyte 2026`}
+        onChange={(e) => setTitel(e.target.value)}
+        className="w-full rounded-lg border border-border bg-white px-3 py-1.5 text-sm"
+      />
+      <input
+        ref={filRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt"
+        className="block w-full text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+      />
+      <DokumentSparaVal
+        omrade={mall.omrade}
+        value={sparaVal}
+        onChange={setSparaVal}
+        kompakt
+      />
+      {fel && <p className="text-xs text-red-700">{fel}</p>}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => void laddaUpp()}
+          disabled={laddar}
+          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+        >
+          {laddar ? "Laddar upp…" : "Spara uppladdning"}
+        </button>
+        <button
+          type="button"
+          onClick={onAvbryt}
+          className="rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted"
+        >
+          Avbryt
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface MallKatalogProps {
   onSkapaKopia: (
     mall: DokumentbankMall,
@@ -615,9 +722,13 @@ interface MallKatalogProps {
       utforareNamn: string[];
     },
   ) => string | null;
+  onSparadUppladdning: (
+    dok: ForeningsDokument,
+    sparaVal: DokumentSparaValType,
+  ) => string | null;
 }
 
-function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
+function MallKatalog({ onSkapaKopia, onSparadUppladdning }: MallKatalogProps) {
   const [skaparKopiaFor, setSkaparKopiaFor] = useState<string | null>(null);
   const [forhandsgranskaMall, setForhandsgranskaMall] =
     useState<DokumentbankMall | null>(null);
@@ -732,20 +843,27 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                     <p className="mt-1 text-sm leading-relaxed text-muted">
                       {mall.beskrivning}
                     </p>
-                    {mall.textInnehall && (
+                    {mall.endastUppladdning && (
+                      <span className="mt-2 inline-block rounded-full bg-[#eef6f0] px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                        Endast uppladdning
+                      </span>
+                    )}
+                    {mall.textInnehall && !mall.endastUppladdning && (
                       <span className="mt-2 inline-block rounded-full bg-[#eef6f0] px-2.5 py-0.5 text-xs font-medium text-primary-dark">
                         Textmall · förhandsgranska
                       </span>
                     )}
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setForhandsgranskaMall(mall)}
-                      className="rounded-lg border border-primary/50 bg-[#eef6f0] px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
-                    >
-                      Förhandsgranska
-                    </button>
+                    {!mall.endastUppladdning && (
+                      <button
+                        type="button"
+                        onClick={() => setForhandsgranskaMall(mall)}
+                        className="rounded-lg border border-primary/50 bg-[#eef6f0] px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+                      >
+                        Förhandsgranska
+                      </button>
+                    )}
                     {(harAnbudsUtvarderingExcel(mall.id) ||
                       harProjektUppfoljningExcel(mall.id)) && (
                       <button
@@ -765,13 +883,23 @@ function MallKatalog({ onSkapaKopia }: MallKatalogProps) {
                       }
                       className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
                     >
-                      {arEgenkontrollMallId(mall.id)
-                        ? "Skapa egenkontroll"
-                        : "Skapa kopia"}
+                      {mall.endastUppladdning
+                        ? "Ladda upp"
+                        : arEgenkontrollMallId(mall.id)
+                          ? "Skapa egenkontroll"
+                          : "Skapa kopia"}
                     </button>
                   </div>
                 </div>
+                {skaparKopiaFor === mall.id && mall.endastUppladdning && (
+                  <MallUppladdningForm
+                    mall={mall}
+                    onSparad={onSparadUppladdning}
+                    onAvbryt={() => setSkaparKopiaFor(null)}
+                  />
+                )}
                 {skaparKopiaFor === mall.id &&
+                  !mall.endastUppladdning &&
                   (arEgenkontrollMallId(mall.id) ? (
                     <SkapaEgenkontrollKopiaForm
                       mall={mall}
@@ -1100,7 +1228,10 @@ export function ForeningsDokumentbank() {
           onSparadUppladdning={sparaDokumentMedVal}
         />
       ) : (
-        <MallKatalog onSkapaKopia={skapaKopia} />
+        <MallKatalog
+          onSkapaKopia={skapaKopia}
+          onSparadUppladdning={sparaDokumentMedVal}
+        />
       )}
     </div>
   );

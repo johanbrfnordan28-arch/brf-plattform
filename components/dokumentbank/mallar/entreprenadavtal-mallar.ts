@@ -6,11 +6,18 @@ export const ENTREPRENAD_AVTAL_MALL_ID: Record<EntreprenadAvtalForm, string> = {
   "ABK-09": "entreprenad-abk-09",
 };
 
+/** Äldre upphandlingsmall — behandlas som AB 04-avtal med BankID-signering. */
+export const KONTRAKT_ENTREPRENAD_MALL_ID = "kontrakt-entreprenad";
+
 export function arEntreprenadAvtalMallId(mallId: string): boolean {
-  return Object.values(ENTREPRENAD_AVTAL_MALL_ID).includes(mallId);
+  return (
+    Object.values(ENTREPRENAD_AVTAL_MALL_ID).includes(mallId) ||
+    mallId === KONTRAKT_ENTREPRENAD_MALL_ID
+  );
 }
 
 export function hamtaAvtalFormForMall(mallId: string): EntreprenadAvtalForm | undefined {
+  if (mallId === KONTRAKT_ENTREPRENAD_MALL_ID) return "AB04";
   const entry = Object.entries(ENTREPRENAD_AVTAL_MALL_ID).find(
     ([, id]) => id === mallId,
   );

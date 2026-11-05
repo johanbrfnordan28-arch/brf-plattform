@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   DOKUMENT_STATUS_ETIKETTER,
   tomDokumentEntreprenor,
@@ -14,11 +14,7 @@ import {
   synkroniseraForeningsfaltInnehall,
 } from "@/components/dokumentbank/forening-dokument-innehall";
 import { hamtaMall } from "@/components/dokumentbank/mallar";
-import {
-  arEntreprenadAvtalDokument,
-  byggSignaturStatusText,
-  normaliseraAvtalSignering,
-} from "@/components/dokumentbank/forening-dokument-avtal";
+import { arEntreprenadAvtalDokument } from "@/components/dokumentbank/forening-dokument-avtal";
 import {
   DOKUMENT_LAYOUT_ETIKETTER,
   STANDARD_DOKUMENT_LAYOUT,
@@ -27,12 +23,7 @@ import {
 import { oppnaForeningsDokumentPreview } from "@/components/dokumentbank/forening-dokument-visning";
 import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
 import { standardPdfUndertecknareBlock } from "@/components/forening/pdf-undertecknare-block";
-import { BankIdAvtalSignering } from "@/components/bankid/BankIdAvtalSignering";
-import {
-  laggTillBankIdSignatur,
-  type BankIdSignatur,
-} from "@/lib/bankid-signering";
-import { lasForeningProfil } from "@/lib/forening-registry";
+import { ForeningsDokumentAvtalSignering } from "@/components/dokumentbank/ForeningsDokumentAvtalSignering";
 import { DokumentRedigerareMedPreview } from "@/components/dokumentbank/DokumentRedigerareMedPreview";
 import { arEgenkontrollDokument } from "@/components/dokumentbank/forening-dokument-egenkontroll";
 import { ForeningsDokumentEgenkontrollPanel } from "@/components/dokumentbank/ForeningsDokumentEgenkontrollPanel";
@@ -75,14 +66,6 @@ export function ForeningsDokumentRedigeraPanel({
   );
   const [meddelande, setMeddelande] = useState<string | null>(null);
 
-  const signering = useMemo(
-    () => normaliseraAvtalSignering(dokument),
-    [dokument],
-  );
-
-  const profil = typeof window !== "undefined" ? lasForeningProfil() : null;
-  const ledamoter = profil?.styrelseledamoter ?? [];
-
   function sparaBas() {
     onSpara({
       titel: titel.trim() || dokument.titel,
@@ -116,42 +99,6 @@ export function ForeningsDokumentRedigeraPanel({
     if (!ok) {
       setMeddelande("Tillåt popup för PDF.");
     }
-  }
-
-  function signeraEntreprenor(signatur: BankIdSignatur) {
-    const result = laggTillBankIdSignatur(
-      signering.entreprenorSignaturer,
-      { ...signatur, part: "foretag" },
-    );
-    if (!result.ok) {
-      setMeddelande(result.fel);
-      return;
-    }
-    onSpara({
-      entreprenorSignaturer: result.signaturer,
-      status: "utkast",
-    });
-    setMeddelande("Entreprenörssignatur registrerad.");
-  }
-
-  function signeraForening(signatur: BankIdSignatur) {
-    const result = laggTillBankIdSignatur(
-      signering.foreningSignaturer,
-      { ...signatur, part: "forening" },
-    );
-    if (!result.ok) {
-      setMeddelande(result.fel);
-      return;
-    }
-    const next = result.signaturer;
-    const ent = signering.entreprenorSignaturer;
-    const klar =
-      ent.length >= 2 && next.length >= 2;
-    onSpara({
-      foreningSignaturer: next,
-      status: klar ? "klar" : "utkast",
-    });
-    setMeddelande("Föreningssignatur registrerad.");
   }
 
   return (
@@ -296,29 +243,7 @@ export function ForeningsDokumentRedigeraPanel({
       </label>
 
       {arAvtal && (
-        <div className="rounded-xl border border-border bg-surface/80 p-4">
-          <p className="text-sm font-semibold text-foreground">
-            Signering med BankID
-          </p>
-          <p className="mt-1 text-xs text-muted">{byggSignaturStatusText(dokument)}</p>
-          <div className="mt-4 space-y-4">
-            <BankIdAvtalSignering
-              part="foretag"
-              partEtikett="entreprenören"
-              signaturer={signering.entreprenorSignaturer}
-              onSignera={async (s) => signeraEntreprenor(s)}
-            />
-            <BankIdAvtalSignering
-              part="forening"
-              partEtikett="föreningen"
-              signaturer={signering.foreningSignaturer}
-              disabled={!signering.entreprenorKlart}
-              disabledOrsak="Entreprenören måste signera med två BankID först."
-              ledamoter={ledamoter}
-              onSignera={async (s) => signeraForening(s)}
-            />
-          </div>
-        </div>
+        <ForeningsDokumentAvtalSignering dokument={dokument} onSpara={onSpara} />
       )}
 
       {meddelande && (

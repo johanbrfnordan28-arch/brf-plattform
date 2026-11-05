@@ -1,3 +1,8 @@
+import {
+  ENTREPRENAD_HANDLINGAR_FORKLARING,
+  entreprenadHandlingarForetradeText,
+} from "@/components/dokumentbank/mallar/innehall/entreprenad-handlingar-foretrade";
+
 /** Entreprenadkontrakt enligt AB 04 — utförandeentreprenad (ej ABT 06). */
 export const AB_04_ENTREPRENAD_MALL = `ENTREPRENADKONTRAKT — AB 04 (UTFÖRANDEENTREPRENAD)
 ===================================================
@@ -56,11 +61,10 @@ Slutbesiktning och garantitider enligt AB 04 och gällande krav.
 8. SÄRSKILDA VILLKOR
 [Egna tillägg]
 
-9. BILAGOR
-[ ] Handlingar / förfrågningsunderlag
-[ ] Ritningar
-[ ] Bilaga tidsplan entreprenad
-[ ] Bilaga lyftplan entreprenad
+9. HANDLINGAR — FÖRETRÄDE VID MOTSÄGELSER
+${ENTREPRENAD_HANDLINGAR_FORKLARING}
+
+${entreprenadHandlingarForetradeText()}
 
 Avtal upprättat: [ÅÅÅÅ-MM-DD]
 
