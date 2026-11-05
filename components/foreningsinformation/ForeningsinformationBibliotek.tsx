@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OppnaStangIkon } from "@/components/OppnaStangKnapp";
-import { DemoFilSparningNotis } from "@/components/DemoFilSparningNotis";
 import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
 import {
   KUNDAVTAL_EVENT,
@@ -38,19 +37,25 @@ import {
   type ForeningsUndermapp,
 } from "@/components/foreningsinformation/mappar";
 import {
-  hamtaBibliotekFil,
+  hamtaBibliotekFilUrl,
   lasBibliotekState,
-  lasInBibliotekFil,
   sparaBibliotekFil,
   sparaBibliotekState,
   taBortBibliotekFil,
+  type BibliotekUppladdatDokument,
 } from "@/components/foreningsinformation/foreningsinformation-bibliotek-lager";
+import { oppnaFilIFlik } from "@/lib/forening-fil-lagring";
+import { FilUppladdningsRuta } from "@/components/FilUppladdningsRuta";
 
-type UppladdatDokument = {
-  id: string;
-  filnamn: string;
-  uppladdad: string;
-};
+type UppladdningsResultat = { ok: true } | { ok: false; fel: string };
+
+type UppladdatDokument = BibliotekUppladdatDokument;
+
+type UppladdningsHandler = (
+  underPath: string,
+  fil: File,
+  onProgress?: (procent: number) => void,
+) => Promise<UppladdningsResultat>;
 
 type UndermappState = {
   öppen: boolean;
@@ -122,7 +127,6 @@ export function ForeningsinformationBibliotek() {
   const [pågåendeUppladdning, setPågåendeUppladdning] = useState<string | null>(
     null,
   );
-  const [uppladdningsFel, setUppladdningsFel] = useState<string | null>(null);
   const [sotningProtokollAntal, setSotningProtokollAntal] = useState(0);
   const [nyckelKvittenserAntal, setNyckelKvittenserAntal] = useState(0);
   const [utlamnadeNycklarAntal, setUtlamnadeNycklarAntal] = useState(0);
@@ -245,31 +249,18 @@ export function ForeningsinformationBibliotek() {
   async function läggTillDokument(
     huvudId: string,
     underPath: string,
-    fil: File | null,
-  ) {
-    if (!fil) return;
-    setUppladdningsFel(null);
-    const inl = await lasInBibliotekFil(fil);
-    if (!inl.ok) {
-      setUppladdningsFel(inl.fel);
-      return;
-    }
+    fil: File,
+    onProgress?: (procent: number) => void,
+  ): Promise<UppladdningsResultat> {
+    const id = skapaForeningsDokumentId();
+    const sparat = await sparaBibliotekFil(id, fil, onProgress);
+    if (!sparat.ok) return sparat;
     const dokument: UppladdatDokument = {
-      id: skapaForeningsDokumentId(),
+      id,
       filnamn: fil.name,
       uppladdad: new Date().toLocaleDateString("sv-SE"),
+      ...(sparat.moln ? { moln: sparat.moln } : {}),
     };
-    const sparat = sparaBibliotekFil(dokument.id, {
-      filnamn: fil.name,
-      mime: fil.type || "application/octet-stream",
-      dataUrl: inl.dataUrl,
-      storlek: fil.size,
-      uppladdad: dokument.uppladdad,
-    });
-    if (!sparat) {
-      setUppladdningsFel("Kunde inte spara filen lokalt.");
-      return;
-    }
     setHuvudmappar((current) => {
       const huvud = current[huvudId];
       const under = huvud.undermappar[underPath];
@@ -286,14 +277,17 @@ export function ForeningsinformationBibliotek() {
     });
     setPågåendeUppladdning(null);
     window.dispatchEvent(new CustomEvent(BESIKTNING_UPPHANDLING_EVENT));
+    return { ok: true };
   }
 
   function taBortDokument(
     huvudId: string,
     underPath: string,
-    dokumentId: string,
+    dokument: UppladdatDokument,
   ) {
-    taBortBibliotekFil(dokumentId);
+    if (!window.confirm(`Ta bort ${dokument.filnamn}?`)) return;
+    const dokumentId = dokument.id;
+    taBortBibliotekFil(dokument);
     setHuvudmappar((current) => {
       const huvud = current[huvudId];
       const under = huvud.undermappar[underPath];
@@ -348,12 +342,6 @@ export function ForeningsinformationBibliotek() {
       <p className="text-xs text-muted">
         Totalt {totaltDokument} dokument i biblioteket.
       </p>
-      <DemoFilSparningNotis />
-      {uppladdningsFel ? (
-        <p className="text-sm text-red-800" role="alert">
-          {uppladdningsFel}
-        </p>
-      ) : null}
 
       <UtlamnadeNycklarOversikt variant="kompakt" />
 
@@ -370,14 +358,13 @@ export function ForeningsinformationBibliotek() {
             onVisaUppladdning={(underPath) =>
               setPågåendeUppladdning(undermappNyckel(huvud.id, underPath))
             }
-            onUpload={(underPath, fil) => void läggTillDokument(huvud.id, underPath, fil)}
-            onOppnaFil={(dokId) => {
-              const fil = hamtaBibliotekFil(dokId);
-              if (!fil?.dataUrl) return;
-              window.open(fil.dataUrl, "_blank", "noopener,noreferrer");
-            }}
-            onTaBort={(underPath, docId) =>
-              taBortDokument(huvud.id, underPath, docId)
+            onAvbrytUppladdning={() => setPågåendeUppladdning(null)}
+            onUpload={(underPath, fil, onProgress) =>
+              läggTillDokument(huvud.id, underPath, fil, onProgress)
+            }
+            onOppnaFil={(dok) => void oppnaFilIFlik(() => hamtaBibliotekFilUrl(dok))}
+            onTaBort={(underPath, dok) =>
+              taBortDokument(huvud.id, underPath, dok)
             }
             sotningProtokollAntal={sotningProtokollAntal}
             onSotningProtokollAntal={onSotningProtokollAntal}
@@ -398,9 +385,10 @@ type HuvudmappRadProps = {
   onToggleHuvud: () => void;
   onToggleUnder: (underPath: string) => void;
   onVisaUppladdning: (underPath: string) => void;
-  onUpload: (underPath: string, fil: File | null) => void;
-  onTaBort: (underPath: string, dokumentId: string) => void;
-  onOppnaFil: (dokumentId: string) => void;
+  onAvbrytUppladdning: () => void;
+  onUpload: UppladdningsHandler;
+  onTaBort: (underPath: string, dokument: UppladdatDokument) => void;
+  onOppnaFil: (dokument: UppladdatDokument) => void;
   sotningProtokollAntal: number;
   onSotningProtokollAntal: (antal: number) => void;
   nyckelKvittenserAntal: number;
@@ -415,6 +403,7 @@ function HuvudmappRad({
   onToggleHuvud,
   onToggleUnder,
   onVisaUppladdning,
+  onAvbrytUppladdning,
   onUpload,
   onTaBort,
   onOppnaFil,
@@ -482,8 +471,9 @@ function HuvudmappRad({
               pågåendeUppladdning={pågåendeUppladdning}
               onToggle={(path) => onToggleUnder(path)}
               onVisaUppladdning={(path) => onVisaUppladdning(path)}
-              onUpload={(path, fil) => onUpload(path, fil)}
-              onTaBort={(path, docId) => onTaBort(path, docId)}
+              onAvbrytUppladdning={onAvbrytUppladdning}
+              onUpload={onUpload}
+              onTaBort={onTaBort}
               onOppnaFil={onOppnaFil}
               sotningProtokollAntal={sotningProtokollAntal}
               onSotningProtokollAntal={onSotningProtokollAntal}
@@ -508,9 +498,10 @@ type UndermappRadProps = {
   pågåendeUppladdning: string | null;
   onToggle: (underPath: string) => void;
   onVisaUppladdning: (underPath: string) => void;
-  onUpload: (underPath: string, fil: File | null) => void;
-  onTaBort: (underPath: string, dokumentId: string) => void;
-  onOppnaFil: (dokumentId: string) => void;
+  onAvbrytUppladdning: () => void;
+  onUpload: UppladdningsHandler;
+  onTaBort: (underPath: string, dokument: UppladdatDokument) => void;
+  onOppnaFil: (dokument: UppladdatDokument) => void;
   sotningProtokollAntal: number;
   onSotningProtokollAntal: (antal: number) => void;
   nyckelKvittenserAntal: number;
@@ -528,6 +519,7 @@ function UndermappRad({
   pågåendeUppladdning,
   onToggle,
   onVisaUppladdning,
+  onAvbrytUppladdning,
   onUpload,
   onTaBort,
   onOppnaFil,
@@ -685,6 +677,7 @@ function UndermappRad({
                     pågåendeUppladdning={pågåendeUppladdning}
                     onToggle={onToggle}
                     onVisaUppladdning={onVisaUppladdning}
+                    onAvbrytUppladdning={onAvbrytUppladdning}
                     onUpload={onUpload}
                     onTaBort={onTaBort}
                     onOppnaFil={onOppnaFil}
@@ -724,14 +717,14 @@ function UndermappRad({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => onOppnaFil(doc.id)}
+                          onClick={() => onOppnaFil(doc)}
                           className="rounded-lg border border-primary/40 px-3 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
                         >
                           Öppna
                         </button>
                         <button
                           type="button"
-                          onClick={() => onTaBort(underPath, doc.id)}
+                          onClick={() => onTaBort(underPath, doc)}
                           className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
                         >
                           Ta bort
@@ -754,18 +747,10 @@ function UndermappRad({
                     Ladda upp dokument
                   </button>
                 ) : (
-                  <label className="inline-flex cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
-                    Välj fil
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,image/*,application/pdf"
-                      className="sr-only"
-                      onChange={(e) => {
-                        onUpload(underPath, e.target.files?.[0] ?? null);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+                  <FilUppladdningsRuta
+                    onSpara={(fil, onProgress) => onUpload(underPath, fil, onProgress)}
+                    onAvbryt={onAvbrytUppladdning}
+                  />
                 )}
               </div>
             </>

@@ -48,6 +48,10 @@ import {
 import { taBortDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
 import { skapaForeningsDokumentFranFil } from "@/components/dokumentbank/forening-dokument-uppladdning";
 import {
+  FilUppladdningsRuta,
+  type FilUppladdningsResultat,
+} from "@/components/FilUppladdningsRuta";
+import {
   laddaNedForeningsDokumentFil,
   oppnaForeningsDokumentPreview,
 } from "@/components/dokumentbank/forening-dokument-visning";
@@ -327,31 +331,28 @@ function EgetDokumentUppladdning({
     sparaVal: DokumentSparaValType,
   ) => string | null;
 }) {
-  const [fel, setFel] = useState<string | null>(null);
-  const [laddar, setLaddar] = useState(false);
+  const [meddelande, setMeddelande] = useState<string | null>(null);
   const [sparaVal, setSparaVal] = useState<DokumentSparaValType>({
     typ: "bara-forening",
   });
 
-  async function hanteraFil(fil: File | null) {
-    if (!fil) return;
+  async function hanteraFil(
+    fil: File,
+    onProgress: (procent: number) => void,
+  ): Promise<FilUppladdningsResultat> {
+    setMeddelande(null);
     if (!dokumentSparaValArOk(sparaVal)) {
-      setFel("Välj projekt och mapp om dokumentet ska sparas i både bank och projekt.");
-      return;
+      return {
+        ok: false,
+        fel: "Välj projekt och mapp om dokumentet ska sparas i både bank och projekt.",
+      };
     }
-    setFel(null);
-    setLaddar(true);
-    try {
-      const result = await skapaForeningsDokumentFranFil(fil);
-      if (!result.ok) {
-        setFel(result.fel);
-        return;
-      }
-      const kopplingsFel = onSparad(result.dokument, sparaVal);
-      if (kopplingsFel) setFel(kopplingsFel);
-    } finally {
-      setLaddar(false);
-    }
+    const result = await skapaForeningsDokumentFranFil(fil, undefined, undefined, onProgress);
+    if (!result.ok) return result;
+    const kopplingsFel = onSparad(result.dokument, sparaVal);
+    if (kopplingsFel) return { ok: false, fel: kopplingsFel };
+    setMeddelande(`«${result.dokument.titel}» sparades i föreningens dokument.`);
+    return { ok: true };
   }
 
   return (
@@ -371,20 +372,14 @@ function EgetDokumentUppladdning({
           kompakt
         />
       </div>
-      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">
-        {laddar ? "Laddar upp…" : "Välj fil att spara"}
-        <input
-          type="file"
-          accept=".pdf,.doc,.docx,.txt,application/pdf,text/plain"
-          className="sr-only"
-          disabled={laddar}
-          onChange={(e) => {
-            void hanteraFil(e.target.files?.[0] ?? null);
-            e.target.value = "";
-          }}
-        />
-      </label>
-      {fel && <p className="mt-2 text-xs text-red-700">{fel}</p>}
+      <div className="mt-4">
+        <FilUppladdningsRuta onSpara={hanteraFil} sparaEtikett="Spara dokument" />
+      </div>
+      {meddelande && (
+        <p className="mt-2 text-xs text-primary-dark" role="status">
+          {meddelande}
+        </p>
+      )}
     </div>
   );
 }
@@ -525,10 +520,10 @@ function ForeningensDokument({
                   {(harInnehall || dok.dokumentKalla === "fil") && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         if (
                           dok.dokumentKalla === "fil" &&
-                          laddaNedForeningsDokumentFil(dok)
+                          (await laddaNedForeningsDokumentFil(dok))
                         ) {
                           return;
                         }
@@ -1148,8 +1143,9 @@ export function ForeningsDokumentbank() {
   }
 
   function taBortDokument(id: string) {
-    taBortDokumentFil(id);
     const state = lasForeningsDokument();
+    const dok = state.dokument.find((d) => d.id === id);
+    if (dok) taBortDokumentFil(dok);
     sparaForeningsDokument({
       ...state,
       dokument: state.dokument.filter((d) => d.id !== id),

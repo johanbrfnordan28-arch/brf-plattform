@@ -4,6 +4,7 @@ import type { EntreprenadAvtalForm } from "@/components/dokumentbank/mallar/entr
 import type { DokumentLayoutTema } from "@/components/dokumentbank/dokument-layout";
 import type { BankIdSignatur } from "@/lib/bankid-signering";
 import type { EgenkontrollState } from "@/components/dokumentbank/forening-dokument-egenkontroll";
+import type { MolnFilRef } from "@/lib/forening-filer-moln";
 
 // ── Typer ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ export type ForeningsDokument = {
   foreningSignaturer?: BankIdSignatur[];
   /** mall = skapad från mallkatalog, fil = uppladdad fil sparad per förening */
   dokumentKalla?: "mall" | "fil";
+  /** Uppladdad fil i molnet (eller lokalt i demo). Saknas för äldre filer sparade som data-URL. */
+  fil?: { filnamn: string; moln?: MolnFilRef };
   layoutTema?: DokumentLayoutTema;
   /** Strukturerad egenkontroll (t.ex. VVS) med kontrollpunkter och slutsignering. */
   egenkontroll?: EgenkontrollState;

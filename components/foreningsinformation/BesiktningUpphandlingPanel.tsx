@@ -35,7 +35,9 @@ type Props = {
   tjanstId: BesiktningTjanstId;
   uppladdadeFilnamn: string[];
   /** Laddar upp protokollfil till mappen (OVK m.m.). */
-  onLaddaUppProtokollFil?: (fil: File) => void;
+  onLaddaUppProtokollFil?: (
+    fil: File,
+  ) => Promise<{ ok: true } | { ok: false; fel: string }>;
 };
 
 export function BesiktningUpphandlingPanel({
@@ -208,8 +210,14 @@ export function BesiktningUpphandlingPanel({
                       const fil = e.target.files?.[0] ?? null;
                       if (fil) {
                         setFilnamn(fil.name);
-                        onLaddaUppProtokollFil(fil);
-                        setStatus(`Filen ${fil.name} lades till i mappen.`);
+                        setStatus(`Sparar ${fil.name}…`);
+                        void onLaddaUppProtokollFil(fil).then((res) =>
+                          setStatus(
+                            res.ok
+                              ? `Filen ${fil.name} lades till i mappen.`
+                              : res.fel,
+                          ),
+                        );
                       }
                       e.target.value = "";
                     }}

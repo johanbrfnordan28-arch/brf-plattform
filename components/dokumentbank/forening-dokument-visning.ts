@@ -5,7 +5,12 @@ import {
   type DokumentLayoutTema,
 } from "@/components/dokumentbank/dokument-layout";
 import { hamtaForeningsDokumentInnehall } from "@/components/dokumentbank/forening-dokument-innehall";
-import { hamtaDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
+import {
+  dokumentFilnamn,
+  hamtaDokumentFilUrl,
+  harDokumentFil,
+} from "@/components/dokumentbank/forening-dokument-fil-lager";
+import { oppnaFilIFlik } from "@/lib/forening-fil-lagring";
 import { arEntreprenadAvtalDokument } from "@/components/dokumentbank/forening-dokument-avtal";
 import { oppnaTextSomPdf } from "@/components/forening/avtal-pdf";
 import { standardPdfUndertecknareBlock } from "@/components/forening/pdf-undertecknare-block";
@@ -15,12 +20,9 @@ export function oppnaForeningsDokumentPreview(dok: ForeningsDokument): boolean {
     dok.layoutTema ?? STANDARD_DOKUMENT_LAYOUT;
   const text = hamtaForeningsDokumentInnehall(dok, { medSignaturer: false });
   if (!text.trim() && dok.dokumentKalla === "fil") {
-    const fil = hamtaDokumentFil(dok.id);
-    if (fil?.dataUrl) {
-      window.open(fil.dataUrl, "_blank");
-      return true;
-    }
-    return false;
+    if (!harDokumentFil(dok)) return false;
+    void oppnaFilIFlik(() => hamtaDokumentFilUrl(dok));
+    return true;
   }
 
   if (arEntreprenadAvtalDokument(dok)) {
@@ -50,14 +52,17 @@ export function oppnaForeningsDokumentPreview(dok: ForeningsDokument): boolean {
   });
 }
 
-export function laddaNedForeningsDokumentFil(dok: ForeningsDokument): boolean {
-  const fil = hamtaDokumentFil(dok.id);
-  if (!fil?.dataUrl) return false;
+export async function laddaNedForeningsDokumentFil(
+  dok: ForeningsDokument,
+): Promise<boolean> {
+  const url = await hamtaDokumentFilUrl(dok);
+  if (!url) return false;
   const a = document.createElement("a");
-  a.href = fil.dataUrl;
-  a.download = fil.filnamn;
+  a.href = url;
+  a.download = dokumentFilnamn(dok);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
   return true;
 }

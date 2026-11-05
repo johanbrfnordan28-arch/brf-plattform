@@ -31,10 +31,10 @@ export function ForeningInternDokumentHamta({ className = "" }: Props) {
     return () => window.removeEventListener(FORENINGS_DOK_EVENT, ladda);
   }, []);
 
-  function hamta(ref: ArshjulBilagaRef) {
+  async function hamta(ref: ArshjulBilagaRef) {
     setFel(null);
     setMeddelande(null);
-    const resultat = skapaForeningsDokumentFranArshjul(ref);
+    const resultat = await skapaForeningsDokumentFranArshjul(ref);
     if (!resultat.ok) {
       setFel(resultat.fel);
       return;
@@ -69,7 +69,7 @@ export function ForeningInternDokumentHamta({ className = "" }: Props) {
             </div>
             <button
               type="button"
-              onClick={() => hamta(b)}
+              onClick={() => void hamta(b)}
               className="shrink-0 rounded-lg border border-primary px-3 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
             >
               Spara här

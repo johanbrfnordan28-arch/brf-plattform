@@ -303,10 +303,12 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
               <select
                 className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
                 defaultValue=""
-                onChange={(e) => {
-                  const dokId = e.target.value;
+                onChange={async (e) => {
+                  const select = e.currentTarget;
+                  const dokId = select.value;
                   if (!dokId) return;
-                  const resultat = kopieraForeningsDokumentTillBilaga(dokId);
+                  const resultat = await kopieraForeningsDokumentTillBilaga(dokId);
+                  select.value = "";
                   if (!resultat.ok) {
                     setFilFel(resultat.fel);
                     return;
@@ -315,7 +317,6 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
                   onSpara({
                     bilagor: [...(handelse.bilagor ?? []), resultat.bilaga],
                   });
-                  e.target.value = "";
                 }}
               >
                 <option value="">Välj dokument …</option>

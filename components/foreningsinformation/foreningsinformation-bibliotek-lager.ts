@@ -1,15 +1,20 @@
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import type { SparadDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
 import {
-  lasFilSomDataUrl,
-  MAX_UPPLADDAD_FIL_STORLEK,
-  type SparadDokumentFil,
-} from "@/components/dokumentbank/forening-dokument-fil-lager";
+  hamtaForeningFilUrlFranPlats,
+  sparaForeningFil,
+  taBortForeningFilFranPlats,
+  type FilSparResultat,
+  type MolnFilRef,
+} from "@/lib/forening-fil-lagring";
 
 export type BibliotekUppladdatDokument = {
   id: string;
   filnamn: string;
   uppladdad: string;
+  /** Saknas för filer sparade lokalt i webbläsaren (demo/äldre uppladdningar). */
+  moln?: MolnFilRef;
 };
 
 export type BibliotekUndermappState = {
@@ -26,6 +31,7 @@ export type BibliotekState = Record<string, BibliotekHuvudmappState>;
 
 const BIBLIOTEK_BASE = "brf-forening-bibliotek-mappar";
 const BIBLIOTEK_FILER_BASE = "brf-forening-bibliotek-filer";
+const FIL_MODUL = "forening-bibliotek";
 
 export function bibliotekStorageKey(): string {
   return foreningStorageKey(BIBLIOTEK_BASE);
@@ -37,7 +43,8 @@ function bibliotekFilerKey(): string {
 
 type FilLager = Record<string, SparadDokumentFil>;
 
-function lasFiler(): FilLager {
+/** Äldre uppladdningar som sparades som data-URL i localStorage. */
+function lasAldreFiler(): FilLager {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(bibliotekFilerKey());
@@ -47,27 +54,36 @@ function lasFiler(): FilLager {
   }
 }
 
-function sparaFiler(filer: FilLager): boolean {
-  return safeSetLocalStorage(bibliotekFilerKey(), JSON.stringify(filer)).ok;
-}
-
-export function hamtaBibliotekFil(dokId: string): SparadDokumentFil | null {
-  return lasFiler()[dokId] ?? null;
+/** Ger en blob-URL att öppna filen med; anroparen ansvarar för att släppa den. */
+export async function hamtaBibliotekFilUrl(
+  dok: BibliotekUppladdatDokument,
+): Promise<string | null> {
+  const url = await hamtaForeningFilUrlFranPlats({
+    modul: FIL_MODUL,
+    dokId: dok.id,
+    moln: dok.moln,
+  });
+  if (url || dok.moln) return url;
+  const aldre = lasAldreFiler()[dok.id];
+  if (!aldre?.dataUrl) return null;
+  const blob = await (await fetch(aldre.dataUrl)).blob();
+  return URL.createObjectURL(blob);
 }
 
 export function sparaBibliotekFil(
   dokId: string,
-  fil: SparadDokumentFil,
-): boolean {
-  const all = lasFiler();
-  all[dokId] = fil;
-  return sparaFiler(all);
+  fil: File,
+  onProgress?: (procent: number) => void,
+): Promise<FilSparResultat> {
+  return sparaForeningFil({ modul: FIL_MODUL, dokId, fil, onProgress });
 }
 
-export function taBortBibliotekFil(dokId: string): void {
-  const all = lasFiler();
-  delete all[dokId];
-  sparaFiler(all);
+export function taBortBibliotekFil(dok: BibliotekUppladdatDokument): void {
+  taBortForeningFilFranPlats({ modul: FIL_MODUL, dokId: dok.id, moln: dok.moln });
+  const all = lasAldreFiler();
+  if (!(dok.id in all)) return;
+  delete all[dok.id];
+  safeSetLocalStorage(bibliotekFilerKey(), JSON.stringify(all));
 }
 
 export function lasBibliotekState(): BibliotekState | null {
@@ -84,21 +100,4 @@ export function lasBibliotekState(): BibliotekState | null {
 export function sparaBibliotekState(state: BibliotekState): boolean {
   if (typeof window === "undefined") return false;
   return safeSetLocalStorage(bibliotekStorageKey(), JSON.stringify(state)).ok;
-}
-
-export async function lasInBibliotekFil(
-  fil: File,
-): Promise<{ ok: true; dataUrl: string } | { ok: false; fel: string }> {
-  if (fil.size > MAX_UPPLADDAD_FIL_STORLEK) {
-    return {
-      ok: false,
-      fel: "Filen är för stor (max cirka 2,5 MB).",
-    };
-  }
-  try {
-    const dataUrl = await lasFilSomDataUrl(fil);
-    return { ok: true, dataUrl };
-  } catch {
-    return { ok: false, fel: "Kunde inte läsa filen." };
-  }
 }
