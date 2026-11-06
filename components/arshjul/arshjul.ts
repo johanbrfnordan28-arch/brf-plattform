@@ -1,6 +1,10 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import { arDeladFil, type DeladFil } from "@/lib/forening-fil-lagring";
 import {
+  normaliseraBesiktningResultat,
+  type BesiktningResultatVarden,
+} from "@/lib/besiktning-intervall";
+import {
   normaliseraArshjulSignering,
   type ArshjulDokumentSignering,
 } from "@/components/arshjul/arshjul-dokument-signering";
@@ -94,7 +98,9 @@ export type ArshjulHandelse = {
   leverantor?: string;
   /** Datum då senaste besiktningen godkändes (OVK m.m.) — ISO-datum. */
   besiktningSenastDatum?: string;
-  /** Senaste besiktningen underkändes först och godkändes vid ombesiktning. */
+  /** Resultat, ombesiktning och OVK-anmärkningar för senaste besiktningen. */
+  besiktningResultat?: BesiktningResultatVarden;
+  /** @deprecated Ersatt av besiktningResultat — behålls för äldre data. */
   besiktningUnderkandForst?: boolean;
   /** År då den ordinarie besiktningen skulle ha gjorts — grund för nästa intervall. */
   besiktningOrdinarieAr?: number;
@@ -411,6 +417,7 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
       /^\d{4}-\d{2}-\d{2}$/.test(raw.besiktningSenastDatum.trim())
         ? raw.besiktningSenastDatum.trim()
         : undefined,
+    besiktningResultat: rensaBesiktningResultat(raw.besiktningResultat),
     besiktningUnderkandForst: raw.besiktningUnderkandForst ? true : undefined,
     besiktningOrdinarieAr:
       raw.besiktningUnderkandForst &&
@@ -424,6 +431,11 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
     bankid: rensaBankid(raw.bankid),
     signering: rensaSignering(raw.signering),
   };
+}
+
+function rensaBesiktningResultat(value: unknown): BesiktningResultatVarden | undefined {
+  const v = normaliseraBesiktningResultat(value);
+  return v.resultat || v.anmarkningar ? v : undefined;
 }
 
 function rensaSignering(value: unknown): ArshjulDokumentSignering | undefined {

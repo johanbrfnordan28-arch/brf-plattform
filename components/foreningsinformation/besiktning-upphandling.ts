@@ -15,7 +15,13 @@ import {
   ovkBostadIntervallFromVentilation,
   ovkIntervallBostadHint,
 } from "@/components/underhallsplan/besiktningar";
-import { arFranDatum, beraknaNastaBesiktningAr } from "@/lib/besiktning-intervall";
+import {
+  arFranDatum,
+  beraknaNastaBesiktningAr,
+  beskrivBesiktningResultat,
+  normaliseraSenasteBesiktning,
+  type SenasteBesiktningUppgifter,
+} from "@/lib/besiktning-intervall";
 import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 import { foreningStorageKey } from "@/lib/foreningStorage";
@@ -127,6 +133,8 @@ export type SparadHandling = {
 };
 
 export type BesiktningUpphandlingPost = {
+  /** Senaste ordinarie besiktning — en post som uppdateras, inte ett protokoll. */
+  senaste?: SenasteBesiktningUppgifter;
   egnaProtokoll: TidigareProtokoll[];
   upphandlingSkapad?: string;
   underlagText?: string;
@@ -211,6 +219,7 @@ function normaliseraPost(raw: unknown): BesiktningUpphandlingPost {
   if (!raw || typeof raw !== "object") return tom;
   const rad = raw as Partial<BesiktningUpphandlingPost>;
   return {
+    senaste: normaliseraSenasteBesiktning(rad.senaste),
     egnaProtokoll: Array.isArray(rad.egnaProtokoll)
       ? rad.egnaProtokoll.filter(arProtokoll)
       : [],
@@ -408,6 +417,39 @@ export function nastaBesiktningArForProtokoll(
   });
 }
 
+export function hamtaSenasteBesiktning(
+  tjanst: BesiktningTjanstId,
+): SenasteBesiktningUppgifter | undefined {
+  return hamtaBesiktningPost(tjanst).senaste;
+}
+
+/**
+ * Sparar senaste besiktningen. Ersätts en tidigare besiktning med annat datum
+ * flyttas den till historiken bland tidigare protokoll.
+ */
+export function sparaSenasteBesiktning(
+  tjanst: BesiktningTjanstId,
+  uppgifter: SenasteBesiktningUppgifter,
+): void {
+  const post = hamtaBesiktningPost(tjanst);
+  const tidigare = post.senaste;
+  if (tidigare?.datum && tidigare.datum !== uppgifter.datum) {
+    post.egnaProtokoll = [
+      ...post.egnaProtokoll,
+      {
+        id: `prot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        kalla: "egen",
+        datum: tidigare.datum,
+        utforsAv: tidigare.utforsAv ?? "",
+        sammanfattning:
+          beskrivBesiktningResultat(tjanst, tidigare) || "Tidigare besiktning.",
+      },
+    ];
+  }
+  post.senaste = normaliseraSenasteBesiktning(uppgifter);
+  skrivPost(tjanst, post);
+}
+
 export function laggTillEgetProtokoll(
   tjanst: BesiktningTjanstId,
   input: {
@@ -465,6 +507,18 @@ export function ovkIntervallInformationsText(ventilationssystem: string): string
     `• ${bostadRad}`,
     `• Verksamhetslokaler (butik, kontor m.m.): alltid vart ${OVK_INTERVALL_VERKSAMHET_AR}:e år, oavsett ventilationstyp.`,
   ].join("\n");
+}
+
+function formateraSenaste(tjanst: BesiktningTjanstId): string {
+  const s = hamtaSenasteBesiktning(tjanst);
+  if (!s) return "";
+  return [
+    `Senaste besiktning: ${s.datum ?? "datum saknas"}`,
+    s.utforsAv ? `utförd av ${s.utforsAv}` : "",
+    beskrivBesiktningResultat(tjanst, s),
+  ]
+    .filter(Boolean)
+    .join(" — ");
 }
 
 function formateraProtokoll(protokoll: TidigareProtokoll[]): string {
@@ -542,7 +596,9 @@ export function genereraBesiktningUnderlagText(
     tjanst.omfattning,
     "",
     "Tidigare protokoll",
-    formateraProtokoll(allaProtokoll(tjanstId, uppladdadeFilnamn)),
+    [formateraSenaste(tjanstId), formateraProtokoll(allaProtokoll(tjanstId, uppladdadeFilnamn))]
+      .filter(Boolean)
+      .join("\n"),
     "",
     `Avtalet och beställningen undertecknas för föreningen av: ${signerRad()}`,
     "Entreprenören signerar beställningen först. Därefter signerar föreningen. Handlingarna sparas i Styrning och Dokument.",
@@ -575,7 +631,9 @@ export function genereraBesiktningAnbudsformularText(
       : []),
     "",
     "Tidigare protokoll som anbudet ska förhålla sig till",
-    formateraProtokoll(allaProtokoll(tjanstId, uppladdadeFilnamn)),
+    [formateraSenaste(tjanstId), formateraProtokoll(allaProtokoll(tjanstId, uppladdadeFilnamn))]
+      .filter(Boolean)
+      .join("\n"),
     "",
     "Uppdrag",
     tjanst.omfattning,

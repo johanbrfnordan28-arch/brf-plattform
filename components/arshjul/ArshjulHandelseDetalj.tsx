@@ -36,12 +36,12 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     const arEnergi = arshjulArEnergideklaration(handelse);
     const arRadon = arshjulArRadon(handelse);
     const intro = arOvk
-      ? "OVK: ange vem som utförde besiktningen och när den godkändes. Nästa OVK räknas ut automatiskt."
+      ? "OVK: ange vem som utförde besiktningen, besiktningsdatum, resultat och antal anmärkningar. Nästa OVK räknas ut automatiskt."
       : arEnergi
         ? "Energideklaration: ange vem som gjorde den och när den blev klar. Den gäller i 10 år."
         : arRadon
           ? "Radonmätning: ange vem som mätte och när mätningen blev klar. Rekommenderat intervall är 10 år."
-          : "Ange vem som utförde besiktningen och när den godkändes.";
+          : "Ange vem som utförde besiktningen, besiktningsdatum och resultat.";
 
     return (
       <div className="mt-3 space-y-4 border-t border-border/70 pt-3">

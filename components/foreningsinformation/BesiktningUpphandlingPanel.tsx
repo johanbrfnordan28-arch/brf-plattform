@@ -12,8 +12,8 @@ import {
   genereraBesiktningAnbudsformularText,
   genereraBesiktningUnderlagText,
   hamtaBesiktningPost,
-  laggTillEgetProtokoll,
-  nastaBesiktningArForProtokoll,
+  hamtaSenasteBesiktning,
+  sparaSenasteBesiktning,
   skapaBesiktningBestallning,
   skapaBesiktningUpphandling,
   signeraBesiktningBestallning,
@@ -30,8 +30,8 @@ import { lasAktivForeningId, lasForeningProfil } from "@/lib/forening-registry";
 import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 import { harTillrackligaBankIdSignaturer } from "@/lib/bankid-signering";
 import { MOLN_FIL_ACCEPT } from "@/lib/forening-fil-lagring";
-import { BesiktningUnderkandFalt } from "@/components/BesiktningUnderkandFalt";
-import { arFranDatum, kontrolleraOrdinarieAr, tolkaAr } from "@/lib/besiktning-intervall";
+import { SenasteBesiktningFormular } from "@/components/SenasteBesiktningFormular";
+import type { SenasteBesiktningUppgifter } from "@/lib/besiktning-intervall";
 
 const inputKlass =
   "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -61,12 +61,8 @@ export function BesiktningUpphandlingPanel({
     fel: boolean;
     text: string;
   } | null>(null);
-  const [datum, setDatum] = useState("");
-  const [utforsAv, setUtforsAv] = useState("");
-  const [sammanfattning, setSammanfattning] = useState("");
-  const [filnamn, setFilnamn] = useState("");
-  const [underkand, setUnderkand] = useState(false);
-  const [ordinarieAr, setOrdinarieAr] = useState("");
+  const [senaste, setSenaste] = useState<SenasteBesiktningUppgifter | undefined>();
+  const [laddarUpp, setLaddarUpp] = useState(false);
   const [entreprenorNamn, setEntreprenorNamn] = useState("");
   const [entreprenorEpost, setEntreprenorEpost] = useState("");
   const [prisKr, setPrisKr] = useState("");
@@ -76,6 +72,7 @@ export function BesiktningUpphandlingPanel({
   function ladda() {
     const post = hamtaBesiktningPost(tjanstId);
     setProtokoll(allaProtokoll(tjanstId, uppladdadeFilnamn));
+    setSenaste(hamtaSenasteBesiktning(tjanstId));
     setSkapad(post.upphandlingSkapad);
     setHandlingar(sparadeHandlingar(tjanstId));
     setBestallning(post.bestallning);
@@ -99,52 +96,17 @@ export function BesiktningUpphandlingPanel({
     ? harTillrackligaBankIdSignaturer(bestallning.foretagSignaturer)
     : false;
 
-  const kanUnderkannas = tjanstId === "ovk";
-  const ordinarie = kanUnderkannas && underkand ? tolkaAr(ordinarieAr) : null;
-  const nastaAr = hydrated
-    ? nastaBesiktningArForProtokoll(tjanstId, {
-        datum,
-        underkandForst: Boolean(ordinarie),
-        ordinarieAr: ordinarie ?? undefined,
-      })
-    : null;
-  const datumEtikett =
-    tjanstId === "ovk"
-      ? "Datum för godkänd OVK"
-      : tjanstId === "energideklaration"
-        ? "Datum då energideklarationen blev klar"
-        : "Datum då radonmätningen blev klar";
-
-  function sparaProtokoll() {
-    if (kanUnderkannas && underkand) {
-      const fel = kontrolleraOrdinarieAr(ordinarie, arFranDatum(datum));
-      if (fel) {
-        setProtokollStatus({ fel: true, text: fel });
-        return;
-      }
-    }
-    const resultat = laggTillEgetProtokoll(tjanstId, {
-      datum,
-      utforsAv,
-      sammanfattning,
-      filnamn,
-      ordinarieAr: ordinarie ?? undefined,
-    });
-    if (!resultat.ok) {
-      setProtokollStatus({ fel: true, text: resultat.fel });
-      return;
-    }
-    setDatum("");
-    setUtforsAv("");
-    setSammanfattning("");
-    setFilnamn("");
-    setUnderkand(false);
-    setOrdinarieAr("");
-    setProtokollStatus({
-      fel: false,
-      text: "Uppgifterna är sparade i mappen och följer med i underlaget.",
-    });
-    ladda();
+  async function laddaUppProtokoll(fil: File) {
+    if (!onLaddaUppProtokollFil) return;
+    setLaddarUpp(true);
+    setProtokollStatus({ fel: false, text: `Laddar upp ${fil.name}…` });
+    const res = await onLaddaUppProtokollFil(fil);
+    setLaddarUpp(false);
+    setProtokollStatus(
+      res.ok
+        ? { fel: false, text: `${fil.name} är sparat bland protokollen.` }
+        : { fel: true, text: res.fel },
+    );
   }
 
   return (
@@ -167,11 +129,33 @@ export function BesiktningUpphandlingPanel({
         </p>
       </div>
 
+      <div className="rounded-lg border border-border bg-white p-4">
+        <p className="text-sm font-semibold text-foreground">Senaste besiktning</p>
+        <p className="mt-1 text-xs text-muted">
+          Uppgifterna uppdateras när en ny besiktning görs. Den tidigare besiktningen
+          flyttas då till historiken nedan.
+        </p>
+        {hydrated ? (
+          <div className="mt-3">
+            <SenasteBesiktningFormular
+              key={senaste?.datum ?? "ny"}
+              typ={tjanstId}
+              intervallAr={besiktningIntervallAr(tjanstId)}
+              sparat={senaste ?? {}}
+              onSpara={(uppgifter) => {
+                sparaSenasteBesiktning(tjanstId, uppgifter);
+                ladda();
+              }}
+            />
+          </div>
+        ) : null}
+      </div>
+
       <div>
-        <p className="text-sm font-medium text-foreground">Tidigare protokoll</p>
+        <p className="text-sm font-medium text-foreground">Protokoll och tidigare besiktningar</p>
         {protokoll.length === 0 ? (
           <p className="mt-1 text-sm text-muted">
-            Inga protokoll ännu — lägg till uppgifter nedan eller ladda upp fil.
+            Inga protokoll ännu. Ladda upp protokollet när en ny besiktning har gjorts.
           </p>
         ) : (
           <ul className="mt-2 space-y-2">
@@ -181,29 +165,16 @@ export function BesiktningUpphandlingPanel({
                 className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 <p className="font-medium text-foreground">
-                  {rad.datum
-                    ? `${tjanstId === "ovk" ? "Godkänd" : "Klar"} ${rad.datum}`
-                    : "Datum saknas"}
+                  {rad.filnamn ?? (rad.datum ? `Besiktning ${rad.datum}` : "Datum saknas")}
+                  {rad.filnamn && rad.datum ? ` · ${rad.datum}` : ""}
                   {rad.utforsAv ? ` · ${rad.utforsAv}` : ""}
-                  {rad.filnamn ? ` · ${rad.filnamn}` : ""}
                 </p>
-                {rad.underkandForst && rad.ordinarieAr ? (
-                  <p className="text-xs text-muted">
-                    Underkänd först, godkänd vid ombesiktning. Ordinarie år{" "}
-                    {rad.ordinarieAr}.
-                  </p>
-                ) : null}
-                {(() => {
-                  const nasta = nastaBesiktningArForProtokoll(tjanstId, rad);
-                  return nasta ? (
-                    <p className="text-xs text-primary-dark">Nästa: år {nasta}</p>
-                  ) : null;
-                })()}
                 <p className="text-muted">{rad.sammanfattning}</p>
                 {rad.kalla === "egen" && (
                   <button
                     type="button"
                     onClick={() => {
+                      if (!window.confirm("Ta bort raden från historiken?")) return;
                       taBortEgetProtokoll(tjanstId, rad.id);
                       ladda();
                     }}
@@ -216,116 +187,32 @@ export function BesiktningUpphandlingPanel({
             ))}
           </ul>
         )}
-        <p className="mt-4 text-sm font-medium text-foreground">
-          Lägg till senaste besiktning
-        </p>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            <label className="block text-xs font-medium text-muted">
-              {datumEtikett}
-              <input
-                type="date"
-                value={datum}
-                onChange={(event) => setDatum(event.target.value)}
-                className={`${inputKlass} mt-1`}
-              />
-            </label>
-            <label className="block text-xs font-medium text-muted">
-              Utförd av (företag eller person)
-              <input
-                type="text"
-                value={utforsAv}
-                onChange={(event) => setUtforsAv(event.target.value)}
-                placeholder="T.ex. Ventilationskontroll AB"
-                className={`${inputKlass} mt-1`}
-              />
-            </label>
-            <label className="block text-xs font-medium text-muted sm:col-span-2">
-              Anteckning (valfritt)
-              <textarea
-                value={sammanfattning}
-                onChange={(event) => setSammanfattning(event.target.value)}
-                placeholder="T.ex. anmärkningar, åtgärder eller mätvärde"
-                rows={2}
-                className={`${inputKlass} mt-1`}
-              />
-            </label>
-            {kanUnderkannas ? (
-              <div className="sm:col-span-2">
-                <BesiktningUnderkandFalt
-                  underkand={underkand}
-                  ordinarieAr={ordinarieAr}
-                  onUnderkand={setUnderkand}
-                  onOrdinarieAr={setOrdinarieAr}
-                  inputKlass={`${inputKlass} mt-1 max-w-[10rem]`}
-                />
-              </div>
-            ) : null}
-            {nastaAr ? (
-              <p className="text-sm text-foreground sm:col-span-2">
-                {tjanstId === "ovk"
-                  ? "Nästa OVK"
-                  : tjanstId === "energideklaration"
-                    ? "Nästa energideklaration"
-                    : "Nästa radonmätning"}
-                :{" "}
-                <span className="font-medium">år {nastaAr}</span>
-                <span className="text-muted">
-                  {" "}
-                  (vart {besiktningIntervallAr(tjanstId)}:e år)
-                </span>
-              </p>
-            ) : null}
-            <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-              {onLaddaUppProtokollFil ? (
-                <label className="inline-flex cursor-pointer rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]">
-                  {filnamn ? "Byt protokollfil" : "Bifoga protokollfil (valfritt)"}
-                  <input
-                    type="file"
-                    accept={MOLN_FIL_ACCEPT}
-                    className="sr-only"
-                    onChange={(e) => {
-                      const fil = e.target.files?.[0] ?? null;
-                      if (fil) {
-                        setFilnamn(fil.name);
-                        setProtokollStatus({ fel: false, text: `Laddar upp ${fil.name}…` });
-                        void onLaddaUppProtokollFil(fil).then((res) =>
-                          setProtokollStatus(
-                            res.ok
-                              ? {
-                                  fel: false,
-                                  text: `${fil.name} är uppladdad. Klicka på Spara uppgifter.`,
-                                }
-                              : { fel: true, text: res.fel },
-                          ),
-                        );
-                      }
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              ) : null}
-              {filnamn ? (
-                <span className="text-xs text-muted">Bifogad fil: {filnamn}</span>
-              ) : null}
-            </div>
-            <div className="sm:col-span-2">
-              <button
-                type="button"
-                onClick={sparaProtokoll}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-              >
-                Spara uppgifter
-              </button>
-              {protokollStatus ? (
-                <p
-                  className={`mt-2 text-sm ${protokollStatus.fel ? "text-red-800" : "text-primary-dark"}`}
-                  role={protokollStatus.fel ? "alert" : "status"}
-                >
-                  {protokollStatus.text}
-                </p>
-              ) : null}
-            </div>
-        </div>
+        {onLaddaUppProtokollFil ? (
+          <label
+            className={`mt-3 inline-flex cursor-pointer rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0] ${laddarUpp ? "pointer-events-none opacity-50" : ""}`}
+          >
+            {laddarUpp ? "Laddar upp…" : "Ladda upp nytt protokoll"}
+            <input
+              type="file"
+              accept={MOLN_FIL_ACCEPT}
+              className="sr-only"
+              disabled={laddarUpp}
+              onChange={(e) => {
+                const fil = e.target.files?.[0];
+                e.target.value = "";
+                if (fil) void laddaUppProtokoll(fil);
+              }}
+            />
+          </label>
+        ) : null}
+        {protokollStatus ? (
+          <p
+            className={`mt-2 text-sm ${protokollStatus.fel ? "text-red-800" : "text-primary-dark"}`}
+            role={protokollStatus.fel ? "alert" : "status"}
+          >
+            {protokollStatus.text}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">

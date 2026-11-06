@@ -22,8 +22,8 @@ import {
   type Besiktning,
   type BesiktningId,
 } from "@/components/underhallsplan/besiktningar";
-import { BesiktningUnderkandFalt } from "@/components/BesiktningUnderkandFalt";
-import { beraknaNastaBesiktningAr, tolkaAr } from "@/lib/besiktning-intervall";
+import { BesiktningIntervallInfo } from "@/components/BesiktningResultatFalt";
+import { beraknaNastaBesiktningAr } from "@/lib/besiktning-intervall";
 
 export { synkaNastaBesiktningFranUtfört };
 
@@ -72,8 +72,8 @@ export function UtfördaBesiktningarPanel({
         Utförda besiktningar (OVK, sotning m.m.)
       </p>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Ange vem som utförde senaste besiktningen, när den godkändes och vad den
-        kostade. När du sparar steg 3 räknas nästa besiktning ut (år + intervall)
+        Ange vem som utförde senaste besiktningen, vilket år den gjordes och vad
+        den kostade. När du sparar steg 3 räknas nästa besiktning ut (år + intervall)
         och schemat kan sedan justeras i steg 5. Stäng av det som inte gäller er
         förening.
       </p>
@@ -291,9 +291,9 @@ export function UtfördaBesiktningarPanel({
                   <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">
                       {besiktning.id === "ovk" && besiktning.ovkInkluderaVerksamhet
-                        ? "OVK bostäder senast godkänd (år)"
+                        ? "Senaste ordinarie OVK bostäder (år)"
                         : besiktningKanUnderkannas(besiktning.id)
-                          ? "Senast godkänd (år)"
+                          ? "Senaste ordinarie besiktning (år)"
                           : "Senast utförd (år)"}
                     </span>
                     <input
@@ -312,36 +312,10 @@ export function UtfördaBesiktningarPanel({
                     />
                   </label>
                   {besiktningKanUnderkannas(besiktning.id) && (
-                    <div className="sm:col-span-2">
-                      <BesiktningUnderkandFalt
-                        underkand={Boolean(besiktning.senastUnderkandForst)}
-                        ordinarieAr={
-                          besiktning.senastOrdinarieAr
-                            ? String(besiktning.senastOrdinarieAr)
-                            : ""
-                        }
-                        onUnderkand={(v) =>
-                          uppdatera(besiktning.id, {
-                            senastUnderkandForst: v || undefined,
-                            ...(v ? {} : { senastOrdinarieAr: undefined }),
-                          })
-                        }
-                        onOrdinarieAr={(v) =>
-                          uppdatera(besiktning.id, {
-                            senastOrdinarieAr: tolkaAr(v) ?? undefined,
-                          })
-                        }
-                        inputKlass="mt-1 w-full max-w-[10rem] rounded-lg border border-border px-2.5 py-1.5 text-sm"
-                      />
-                      {besiktning.senastUnderkandForst &&
-                      besiktning.senastOrdinarieAr &&
-                      besiktning.senastUtförtAr &&
-                      besiktning.senastOrdinarieAr > besiktning.senastUtförtAr ? (
-                        <p className="mt-1 text-xs text-red-800" role="alert">
-                          Ordinarie besiktningsår kan inte vara senare än året för
-                          godkännandet.
-                        </p>
-                      ) : null}
+                    <div className="text-xs text-muted sm:col-span-2">
+                      Ange året för den ordinarie besiktningen, även om den godkändes
+                      först vid en ombesiktning senare.
+                      <BesiktningIntervallInfo />
                     </div>
                   )}
                   {(() => {
@@ -355,8 +329,8 @@ export function UtfördaBesiktningarPanel({
                         Nästa {besiktning.id === "ovk" ? "OVK (bostäder)" : "tillfälle"}:{" "}
                         <span className="font-medium text-foreground">år {nasta}</span>{" "}
                         – vart {besiktning.intervallAr}:e år räknat från{" "}
-                        {besiktning.senastUnderkandForst && besiktning.senastOrdinarieAr
-                          ? `ordinarie år ${besiktning.senastOrdinarieAr}`
+                        {besiktningKanUnderkannas(besiktning.id)
+                          ? "senaste ordinarie besiktning"
                           : "senaste tillfället"}
                         . Uppdateras i planen när du sparar.
                       </p>
@@ -365,7 +339,7 @@ export function UtfördaBesiktningarPanel({
                   {besiktning.id === "ovk" && besiktning.ovkInkluderaVerksamhet && (
                     <label className="block text-sm">
                       <span className="text-xs font-medium text-muted">
-                        OVK verksamhet senast godkänd (år)
+                        Senaste ordinarie OVK verksamhet (år)
                       </span>
                       <input
                         type="number"
