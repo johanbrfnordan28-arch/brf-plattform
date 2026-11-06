@@ -92,8 +92,12 @@ export type ArshjulHandelse = {
    * OVK, sotning, energi m.m.: senast anlitad entreprenör/leverantör.
    */
   leverantor?: string;
-  /** Senaste besiktning (OVK m.m.) — ISO-datum. */
+  /** Datum då senaste besiktningen godkändes (OVK m.m.) — ISO-datum. */
   besiktningSenastDatum?: string;
+  /** Senaste besiktningen underkändes först och godkändes vid ombesiktning. */
+  besiktningUnderkandForst?: boolean;
+  /** År då den ordinarie besiktningen skulle ha gjorts — grund för nästa intervall. */
+  besiktningOrdinarieAr?: number;
   /** Saker som ska hanteras, en rad per punkt. */
   attHantera?: string[];
   /** Dagordningar och liknande, sparade i webbläsaren. */
@@ -406,6 +410,14 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
       typeof raw.besiktningSenastDatum === "string" &&
       /^\d{4}-\d{2}-\d{2}$/.test(raw.besiktningSenastDatum.trim())
         ? raw.besiktningSenastDatum.trim()
+        : undefined,
+    besiktningUnderkandForst: raw.besiktningUnderkandForst ? true : undefined,
+    besiktningOrdinarieAr:
+      raw.besiktningUnderkandForst &&
+      Number.isInteger(raw.besiktningOrdinarieAr) &&
+      raw.besiktningOrdinarieAr! >= 1900 &&
+      raw.besiktningOrdinarieAr! <= 2100
+        ? raw.besiktningOrdinarieAr
         : undefined,
     attHantera: rensaAttHantera(raw.attHantera),
     bilagor: rensaBilagor(raw.bilagor),

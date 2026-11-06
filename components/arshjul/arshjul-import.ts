@@ -6,7 +6,10 @@ import {
 } from "@/components/arshjul/arshjul";
 import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import type { Besiktning } from "@/components/underhallsplan/besiktningar";
-import { OVK_INTERVALL_VERKSAMHET_AR } from "@/components/underhallsplan/besiktningar";
+import {
+  besiktningIntervallBasAr,
+  OVK_INTERVALL_VERKSAMHET_AR,
+} from "@/components/underhallsplan/besiktningar";
 import {
   normaliseraProjekt,
   projektStorageKey,
@@ -23,6 +26,16 @@ function kategoriFranBesiktning(id: string): ArshjulHandelse["kategori"] {
   return "besiktning";
 }
 
+function senasteBesiktning(b: Besiktning): Partial<ArshjulHandelse> {
+  const underkand = Boolean(b.senastUnderkandForst && b.senastOrdinarieAr);
+  return {
+    senastKlarAr: besiktningIntervallBasAr(b),
+    leverantor: b.senastUtförtAv?.trim() || undefined,
+    besiktningUnderkandForst: underkand || undefined,
+    besiktningOrdinarieAr: underkand ? b.senastOrdinarieAr : undefined,
+  };
+}
+
 function besiktningTillHandelse(b: Besiktning): ArshjulHandelse {
   const intervall = b.intervallAr >= 1 ? b.intervallAr : 1;
   const arsPlanering = b.id === "energideklaration" || b.id === "radon";
@@ -36,7 +49,7 @@ function besiktningTillHandelse(b: Besiktning): ArshjulHandelse {
     typ: "intervall",
     startAr: b.nastaBesiktningAr,
     intervallAr: intervall,
-    senastKlarAr: b.senastUtförtAr,
+    ...senasteBesiktning(b),
     utanFastDatum: arsPlanering,
     manad: arsPlanering ? undefined : 6,
     dag: arsPlanering ? undefined : 1,
@@ -60,7 +73,7 @@ function ovkTillHandelser(b: Besiktning): ArshjulHandelse[] {
       typ: "intervall",
       startAr: b.nastaBesiktningAr,
       intervallAr: bostadIntervall,
-      senastKlarAr: b.senastUtförtAr,
+      ...senasteBesiktning(b),
       utanFastDatum: true,
       paminnelseDagar: [...STANDARD_PAMINNELSE_DAGAR],
       klar: false,

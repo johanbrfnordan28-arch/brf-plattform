@@ -48,6 +48,19 @@ export function besiktningHarFastLagkravIntervall(id: BesiktningId): boolean {
   return id === "energideklaration" || id === "radon";
 }
 
+/** Energideklaration och radon godkänns/underkänns inte; SBA är egenkontroll. */
+export function besiktningKanUnderkannas(id: BesiktningId): boolean {
+  return id === "ovk" || id === "sotning" || id === "hiss";
+}
+
+/** Året nästa intervall räknas från: ordinarie år om besiktningen först underkändes. */
+export function besiktningIntervallBasAr(b: Besiktning): number | undefined {
+  if (b.senastUnderkandForst && b.senastOrdinarieAr && besiktningKanUnderkannas(b.id)) {
+    return b.senastOrdinarieAr;
+  }
+  return b.senastUtförtAr;
+}
+
 /** Vem som utförde senaste tillfället (steg 3) — ej årlig hiss/SBA-egenkontroll. */
 export function besiktningVisarSenastUtförtAv(b: Besiktning): boolean {
   return b.id !== "hiss" && b.id !== "sba";
@@ -62,6 +75,10 @@ export type Besiktning = {
   senastUtförtAr?: number;
   /** Företag eller utförare senaste tillfälle. */
   senastUtförtAv?: string;
+  /** Senaste besiktningen underkändes först och godkändes vid ombesiktning. */
+  senastUnderkandForst?: boolean;
+  /** År då den ordinarie besiktningen skulle ha gjorts — grund för nästa intervall. */
+  senastOrdinarieAr?: number;
   /** Faktisk kostnad senaste tillfälle; annars schablon från prismodell. */
   senastKostnadKr?: number;
   aktiv: boolean;
@@ -201,7 +218,7 @@ function arArIFSchema(nastaAr: number, intervallAr: number, ar: number): boolean
   return (ar - nastaAr) % intervallAr === 0;
 }
 
-function beraknaNastaArFranSenast(
+export function beraknaNastaArFranSenast(
   senastAr: number,
   intervallAr: number,
   planStartAr: number,
@@ -962,11 +979,13 @@ export function synkaNastaBesiktningFranUtfört(
   return lista.map((item) => {
     if (!item.aktiv) return item;
 
+    const basAr = besiktningIntervallBasAr(item);
+
     if (item.id === "ovk") {
       const patch: Partial<Besiktning> = {};
-      if (item.senastUtförtAr != null && item.senastUtförtAr > 0) {
+      if (basAr != null && basAr > 0) {
         patch.nastaBesiktningAr = beraknaNastaArFranSenast(
-          item.senastUtförtAr,
+          basAr,
           item.intervallAr,
           planStartAr,
         );
@@ -1014,13 +1033,13 @@ export function synkaNastaBesiktningFranUtfört(
         : item;
     }
 
-    if (item.senastUtförtAr == null || item.senastUtförtAr <= 0) {
+    if (basAr == null || basAr <= 0) {
       return item;
     }
     return {
       ...item,
       nastaBesiktningAr: beraknaNastaArFranSenast(
-        item.senastUtförtAr,
+        basAr,
         item.intervallAr,
         planStartAr,
       ),

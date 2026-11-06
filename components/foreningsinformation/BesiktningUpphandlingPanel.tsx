@@ -7,11 +7,13 @@ import { BankIdAvtalSignering } from "@/components/bankid/BankIdAvtalSignering";
 import {
   allaProtokoll,
   BESIKTNING_UPPHANDLING_EVENT,
+  besiktningIntervallAr,
   besiktningTjanst,
   genereraBesiktningAnbudsformularText,
   genereraBesiktningUnderlagText,
   hamtaBesiktningPost,
   laggTillEgetProtokoll,
+  nastaBesiktningArForProtokoll,
   skapaBesiktningBestallning,
   skapaBesiktningUpphandling,
   signeraBesiktningBestallning,
@@ -28,6 +30,8 @@ import { lasAktivForeningId, lasForeningProfil } from "@/lib/forening-registry";
 import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 import { harTillrackligaBankIdSignaturer } from "@/lib/bankid-signering";
 import { MOLN_FIL_ACCEPT } from "@/lib/forening-fil-lagring";
+import { BesiktningUnderkandFalt } from "@/components/BesiktningUnderkandFalt";
+import { arFranDatum, kontrolleraOrdinarieAr, tolkaAr } from "@/lib/besiktning-intervall";
 
 const inputKlass =
   "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -61,6 +65,8 @@ export function BesiktningUpphandlingPanel({
   const [utforsAv, setUtforsAv] = useState("");
   const [sammanfattning, setSammanfattning] = useState("");
   const [filnamn, setFilnamn] = useState("");
+  const [underkand, setUnderkand] = useState(false);
+  const [ordinarieAr, setOrdinarieAr] = useState("");
   const [entreprenorNamn, setEntreprenorNamn] = useState("");
   const [entreprenorEpost, setEntreprenorEpost] = useState("");
   const [prisKr, setPrisKr] = useState("");
@@ -93,12 +99,36 @@ export function BesiktningUpphandlingPanel({
     ? harTillrackligaBankIdSignaturer(bestallning.foretagSignaturer)
     : false;
 
+  const kanUnderkannas = tjanstId === "ovk";
+  const ordinarie = kanUnderkannas && underkand ? tolkaAr(ordinarieAr) : null;
+  const nastaAr = hydrated
+    ? nastaBesiktningArForProtokoll(tjanstId, {
+        datum,
+        underkandForst: Boolean(ordinarie),
+        ordinarieAr: ordinarie ?? undefined,
+      })
+    : null;
+  const datumEtikett =
+    tjanstId === "ovk"
+      ? "Datum för godkänd OVK"
+      : tjanstId === "energideklaration"
+        ? "Datum då energideklarationen blev klar"
+        : "Datum då radonmätningen blev klar";
+
   function sparaProtokoll() {
+    if (kanUnderkannas && underkand) {
+      const fel = kontrolleraOrdinarieAr(ordinarie, arFranDatum(datum));
+      if (fel) {
+        setProtokollStatus({ fel: true, text: fel });
+        return;
+      }
+    }
     const resultat = laggTillEgetProtokoll(tjanstId, {
       datum,
       utforsAv,
       sammanfattning,
       filnamn,
+      ordinarieAr: ordinarie ?? undefined,
     });
     if (!resultat.ok) {
       setProtokollStatus({ fel: true, text: resultat.fel });
@@ -108,9 +138,11 @@ export function BesiktningUpphandlingPanel({
     setUtforsAv("");
     setSammanfattning("");
     setFilnamn("");
+    setUnderkand(false);
+    setOrdinarieAr("");
     setProtokollStatus({
       fel: false,
-      text: "Protokollet är sparat i mappen och följer med i underlaget.",
+      text: "Uppgifterna är sparade i mappen och följer med i underlaget.",
     });
     ladda();
   }
@@ -149,10 +181,24 @@ export function BesiktningUpphandlingPanel({
                 className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 <p className="font-medium text-foreground">
-                  {rad.datum ? `Utförd ${rad.datum}` : "Utförandedatum saknas"}
+                  {rad.datum
+                    ? `${tjanstId === "ovk" ? "Godkänd" : "Klar"} ${rad.datum}`
+                    : "Datum saknas"}
                   {rad.utforsAv ? ` · ${rad.utforsAv}` : ""}
                   {rad.filnamn ? ` · ${rad.filnamn}` : ""}
                 </p>
+                {rad.underkandForst && rad.ordinarieAr ? (
+                  <p className="text-xs text-muted">
+                    Underkänd först, godkänd vid ombesiktning. Ordinarie år{" "}
+                    {rad.ordinarieAr}.
+                  </p>
+                ) : null}
+                {(() => {
+                  const nasta = nastaBesiktningArForProtokoll(tjanstId, rad);
+                  return nasta ? (
+                    <p className="text-xs text-primary-dark">Nästa: år {nasta}</p>
+                  ) : null;
+                })()}
                 <p className="text-muted">{rad.sammanfattning}</p>
                 {rad.kalla === "egen" && (
                   <button
@@ -171,11 +217,11 @@ export function BesiktningUpphandlingPanel({
           </ul>
         )}
         <p className="mt-4 text-sm font-medium text-foreground">
-          Lägg till ett utfört protokoll
+          Lägg till senaste besiktning
         </p>
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <label className="block text-xs font-medium text-muted">
-              Datum då kontrollen utfördes
+              {datumEtikett}
               <input
                 type="date"
                 value={datum}
@@ -194,15 +240,41 @@ export function BesiktningUpphandlingPanel({
               />
             </label>
             <label className="block text-xs font-medium text-muted sm:col-span-2">
-              Resultat (valfritt)
+              Anteckning (valfritt)
               <textarea
                 value={sammanfattning}
                 onChange={(event) => setSammanfattning(event.target.value)}
-                placeholder="T.ex. godkänt, anmärkningar eller mätvärde"
+                placeholder="T.ex. anmärkningar, åtgärder eller mätvärde"
                 rows={2}
                 className={`${inputKlass} mt-1`}
               />
             </label>
+            {kanUnderkannas ? (
+              <div className="sm:col-span-2">
+                <BesiktningUnderkandFalt
+                  underkand={underkand}
+                  ordinarieAr={ordinarieAr}
+                  onUnderkand={setUnderkand}
+                  onOrdinarieAr={setOrdinarieAr}
+                  inputKlass={`${inputKlass} mt-1 max-w-[10rem]`}
+                />
+              </div>
+            ) : null}
+            {nastaAr ? (
+              <p className="text-sm text-foreground sm:col-span-2">
+                {tjanstId === "ovk"
+                  ? "Nästa OVK"
+                  : tjanstId === "energideklaration"
+                    ? "Nästa energideklaration"
+                    : "Nästa radonmätning"}
+                :{" "}
+                <span className="font-medium">år {nastaAr}</span>
+                <span className="text-muted">
+                  {" "}
+                  (vart {besiktningIntervallAr(tjanstId)}:e år)
+                </span>
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
               {onLaddaUppProtokollFil ? (
                 <label className="inline-flex cursor-pointer rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]">
@@ -221,7 +293,7 @@ export function BesiktningUpphandlingPanel({
                             res.ok
                               ? {
                                   fel: false,
-                                  text: `${fil.name} är uppladdad. Klicka på Spara protokoll.`,
+                                  text: `${fil.name} är uppladdad. Klicka på Spara uppgifter.`,
                                 }
                               : { fel: true, text: res.fel },
                           ),
@@ -242,7 +314,7 @@ export function BesiktningUpphandlingPanel({
                 onClick={sparaProtokoll}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
               >
-                Spara protokoll
+                Spara uppgifter
               </button>
               {protokollStatus ? (
                 <p

@@ -6,6 +6,7 @@ import {
   type BesiktningTjanstId,
 } from "@/components/foreningsinformation/besiktning-upphandling";
 import { kategoriId } from "@/components/upphandling/kategorier";
+import { arFranDatum, beraknaNastaBesiktningAr } from "@/lib/besiktning-intervall";
 
 /** Styrelsemöten, stämma, ekonomi m.m. — ansvarig inom styrelsen. */
 export function arshjulAnvanderStyrelseAnsvarig(
@@ -103,16 +104,28 @@ export function besiktningTjanstIdFranArshjul(
   return null;
 }
 
+/** Återkommande besiktningar där senaste godkännande och nästa tillfälle följs upp. */
+export function arshjulArAterkommandeBesiktning(h: ArshjulHandelse): boolean {
+  return (
+    arshjulVisaForenkladBesiktning(h) ||
+    arshjulArSotning(h) ||
+    (h.kategori === "besiktning" && h.typ === "intervall")
+  );
+}
+
+/** Energideklaration och radonmätning godkänns eller underkänns inte. */
+export function arshjulBesiktningKanUnderkannas(h: ArshjulBesiktningRef): boolean {
+  return !arshjulKräverTioarsIntervall(h);
+}
+
 export function arshjulNastaBesiktningAr(h: ArshjulHandelse): number | null {
-  const intervall = h.intervallAr;
-  if (!intervall || intervall < 1) return h.startAr ?? null;
-  let senastAr = h.senastKlarAr;
-  if (!senastAr && h.besiktningSenastDatum?.trim()) {
-    const ar = Number(h.besiktningSenastDatum.slice(0, 4));
-    if (Number.isFinite(ar)) senastAr = ar;
-  }
-  if (senastAr) return senastAr + intervall;
-  return h.startAr ?? null;
+  const nasta = beraknaNastaBesiktningAr({
+    godkandAr: arFranDatum(h.besiktningSenastDatum) ?? h.senastKlarAr,
+    ordinarieAr:
+      h.senastKlarAr ?? (h.besiktningUnderkandForst ? h.besiktningOrdinarieAr : null),
+    intervallAr: h.intervallAr,
+  });
+  return nasta ?? h.startAr ?? null;
 }
 
 /** Skickar med senaste OVK från årshjulet som protokoll och skapar upphandling. */

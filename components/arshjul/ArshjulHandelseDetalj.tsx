@@ -1,24 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { ArshjulHandelse } from "@/components/arshjul/arshjul";
 import {
+  arshjulArAterkommandeBesiktning,
   arshjulArEnergideklaration,
   arshjulArOvk,
   arshjulArRadon,
   arshjulArSotning,
-  arshjulKräverTioarsIntervall,
-  arshjulNastaBesiktningAr,
   arshjulVisaForenkladBesiktning,
   entreprenorFaltEtikett,
   entreprenorFaltPlaceholder,
   SOTNING_ENTREPRENOR_INFO,
 } from "@/components/arshjul/arshjul-handelse-falt";
-import { ENERGI_RADON_LAGKRAV_INTERVALL_AR } from "@/components/underhallsplan/besiktningar";
 import { ArshjulSkapaUpphandlingKnapp } from "@/components/arshjul/ArshjulSkapaUpphandlingKnapp";
 import { ArshjulSigneringPanel } from "@/components/arshjul/ArshjulSigneringPanel";
 import { ArshjulBilagor } from "@/components/arshjul/ArshjulBilagor";
+import { ArshjulBesiktningUppgifter } from "@/components/arshjul/ArshjulBesiktningUppgifter";
 
 type Props = {
   handelse: ArshjulHandelse;
@@ -28,103 +27,29 @@ type Props = {
 export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
   const forenkladBesiktning = arshjulVisaForenkladBesiktning(handelse);
   const [leverantor, setLeverantor] = useState(handelse.leverantor ?? "");
-  const [senastDatum, setSenastDatum] = useState(
-    handelse.besiktningSenastDatum ?? "",
-  );
   const [attHanteraText, setAttHanteraText] = useState(
     (handelse.attHantera ?? []).join("\n"),
   );
-
-  const nastaAr = useMemo(() => {
-    return arshjulNastaBesiktningAr({
-      ...handelse,
-      besiktningSenastDatum: senastDatum || handelse.besiktningSenastDatum,
-    });
-  }, [handelse, senastDatum]);
-
-  function sparaSenast(patch: Partial<ArshjulHandelse>) {
-    onSpara(patch);
-  }
 
   if (forenkladBesiktning) {
     const arOvk = arshjulArOvk(handelse);
     const arEnergi = arshjulArEnergideklaration(handelse);
     const arRadon = arshjulArRadon(handelse);
-    const intervallVisning = arshjulKräverTioarsIntervall(handelse)
-      ? ENERGI_RADON_LAGKRAV_INTERVALL_AR
-      : (handelse.intervallAr ?? "?");
     const intro = arOvk
-      ? "OVK i årshjulet: vem som utförde senast, när det gjordes och när nästa kontroll planeras."
+      ? "OVK: ange vem som utförde besiktningen och när den godkändes. Nästa OVK räknas ut automatiskt."
       : arEnergi
-        ? "Energideklaration: ange vem som utförde senast och datum. Intervall är 10 år enligt lag."
+        ? "Energideklaration: ange vem som gjorde den och när den blev klar. Den gäller i 10 år."
         : arRadon
-          ? "Radonmätning: ange vem som utförde senast och datum. Rekommenderat intervall är 10 år."
-          : "Ange senaste utförare och datum.";
-    const utförareEtikett = arOvk
-      ? "Senast utförd av (besiktningsföretag)"
-      : arEnergi
-        ? "Senast utförd av (energiexpert)"
-        : "Senast utförd av (mätentreprenör / laboratorium)";
-    const utförarePlaceholder = arOvk
-      ? "Certifierat OVK-företag"
-      : arEnergi
-        ? "Ackrediterad energiexpert"
-        : "Företag som utförde mätningen";
-    const datumEtikett = arOvk
-      ? "Datum då senaste OVK utfördes"
-      : arEnergi
-        ? "Datum då senaste energideklaration utfördes"
-        : "Datum då senaste radonmätning utfördes";
-    const nastaRubrik = arOvk
-      ? "Nästa OVK planeras"
-      : arEnergi
-        ? "Nästa energideklaration planeras"
-        : "Nästa radonmätning planeras";
+          ? "Radonmätning: ange vem som mätte och när mätningen blev klar. Rekommenderat intervall är 10 år."
+          : "Ange vem som utförde besiktningen och när den godkändes.";
 
     return (
       <div className="mt-3 space-y-4 border-t border-border/70 pt-3">
         <p className="text-xs leading-relaxed text-muted">
-          {intro} Bifoga protokollet nedan — det kan samtidigt visas i Styrning
-          och Dokument och i dokumentbanken.
+          {intro} Bifoga gärna protokollet längst ned – det kan samtidigt visas
+          i Styrning och Dokument och i dokumentbanken.
         </p>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">{utförareEtikett}</span>
-          <input
-            value={leverantor}
-            onChange={(e) => setLeverantor(e.target.value)}
-            onBlur={() => sparaSenast({ leverantor })}
-            placeholder={utförarePlaceholder}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium text-foreground">{datumEtikett}</span>
-          <input
-            type="date"
-            value={senastDatum}
-            onChange={(e) => setSenastDatum(e.target.value)}
-            onBlur={() => {
-              const d = senastDatum.trim();
-              const ar = d ? Number(d.slice(0, 4)) : undefined;
-              sparaSenast({
-                besiktningSenastDatum: d || undefined,
-                senastKlarAr: Number.isFinite(ar) ? ar : undefined,
-              });
-            }}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-          />
-        </label>
-        <div className="rounded-lg border border-border bg-[#f7f9f8] px-3 py-2 text-sm">
-          <span className="font-medium text-foreground">{nastaRubrik}</span>
-          <p className="mt-0.5 text-muted">
-            {nastaAr
-              ? `År ${nastaAr} (intervall ${intervallVisning} år från senaste).`
-              : "Ange senaste datum — intervall följer lag/rekommendation."}
-            {handelse.startAr && !nastaAr
-              ? ` Planerat startår i årshjulet: ${handelse.startAr}.`
-              : ""}
-          </p>
-        </div>
+        <ArshjulBesiktningUppgifter handelse={handelse} onSpara={onSpara} />
         <ArshjulBilagor
           handelse={handelse}
           onSpara={onSpara}
@@ -136,26 +61,32 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     );
   }
 
+  const besiktning = arshjulArAterkommandeBesiktning(handelse);
+
   return (
     <div className="mt-3 space-y-4 border-t border-border/70 pt-3">
-      <label className="block text-sm">
-        <span className="font-medium text-foreground">
-          {entreprenorFaltEtikett(handelse.kategori)}
-        </span>
-        {!arshjulArSotning(handelse) && (
-          <span className="mt-0.5 block text-xs text-muted">
-            Här anger ni vem som utförde uppdraget senast — underlättar för
-            nästa styrelse.
+      {besiktning ? (
+        <ArshjulBesiktningUppgifter handelse={handelse} onSpara={onSpara} />
+      ) : (
+        <label className="block text-sm">
+          <span className="font-medium text-foreground">
+            {entreprenorFaltEtikett(handelse.kategori)}
           </span>
-        )}
-        <input
-          value={leverantor}
-          onChange={(e) => setLeverantor(e.target.value)}
-          onBlur={() => onSpara({ leverantor })}
-          placeholder={entreprenorFaltPlaceholder(handelse.kategori)}
-          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-        />
-      </label>
+          {!arshjulArSotning(handelse) && (
+            <span className="mt-0.5 block text-xs text-muted">
+              Här anger ni vem som utförde uppdraget senast — underlättar för
+              nästa styrelse.
+            </span>
+          )}
+          <input
+            value={leverantor}
+            onChange={(e) => setLeverantor(e.target.value)}
+            onBlur={() => onSpara({ leverantor })}
+            placeholder={entreprenorFaltPlaceholder(handelse.kategori)}
+            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          />
+        </label>
+      )}
 
       {arshjulArSotning(handelse) && (
         <p className="rounded-lg border border-primary/25 bg-[#eef6f0]/80 px-3 py-2 text-xs leading-relaxed text-primary-dark">

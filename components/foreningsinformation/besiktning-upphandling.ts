@@ -10,9 +10,12 @@ import {
   uppdateraKategoriMeta,
 } from "@/components/upphandling/upphandling-lager";
 import {
+  ENERGI_RADON_LAGKRAV_INTERVALL_AR,
   OVK_INTERVALL_VERKSAMHET_AR,
+  ovkBostadIntervallFromVentilation,
   ovkIntervallBostadHint,
 } from "@/components/underhallsplan/besiktningar";
+import { arFranDatum, beraknaNastaBesiktningAr } from "@/lib/besiktning-intervall";
 import { lasUnderhallsplanState } from "@/components/underhallsplan/underhallsplan-lager";
 import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 import { foreningStorageKey } from "@/lib/foreningStorage";
@@ -94,6 +97,10 @@ export type TidigareProtokoll = {
   utforsAv: string;
   sammanfattning: string;
   filnamn?: string;
+  /** Underkändes först och godkändes vid ombesiktning. */
+  underkandForst?: boolean;
+  /** År då den ordinarie besiktningen skulle ha gjorts. */
+  ordinarieAr?: number;
 };
 
 export type BestallningStatus = "vantar_foretag" | "foretag_signerat" | "godkant";
@@ -382,9 +389,34 @@ export function allaProtokoll(
   return [...hamtaInhamtadeProtokoll(tjanst), ...egna, ...uppladdade];
 }
 
+/** Intervall i år: från underhållsplanen, annars lagkrav eller ventilationssystem. */
+export function besiktningIntervallAr(tjanst: BesiktningTjanstId): number {
+  if (tjanst !== "ovk") return ENERGI_RADON_LAGKRAV_INTERVALL_AR;
+  const plan = lasUnderhallsplanState()?.besiktningar.find((b) => b.id === "ovk");
+  if (plan?.intervallAr) return plan.intervallAr;
+  return ovkBostadIntervallFromVentilation(hamtaSynkadPlanGrund()?.ventilationssystem ?? "");
+}
+
+export function nastaBesiktningArForProtokoll(
+  tjanst: BesiktningTjanstId,
+  rad: Pick<TidigareProtokoll, "datum" | "ordinarieAr" | "underkandForst">,
+): number | null {
+  return beraknaNastaBesiktningAr({
+    godkandAr: arFranDatum(rad.datum) ?? (Number(rad.datum) || null),
+    ordinarieAr: rad.underkandForst ? rad.ordinarieAr : null,
+    intervallAr: besiktningIntervallAr(tjanst),
+  });
+}
+
 export function laggTillEgetProtokoll(
   tjanst: BesiktningTjanstId,
-  input: { datum: string; utforsAv: string; sammanfattning: string; filnamn?: string },
+  input: {
+    datum: string;
+    utforsAv: string;
+    sammanfattning: string;
+    filnamn?: string;
+    ordinarieAr?: number;
+  },
 ): { ok: true } | { ok: false; fel: string } {
   const sammanfattning = input.sammanfattning.trim();
   if (
@@ -402,12 +434,15 @@ export function laggTillEgetProtokoll(
   post.egnaProtokoll = [
     ...post.egnaProtokoll,
     {
-      id: `prot-${Date.now()}`,
+      id: `prot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       kalla: "egen",
       datum: input.datum.trim(),
       utforsAv: input.utforsAv.trim(),
       sammanfattning: sammanfattning || "Tidigare protokoll.",
       filnamn: input.filnamn?.trim() || undefined,
+      ...(input.ordinarieAr
+        ? { underkandForst: true, ordinarieAr: input.ordinarieAr }
+        : {}),
     },
   ];
   skrivPost(tjanst, post);
@@ -441,6 +476,9 @@ function formateraProtokoll(protokoll: TidigareProtokoll[]): string {
       const delar = [
         `${index + 1}. ${rad.datum || "Datum saknas"}`,
         rad.utforsAv ? `utfört av ${rad.utforsAv}` : "",
+        rad.underkandForst && rad.ordinarieAr
+          ? `underkänd först, godkänd vid ombesiktning (ordinarie år ${rad.ordinarieAr})`
+          : "",
         rad.filnamn ? `fil: ${rad.filnamn}` : "",
         rad.sammanfattning,
       ].filter(Boolean);
