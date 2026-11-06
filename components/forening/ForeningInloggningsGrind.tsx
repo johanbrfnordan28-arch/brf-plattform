@@ -5,8 +5,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import {
+  arOppenForening,
   harForeningBehorighet,
-  harLokalForeningBehorighet,
 } from "@/lib/forening-behorighet-klient";
 import { arKundForening, KUND_LOGIN_PATH, TEST_LOGIN_PATH } from "@/lib/forening-kund";
 import { byggMedlemFelanmalanLank } from "@/lib/forening-medlem";
@@ -21,6 +21,10 @@ type Lage =
   | { typ: "oppen" }
   | { typ: "last"; id: string; namn: string; kund: boolean };
 
+/** Senast godkända förening — undviker en tom laddningsbild vid varje sidbyte. */
+let senastGodkand: { id: string; tid: number } | null = null;
+const GODKAND_GILTIG_MS = 60_000;
+
 /** Visar styrelsens sidor bara när webbläsaren har behörighet till aktiv förening. */
 export function ForeningInloggningsGrind({ children }: { children: React.ReactNode }) {
   const [lage, setLage] = useState<Lage>({ typ: "kontrollerar" });
@@ -30,17 +34,21 @@ export function ForeningInloggningsGrind({ children }: { children: React.ReactNo
     function kontrollera() {
       const id = lasAktivForeningId();
       const nr = ++kontrollId.current;
-      if (harLokalForeningBehorighet(id)) {
+      if (arOppenForening(id)) {
         setLage({ typ: "oppen" });
         return;
       }
-      setLage({ typ: "kontrollerar" });
+      const nyligenGodkand =
+        senastGodkand?.id === id && Date.now() - senastGodkand.tid < GODKAND_GILTIG_MS;
+      setLage(nyligenGodkand ? { typ: "oppen" } : { typ: "kontrollerar" });
       void harForeningBehorighet(id).then((ok) => {
         if (nr !== kontrollId.current) return;
         if (ok) {
+          senastGodkand = { id, tid: Date.now() };
           setLage({ typ: "oppen" });
           return;
         }
+        senastGodkand = null;
         const profil = lasForeningProfil(id);
         setLage({
           typ: "last",

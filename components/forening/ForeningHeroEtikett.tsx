@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
+import { arInloggadIMenyn } from "@/lib/forening-behorighet-klient";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 
 /** Etikett ovanför hubb-rubriken — föreningsnamnet står i H1. */
@@ -10,7 +10,7 @@ export function ForeningHeroEtikett() {
 
   useEffect(() => {
     function uppdatera() {
-      setInloggad(arInloggadPaEgenForening());
+      void arInloggadIMenyn().then(setInloggad);
     }
     uppdatera();
     window.addEventListener(FORENING_AKTIV_EVENT, uppdatera);

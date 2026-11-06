@@ -1,5 +1,6 @@
 "use client";
 
+import { rensaLokalSession } from "@/lib/auth/lokal-session";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -193,6 +194,7 @@ export function PlattformDashboard() {
   }, [ladda]);
 
   async function loggaUt() {
+    rensaLokalSession();
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = PLATTFORM_LOGIN_PATH;
   }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { arInloggadPaEgenForening } from "@/lib/forening-behorighet-klient";
+import { arInloggadIMenyn } from "@/lib/forening-behorighet-klient";
 import { FORENING_AKTIV_EVENT } from "@/lib/forening-registry";
 
 /** Medlemssidan har ingen inloggning. Bara en redan inloggad styrelse ser vägen tillbaka. */
@@ -11,7 +11,7 @@ export function MedlemHeader() {
 
   useEffect(() => {
     function uppdatera() {
-      setStyrelseInloggad(arInloggadPaEgenForening());
+      void arInloggadIMenyn().then(setStyrelseInloggad);
     }
     uppdatera();
     window.addEventListener(FORENING_AKTIV_EVENT, uppdatera);
