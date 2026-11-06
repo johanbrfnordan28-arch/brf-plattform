@@ -55,7 +55,7 @@ export type ForeningsDokument = {
   /** mall = skapad från mallkatalog, fil = uppladdad fil sparad per förening */
   dokumentKalla?: "mall" | "fil";
   /** Uppladdad fil i molnet (eller lokalt i demo). Saknas för äldre filer sparade som data-URL. */
-  fil?: { filnamn: string; moln?: MolnFilRef };
+  fil?: { filnamn: string; moln?: MolnFilRef; filId?: string; modul?: string };
   layoutTema?: DokumentLayoutTema;
   /** Strukturerad egenkontroll (t.ex. VVS) med kontrollpunkter och slutsignering. */
   egenkontroll?: EgenkontrollState;

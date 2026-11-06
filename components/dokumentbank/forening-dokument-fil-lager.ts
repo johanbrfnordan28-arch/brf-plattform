@@ -2,9 +2,10 @@ import { foreningStorageKey } from "@/lib/foreningStorage";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 import {
   hamtaForeningFilUrlFranPlats,
-  sparaForeningFil,
+  laddaUppDeladFil,
   taBortForeningFilFranPlats,
-  type FilSparResultat,
+  type DeladFil,
+  type FilPlats,
 } from "@/lib/forening-fil-lagring";
 import type { ForeningsDokument } from "@/components/dokumentbank/forening-dokumenter-lager";
 
@@ -38,12 +39,28 @@ function lasAldreFiler(): FilLagerState {
   }
 }
 
-export function sparaDokumentFil(
-  dokId: string,
-  fil: File,
-  onProgress?: (procent: number) => void,
-): Promise<FilSparResultat> {
-  return sparaForeningFil({ modul: FIL_MODUL, dokId, fil, onProgress });
+export function sparaDokumentFil(fil: File, onProgress?: (procent: number) => void) {
+  return laddaUppDeladFil({ modul: FIL_MODUL, fil, onProgress });
+}
+
+/** Dokumentets fil som delad fil, eller null för äldre uppladdningar. */
+export function dokumentDeladFil(dok: ForeningsDokument): DeladFil | null {
+  if (!dok.fil?.filId || !dok.fil.modul) return null;
+  return {
+    filId: dok.fil.filId,
+    modul: dok.fil.modul,
+    filnamn: dok.fil.filnamn,
+    ...(dok.fil.moln ? { moln: dok.fil.moln } : {}),
+  };
+}
+
+function filPlats(dok: ForeningsDokument): FilPlats | null {
+  if (!dok.fil) return null;
+  return {
+    modul: dok.fil.modul ?? FIL_MODUL,
+    dokId: dok.fil.filId ?? dok.id,
+    moln: dok.fil.moln,
+  };
 }
 
 export function harDokumentFil(dok: ForeningsDokument): boolean {
@@ -58,23 +75,19 @@ export function dokumentFilnamn(dok: ForeningsDokument): string {
 export async function hamtaDokumentFilUrl(
   dok: ForeningsDokument,
 ): Promise<string | null> {
-  if (dok.fil) {
-    return hamtaForeningFilUrlFranPlats({
-      modul: FIL_MODUL,
-      dokId: dok.id,
-      moln: dok.fil.moln,
-    });
-  }
+  const plats = filPlats(dok);
+  if (plats) return hamtaForeningFilUrlFranPlats(plats);
   const aldre = lasAldreFiler()[dok.id];
   if (!aldre?.dataUrl) return null;
   const blob = await (await fetch(aldre.dataUrl)).blob();
   return URL.createObjectURL(blob);
 }
 
+/** Tar bort äldre, odelade filer. Delade filer släpps via `slappDeladFil`. */
 export function taBortDokumentFil(dok: ForeningsDokument): void {
-  if (dok.fil) {
-    taBortForeningFilFranPlats({ modul: FIL_MODUL, dokId: dok.id, moln: dok.fil.moln });
-  }
+  if (dokumentDeladFil(dok)) return;
+  const plats = filPlats(dok);
+  if (plats) taBortForeningFilFranPlats(plats);
   const all = lasAldreFiler();
   if (!(dok.id in all)) return;
   delete all[dok.id];

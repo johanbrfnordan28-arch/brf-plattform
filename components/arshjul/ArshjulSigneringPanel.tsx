@@ -1,5 +1,6 @@
 "use client";
 
+import { oppnaArshjulBilaga } from "@/components/arshjul/ArshjulBilagor";
 import { useMemo, useState } from "react";
 import type { ArshjulBilaga, ArshjulHandelse } from "@/components/arshjul/arshjul";
 import {
@@ -158,21 +159,22 @@ export function ArshjulSigneringPanel({ handelse, onSpara }: Props) {
 
       {valtBilaga && (
         <div className="flex flex-wrap gap-2">
-          <a
-            href={valtBilaga.dataUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => oppnaArshjulBilaga(valtBilaga)}
             className="rounded-lg border border-primary/50 bg-white px-3 py-1.5 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
           >
             Öppna och läs dokument
-          </a>
-          <a
-            href={valtBilaga.dataUrl}
-            download={valtBilaga.filnamn}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:text-foreground"
-          >
-            Ladda ned
-          </a>
+          </button>
+          {valtBilaga.dataUrl ? (
+            <a
+              href={valtBilaga.dataUrl}
+              download={valtBilaga.filnamn}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:text-foreground"
+            >
+              Ladda ned
+            </a>
+          ) : null}
         </div>
       )}
 

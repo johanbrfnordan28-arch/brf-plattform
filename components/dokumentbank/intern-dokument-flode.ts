@@ -8,6 +8,7 @@ import {
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import {
   dokumentFilnamn,
+  dokumentDeladFil,
   hamtaDokumentFilUrl,
   harDokumentFil,
   sparaDokumentFil,
@@ -60,15 +61,19 @@ export async function skapaForeningsDokumentFranArshjul(
   ref: ArshjulBilagaRef,
 ): Promise<{ ok: true; dokument: ForeningsDokument } | { ok: false; fel: string }> {
   const bilaga = hittaArshjulBilaga(ref.handelseId, ref.bilagaId);
-  if (!bilaga?.dataUrl) {
+  if (!bilaga || (!bilaga.dataUrl && !bilaga.fil)) {
     return { ok: false, fel: "Bilagan kunde inte hittas." };
   }
   const id = skapaForeningsDokumentId();
   const nu = new Date().toISOString();
-  const blob = await (await fetch(bilaga.dataUrl)).blob();
-  const fil = new File([blob], bilaga.filnamn, { type: blob.type });
-  const sparat = await sparaDokumentFil(id, fil);
-  if (!sparat.ok) return sparat;
+  let delad = bilaga.fil;
+  if (!delad) {
+    const blob = await (await fetch(bilaga.dataUrl)).blob();
+    const fil = new File([blob], bilaga.filnamn, { type: blob.type });
+    const sparat = await sparaDokumentFil(fil);
+    if (!sparat.ok) return sparat;
+    delad = sparat.fil;
+  }
   const dokument: ForeningsDokument = {
     id,
     mallId: "uppladdad-fil",
@@ -81,7 +86,7 @@ export async function skapaForeningsDokumentFranArshjul(
     notering: "",
     omrade: "styrelse",
     dokumentKalla: "fil",
-    fil: { filnamn: bilaga.filnamn, ...(sparat.moln ? { moln: sparat.moln } : {}) },
+    fil: delad,
     koppladeProjektId: [],
   };
   const lager = lasForeningsDokument();
@@ -109,6 +114,18 @@ export async function kopieraForeningsDokumentTillBilaga(
   dokId: string,
 ): Promise<{ ok: true; bilaga: ArshjulBilaga } | { ok: false; fel: string }> {
   const dok = lasForeningsDokument().dokument.find((d) => d.id === dokId);
+  const delad = dok ? dokumentDeladFil(dok) : null;
+  if (delad) {
+    return {
+      ok: true,
+      bilaga: {
+        id: `bil-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        filnamn: delad.filnamn,
+        dataUrl: "",
+        fil: delad,
+      },
+    };
+  }
   const url = dok ? await hamtaDokumentFilUrl(dok) : null;
   if (!dok || !url) {
     return { ok: false, fel: "Dokumentet har ingen sparad fil att kopiera." };

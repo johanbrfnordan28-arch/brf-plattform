@@ -26,6 +26,8 @@ export async function skapaForeningsDokumentFranFil(
   titel?: string,
   meta?: ForeningsDokumentUppladdningMeta,
   onProgress?: (procent: number) => void,
+  /** Spara även textfiler som fil, så att de kan visas på andra ställen. */
+  delas = false,
 ): Promise<UppladdningResult> {
   const id = skapaForeningsDokumentId();
   const nu = new Date().toISOString();
@@ -42,10 +44,11 @@ export async function skapaForeningsDokumentFranFil(
     } catch {
       return { ok: false, fel: "Kunde inte läsa textfilen." };
     }
-  } else {
-    const sparat = await sparaDokumentFil(id, fil, onProgress);
+  }
+  if (!arText || delas) {
+    const sparat = await sparaDokumentFil(fil, onProgress);
     if (!sparat.ok) return sparat;
-    filPlats = { filnamn: fil.name, ...(sparat.moln ? { moln: sparat.moln } : {}) };
+    filPlats = sparat.fil;
   }
 
   const dokument: ForeningsDokument = {

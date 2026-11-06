@@ -9,6 +9,7 @@ import {
   type ProjektTidsplan,
 } from "@/components/projekt/tidsplan";
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import { arDeladFil, type DeladFil } from "@/lib/forening-fil-lagring";
 import {
   normaliseraProjektEtapper,
   type ProjektEtapp,
@@ -162,6 +163,8 @@ export type ProjektDokument = {
   kalla?: ProjektDokumentKalla;
   bankId?: string;
   foreningsDokumentId?: string;
+  /** Uppladdad fil i föreningens fillagring — kan visas på flera ställen. */
+  fil?: DeladFil;
 };
 
 function normaliseraProjektDokument(d: ProjektDokument): ProjektDokument {
@@ -178,6 +181,7 @@ function normaliseraProjektDokument(d: ProjektDokument): ProjektDokument {
     ...(kalla ? { kalla } : {}),
     ...(d.bankId ? { bankId: d.bankId } : {}),
     ...(d.foreningsDokumentId ? { foreningsDokumentId: d.foreningsDokumentId } : {}),
+    ...(arDeladFil(d.fil) ? { fil: d.fil } : {}),
   };
 }
 

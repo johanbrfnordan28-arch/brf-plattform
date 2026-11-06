@@ -19,6 +19,50 @@ export type FilPlats = {
   moln?: MolnFilRef;
 };
 
+/** En uppladdad fil som kan visas på flera ställen; alla ställen pekar på samma `filId`. */
+export type DeladFil = {
+  filId: string;
+  modul: string;
+  filnamn: string;
+  moln?: MolnFilRef;
+};
+
+export function deladFilPlats(fil: DeladFil): FilPlats {
+  return { modul: fil.modul, dokId: fil.filId, moln: fil.moln };
+}
+
+export function arDeladFil(value: unknown): value is DeladFil {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Partial<DeladFil>;
+  return (
+    typeof v.filId === "string" &&
+    typeof v.modul === "string" &&
+    typeof v.filnamn === "string" &&
+    (v.moln === undefined ||
+      (typeof v.moln?.foreningId === "string" && typeof v.moln?.pathname === "string"))
+  );
+}
+
+/** Laddar upp en ny fil och ger en delbar referens till den. */
+export async function laddaUppDeladFil(opts: {
+  modul: string;
+  fil: File;
+  onProgress?: (procent: number) => void;
+}): Promise<{ ok: true; fil: DeladFil } | { ok: false; fel: string }> {
+  const filId = `fil-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await sparaForeningFil({ ...opts, dokId: filId });
+  if (!res.ok) return res;
+  return {
+    ok: true,
+    fil: {
+      filId,
+      modul: opts.modul,
+      filnamn: opts.fil.name,
+      ...(res.moln ? { moln: res.moln } : {}),
+    },
+  };
+}
+
 export type FilSparResultat =
   | { ok: true; moln?: MolnFilRef }
   | { ok: false; fel: string };

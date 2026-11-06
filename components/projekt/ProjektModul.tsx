@@ -65,6 +65,21 @@ import {
 } from "@/components/dokumentbank/forening-dokumenter-lager";
 import { hamtaMall } from "@/components/dokumentbank/mallar";
 import {
+  FilUppladdningsRuta,
+  type FilUppladdningsResultat,
+} from "@/components/FilUppladdningsRuta";
+import {
+  deladFilPlats,
+  hamtaForeningFilUrlFranPlats,
+  laddaUppDeladFil,
+  oppnaFilIFlik,
+} from "@/lib/forening-fil-lagring";
+import {
+  lankaFilTillPlatser,
+  slappDeladFil,
+  type DokumentPlats,
+} from "@/lib/forening-dokument-platser";
+import {
   hamtaForeningsDokumentInnehall,
   skapaInnehallFranMall,
 } from "@/components/dokumentbank/forening-dokument-innehall";
@@ -365,12 +380,21 @@ export function ProjektModul() {
     );
   }
 
-  function läggTillDokument(projektId: string, mappId: string, fil: File | null) {
-    if (!fil) return;
+  async function läggTillDokument(
+    projektId: string,
+    mappId: string,
+    fil: File,
+    onProgress: (procent: number) => void,
+    platser: DokumentPlats[],
+  ): Promise<FilUppladdningsResultat> {
+    const sparat = await laddaUppDeladFil({ modul: "projekt", fil, onProgress });
+    if (!sparat.ok) return sparat;
     const dokument: ProjektDokument = {
       id: skapaDokumentId(),
       filnamn: fil.name,
       uppladdad: new Date().toLocaleDateString("sv-SE"),
+      kalla: "upload",
+      fil: sparat.fil,
     };
     setProjekt((current) =>
       current.map((p) => {
@@ -415,9 +439,16 @@ export function ProjektModul() {
       }),
     );
     setPågåendeUppladdning(null);
+    const varning = lankaFilTillPlatser(platser, sparat.fil);
+    return varning ? { ok: true, varning } : { ok: true };
   }
 
   function laddaNedProjektDokument(doc: ProjektDokument) {
+    if (doc.fil) {
+      const fil = doc.fil;
+      void oppnaFilIFlik(() => hamtaForeningFilUrlFranPlats(deladFilPlats(fil)));
+      return;
+    }
     if (doc.kalla === "foreningsdokument" && doc.foreningsDokumentId) {
       const fd = lasForeningsDokument().dokument.find(
         (d) => d.id === doc.foreningsDokumentId,
@@ -505,7 +536,12 @@ export function ProjektModul() {
     setImportFranBankKey(null);
   }
 
-  function taBortDokument(projektId: string, mappId: string, dokumentId: string) {
+  function taBortDokument(projektId: string, mappId: string, doc: ProjektDokument) {
+    if (doc.fil) {
+      if (!window.confirm(`Ta bort ${doc.filnamn} från projektet?`)) return;
+      slappDeladFil(doc.fil, doc.id);
+    }
+    const dokumentId = doc.id;
     setProjekt((current) =>
       current.map((p) => {
         if (p.id !== projektId) return p;
@@ -1043,7 +1079,8 @@ export function ProjektModul() {
                                               Redigera
                                             </button>
                                           )}
-                                          {(doc.kalla === "bank" ||
+                                          {(doc.fil ||
+                                            doc.kalla === "bank" ||
                                             doc.kalla === "foreningsdokument") && (
                                             <button
                                               type="button"
@@ -1052,13 +1089,13 @@ export function ProjektModul() {
                                               }
                                               className="rounded-lg border border-primary px-3 py-1 text-xs font-medium text-primary-dark"
                                             >
-                                              Ladda ned
+                                              {doc.fil ? "Öppna" : "Ladda ned"}
                                             </button>
                                           )}
                                           <button
                                             type="button"
                                             onClick={() =>
-                                              taBortDokument(p.id, mapp.id, doc.id)
+                                              taBortDokument(p.id, mapp.id, doc)
                                             }
                                             className="rounded-lg border border-border px-3 py-1 text-xs text-muted"
                                           >
@@ -1091,24 +1128,19 @@ export function ProjektModul() {
                                     >
                                       Ladda upp dokument
                                     </button>
-                                  ) : (
-                                    <label className="inline-flex cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
-                                      Välj fil
-                                      <input
-                                        type="file"
-                                        accept=".pdf,.doc,.docx,image/*"
-                                        className="sr-only"
-                                        onChange={(e) =>
-                                          läggTillDokument(
-                                            p.id,
-                                            mapp.id,
-                                            e.target.files?.[0] ?? null,
-                                          )
-                                        }
-                                      />
-                                    </label>
-                                  )}
+                                  ) : null}
                                 </div>
+                                {pågåendeUppladdning === uploadKey && (
+                                  <div className="mt-3">
+                                    <FilUppladdningsRuta
+                                      onSpara={(fil, onProgress, platser) =>
+                                        läggTillDokument(p.id, mapp.id, fil, onProgress, platser)
+                                      }
+                                      onAvbryt={() => setPågåendeUppladdning(null)}
+                                      delaTill={{ typer: ["styrning", "dokumentbank", "arshjul"] }}
+                                    />
+                                  </div>
+                                )}
                                 {importFranBankKey === uploadKey && (
                                   <ProjektDokumentImportPanel
                                     onStang={() => setImportFranBankKey(null)}

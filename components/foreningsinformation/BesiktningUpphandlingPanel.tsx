@@ -27,6 +27,7 @@ import { hamtaAvtalssignerare } from "@/lib/styrelse-kontakt";
 import { lasAktivForeningId, lasForeningProfil } from "@/lib/forening-registry";
 import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 import { harTillrackligaBankIdSignaturer } from "@/lib/bankid-signering";
+import { MOLN_FIL_ACCEPT } from "@/lib/forening-fil-lagring";
 
 const inputKlass =
   "w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -52,6 +53,10 @@ export function BesiktningUpphandlingPanel({
   const [handlingar, setHandlingar] = useState<SparadHandling[]>([]);
   const [bestallning, setBestallning] = useState<BesiktningBestallning | undefined>();
   const [status, setStatus] = useState<string | null>(null);
+  const [protokollStatus, setProtokollStatus] = useState<{
+    fel: boolean;
+    text: string;
+  } | null>(null);
   const [datum, setDatum] = useState("");
   const [utforsAv, setUtforsAv] = useState("");
   const [sammanfattning, setSammanfattning] = useState("");
@@ -96,14 +101,17 @@ export function BesiktningUpphandlingPanel({
       filnamn,
     });
     if (!resultat.ok) {
-      setStatus(resultat.fel);
+      setProtokollStatus({ fel: true, text: resultat.fel });
       return;
     }
     setDatum("");
     setUtforsAv("");
     setSammanfattning("");
     setFilnamn("");
-    setStatus("Protokollet är sparat i mappen och följer med i underlaget.");
+    setProtokollStatus({
+      fel: false,
+      text: "Protokollet är sparat i mappen och följer med i underlaget.",
+    });
     ladda();
   }
 
@@ -141,7 +149,7 @@ export function BesiktningUpphandlingPanel({
                 className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
               >
                 <p className="font-medium text-foreground">
-                  {rad.datum || "Datum saknas"}
+                  {rad.datum ? `Utförd ${rad.datum}` : "Utförandedatum saknas"}
                   {rad.utforsAv ? ` · ${rad.utforsAv}` : ""}
                   {rad.filnamn ? ` · ${rad.filnamn}` : ""}
                 </p>
@@ -162,60 +170,60 @@ export function BesiktningUpphandlingPanel({
             ))}
           </ul>
         )}
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <input
-              type="date"
-              value={datum}
-              onChange={(event) => setDatum(event.target.value)}
-              className={inputKlass}
-              aria-label="Protokollets datum"
-            />
-            <input
-              type="text"
-              value={utforsAv}
-              onChange={(event) => setUtforsAv(event.target.value)}
-              placeholder="Utfört av"
-              className={inputKlass}
-            />
-            <input
-              type="text"
-              value={filnamn}
-              onChange={(event) => setFilnamn(event.target.value)}
-              placeholder="Filnamn, om protokollet är uppladdat"
-              className={`${inputKlass} sm:col-span-2`}
-            />
-            <textarea
-              value={sammanfattning}
-              onChange={(event) => setSammanfattning(event.target.value)}
-              placeholder="Vad protokollet visar, t.ex. godkänt eller mätvärde"
-              rows={2}
-              className={`${inputKlass} sm:col-span-2`}
-            />
-            <div className="flex flex-wrap gap-2 sm:col-span-2">
-              <button
-                type="button"
-                onClick={sparaProtokoll}
-                className="rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
-              >
-                Lägg till tidigare protokoll
-              </button>
+        <p className="mt-4 text-sm font-medium text-foreground">
+          Lägg till ett utfört protokoll
+        </p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs font-medium text-muted">
+              Datum då kontrollen utfördes
+              <input
+                type="date"
+                value={datum}
+                onChange={(event) => setDatum(event.target.value)}
+                className={`${inputKlass} mt-1`}
+              />
+            </label>
+            <label className="block text-xs font-medium text-muted">
+              Utförd av (företag eller person)
+              <input
+                type="text"
+                value={utforsAv}
+                onChange={(event) => setUtforsAv(event.target.value)}
+                placeholder="T.ex. Ventilationskontroll AB"
+                className={`${inputKlass} mt-1`}
+              />
+            </label>
+            <label className="block text-xs font-medium text-muted sm:col-span-2">
+              Resultat (valfritt)
+              <textarea
+                value={sammanfattning}
+                onChange={(event) => setSammanfattning(event.target.value)}
+                placeholder="T.ex. godkänt, anmärkningar eller mätvärde"
+                rows={2}
+                className={`${inputKlass} mt-1`}
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
               {onLaddaUppProtokollFil ? (
-                <label className="inline-flex cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark">
-                  Ladda upp protokoll (bilaga)
+                <label className="inline-flex cursor-pointer rounded-lg border border-primary bg-white px-3 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]">
+                  {filnamn ? "Byt protokollfil" : "Bifoga protokollfil (valfritt)"}
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx,image/*,application/pdf"
+                    accept={MOLN_FIL_ACCEPT}
                     className="sr-only"
                     onChange={(e) => {
                       const fil = e.target.files?.[0] ?? null;
                       if (fil) {
                         setFilnamn(fil.name);
-                        setStatus(`Sparar ${fil.name}…`);
+                        setProtokollStatus({ fel: false, text: `Laddar upp ${fil.name}…` });
                         void onLaddaUppProtokollFil(fil).then((res) =>
-                          setStatus(
+                          setProtokollStatus(
                             res.ok
-                              ? `Filen ${fil.name} lades till i mappen.`
-                              : res.fel,
+                              ? {
+                                  fel: false,
+                                  text: `${fil.name} är uppladdad. Klicka på Spara protokoll.`,
+                                }
+                              : { fel: true, text: res.fel },
                           ),
                         );
                       }
@@ -223,6 +231,26 @@ export function BesiktningUpphandlingPanel({
                     }}
                   />
                 </label>
+              ) : null}
+              {filnamn ? (
+                <span className="text-xs text-muted">Bifogad fil: {filnamn}</span>
+              ) : null}
+            </div>
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                onClick={sparaProtokoll}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              >
+                Spara protokoll
+              </button>
+              {protokollStatus ? (
+                <p
+                  className={`mt-2 text-sm ${protokollStatus.fel ? "text-red-800" : "text-primary-dark"}`}
+                  role={protokollStatus.fel ? "alert" : "status"}
+                >
+                  {protokollStatus.text}
+                </p>
               ) : null}
             </div>
         </div>

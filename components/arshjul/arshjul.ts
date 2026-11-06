@@ -1,4 +1,5 @@
 import { foreningStorageKey } from "@/lib/foreningStorage";
+import { arDeladFil, type DeladFil } from "@/lib/forening-fil-lagring";
 import {
   normaliseraArshjulSignering,
   type ArshjulDokumentSignering,
@@ -106,8 +107,9 @@ export type ArshjulHandelse = {
 export type ArshjulBilaga = {
   id: string;
   filnamn: string;
-  /** Data-URL för små filer. */
+  /** Data-URL för små filer; tom när filen ligger i föreningens fillagring (`fil`). */
   dataUrl: string;
+  fil?: DeladFil;
 };
 
 export type ArshjulBankidForberedelse = {
@@ -439,8 +441,9 @@ function rensaBilagor(value: unknown): ArshjulBilaga[] | undefined {
       const filnamn =
         typeof post.filnamn === "string" ? post.filnamn.trim().slice(0, 180) : "";
       const id = typeof post.id === "string" ? post.id.slice(0, 40) : "";
-      if (!id || !filnamn || !dataUrl) return null;
-      return { id, filnamn, dataUrl };
+      const fil = arDeladFil(post.fil) ? post.fil : undefined;
+      if (!id || !filnamn || (!dataUrl && !fil)) return null;
+      return { id, filnamn, dataUrl, ...(fil ? { fil } : {}) };
     })
     .filter((rad): rad is ArshjulBilaga => rad !== null)
     .slice(0, 6);

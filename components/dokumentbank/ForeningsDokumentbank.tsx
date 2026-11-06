@@ -45,7 +45,15 @@ import {
   STANDARD_DOKUMENT_LAYOUT,
   type DokumentLayoutTema,
 } from "@/components/dokumentbank/dokument-layout";
-import { taBortDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
+import {
+  dokumentDeladFil,
+  taBortDokumentFil,
+} from "@/components/dokumentbank/forening-dokument-fil-lager";
+import {
+  lankaFilTillPlatser,
+  slappDeladFil,
+  type DokumentPlats,
+} from "@/lib/forening-dokument-platser";
 import { skapaForeningsDokumentFranFil } from "@/components/dokumentbank/forening-dokument-uppladdning";
 import {
   FilUppladdningsRuta,
@@ -339,6 +347,7 @@ function EgetDokumentUppladdning({
   async function hanteraFil(
     fil: File,
     onProgress: (procent: number) => void,
+    platser: DokumentPlats[],
   ): Promise<FilUppladdningsResultat> {
     setMeddelande(null);
     if (!dokumentSparaValArOk(sparaVal)) {
@@ -347,12 +356,20 @@ function EgetDokumentUppladdning({
         fel: "Välj projekt och mapp om dokumentet ska sparas i både bank och projekt.",
       };
     }
-    const result = await skapaForeningsDokumentFranFil(fil, undefined, undefined, onProgress);
+    const result = await skapaForeningsDokumentFranFil(
+      fil,
+      undefined,
+      undefined,
+      onProgress,
+      platser.length > 0,
+    );
     if (!result.ok) return result;
     const kopplingsFel = onSparad(result.dokument, sparaVal);
     if (kopplingsFel) return { ok: false, fel: kopplingsFel };
+    const delad = dokumentDeladFil(result.dokument);
+    const varning = delad ? lankaFilTillPlatser(platser, delad) : null;
     setMeddelande(`«${result.dokument.titel}» sparades i föreningens dokument.`);
-    return { ok: true };
+    return varning ? { ok: true, varning } : { ok: true };
   }
 
   return (
@@ -373,7 +390,11 @@ function EgetDokumentUppladdning({
         />
       </div>
       <div className="mt-4">
-        <FilUppladdningsRuta onSpara={hanteraFil} sparaEtikett="Spara dokument" />
+        <FilUppladdningsRuta
+          onSpara={hanteraFil}
+          sparaEtikett="Spara dokument"
+          delaTill={{ typer: ["styrning", "arshjul"] }}
+        />
       </div>
       {meddelande && (
         <p className="mt-2 text-xs text-primary-dark" role="status">
@@ -1146,6 +1167,8 @@ export function ForeningsDokumentbank() {
     const state = lasForeningsDokument();
     const dok = state.dokument.find((d) => d.id === id);
     if (dok) taBortDokumentFil(dok);
+    const delad = dok ? dokumentDeladFil(dok) : null;
+    if (delad) slappDeladFil(delad, id);
     sparaForeningsDokument({
       ...state,
       dokument: state.dokument.filter((d) => d.id !== id),

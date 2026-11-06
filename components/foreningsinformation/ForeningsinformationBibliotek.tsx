@@ -39,15 +39,22 @@ import {
 import {
   hamtaBibliotekFilUrl,
   lasBibliotekState,
-  sparaBibliotekFil,
+  laddaUppBibliotekFil,
   sparaBibliotekState,
   taBortBibliotekFil,
   type BibliotekUppladdatDokument,
 } from "@/components/foreningsinformation/foreningsinformation-bibliotek-lager";
 import { oppnaFilIFlik } from "@/lib/forening-fil-lagring";
-import { FilUppladdningsRuta } from "@/components/FilUppladdningsRuta";
-
-type UppladdningsResultat = { ok: true } | { ok: false; fel: string };
+import {
+  FilUppladdningsRuta,
+  type FilUppladdningsResultat,
+} from "@/components/FilUppladdningsRuta";
+import {
+  lankaFilTillPlatser,
+  platsNyckel,
+  slappDeladFil,
+  type DokumentPlats,
+} from "@/lib/forening-dokument-platser";
 
 type UppladdatDokument = BibliotekUppladdatDokument;
 
@@ -55,7 +62,8 @@ type UppladdningsHandler = (
   underPath: string,
   fil: File,
   onProgress?: (procent: number) => void,
-) => Promise<UppladdningsResultat>;
+  platser?: DokumentPlats[],
+) => Promise<FilUppladdningsResultat>;
 
 type UndermappState = {
   öppen: boolean;
@@ -251,33 +259,47 @@ export function ForeningsinformationBibliotek() {
     underPath: string,
     fil: File,
     onProgress?: (procent: number) => void,
-  ): Promise<UppladdningsResultat> {
-    const id = skapaForeningsDokumentId();
-    const sparat = await sparaBibliotekFil(id, fil, onProgress);
+    platser: DokumentPlats[] = [],
+  ): Promise<FilUppladdningsResultat> {
+    const sparat = await laddaUppBibliotekFil(fil, onProgress);
     if (!sparat.ok) return sparat;
-    const dokument: UppladdatDokument = {
-      id,
-      filnamn: fil.name,
-      uppladdad: new Date().toLocaleDateString("sv-SE"),
-      ...(sparat.moln ? { moln: sparat.moln } : {}),
-    };
+    const delad = sparat.fil;
+    const idag = new Date().toLocaleDateString("sv-SE");
+    const styrningsMal = [
+      { typ: "styrning" as const, huvudId, underPath },
+      ...platser.filter(
+        (p): p is Extract<DokumentPlats, { typ: "styrning" }> => p.typ === "styrning",
+      ),
+    ];
     setHuvudmappar((current) => {
-      const huvud = current[huvudId];
-      const under = huvud.undermappar[underPath];
-      return {
-        ...current,
-        [huvudId]: {
+      const next = { ...current };
+      for (const mal of styrningsMal) {
+        const huvud = next[mal.huvudId];
+        const under = huvud?.undermappar[mal.underPath];
+        if (!huvud || !under) continue;
+        next[mal.huvudId] = {
           ...huvud,
           undermappar: {
             ...huvud.undermappar,
-            [underPath]: { ...under, dokument: [...under.dokument, dokument] },
+            [mal.underPath]: {
+              ...under,
+              dokument: [
+                ...under.dokument,
+                { id: skapaForeningsDokumentId(), filnamn: fil.name, uppladdad: idag, fil: delad },
+              ],
+            },
           },
-        },
-      };
+        };
+      }
+      return next;
     });
+    const varning = lankaFilTillPlatser(
+      platser.filter((p) => p.typ !== "styrning"),
+      delad,
+    );
     setPågåendeUppladdning(null);
     window.dispatchEvent(new CustomEvent(BESIKTNING_UPPHANDLING_EVENT));
-    return { ok: true };
+    return varning ? { ok: true, varning } : { ok: true };
   }
 
   function taBortDokument(
@@ -288,6 +310,7 @@ export function ForeningsinformationBibliotek() {
     if (!window.confirm(`Ta bort ${dokument.filnamn}?`)) return;
     const dokumentId = dokument.id;
     taBortBibliotekFil(dokument);
+    if (dokument.fil) slappDeladFil(dokument.fil, dokumentId);
     setHuvudmappar((current) => {
       const huvud = current[huvudId];
       const under = huvud.undermappar[underPath];
@@ -359,8 +382,8 @@ export function ForeningsinformationBibliotek() {
               setPågåendeUppladdning(undermappNyckel(huvud.id, underPath))
             }
             onAvbrytUppladdning={() => setPågåendeUppladdning(null)}
-            onUpload={(underPath, fil, onProgress) =>
-              läggTillDokument(huvud.id, underPath, fil, onProgress)
+            onUpload={(underPath, fil, onProgress, platser) =>
+              läggTillDokument(huvud.id, underPath, fil, onProgress, platser)
             }
             onOppnaFil={(dok) => void oppnaFilIFlik(() => hamtaBibliotekFilUrl(dok))}
             onTaBort={(underPath, dok) =>
@@ -748,8 +771,14 @@ function UndermappRad({
                   </button>
                 ) : (
                   <FilUppladdningsRuta
-                    onSpara={(fil, onProgress) => onUpload(underPath, fil, onProgress)}
+                    onSpara={(fil, onProgress, platser) =>
+                      onUpload(underPath, fil, onProgress, platser)
+                    }
                     onAvbryt={onAvbrytUppladdning}
+                    delaTill={{
+                      typer: ["styrning", "dokumentbank", "arshjul", "projekt"],
+                      aktuellNyckel: platsNyckel({ typ: "styrning", huvudId, underPath }),
+                    }}
                   />
                 )}
               </div>

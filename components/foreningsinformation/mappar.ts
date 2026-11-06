@@ -279,5 +279,5 @@ export function allaUndermappNycklar(): string[] {
 }
 
 export function skapaForeningsDokumentId(): string {
-  return `forening-doc-${Date.now()}`;
+  return `forening-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

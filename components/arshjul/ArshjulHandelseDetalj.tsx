@@ -1,14 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import {
-  FORENINGS_DOK_EVENT,
-} from "@/components/dokumentbank/forening-dokumenter-lager";
-import {
-  kopieraForeningsDokumentTillBilaga,
-  listaForeningsDokumentMedFil,
-} from "@/components/dokumentbank/intern-dokument-flode";
+import { useMemo, useState } from "react";
 import type { ArshjulHandelse } from "@/components/arshjul/arshjul";
 import {
   arshjulArEnergideklaration,
@@ -25,8 +18,7 @@ import {
 import { ENERGI_RADON_LAGKRAV_INTERVALL_AR } from "@/components/underhallsplan/besiktningar";
 import { ArshjulSkapaUpphandlingKnapp } from "@/components/arshjul/ArshjulSkapaUpphandlingKnapp";
 import { ArshjulSigneringPanel } from "@/components/arshjul/ArshjulSigneringPanel";
-
-const MAX_FIL_BYTE = 280_000;
+import { ArshjulBilagor } from "@/components/arshjul/ArshjulBilagor";
 
 type Props = {
   handelse: ArshjulHandelse;
@@ -35,19 +27,6 @@ type Props = {
 
 export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
   const forenkladBesiktning = arshjulVisaForenkladBesiktning(handelse);
-  const [filFel, setFilFel] = useState<string | null>(null);
-  const [foreningsFiler, setForeningsFiler] = useState(
-    listaForeningsDokumentMedFil(),
-  );
-
-  useEffect(() => {
-    function ladda() {
-      setForeningsFiler(listaForeningsDokumentMedFil());
-    }
-    ladda();
-    window.addEventListener(FORENINGS_DOK_EVENT, ladda);
-    return () => window.removeEventListener(FORENINGS_DOK_EVENT, ladda);
-  }, []);
   const [leverantor, setLeverantor] = useState(handelse.leverantor ?? "");
   const [senastDatum, setSenastDatum] = useState(
     handelse.besiktningSenastDatum ?? "",
@@ -65,46 +44,6 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
 
   function sparaSenast(patch: Partial<ArshjulHandelse>) {
     onSpara(patch);
-  }
-
-  function laggTillFil(fil: File | null) {
-    setFilFel(null);
-    if (!fil) return;
-    if (fil.size > MAX_FIL_BYTE) {
-      setFilFel(
-        "Filen är för stor för att sparas här. Håll dagordningen under 280 kB.",
-      );
-      return;
-    }
-    if ((handelse.bilagor?.length ?? 0) >= 6) {
-      setFilFel("Högst sex bilagor per händelse.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = typeof reader.result === "string" ? reader.result : "";
-      if (!dataUrl.startsWith("data:")) {
-        setFilFel("Filen kunde inte läsas.");
-        return;
-      }
-      onSpara({
-        bilagor: [
-          ...(handelse.bilagor ?? []),
-          {
-            id: `bil-${Date.now().toString(36)}`,
-            filnamn: fil.name,
-            dataUrl,
-          },
-        ],
-      });
-    };
-    reader.readAsDataURL(fil);
-  }
-
-  function taBortBilaga(id: string) {
-    onSpara({
-      bilagor: (handelse.bilagor ?? []).filter((bilaga) => bilaga.id !== id),
-    });
   }
 
   if (forenkladBesiktning) {
@@ -132,10 +71,10 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
         ? "Ackrediterad energiexpert"
         : "Företag som utförde mätningen";
     const datumEtikett = arOvk
-      ? "Senaste OVK (datum)"
+      ? "Datum då senaste OVK utfördes"
       : arEnergi
-        ? "Senaste energideklaration (datum)"
-        : "Senaste radonmätning (datum)";
+        ? "Datum då senaste energideklaration utfördes"
+        : "Datum då senaste radonmätning utfördes";
     const nastaRubrik = arOvk
       ? "Nästa OVK planeras"
       : arEnergi
@@ -145,8 +84,8 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     return (
       <div className="mt-3 space-y-4 border-t border-border/70 pt-3">
         <p className="text-xs leading-relaxed text-muted">
-          {intro} Protokoll och anbud hanteras via upphandling — inte dagordning
-          eller BankID här.
+          {intro} Bifoga protokollet nedan — det kan samtidigt visas i Styrning
+          och Dokument och i dokumentbanken.
         </p>
         <label className="block text-sm">
           <span className="font-medium text-foreground">{utförareEtikett}</span>
@@ -186,6 +125,12 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
               : ""}
           </p>
         </div>
+        <ArshjulBilagor
+          handelse={handelse}
+          onSpara={onSpara}
+          rubrik="Protokoll och dokument"
+          uppladdningsEtikett="Ladda upp protokoll"
+        />
         <ArshjulSkapaUpphandlingKnapp handelse={handelse} />
       </div>
     );
@@ -254,87 +199,12 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
         />
       </label>
 
-      <div className="text-sm">
-        <p className="font-medium text-foreground">Dagordning och bilagor</p>
-        <p className="mt-1 text-xs text-muted">
-          Filen sparas i den här webbläsaren, inte i molnet.
-        </p>
-        {(handelse.bilagor ?? []).length > 0 && (
-          <ul className="mt-2 space-y-1">
-            {(handelse.bilagor ?? []).map((bilaga) => (
-              <li
-                key={bilaga.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#f7f9f8] px-2.5 py-1.5"
-              >
-                <a
-                  href={bilaga.dataUrl}
-                  download={bilaga.filnamn}
-                  className="text-sm font-medium text-primary-dark underline"
-                >
-                  {bilaga.filnamn}
-                </a>
-                <button
-                  type="button"
-                  onClick={() => taBortBilaga(bilaga.id)}
-                  className="rounded-lg border border-border px-2 py-1 text-xs text-muted"
-                >
-                  Ta bort
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <label className="mt-2 inline-flex cursor-pointer rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]">
-          Ladda upp dagordning
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx,.txt,image/*,application/pdf"
-            className="sr-only"
-            onChange={(e) => {
-              laggTillFil(e.target.files?.[0] ?? null);
-              e.target.value = "";
-            }}
-          />
-        </label>
-        {foreningsFiler.length > 0 ? (
-          <div className="mt-3">
-            <label className="block text-xs font-medium text-muted">
-              Hämta bilaga från föreningens dokument
-              <select
-                className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm"
-                defaultValue=""
-                onChange={async (e) => {
-                  const select = e.currentTarget;
-                  const dokId = select.value;
-                  if (!dokId) return;
-                  const resultat = await kopieraForeningsDokumentTillBilaga(dokId);
-                  select.value = "";
-                  if (!resultat.ok) {
-                    setFilFel(resultat.fel);
-                    return;
-                  }
-                  setFilFel(null);
-                  onSpara({
-                    bilagor: [...(handelse.bilagor ?? []), resultat.bilaga],
-                  });
-                }}
-              >
-                <option value="">Välj dokument …</option>
-                {foreningsFiler.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.titel}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        ) : null}
-        {filFel && (
-          <p className="mt-2 text-xs text-red-800" role="alert">
-            {filFel}
-          </p>
-        )}
-      </div>
+      <ArshjulBilagor
+        handelse={handelse}
+        onSpara={onSpara}
+        rubrik="Dagordning och bilagor"
+        uppladdningsEtikett="Ladda upp dagordning eller bilaga"
+      />
 
       <ArshjulSigneringPanel handelse={handelse} onSpara={onSpara} />
     </div>

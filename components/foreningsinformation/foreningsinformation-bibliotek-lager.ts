@@ -2,10 +2,11 @@ import { safeSetLocalStorage } from "@/lib/localStorage";
 import { foreningStorageKey } from "@/lib/foreningStorage";
 import type { SparadDokumentFil } from "@/components/dokumentbank/forening-dokument-fil-lager";
 import {
+  deladFilPlats,
   hamtaForeningFilUrlFranPlats,
-  sparaForeningFil,
+  laddaUppDeladFil,
   taBortForeningFilFranPlats,
-  type FilSparResultat,
+  type DeladFil,
   type MolnFilRef,
 } from "@/lib/forening-fil-lagring";
 
@@ -13,8 +14,10 @@ export type BibliotekUppladdatDokument = {
   id: string;
   filnamn: string;
   uppladdad: string;
-  /** Saknas för filer sparade lokalt i webbläsaren (demo/äldre uppladdningar). */
+  /** Äldre uppladdningar: filen ligger under dokumentets eget id. */
   moln?: MolnFilRef;
+  /** Delad fil som kan visas på flera ställen. */
+  fil?: DeladFil;
 };
 
 export type BibliotekUndermappState = {
@@ -58,6 +61,7 @@ function lasAldreFiler(): FilLager {
 export async function hamtaBibliotekFilUrl(
   dok: BibliotekUppladdatDokument,
 ): Promise<string | null> {
+  if (dok.fil) return hamtaForeningFilUrlFranPlats(deladFilPlats(dok.fil));
   const url = await hamtaForeningFilUrlFranPlats({
     modul: FIL_MODUL,
     dokId: dok.id,
@@ -70,15 +74,16 @@ export async function hamtaBibliotekFilUrl(
   return URL.createObjectURL(blob);
 }
 
-export function sparaBibliotekFil(
-  dokId: string,
+export function laddaUppBibliotekFil(
   fil: File,
   onProgress?: (procent: number) => void,
-): Promise<FilSparResultat> {
-  return sparaForeningFil({ modul: FIL_MODUL, dokId, fil, onProgress });
+) {
+  return laddaUppDeladFil({ modul: FIL_MODUL, fil, onProgress });
 }
 
+/** Tar bort äldre, odelade filer. Delade filer släpps via `slappDeladFil`. */
 export function taBortBibliotekFil(dok: BibliotekUppladdatDokument): void {
+  if (dok.fil) return;
   taBortForeningFilFranPlats({ modul: FIL_MODUL, dokId: dok.id, moln: dok.moln });
   const all = lasAldreFiler();
   if (!(dok.id in all)) return;

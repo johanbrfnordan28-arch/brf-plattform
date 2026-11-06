@@ -6,18 +6,25 @@ import {
   MAX_FIL_BYTE,
   MOLN_FIL_ACCEPT,
 } from "@/lib/forening-fil-lagring";
+import { DokumentPlatsVal } from "@/components/DokumentPlatsVal";
+import type { DokumentPlats, DokumentPlatsTyp } from "@/lib/forening-dokument-platser";
 
-export type FilUppladdningsResultat = { ok: true } | { ok: false; fel: string };
+export type FilUppladdningsResultat =
+  | { ok: true; varning?: string }
+  | { ok: false; fel: string };
 
 type Props = {
   onSpara: (
     fil: File,
     onProgress: (procent: number) => void,
+    platser: DokumentPlats[],
   ) => Promise<FilUppladdningsResultat>;
   onAvbryt?: () => void;
   sparaEtikett?: string;
   accept?: string;
   maxByte?: number;
+  /** Visar "Visa även i …" så att filen kan synas på fler ställen. */
+  delaTill?: { typer: DokumentPlatsTyp[]; aktuellNyckel?: string };
 };
 
 /** Välj fil → granska → Spara. Fel och förlopp visas direkt i rutan. */
@@ -27,7 +34,10 @@ export function FilUppladdningsRuta({
   sparaEtikett = "Spara i mappen",
   accept = MOLN_FIL_ACCEPT,
   maxByte = MAX_FIL_BYTE,
+  delaTill,
 }: Props) {
+  const [platser, setPlatser] = useState<DokumentPlats[]>([]);
+  const [varning, setVarning] = useState<string | null>(null);
   const [valdFil, setValdFil] = useState<File | null>(null);
   const [sparar, setSparar] = useState(false);
   const [procent, setProcent] = useState(0);
@@ -35,6 +45,7 @@ export function FilUppladdningsRuta({
 
   function valjFil(fil: File | null) {
     setFel(null);
+    setVarning(null);
     if (fil && fil.size > maxByte) {
       setValdFil(null);
       setFel(
@@ -50,10 +61,12 @@ export function FilUppladdningsRuta({
     setSparar(true);
     setProcent(0);
     setFel(null);
-    const res = await onSpara(valdFil, setProcent);
+    const res = await onSpara(valdFil, setProcent, platser);
     setSparar(false);
-    if (res.ok) setValdFil(null);
-    else setFel(res.fel);
+    if (res.ok) {
+      setValdFil(null);
+      setVarning(res.varning ?? null);
+    } else setFel(res.fel);
   }
 
   return (
@@ -88,6 +101,15 @@ export function FilUppladdningsRuta({
         )}
       </div>
 
+      {valdFil && delaTill ? (
+        <DokumentPlatsVal
+          typer={delaTill.typer}
+          aktuellNyckel={delaTill.aktuellNyckel}
+          onChange={setPlatser}
+          disabled={sparar}
+        />
+      ) : null}
+
       {sparar ? (
         <div
           className="h-2 overflow-hidden rounded-full bg-[#e2f0e6]"
@@ -106,6 +128,12 @@ export function FilUppladdningsRuta({
       {fel ? (
         <p className="text-sm text-red-800" role="alert">
           {fel}
+        </p>
+      ) : null}
+
+      {varning ? (
+        <p className="text-sm text-amber-800" role="status">
+          {varning}
         </p>
       ) : null}
 

@@ -387,8 +387,16 @@ export function laggTillEgetProtokoll(
   input: { datum: string; utforsAv: string; sammanfattning: string; filnamn?: string },
 ): { ok: true } | { ok: false; fel: string } {
   const sammanfattning = input.sammanfattning.trim();
-  if (!sammanfattning && !input.filnamn?.trim()) {
-    return { ok: false, fel: "Ange vad protokollet visar, eller ett filnamn." };
+  if (
+    !sammanfattning &&
+    !input.filnamn?.trim() &&
+    !input.datum.trim() &&
+    !input.utforsAv.trim()
+  ) {
+    return {
+      ok: false,
+      fel: "Fyll i minst datum, vem som utförde kontrollen eller vad protokollet visar.",
+    };
   }
   const post = hamtaBesiktningPost(tjanst);
   post.egnaProtokoll = [
