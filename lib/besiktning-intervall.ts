@@ -53,6 +53,8 @@ export type BesiktningResultatVarden = {
   /** Datum då ombesiktningen blev godkänd. */
   ombesiktningGodkand?: string;
   anmarkningar?: OvkAnmarkningar;
+  /** Fritext från protokollet, t.ex. vilka brister som finns och vem som åtgärdar dem. */
+  anteckning?: string;
 };
 
 /** Energideklarationer godkänns eller underkänns inte. */
@@ -117,6 +119,10 @@ export function normaliseraBesiktningResultat(raw: unknown): BesiktningResultatV
         ? r.ombesiktningGodkand
         : undefined,
     anmarkningar: normaliseraOvkAnmarkningar(r.anmarkningar),
+    anteckning:
+      typeof r.anteckning === "string" && r.anteckning.trim()
+        ? r.anteckning.trim().slice(0, 4000)
+        : undefined,
   };
 }
 
@@ -174,8 +180,10 @@ export const BESIKTNING_INTERVALL_EXEMPEL =
 export const OVK_ANMARKNING_RUBRIK = "Så klassas anmärkningar i OVK-protokollet";
 
 export const OVK_ANMARKNING_TEXT = [
-  "Utfall 0 – information. Kräver ingen åtgärd.",
-  "Utfall 1 – ska åtgärdas före nästa ordinarie OVK (inom 3 eller 6 år beroende på ventilationssystem). Kräver ingen ombesiktning.",
-  "Utfall 2 – ska åtgärdas snarast. OVK:n blir inte godkänd och en ombesiktning krävs, normalt inom sex månader.",
-  "Det är kommunens byggnadsnämnd som bestämmer den slutliga tidsfristen.",
+  "Utfall 0 – kommentar eller information om något besiktningsmannen har sett. Det är inte en brist och kräver ingen åtgärd.",
+  "Utfall 1 – mindre brist som bör åtgärdas före nästa ordinarie OVK (inom 3 eller 6 år beroende på ventilationssystem). Påverkar inte om OVK:n blir godkänd och kräver ingen ombesiktning.",
+  "Utfall 2 – brist som ska åtgärdas snarast. Redan en enda anmärkning med utfall 2 gör att OVK:n inte blir godkänd. Bristen ska åtgärdas och en ombesiktning göras, normalt inom sex månader.",
+  "Det finns ingen klass 3 i vanliga OVK-protokoll. Även mycket allvarliga brister får utfall 2. Åtgärdar föreningen inte bristerna kan byggnadsnämnden besluta om föreläggande, ofta med vite.",
+  "Resultatet avgörs av besiktningsmannens slutsats på protokollets första sida – Godkänd eller Ej godkänd. Ange samma resultat här.",
+  "Klassningen 0–2 är praxis i protokollen. Enligt Boverkets regler ska protokollet redovisa bristerna och om systemet godkänns. Byggnadsnämnden bestämmer den slutliga tidsfristen.",
 ];

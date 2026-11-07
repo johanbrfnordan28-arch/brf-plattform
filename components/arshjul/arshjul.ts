@@ -435,7 +435,7 @@ export function normaliseraHandelse(raw: ArshjulHandelse): ArshjulHandelse {
 
 function rensaBesiktningResultat(value: unknown): BesiktningResultatVarden | undefined {
   const v = normaliseraBesiktningResultat(value);
-  return v.resultat || v.anmarkningar ? v : undefined;
+  return v.resultat || v.anmarkningar || v.anteckning ? v : undefined;
 }
 
 function rensaSignering(value: unknown): ArshjulDokumentSignering | undefined {

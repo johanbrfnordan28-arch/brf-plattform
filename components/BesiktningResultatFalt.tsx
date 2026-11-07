@@ -74,14 +74,14 @@ export function BesiktningResultatFalt({ typ, varden, onChange }: Props) {
           </div>
           {(anm.utfall1 ?? 0) > 0 ? (
             <p className="mt-1 text-xs text-amber-900">
-              {anm.utfall1} anmärkning{anm.utfall1 === 1 ? "" : "ar"} med utfall 1 ska
+              {anm.utfall1} anmärkning{anm.utfall1 === 1 ? "" : "ar"} med utfall 1 bör
               åtgärdas före nästa ordinarie OVK.
             </p>
           ) : null}
           {utfall2 > 0 ? (
             <p className="mt-1 text-xs text-red-800">
               {utfall2} anmärkning{utfall2 === 1 ? "" : "ar"} med utfall 2 ska åtgärdas
-              snarast och kräver ombesiktning.
+              snarast. OVK:n blir inte godkänd och ombesiktning krävs.
             </p>
           ) : null}
           <details className="mt-1 text-xs leading-relaxed text-muted">
@@ -126,8 +126,9 @@ export function BesiktningResultatFalt({ typ, varden, onChange }: Props) {
         </div>
         {typ === "ovk" && utfall2 > 0 && varden.resultat === "godkand" ? (
           <p className="mt-1 text-xs text-amber-900">
-            Anmärkningar med utfall 2 innebär normalt att OVK:n inte blir godkänd. Kontrollera
-            protokollet.
+            Redan en anmärkning med utfall 2 innebär normalt att OVK:n inte blir godkänd.
+            Kontrollera vad som står på protokollets första sida – det är den slutsatsen som
+            gäller.
           </p>
         ) : null}
       </fieldset>

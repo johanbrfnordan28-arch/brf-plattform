@@ -19,6 +19,9 @@ function texter(typ: BesiktningTyp) {
         placeholder: "Certifierat OVK-företag",
         datum: "Besiktningsdatum",
         nasta: "Nästa ordinarie OVK",
+        anteckning: "Information från protokollet",
+        anteckningPlaceholder:
+          "T.ex. vilka anmärkningar som finns och var, vem som ansvarar för åtgärden och vad som är beställt",
       };
     case "energideklaration":
       return {
@@ -26,6 +29,8 @@ function texter(typ: BesiktningTyp) {
         placeholder: "Certifierad energiexpert",
         datum: "Datum för energideklarationen",
         nasta: "Ny energideklaration senast",
+        anteckning: "Anteckningar",
+        anteckningPlaceholder: "T.ex. energiklass och energiprestanda (kWh/m² och år)",
       };
     case "radon":
       return {
@@ -33,6 +38,8 @@ function texter(typ: BesiktningTyp) {
         placeholder: "Företag som utförde mätningen",
         datum: "Datum då mätningen avslutades",
         nasta: "Nästa radonmätning",
+        anteckning: "Anteckningar",
+        anteckningPlaceholder: "T.ex. uppmätta värden och i vilka lägenheter",
       };
     case "sotning":
       return {
@@ -40,6 +47,8 @@ function texter(typ: BesiktningTyp) {
         placeholder: "Företag som utförde kontrollen",
         datum: "Datum för kontrollen",
         nasta: "Nästa kontroll",
+        anteckning: "Anteckningar",
+        anteckningPlaceholder: "T.ex. anmärkningar från sotaren",
       };
     default:
       return {
@@ -47,6 +56,8 @@ function texter(typ: BesiktningTyp) {
         placeholder: "Företag som utförde besiktningen",
         datum: "Besiktningsdatum",
         nasta: "Nästa ordinarie besiktning",
+        anteckning: "Anteckningar",
+        anteckningPlaceholder: "T.ex. anmärkningar och vad som ska åtgärdas",
       };
   }
 }
@@ -68,6 +79,7 @@ function rensa(v: SenasteBesiktningVarden): SenasteBesiktningVarden {
     anmarkningar: harAnm
       ? { utfall0: a.utfall0, utfall1: a.utfall1, utfall2: a.utfall2 }
       : undefined,
+    anteckning: v.anteckning?.trim() || undefined,
   };
 }
 
@@ -155,6 +167,17 @@ export function SenasteBesiktningFormular({
       </div>
 
       <BesiktningResultatFalt typ={typ} varden={varden} onChange={(v) => andra(v)} />
+
+      <label className="block text-sm">
+        <span className="font-medium text-foreground">{t.anteckning}</span>
+        <textarea
+          value={varden.anteckning ?? ""}
+          onChange={(e) => andra({ anteckning: e.target.value })}
+          rows={4}
+          placeholder={t.anteckningPlaceholder}
+          className={inputKlass}
+        />
+      </label>
 
       <div className="flex flex-wrap items-center gap-3">
         <button
