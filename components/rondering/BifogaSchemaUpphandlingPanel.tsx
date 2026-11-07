@@ -6,14 +6,13 @@ import {
   driftUpphandlingsKategorier,
   schemaRollForDriftKategori,
   schemaFilnamnForDriftKategori,
-  type DriftUpphandlingsKategori,
 } from "@/components/rondering/drift-upphandling-koppling";
 import {
   kopieraTillUrklipp,
   laddaNedSchemaText,
   laddaNedTextfil,
 } from "@/components/rondering/exporteraSigneringSchema";
-import { skapaDriftUpphandling } from "@/components/rondering/skapa-drift-upphandling";
+import { upphandlingsLank } from "@/components/upphandling/portal-handlingar";
 import { signeringRollInfo } from "@/components/rondering/signering";
 import { genereraDriftUpphandlingsVillkorText } from "@/components/rondering/upphandlingsvillkor-drift";
 import { hamtaSchemaBilaga } from "@/components/upphandling/schema-bilagor-lager";
@@ -39,16 +38,6 @@ export function BifogaSchemaUpphandlingPanel() {
   }, [uppdatera]);
 
   void bilagaVersion;
-
-  function bifogaTillUpphandling(kategori: DriftUpphandlingsKategori) {
-    const resultat = skapaDriftUpphandling(kategori);
-    setMeddelande(
-      resultat.ok
-        ? `Upphandling skapad: ${resultat.titel}. Schema, villkor och anbudsformulär ligger i upphandlingsmodulen.`
-        : resultat.fel,
-    );
-    uppdatera();
-  }
 
   async function kopieraVillkor() {
     const ok = await kopieraTillUrklipp(genereraDriftUpphandlingsVillkorText());
@@ -131,13 +120,12 @@ export function BifogaSchemaUpphandlingPanel() {
                 >
                   Ladda ner schema
                 </button>
-                <button
-                  type="button"
-                  onClick={() => bifogaTillUpphandling(kategori)}
+                <Link
+                  href={upphandlingsLank(kategori)}
                   className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
                 >
-                  Skapa upphandling
-                </button>
+                  {sparad ? "Öppna i upphandling" : "Skapa upphandling"}
+                </Link>
               </div>
             </div>
           );
@@ -151,15 +139,15 @@ export function BifogaSchemaUpphandlingPanel() {
       )}
 
       <p className="mt-4 text-sm text-muted">
-        Öppna{" "}
+        Upphandlingen görs i{" "}
         <Link
           href="/forening/upphandling"
           className="font-medium text-primary-dark underline hover:no-underline"
         >
           Upphandling
         </Link>{" "}
-        under kategorierna Städning och Fastighetsskötsel för att se bifogade scheman
-        och lägga dem i anbudsunderlaget.
+        under Städning och Fastighetsskötsel. Där skapas underlaget från det bestämda
+        schemat, och schemat är förvalt att hämtas med som bilaga.
       </p>
     </div>
   );

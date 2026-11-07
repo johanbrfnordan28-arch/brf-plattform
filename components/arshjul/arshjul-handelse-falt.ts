@@ -1,11 +1,12 @@
 import type { ArshjulHandelse, ArshjulKategori } from "@/components/arshjul/arshjul";
 import {
+  besiktningTjanst,
   besiktningTjanster,
+  hamtaBesiktningPost,
   laggTillEgetProtokoll,
-  skapaBesiktningUpphandling,
   type BesiktningTjanstId,
 } from "@/components/foreningsinformation/besiktning-upphandling";
-import { kategoriId } from "@/components/upphandling/kategorier";
+import { upphandlingsLank } from "@/components/upphandling/portal-handlingar";
 import { arFranDatum, beraknaNastaBesiktningAr } from "@/lib/besiktning-intervall";
 
 /** Styrelsemöten, stämma, ekonomi m.m. — ansvarig inom styrelsen. */
@@ -128,36 +129,28 @@ export function arshjulNastaBesiktningAr(h: ArshjulHandelse): number | null {
   return nasta ?? h.startAr ?? null;
 }
 
-/** Skickar med senaste OVK från årshjulet som protokoll och skapar upphandling. */
-export function skapaUpphandlingFranArshjul(
-  h: ArshjulHandelse,
-): { ok: true; titel: string; href: string } | { ok: false; fel: string } {
+/** Tar med senaste besiktningen från årshjulet som protokoll, om den inte redan finns där. */
+export function hamtaArshjulProtokollTillUpphandling(h: ArshjulHandelse): void {
   const tjanstId = besiktningTjanstIdFranArshjul(h);
-  if (!tjanstId) return { ok: false, fel: "Upphandling finns inte för den här händelsen." };
-
-  if (h.leverantor?.trim() || h.besiktningSenastDatum?.trim()) {
-    const nasta = arshjulNastaBesiktningAr(h);
-    laggTillEgetProtokoll(tjanstId, {
-      datum: h.besiktningSenastDatum?.trim() || String(h.senastKlarAr ?? ""),
-      utforsAv: h.leverantor?.trim() ?? "",
-      sammanfattning: [
-        "Senaste OVK enligt årshjulet.",
-        nasta ? `Nästa planerat år: ${nasta}.` : "",
-      ]
-        .filter(Boolean)
-        .join(" "),
-    });
-  }
-
-  const result = skapaBesiktningUpphandling(tjanstId, []);
-  if (!result.ok) return result;
-  const tjanst = besiktningTjanster.find((t) => t.id === tjanstId);
-  const key = tjanst ? kategoriId(tjanst.kategoriNamn) : "ovk";
-  return {
-    ok: true,
-    titel: result.titel,
-    href: `/forening/upphandling#kategori-${key}`,
-  };
+  if (!tjanstId) return;
+  const utforsAv = h.leverantor?.trim() ?? "";
+  const datum = h.besiktningSenastDatum?.trim() || String(h.senastKlarAr ?? "");
+  if (!utforsAv && !h.besiktningSenastDatum?.trim()) return;
+  const finns = hamtaBesiktningPost(tjanstId).egnaProtokoll.some(
+    (p) => p.datum === datum && p.utforsAv === utforsAv,
+  );
+  if (finns) return;
+  const nasta = arshjulNastaBesiktningAr(h);
+  laggTillEgetProtokoll(tjanstId, {
+    datum,
+    utforsAv,
+    sammanfattning: [
+      `Senaste ${besiktningTjanst(tjanstId).rubrik} enligt årshjulet.`,
+      nasta ? `Nästa planerat år: ${nasta}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+  });
 }
 
 /** Förenklad upphandling (senaste protokoll + anbudsformulär) — inte sotning. */
@@ -184,12 +177,11 @@ export function arshjulUpphandlingsLank(
   const tjanst = besiktningTjanster.find((t) => t.id === tjanstId);
   if (!tjanst) return null;
 
-  const key = kategoriId(tjanst.kategoriNamn);
   return {
-    href: `/forening/upphandling#kategori-${key}`,
+    href: upphandlingsLank(tjanst.kategoriNamn, { arshjulHandelseId: h.id }),
     etikett: "Skapa upphandling",
     beskrivning:
-      "Öppnar förenklad upphandling: senaste protokoll och föreningens uppgifter följer med, plus anbudsformulär som kan mejlas ut. Anbud kommer in i upphandlingsmodulen.",
+      "Öppnar upphandlingsmodulen. Senaste protokoll, händelsens bilagor och föreningens uppgifter följer med, och fler handlingar kan hämtas från hela portalen.",
   };
 }
 

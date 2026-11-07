@@ -11,6 +11,7 @@ import {
   hissUpphandlingForKategori,
   HISS_UPPHANDLING_EVENT,
   lasHissUpphandling,
+  skapaHissUpphandling,
 } from "@/components/foreningsinformation/hiss-upphandling";
 
 function giltigEpost(value: string): boolean {
@@ -46,7 +47,49 @@ export function HissAnbudMejlPanel({ kategoriNamn }: Props) {
     return () => window.removeEventListener(HISS_UPPHANDLING_EVENT, ladda);
   }, [uppdrag]);
 
-  if (!uppdrag || !hydrated || !skapad) return null;
+  if (!uppdrag || !hydrated) return null;
+
+  if (!skapad) {
+    const aktuelltUppdrag = uppdrag;
+    return (
+      <div className="rounded-xl border-2 border-dashed border-primary/40 bg-[#eef6f0]/60 p-4">
+        <p className="text-sm font-semibold text-primary-dark">
+          Anbudsformulär enligt ABT-06 — {uppdrag.rubrik}
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          Skapa förfrågningsunderlag och anbudsformulär utifrån bilder, felrapport och
+          serviceuppgifter i{" "}
+          <Link
+            href="/forening/foreningsinformation"
+            className="font-medium text-primary-dark underline"
+          >
+            Styrning och Dokument → Hiss
+          </Link>
+          . Hämta bilderna och fakturorna som bilagor med knappen nedan.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            const resultat = skapaHissUpphandling(aktuelltUppdrag.id);
+            if (!resultat.ok) {
+              setStatus(resultat.fel);
+              return;
+            }
+            setStatus(`${resultat.titel} är skapad enligt ABT-06.`);
+            setSkapad(true);
+          }}
+          className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+        >
+          Skapa anbudsunderlag
+        </button>
+        {status && (
+          <p className="mt-2 text-sm text-foreground" role="status">
+            {status}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   async function mejla() {
     if (!uppdrag) return;
@@ -109,9 +152,9 @@ export function HissAnbudMejlPanel({ kategoriNamn }: Props) {
         Anbudsformulär enligt ABT-06 — {uppdrag.rubrik}
       </p>
       <p className="mt-1 text-sm text-muted">
-        Underlaget är flyttat hit från{" "}
+        Underlaget bygger på uppgifterna i{" "}
         <Link href="/forening/foreningsinformation" className="font-medium text-primary-dark underline">
-          Styrning och Dokument
+          Styrning och Dokument → Hiss
         </Link>
         . Pris på serviceintervall, timpris ordinarie och jour samt bilkostnad ingår i
         formuläret. Bifoga bilderna när mejlet öppnas i e-postprogrammet.

@@ -17,6 +17,8 @@ import {
   skapaBesiktningUpphandling,
   sparadeHandlingar,
 } from "@/components/foreningsinformation/besiktning-upphandling";
+import { listaDokumentIMapp } from "@/components/foreningsinformation/foreningsinformation-bibliotek-lager";
+import { styrningPlatsForBesiktning } from "@/lib/forening-dokument-platser";
 import { hamtaSynkadPlanGrund } from "@/lib/forening-grund-synk";
 import { hamtaStyrelseKontakt } from "@/lib/styrelse-kontakt";
 
@@ -97,7 +99,12 @@ export function BesiktningAnbudMejlPanel({ kategoriNamn }: Props) {
   }
 
   function skapaUnderlag() {
-    const resultat = skapaBesiktningUpphandling(aktivTjanst.id, []);
+    const plats = styrningPlatsForBesiktning(aktivTjanst.id);
+    const protokollIMappen =
+      plats?.typ === "styrning"
+        ? listaDokumentIMapp(plats.huvudId, plats.underPath).map((dok) => dok.filnamn)
+        : [];
+    const resultat = skapaBesiktningUpphandling(aktivTjanst.id, protokollIMappen);
     if (!resultat.ok) {
       setStatus(resultat.fel);
       return;

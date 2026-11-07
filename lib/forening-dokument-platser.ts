@@ -30,6 +30,7 @@ import {
   besiktningTjanst,
   type BesiktningTjanstId,
 } from "@/components/foreningsinformation/besiktning-upphandling";
+import { upphandlingensFiler } from "@/components/upphandling/upphandling-dokument-lager";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 export type DokumentPlatsTyp = "styrning" | "dokumentbank" | "arshjul" | "projekt";
@@ -86,7 +87,7 @@ export function styrningsMappVal(): PlatsVal[] {
   );
 }
 
-function lasArshjulLista(): ArshjulHandelse[] {
+export function lasArshjulLista(): ArshjulHandelse[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(arshjulStorageKey());
@@ -298,6 +299,7 @@ function antalReferenser(filId: string, ignoreraPostId: string): number {
       for (const d of mapp.dokument) rakna(d.id, d.fil);
     }
   }
+  for (const rad of upphandlingensFiler()) rakna(rad.postId, rad.fil);
   return antal;
 }
 

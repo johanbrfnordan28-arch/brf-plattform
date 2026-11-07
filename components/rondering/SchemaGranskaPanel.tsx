@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   lasHusEntreprenorerState,
   type HusEntreprenor,
 } from "@/components/entreprenorer/hus-entreprenorer-lager";
 import { oppnaSchemaGranskningPdf } from "@/components/rondering/exporteraSigneringSchema";
-import { genereraAnbudsformularText, skapaDriftUpphandlingar } from "@/components/rondering/skapa-drift-upphandling";
+import { genereraAnbudsformularText } from "@/components/rondering/skapa-drift-upphandling";
+import { driftUpphandlingsKategorier } from "@/components/rondering/drift-upphandling-koppling";
+import { upphandlingsLank } from "@/components/upphandling/portal-handlingar";
 import {
   hamtaForeningUndertecknareForPdf,
   standardMejlForSignering,
@@ -280,20 +283,15 @@ export function SchemaGranskaPanel() {
         >
           Bestäm schema
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            const resultat = skapaDriftUpphandlingar();
-            setStatus(
-              resultat.ok
-                ? `Upphandling skapad för städning och fastighetsskötsel. Underlaget ligger i upphandlingsmodulen.`
-                : resultat.fel,
-            );
-          }}
-          className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
-        >
-          Skapa upphandling
-        </button>
+        {driftUpphandlingsKategorier.map((kategori) => (
+          <Link
+            key={kategori}
+            href={upphandlingsLank(kategori)}
+            className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
+          >
+            Upphandla {kategori.toLowerCase()}
+          </Link>
+        ))}
       </div>
       {pdfFel && (
         <p className="mt-2 text-sm text-amber-950" role="status">

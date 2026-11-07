@@ -102,7 +102,7 @@ export function kategoriId(namn: string): string {
 }
 
 export function skapaDokumentId(): string {
-  return `dok-${Date.now()}`;
+  return `dok-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function hamtaUpphandlingsGrupp(

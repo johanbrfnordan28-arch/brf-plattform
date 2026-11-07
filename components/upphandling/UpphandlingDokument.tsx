@@ -45,6 +45,12 @@ import { publiceraTillNavet } from "@/components/upphandling/navet-upphandling-l
 import { DriftUpphandlingSchemaPanel } from "@/components/upphandling/DriftUpphandlingSchemaPanel";
 import { BesiktningAnbudMejlPanel } from "@/components/upphandling/BesiktningAnbudMejlPanel";
 import { HissAnbudMejlPanel } from "@/components/upphandling/HissAnbudMejlPanel";
+import { PortalHandlingarValjare } from "@/components/upphandling/PortalHandlingarValjare";
+import {
+  laddaUppUpphandlingsFil,
+  oppnaUpphandlingsDokument,
+} from "@/components/upphandling/portal-handlingar";
+import { slappDeladFil } from "@/lib/forening-dokument-platser";
 import {
   StyrelseBeslutSektion,
   StyrelseGodkannandeSektion,
@@ -58,6 +64,12 @@ type VäljMål =
   | { typ: "extra"; kategoriId: string; extraId: string }
   | null;
 
+type PortalVäljare = {
+  kategoriKey: string;
+  forvalj: boolean;
+  arshjulHandelseId: string | null;
+};
+
 /** Kategorier + dokumentbank i egna sektioner (banken före publicering). */
 export function UpphandlingSidaInnehall() {
   const pathname = usePathname();
@@ -70,7 +82,11 @@ export function UpphandlingSidaInnehall() {
   const [publiceringsFel, setPubliceringsFel] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
   const [lagerVersion, setLagerVersion] = useState(0);
+  const [portalVäljare, setPortalVäljare] = useState<PortalVäljare | null>(null);
+  const [dokumentFel, setDokumentFel] = useState<Record<string, string>>({});
   const skipFirstKategoriSave = useRef(true);
+  const kategorierRef = useRef(kategorier);
+  kategorierRef.current = kategorier;
 
   function uppdateraFranLager() {
     const lager = lasUpphandlingLager();
@@ -126,6 +142,29 @@ export function UpphandlingSidaInnehall() {
     window.addEventListener("hashchange", oppnaKategoriFranHash);
     return () => window.removeEventListener("hashchange", oppnaKategoriFranHash);
   }, [hydrated, pathname]);
+
+  useEffect(() => {
+    if (!hydrated || Object.keys(kategorierRef.current).length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("kategori");
+    if (!key || !kategorierRef.current[key]) return;
+    if (params.get("hamta") === "1") {
+      setPortalVäljare({
+        kategoriKey: key,
+        forvalj: true,
+        arshjulHandelseId: params.get("handelse"),
+      });
+    }
+    setKategorier((current) =>
+      current[key].öppen ? current : { ...current, [key]: { ...current[key], öppen: true } },
+    );
+    window.history.replaceState(null, "", `${window.location.pathname}#kategori-${key}`);
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`kategori-${key}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated || Object.keys(kategorier).length === 0) return;
@@ -207,17 +246,34 @@ export function UpphandlingSidaInnehall() {
     }));
   }
 
+  /** Uppdaterar kategorin och raderar filer som inte längre används någonstans. */
+  function ändraKategori(
+    kategoriKey: string,
+    ändra: (state: KategoriState) => KategoriState,
+  ) {
+    const current = kategorierRef.current;
+    const före = current[kategoriKey];
+    if (!före) return;
+    const efter = ändra(före);
+    const next = { ...current, [kategoriKey]: efter };
+    kategorierRef.current = next;
+    setKategorier(next);
+
+    const kvar = new Set(filIdn(efter));
+    const borttagna = allaRefs(före).filter((ref) => ref.fil && !kvar.has(ref.fil.filId));
+    if (borttagna.length === 0) return;
+    sparaUpphandlingKategoriDokument(next);
+    for (const ref of borttagna) slappDeladFil(ref.fil!, "");
+  }
+
   function sättPlatsDokument(
     kategoriKey: string,
     platsId: string,
     dokument: DokumentRef | null,
   ) {
-    setKategorier((current) => ({
-      ...current,
-      [kategoriKey]: {
-        ...current[kategoriKey],
-        platser: { ...current[kategoriKey].platser, [platsId]: dokument },
-      },
+    ändraKategori(kategoriKey, (state) => ({
+      ...state,
+      platser: { ...state.platser, [platsId]: dokument },
     }));
   }
 
@@ -226,51 +282,71 @@ export function UpphandlingSidaInnehall() {
     extraId: string,
     dokument: DokumentRef | null,
   ) {
-    setKategorier((current) => ({
-      ...current,
-      [kategoriKey]: {
-        ...current[kategoriKey],
-        extra: current[kategoriKey].extra.map((rad) =>
-          rad.id === extraId ? { ...rad, dokument } : rad,
-        ),
-      },
+    ändraKategori(kategoriKey, (state) => ({
+      ...state,
+      extra: state.extra.map((rad) => (rad.id === extraId ? { ...rad, dokument } : rad)),
     }));
   }
 
-  function laddaUppPlats(kategoriKey: string, platsId: string, fil: File | null) {
+  async function laddaUppFil(
+    kategoriKey: string,
+    fil: File | null,
+    sätt: (ref: DokumentRef) => void,
+  ) {
     if (!fil) return;
-    sättPlatsDokument(kategoriKey, platsId, { filnamn: fil.name, källa: "upload" });
+    setDokumentFel((current) => {
+      const next = { ...current };
+      delete next[kategoriKey];
+      return next;
+    });
+    const res = await laddaUppUpphandlingsFil(fil);
+    if (!res.ok) {
+      setDokumentFel((current) => ({ ...current, [kategoriKey]: res.fel }));
+      return;
+    }
+    sätt({ filnamn: fil.name, källa: "upload", fil: res.fil });
+  }
+
+  function laddaUppPlats(kategoriKey: string, platsId: string, fil: File | null) {
+    void laddaUppFil(kategoriKey, fil, (ref) => sättPlatsDokument(kategoriKey, platsId, ref));
   }
 
   function laddaUppExtra(kategoriKey: string, extraId: string, fil: File | null) {
-    if (!fil) return;
-    sättExtraDokument(kategoriKey, extraId, { filnamn: fil.name, källa: "upload" });
+    void laddaUppFil(kategoriKey, fil, (ref) => sättExtraDokument(kategoriKey, extraId, ref));
   }
 
   function läggTillExtraDokument(kategoriKey: string) {
-    setKategorier((current) => ({
-      ...current,
-      [kategoriKey]: {
-        ...current[kategoriKey],
-        extra: [
-          ...current[kategoriKey].extra,
-          {
-            id: skapaDokumentId(),
-            etikett: "Bilaga (t.ex. tidigare protokoll)",
-            dokument: null,
-          },
-        ],
-      },
+    ändraKategori(kategoriKey, (state) => ({
+      ...state,
+      extra: [
+        ...state.extra,
+        {
+          id: skapaDokumentId(),
+          etikett: "Bilaga (t.ex. tidigare protokoll)",
+          dokument: null,
+        },
+      ],
+    }));
+  }
+
+  function läggTillPortalHandlingar(
+    kategoriKey: string,
+    rader: { etikett: string; ref: DokumentRef }[],
+  ) {
+    ändraKategori(kategoriKey, (state) => ({
+      ...state,
+      öppen: true,
+      extra: [
+        ...state.extra,
+        ...rader.map((rad) => ({ id: skapaDokumentId(), etikett: rad.etikett, dokument: rad.ref })),
+      ],
     }));
   }
 
   function taBortExtra(kategoriKey: string, extraId: string) {
-    setKategorier((current) => ({
-      ...current,
-      [kategoriKey]: {
-        ...current[kategoriKey],
-        extra: current[kategoriKey].extra.filter((rad) => rad.id !== extraId),
-      },
+    ändraKategori(kategoriKey, (state) => ({
+      ...state,
+      extra: state.extra.filter((rad) => rad.id !== extraId),
     }));
   }
 
@@ -326,6 +402,12 @@ export function UpphandlingSidaInnehall() {
       sättPlatsDokument(key, platsId, null),
     onRensaExtra: (key: string, extraId: string) =>
       sättExtraDokument(key, extraId, null),
+    portalVäljare,
+    dokumentFel,
+    onÖppnaPortal: (key: string) =>
+      setPortalVäljare({ kategoriKey: key, forvalj: false, arshjulHandelseId: null }),
+    onStängPortal: () => setPortalVäljare(null),
+    onLäggTillPortal: läggTillPortalHandlingar,
   };
 
   return (
@@ -392,6 +474,27 @@ export function UpphandlingSidaInnehall() {
   );
 }
 
+function allaRefs(state: KategoriState): DokumentRef[] {
+  return [
+    ...Object.values(state.platser),
+    ...state.extra.map((rad) => rad.dokument),
+  ].filter((ref): ref is DokumentRef => Boolean(ref));
+}
+
+function filIdn(state: KategoriState): string[] {
+  return allaRefs(state).flatMap((ref) => (ref.fil ? [ref.fil.filId] : []));
+}
+
+/** portalId och filId för allt som redan är kopplat, så det inte kopplas två gånger. */
+function koppladeNycklar(state: KategoriState): Set<string> {
+  return new Set(
+    allaRefs(state).flatMap((ref) => [
+      ...(ref.portalId ? [ref.portalId] : []),
+      ...(ref.fil ? [ref.fil.filId] : []),
+    ]),
+  );
+}
+
 function gruppSektionKlass(gruppId: UpphandlingsGrupp["id"]): string {
   if (!arInramadUpphandlingsGrupp(gruppId)) return "";
   return "rounded-2xl border-2 border-dashed border-primary/35 bg-[#eef6f0]/60 p-4 sm:p-6";
@@ -417,6 +520,14 @@ type UpphandlingsGruppSektionProps = {
   onTaBortExtra: (kategoriKey: string, extraId: string) => void;
   onRensaPlats: (kategoriKey: string, platsId: string) => void;
   onRensaExtra: (kategoriKey: string, extraId: string) => void;
+  portalVäljare: PortalVäljare | null;
+  dokumentFel: Record<string, string>;
+  onÖppnaPortal: (kategoriKey: string) => void;
+  onStängPortal: () => void;
+  onLäggTillPortal: (
+    kategoriKey: string,
+    rader: { etikett: string; ref: DokumentRef }[],
+  ) => void;
 };
 
 function UpphandlingsGruppSektion({
@@ -439,6 +550,11 @@ function UpphandlingsGruppSektion({
   onTaBortExtra,
   onRensaPlats,
   onRensaExtra,
+  portalVäljare,
+  dokumentFel,
+  onÖppnaPortal,
+  onStängPortal,
+  onLäggTillPortal,
 }: UpphandlingsGruppSektionProps) {
   const inramad = arInramadUpphandlingsGrupp(grupp.id);
   const sektionKlass = inramad ? gruppSektionKlass(grupp.id) : "";
@@ -481,6 +597,11 @@ function UpphandlingsGruppSektion({
               onTaBortExtra={(extraId) => onTaBortExtra(key, extraId)}
               onRensaPlats={(platsId) => onRensaPlats(key, platsId)}
               onRensaExtra={(extraId) => onRensaExtra(key, extraId)}
+              portalVäljare={portalVäljare?.kategoriKey === key ? portalVäljare : null}
+              dokumentFel={dokumentFel[key]}
+              onÖppnaPortal={() => onÖppnaPortal(key)}
+              onStängPortal={onStängPortal}
+              onLäggTillPortal={(rader) => onLäggTillPortal(key, rader)}
             />
           );
         })}
@@ -510,6 +631,11 @@ type KategoriKortProps = {
   onTaBortExtra: (extraId: string) => void;
   onRensaPlats: (platsId: string) => void;
   onRensaExtra: (extraId: string) => void;
+  portalVäljare: PortalVäljare | null;
+  dokumentFel?: string;
+  onÖppnaPortal: () => void;
+  onStängPortal: () => void;
+  onLäggTillPortal: (rader: { etikett: string; ref: DokumentRef }[]) => void;
 };
 
 function KategoriKort({
@@ -533,6 +659,11 @@ function KategoriKort({
   onTaBortExtra,
   onRensaPlats,
   onRensaExtra,
+  portalVäljare,
+  dokumentFel,
+  onÖppnaPortal,
+  onStängPortal,
+  onLäggTillPortal,
 }: KategoriKortProps) {
   const antalIfyllda =
     Object.values(state.platser).filter(Boolean).length +
@@ -590,6 +721,37 @@ function KategoriKort({
           <DriftUpphandlingSchemaPanel kategoriNamn={namn} />
           <BesiktningAnbudMejlPanel kategoriNamn={namn} />
           <HissAnbudMejlPanel kategoriNamn={namn} />
+
+          {portalVäljare ? (
+            <PortalHandlingarValjare
+              kategoriNamn={namn}
+              redanKopplade={koppladeNycklar(state)}
+              arshjulHandelseId={portalVäljare.arshjulHandelseId}
+              forvalj={portalVäljare.forvalj}
+              onLaggTill={onLäggTillPortal}
+              onStang={onStängPortal}
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-[#f7fbf8] px-4 py-3">
+              <button
+                type="button"
+                onClick={onÖppnaPortal}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+              >
+                Hämta handlingar från portalen
+              </button>
+              <p className="min-w-0 flex-1 text-xs text-muted">
+                Protokoll, bilder, fakturor, scheman och dokument från Styrning och Dokument,
+                årshjulet, dokumentbanken, projekten och ronderingen.
+              </p>
+            </div>
+          )}
+
+          {dokumentFel && (
+            <p className="text-sm text-red-700" role="alert">
+              {dokumentFel}
+            </p>
+          )}
 
           {standardDokumentPlatser.map((plats) => (
             <DokumentRad
@@ -881,8 +1043,24 @@ function DokumentRad({
       <p className="text-sm font-medium text-foreground">{etikett}</p>
       {dokument ? (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-foreground">{dokument.filnamn}</p>
+          <div className="min-w-0">
+            <p className="break-words text-sm text-foreground">{dokument.filnamn}</p>
+            {dokument.källa === "upload" && !dokument.fil && (
+              <p className="text-xs text-amber-800">
+                Bara filnamnet sparades. Ladda upp filen igen om den ska kunna öppnas.
+              </p>
+            )}
+          </div>
           <div className="flex gap-2">
+            {(dokument.fil || dokument.foreningsDokumentId) && (
+              <button
+                type="button"
+                onClick={() => void oppnaUpphandlingsDokument(dokument)}
+                className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+              >
+                Öppna
+              </button>
+            )}
             <button
               type="button"
               onClick={onRensa}

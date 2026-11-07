@@ -15,7 +15,6 @@ import {
   laggTillHissBild,
   lasHissUpphandling,
   skapaHissBestallning,
-  skapaHissUpphandling,
   signeraHissBestallning,
   taBortHissBild,
   type HissBestallning,
@@ -24,7 +23,7 @@ import {
   type HissUpphandlingsSlag,
   type RegistreradHiss,
 } from "@/components/foreningsinformation/hiss-upphandling";
-import { kategoriId } from "@/components/upphandling/kategorier";
+import { upphandlingsLank } from "@/components/upphandling/portal-handlingar";
 import { HissBildMiniatyr } from "@/components/foreningsinformation/HissMappPaneler";
 import {
   bekraftaOmDubblett,
@@ -157,16 +156,6 @@ export function HissUpphandlingPanel() {
     }
   }
 
-  function skapa(slag: HissUpphandlingsSlag) {
-    const resultat = skapaHissUpphandling(slag);
-    setStatus(
-      resultat.ok
-        ? `${resultat.titel} är skapad enligt ABT-06. Underlaget ligger i upphandlingsmodulen och handlingarna är sparade här.`
-        : resultat.fel,
-    );
-    ladda();
-  }
-
   return (
     <div className="mt-4 space-y-4 rounded-xl border border-primary/30 bg-[#eef6f0] p-4">
       <div>
@@ -175,9 +164,9 @@ export function HissUpphandlingPanel() {
           Service, reparation och ny hiss upphandlas här. Bilder på id-brickan och
           från hissmaskinrummet ska finnas med. Serviceintervall och akutrutin fyller
           ni i under Service, felrapport och materialfakturor under Reparationer.
-          Anbudsformuläret är knutet till ABT-06. När upphandlingen skapas flyttas den
-          till upphandlingsmodulen så den kan mejlas till anbudsgivare. Entreprenören
-          signerar beställningen först, därefter föreningen.
+          Anbudsformuläret är knutet till ABT-06. Upphandlingen görs i
+          upphandlingsmodulen, där bilder, felrapport och fakturor är förvalda att hämtas
+          med. Entreprenören signerar beställningen först, därefter föreningen.
         </p>
         <p className="mt-2 text-xs text-muted">
           Avtalsundertecknare:{" "}
@@ -272,21 +261,12 @@ export function HissUpphandlingPanel() {
               <p className="text-sm font-semibold text-foreground">{uppdrag.rubrik}</p>
               <p className="mt-1 text-xs text-muted">{uppdrag.omfattning}</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => skapa(uppdrag.id)}
+                <Link
+                  href={upphandlingsLank(uppdrag.kategoriNamn)}
                   className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
                 >
-                  Skapa upphandling
-                </button>
-                {skapade[uppdrag.id] && (
-                  <Link
-                    href={`/forening/upphandling#kategori-${kategoriId(uppdrag.kategoriNamn)}`}
-                    className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark"
-                  >
-                    Öppna i upphandling
-                  </Link>
-                )}
+                  {skapade[uppdrag.id] ? "Öppna i upphandling" : "Skapa upphandling"}
+                </Link>
               </div>
               {skapade[uppdrag.id] && (!bestallning || bestallning.status === "godkant") && (
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">

@@ -15,7 +15,6 @@ import {
   hamtaSenasteBesiktning,
   sparaSenasteBesiktning,
   skapaBesiktningBestallning,
-  skapaBesiktningUpphandling,
   signeraBesiktningBestallning,
   sparadeHandlingar,
   taBortEgetProtokoll,
@@ -24,7 +23,7 @@ import {
   type SparadHandling,
   type TidigareProtokoll,
 } from "@/components/foreningsinformation/besiktning-upphandling";
-import { kategoriId } from "@/components/upphandling/kategorier";
+import { upphandlingsLank } from "@/components/upphandling/portal-handlingar";
 import { hamtaAvtalssignerare } from "@/lib/styrelse-kontakt";
 import { lasAktivForeningId, lasForeningProfil } from "@/lib/forening-registry";
 import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
@@ -95,7 +94,6 @@ export function BesiktningUpphandlingPanel({
   }, [tjanstId, uppladdadeFilnamn]);
 
   const signerare = hydrated ? hamtaAvtalssignerare() : [];
-  const kategoriKey = kategoriId(tjanst.kategoriNamn);
   const foretagKlar = bestallning
     ? harTillrackligaBankIdSignaturer(bestallning.foretagSignaturer)
     : false;
@@ -233,30 +231,17 @@ export function BesiktningUpphandlingPanel({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            const resultat = skapaBesiktningUpphandling(tjanstId, uppladdadeFilnamn);
-            setStatus(
-              resultat.ok
-                ? `${resultat.titel} är skapad. Underlaget och anbudsformuläret är sparade här och ligger i upphandlingsmodulen.`
-                : resultat.fel,
-            );
-            ladda();
-          }}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+      <div className="space-y-1.5">
+        <Link
+          href={upphandlingsLank(tjanst.kategoriNamn)}
+          className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Skapa upphandling
-        </button>
-        {skapad && (
-          <Link
-            href={`/forening/upphandling#kategori-${kategoriKey}`}
-            className="rounded-lg border border-primary bg-white px-4 py-2 text-sm font-medium text-primary-dark hover:bg-[#eef6f0]"
-          >
-            Öppna i upphandling
-          </Link>
-        )}
+          {skapad ? "Öppna i upphandling" : "Skapa upphandling"}
+        </Link>
+        <p className="text-xs text-muted">
+          Upphandlingen görs i upphandlingsmodulen. Protokollen i mappen är förvalda att
+          hämtas med, och fler handlingar kan hämtas från hela portalen.
+        </p>
       </div>
 
       {skapad && (

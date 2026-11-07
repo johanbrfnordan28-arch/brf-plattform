@@ -8,7 +8,10 @@ import {
   type DriftUpphandlingsKategori,
 } from "@/components/rondering/drift-upphandling-koppling";
 import { genereraSchemaText } from "@/components/rondering/exporteraSigneringSchema";
-import { genereraAnbudsformularText } from "@/components/rondering/skapa-drift-upphandling";
+import {
+  genereraAnbudsformularText,
+  skapaDriftUpphandling,
+} from "@/components/rondering/skapa-drift-upphandling";
 import { signeringRollInfo } from "@/components/rondering/signering";
 import {
   driftUpphandlingsVillkorPunkter,
@@ -64,6 +67,16 @@ export function DriftUpphandlingSchemaPanel({ kategoriNamn }: Props) {
     setVersion((v) => v + 1);
   }
 
+  function skapaFranBestamtSchema() {
+    const resultat = skapaDriftUpphandling(kategori);
+    setNotis(
+      resultat.ok
+        ? `Upphandling skapad: ${resultat.titel}. Schema, villkor och anbudsformulär är bifogade.`
+        : resultat.fel,
+    );
+    setVersion((v) => v + 1);
+  }
+
   return (
     <div className="rounded-xl border-2 border-dashed border-primary/40 bg-[#eef6f0]/60 p-4">
       <p className="text-sm font-semibold text-primary-dark">
@@ -109,10 +122,17 @@ export function DriftUpphandlingSchemaPanel({ kategoriNamn }: Props) {
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={uppdateraFranRondering}
+          onClick={skapaFranBestamtSchema}
           className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          Hämta schema från rondering
+          Skapa upphandling från bestämt schema
+        </button>
+        <button
+          type="button"
+          onClick={uppdateraFranRondering}
+          className="rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary-dark hover:bg-[#e2f0e6]"
+        >
+          Hämta aktuellt schema från rondering
         </button>
         {bilaga && (
           <>
@@ -135,8 +155,8 @@ export function DriftUpphandlingSchemaPanel({ kategoriNamn }: Props) {
       </div>
 
       <p className="mt-3 text-xs text-muted">
-        Ladda upp nedladdad fil under «Ladda upp dokument» eller «Lägg till dokument»
-        med etikett t.ex. «{info.dokument}» och «{driftUpphandlingsVillkorRubrik}».
+        {info.dokument} kan också läggas till som bilaga med «Hämta handlingar från
+        portalen». Villkoren finns under «{driftUpphandlingsVillkorRubrik}».
       </p>
 
       {notis && (
