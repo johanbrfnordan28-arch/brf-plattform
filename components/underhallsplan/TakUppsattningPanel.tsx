@@ -13,8 +13,10 @@ import {
 type TakUppsattningPanelProps = {
   hus: FastighetsHus[];
   tak: TakEnhet[];
+  foreningsAdresser: string[];
   harInnehall: (takNamn: string) => boolean;
   onChange: (next: TakEnhet[]) => void;
+  onAdress: (takNamn: string, adress: string) => void;
 };
 
 function valKnapp(vald: boolean, onClick: () => void, etikett: string) {
@@ -37,8 +39,10 @@ function valKnapp(vald: boolean, onClick: () => void, etikett: string) {
 export function TakUppsattningPanel({
   hus,
   tak,
+  foreningsAdresser,
   harInnehall,
   onChange,
+  onAdress,
 }: TakUppsattningPanelProps) {
   const flerHus = hus.length > 1;
   const arGemensamt = tak.length === 1 && tak[0].husIds.length === hus.length;
@@ -69,7 +73,14 @@ export function TakUppsattningPanel({
       tak.map((t) => t.namn),
       ledigtHus?.husnummer,
     );
-    onChange([...tak, { namn, husIds: ledigtHus ? [ledigtHus.id] : [] }]);
+    onChange([
+      ...tak,
+      {
+        namn,
+        husIds: ledigtHus ? [ledigtHus.id] : [],
+        adress: ledigtHus?.husnummer.trim() || undefined,
+      },
+    ]);
   }
 
   return (
@@ -88,7 +99,7 @@ export function TakUppsattningPanel({
         <div className="mt-3 flex flex-wrap gap-2">
           {valKnapp(
             arGemensamt,
-            () => andra(slaIhopTillEttTak(hus)),
+            () => andra(slaIhopTillEttTak(tak, hus)),
             "Husen sitter ihop — ett gemensamt tak",
           )}
           {valKnapp(
@@ -98,6 +109,12 @@ export function TakUppsattningPanel({
           )}
         </div>
       ) : null}
+
+      <datalist id="tak-adresser">
+        {foreningsAdresser.map((a) => (
+          <option key={a} value={a} />
+        ))}
+      </datalist>
 
       <ul className="mt-3 space-y-2">
         {tak.map((t) => (
@@ -117,6 +134,17 @@ export function TakUppsattningPanel({
                 </button>
               ) : null}
             </div>
+            <label className="mt-2 block max-w-md text-xs text-muted">
+              Adress
+              <input
+                type="text"
+                list="tak-adresser"
+                value={t.adress ?? ""}
+                onChange={(e) => onAdress(t.namn, e.target.value)}
+                placeholder="t.ex. Storgatan 5"
+                className="mt-1 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm text-foreground"
+              />
+            </label>
             {flerHus ? (
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                 {hus.map((h) => (

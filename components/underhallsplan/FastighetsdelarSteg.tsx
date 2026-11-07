@@ -37,11 +37,13 @@ import {
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
 import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
+import { TakKort } from "@/components/underhallsplan/TakKort";
 import { TakUppsattningPanel } from "@/components/underhallsplan/TakUppsattningPanel";
 import {
   arTakKomponent,
   husNamnForTak,
   TAK_KOMPONENT_NAMN,
+  TAK_YTSKIKT_ID,
   takKomponenterIPlan,
   type TakEnhet,
 } from "@/components/underhallsplan/tak-enheter";
@@ -162,13 +164,15 @@ export function FastighetsdelarSteg({
   const takNamnLista = takKomponenterIPlan(activeComponents);
   const takLista: TakEnhet[] = takNamnLista.map((namn) => {
     const sparade = komponentDetaljer[namn]?.takHusIds;
+    const adress = komponentDetaljer[namn]?.takAdress;
     if (sparade) {
       return {
         namn,
         husIds: sparade.filter((id) => ytor.hus.some((h) => h.id === id)),
+        adress,
       };
     }
-    if (namn !== TAK_KOMPONENT_NAMN) return { namn, husIds: [] };
+    if (namn !== TAK_KOMPONENT_NAMN) return { namn, husIds: [], adress };
     const iAndraTak = new Set(
       takNamnLista
         .filter((n) => n !== namn)
@@ -177,6 +181,7 @@ export function FastighetsdelarSteg({
     return {
       namn,
       husIds: ytor.hus.map((h) => h.id).filter((id) => !iAndraTak.has(id)),
+      adress,
     };
   });
 
@@ -293,15 +298,36 @@ export function FastighetsdelarSteg({
       arTakKomponent(namn) && ytor.hus.length > 1
         ? husNamnForTak(takLista.find((t) => t.namn === namn)?.husIds, ytor.hus)
         : [];
+    const takAdress = arTakKomponent(namn) ? data.takAdress?.trim() : "";
+    const takPartier =
+      data.takBelaggningRegister?.[TAK_YTSKIKT_ID]?.belaggningar.length ?? 0;
+    const takKomponenter = synliga.filter(
+      (rad) => rad.id !== TAK_YTSKIKT_ID,
+    ).length;
     return (
       <li key={namn} className="rounded-xl border border-border bg-white">
         <div className="flex items-start justify-between gap-3 px-3 py-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground">{namn}</p>
+            <p className="text-sm font-medium text-foreground">
+              {namn}
+              {takAdress ? (
+                <span className="font-normal text-muted"> · {takAdress}</span>
+              ) : null}
+            </p>
             <p className="mt-0.5 text-xs text-muted">
-              {synliga.length}{" "}
-              {synliga.length === 1 ? "underdel" : "underdelar"}
-              {egen ? " · egen del" : ""} · med i hela planen
+              {arTakKomponent(namn) ? (
+                <>
+                  {takPartier} {takPartier === 1 ? "takparti" : "takpartier"} ·{" "}
+                  {takKomponenter}{" "}
+                  {takKomponenter === 1 ? "komponent" : "komponenter"} på taket
+                </>
+              ) : (
+                <>
+                  {synliga.length}{" "}
+                  {synliga.length === 1 ? "underdel" : "underdelar"}
+                  {egen ? " · egen del" : ""} · med i hela planen
+                </>
+              )}
             </p>
             {takHus.length > 0 ? (
               <p className="mt-0.5 text-xs text-primary-dark">
@@ -325,7 +351,20 @@ export function FastighetsdelarSteg({
             />
           </div>
         </div>
-        {oppenDel && (
+        {oppenDel && arTakKomponent(namn) ? (
+          <div className="border-t border-border px-4 py-3">
+            <TakKort
+              namn={namn}
+              data={data}
+              grund={grund}
+              foreningsAdresser={foreningsAdresser}
+              planStartAr={planStartAr}
+              planLangdAr={planLangdAr}
+              onChange={(next) => sparaDetalj(namn, next)}
+            />
+          </div>
+        ) : null}
+        {oppenDel && !arTakKomponent(namn) && (
           <div className="space-y-3 border-t border-border px-4 py-3">
             {namn === "Fasad" && (
               <FasadSidor
@@ -591,8 +630,12 @@ export function FastighetsdelarSteg({
                 <TakUppsattningPanel
                   hus={ytor.hus}
                   tak={takLista}
+                  foreningsAdresser={foreningsAdresser}
                   harInnehall={takHarInnehall}
                   onChange={andraTakUppsattning}
+                  onAdress={(takNamn, adress) =>
+                    sparaDetalj(takNamn, { ...detaljFor(takNamn), takAdress: adress })
+                  }
                 />
               </div>
             ) : null}

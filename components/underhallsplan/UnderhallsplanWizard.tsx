@@ -35,6 +35,7 @@ import {
 } from "@/components/underhallsplan/komponentregister";
 import {
   arTakKomponent,
+  TAK_YTSKIKT_ID,
   type TakEnhet,
 } from "@/components/underhallsplan/tak-enheter";
 import { KomponentRegisterLista } from "@/components/underhallsplan/KomponentRegisterLista";
@@ -1295,6 +1296,19 @@ export function UnderhallsplanWizard() {
     }
   }
 
+  /** Nytt tak börjar med takpartier — komponenter läggs till i takets ruta. */
+  function nyTakDetalj(namn: string): KomponentDetaljData {
+    const tom = skapaTomKomponentDetalj(namn);
+    return {
+      ...tom,
+      underkomponenter: tom.underkomponenter.map((rad) =>
+        rad.id === TAK_YTSKIKT_ID
+          ? rad
+          : { ...rad, medIPlan: false, aktiv: false },
+      ),
+    };
+  }
+
   /** Antal tak och vilka hus som ingår — ett tak per komponent i planen. */
   function sattTakUppsattning(tak: TakEnhet[]) {
     if (!grundSaved) return;
@@ -1317,9 +1331,12 @@ export function UnderhallsplanWizard() {
       if (!arTakKomponent(namn) || takNamn.has(namn)) register[namn] = data;
     }
     for (const t of tak) {
+      const befintlig = register[t.namn];
+      const bas = befintlig ?? nyTakDetalj(t.namn);
       register[t.namn] = {
-        ...(register[t.namn] ?? skapaTomKomponentDetalj(t.namn)),
+        ...bas,
         takHusIds: t.husIds,
+        takAdress: t.adress ?? bas.takAdress,
       };
     }
     const nastaBorttagna = borttagnaKomponenter.filter(

@@ -560,6 +560,7 @@ export type KomponentDetaljData = {
   klumpsummaPlaneradKostnadKr?: string;
   /** Tak — vilka hus (grunduppgifter) som ingår i taket. */
   takHusIds?: string[];
+  takAdress?: string;
 };
 
 export type KomponentMall = {
@@ -2472,6 +2473,7 @@ export function synkaKomponentDetaljMedMall(
         ? takBelaggningRegister
         : undefined,
     takHusIds: mall.namn === "Tak" ? dataIn.takHusIds : undefined,
+    takAdress: mall.namn === "Tak" ? dataIn.takAdress : undefined,
   };
 }
 

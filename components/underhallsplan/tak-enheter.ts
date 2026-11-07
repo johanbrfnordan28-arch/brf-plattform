@@ -5,11 +5,18 @@ import type { FastighetsHus } from "@/components/underhallsplan/fastighets-ytor"
 export const TAK_KOMPONENT_NAMN = "Tak";
 const EXTRA_TAK_PREFIX = "Tak – ";
 
+/** Underkomponent med takpartier (ytskikt, kulör, yta). */
+export const TAK_YTSKIKT_ID = "takyta";
+
+/** Större tilläggsdelar med eget formulär — visas som egna delar på taket. */
+export const TAK_EGNA_DELAR_IDS = ["takfonster", "takterrass", "medlemstakterrass"];
+
 export type TakEnhet = {
   /** Komponentnamn i planen, t.ex. "Tak" eller "Tak – Storgatan 5". */
   namn: string;
   /** Hus som ingår i taket. Tomt = inget hus valt. */
   husIds: string[];
+  adress?: string;
 };
 
 export function arTakKomponent(namn: string): boolean {
@@ -38,8 +45,17 @@ export function nyttTakNamn(upptagna: string[], husnamn?: string): string {
 }
 
 /** Sammanbyggda hus — ett gemensamt tak över alla hus. */
-export function slaIhopTillEttTak(hus: FastighetsHus[]): TakEnhet[] {
-  return [{ namn: TAK_KOMPONENT_NAMN, husIds: hus.map((h) => h.id) }];
+export function slaIhopTillEttTak(
+  befintliga: TakEnhet[],
+  hus: FastighetsHus[],
+): TakEnhet[] {
+  return [
+    {
+      namn: TAK_KOMPONENT_NAMN,
+      husIds: hus.map((h) => h.id),
+      adress: befintliga.find((t) => t.namn === TAK_KOMPONENT_NAMN)?.adress,
+    },
+  ];
 }
 
 /** Fristående hus — ett tak per hus. Befintliga tak återanvänds för sitt hus. */
@@ -68,7 +84,11 @@ export function ettTakPerHus(
             h.husnummer,
           ));
     anvanda.add(namn);
-    resultat.push({ namn, husIds: [h.id] });
+    resultat.push({
+      namn,
+      husIds: [h.id],
+      adress: befintligt?.adress || h.husnummer.trim() || undefined,
+    });
   });
   return resultat;
 }
