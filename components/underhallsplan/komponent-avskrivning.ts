@@ -4,6 +4,8 @@
  * Separata från underhållsintervall — kortcykliskt underhåll är inte K3-komponenter.
  */
 
+import { komponentTypNamn } from "@/components/underhallsplan/tak-enheter";
+
 export type AvskrivningRekommendation = {
   rekommenderadAvskrivningAr: number;
   /** Betydande byggnadskomponent med egen nyttjandeperiod enligt FAR/K3. */
@@ -307,7 +309,7 @@ export function hamtaAvskrivningRekommendation(
   komponentNamn: string,
   underkomponentId: string,
 ): AvskrivningRekommendation | undefined {
-  return rekommendationer[komponentNamn]?.[underkomponentId];
+  return rekommendationer[komponentTypNamn(komponentNamn)]?.[underkomponentId];
 }
 
 /** Tom sträng om delen inte är K3-komponent eller saknar rekommendation. */

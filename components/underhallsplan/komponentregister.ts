@@ -1,5 +1,6 @@
 import { standardUnderhallIntervallAr } from "@/components/underhallsplan/underhall-intervall";
 import { standardAvskrivningAr } from "@/components/underhallsplan/komponent-avskrivning";
+import { komponentTypNamn } from "@/components/underhallsplan/tak-enheter";
 import {
   formateraFonsterDorrPoster,
   normaliseraDorrPost,
@@ -557,6 +558,8 @@ export type KomponentDetaljData = {
   visaUnderkomponenterLista?: boolean;
   /** Planerad kostnad klumpsumma när komponent saknar huvudyta-rad. */
   klumpsummaPlaneradKostnadKr?: string;
+  /** Tak — vilka hus (grunduppgifter) som ingår i taket. */
+  takHusIds?: string[];
 };
 
 export type KomponentMall = {
@@ -774,7 +777,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         defaultMåttenhet: "kvm",
         detaljPanel: "takbelaggning-val",
         måttHint:
-          "Lägg till takpartier med material (tegel, plåt, koppar m.m.) och mängd per del i m², antal eller styck. Total takyta i m² kan summeras automatiskt.",
+          "Ett takparti per ytskikt — takform, material (tegel, plåt, koppar m.m.), yta och kulör. Total takyta i m² summeras automatiskt.",
       },
       {
         id: "nock",
@@ -1179,7 +1182,7 @@ const komponentMallar: Record<string, KomponentMall> = {
 
 export function hamtaKomponentMall(namn: string): KomponentMall {
   return (
-    komponentMallar[namn] ?? {
+    komponentMallar[komponentTypNamn(namn)] ?? {
       namn,
       deltypSektionTitel: "Typ / utförande",
       deltyper: [],
@@ -2468,6 +2471,7 @@ export function synkaKomponentDetaljMedMall(
       Object.keys(takBelaggningRegister).length > 0
         ? takBelaggningRegister
         : undefined,
+    takHusIds: mall.namn === "Tak" ? dataIn.takHusIds : undefined,
   };
 }
 

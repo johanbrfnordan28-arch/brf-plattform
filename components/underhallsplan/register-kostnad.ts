@@ -10,6 +10,7 @@ import { HISS_UNDERKOMPONENT_ID } from "@/components/underhallsplan/hissar";
 import { hamtaHissKostnadTrapphus } from "@/components/underhallsplan/hiss-pris";
 import { hamtaStambyteKostnadVvs } from "@/components/underhallsplan/stambyte-pris";
 import { hamtaTakterrassKostnaderTak } from "@/components/underhallsplan/takterrass-pris";
+import { takKomponenterIPlan } from "@/components/underhallsplan/tak-enheter";
 import { hamtaTvattstugaKostnadKallare } from "@/components/underhallsplan/tvattstuga-pris";
 import { effektivUnderhallKostnadKr } from "@/components/underhallsplan/underhall-kostnad";
 
@@ -120,34 +121,35 @@ export function sammanstallRegisterKostnader(
     }
   }
 
-  if (activeComponents.includes("Tak")) {
-    const tak = hamtaTakterrassKostnaderTak(komponentDetaljer.Tak);
+  for (const takNamn of takKomponenterIPlan(activeComponents)) {
+    const tak = hamtaTakterrassKostnaderTak(komponentDetaljer[takNamn]);
+    const idPrefix = takNamn === "Tak" ? "tak" : `tak-${takNamn}`;
     if (tak.gemensam > 0) {
       rader.push({
-        id: "tak-gemensam",
-        komponent: "Tak",
+        id: `${idPrefix}-gemensam`,
+        komponent: takNamn,
         etikett: "Gemensam takterrass",
         beloppKr: tak.gemensam,
       });
-      tackta.add("Tak|takterrass");
+      tackta.add(`${takNamn}|takterrass`);
     }
     if (tak.medlem > 0) {
       rader.push({
-        id: "tak-medlem",
-        komponent: "Tak",
+        id: `${idPrefix}-medlem`,
+        komponent: takNamn,
         etikett: "Medlemstakterrass",
         beloppKr: tak.medlem,
       });
-      tackta.add("Tak|medlemstakterrass");
+      tackta.add(`${takNamn}|medlemstakterrass`);
     }
     if (tak.takfonster > 0) {
       rader.push({
-        id: "tak-fonster",
-        komponent: "Tak",
+        id: `${idPrefix}-fonster`,
+        komponent: takNamn,
         etikett: "Takfönster",
         beloppKr: tak.takfonster,
       });
-      tackta.add("Tak|takfonster");
+      tackta.add(`${takNamn}|takfonster`);
     }
   }
 

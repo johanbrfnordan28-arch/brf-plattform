@@ -16,7 +16,9 @@ import {
   lackadPlatKulorAlternativ,
   postPatchFranTakMaterialVal,
   takMaterialValIdFranPost,
+  takformAlternativ,
   type BandlagdPlatMaterial,
+  type Takform,
   type KorrigeradInfastning,
   type TakBelaggningData,
   type TakBelaggningHuvudtyp,
@@ -55,35 +57,36 @@ function lackadPlatKulorSelectVarde(kulor: string | undefined): string {
   return "annan";
 }
 
-function LackadPlatKulorFalt({
-  post,
+function PlatKulorFalt({
+  kulor,
+  etikett = "Kulör (lackad plåt)",
   onChange,
 }: {
-  post: TakBelaggningPost;
-  onChange: (patch: Partial<TakBelaggningPost>) => void;
+  kulor: string | undefined;
+  etikett?: string;
+  onChange: (kulor: string) => void;
 }) {
-  const selectVal = lackadPlatKulorSelectVarde(post.bandlagdKulor);
+  const selectVal = lackadPlatKulorSelectVarde(kulor);
   const annanText =
-    post.bandlagdKulor?.startsWith("annan:") === true
-      ? post.bandlagdKulor.slice("annan:".length)
+    kulor?.startsWith("annan:") === true
+      ? kulor.slice("annan:".length)
       : selectVal === "annan" &&
-          post.bandlagdKulor &&
-          !lackadPlatKulorAlternativ.some((k) => k.id === post.bandlagdKulor)
-        ? post.bandlagdKulor
+          kulor &&
+          !lackadPlatKulorAlternativ.some((k) => k.id === kulor)
+        ? kulor
         : "";
 
   return (
     <div className="mt-3 space-y-2">
       <label className="block text-sm">
-        <span className="text-xs font-medium text-muted">Kulör (lackad plåt)</span>
+        <span className="block text-xs font-medium text-muted">{etikett}</span>
         <select
           value={selectVal}
           onChange={(e) => {
             const id = e.target.value;
-            onChange({
-              bandlagdKulor:
-                id === "annan" ? (annanText ? `annan:${annanText}` : "annan") : id,
-            });
+            onChange(
+              id === "annan" ? (annanText ? `annan:${annanText}` : "annan") : id,
+            );
           }}
           className="mt-1 w-full max-w-md rounded-lg border border-border bg-white px-3 py-2 text-sm"
         >
@@ -102,11 +105,9 @@ function LackadPlatKulorFalt({
             type="text"
             value={annanText}
             onChange={(e) =>
-              onChange({
-                bandlagdKulor: e.target.value.trim()
-                  ? `annan:${e.target.value}`
-                  : "annan",
-              })
+              onChange(
+                e.target.value.trim() ? `annan:${e.target.value}` : "annan",
+              )
             }
             placeholder="t.ex. mörkgrön"
             className="mt-1 w-full max-w-md rounded-lg border border-border px-3 py-2 text-sm"
@@ -226,13 +227,14 @@ export function TakbelaggningPanel({
     <div className="space-y-4">
       <fieldset>
         <legend className="text-xs font-semibold text-primary-dark">
-          Takbeläggning — byggnadsdelar och material
+          Takpartier — takform, ytskikt, yta och kulör
         </legend>
         <p className="mt-1 text-xs text-muted">
-          Lägg till en rad per takparti (t.ex. koppar tak mot gård). Välj
-          material och ange mängd som yta (m²), antal eller styck. Total takyta
-          i m² fylls i automatiskt när du anger m² per del. Nock och ränndalar
-          registreras som löpmeter under övriga takdelar.
+          Ett tak kan bestå av flera takpartier. Har taket olika ytskikt, t.ex.
+          tegel och bandlagd plåt, läggs de som separata partier. Välj takform,
+          material, yta (m²) och kulör per parti. Total takyta summeras
+          automatiskt. Nock, ränndalar, takfönster och övriga komponenter
+          läggs till under samma tak nedan.
         </p>
         {poster.length === 0 ? (
           <p className="mt-2 text-sm text-muted">
@@ -247,7 +249,7 @@ export function TakbelaggningPanel({
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-foreground">
-                  Beläggning {index + 1}
+                  Takparti {index + 1}
                 </p>
                 <button
                   type="button"
@@ -276,6 +278,29 @@ export function TakbelaggningPanel({
                   )[0]}
                   className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                 />
+              </label>
+              <label className="mt-3 block text-sm">
+                <span className="text-xs font-medium text-muted">Takform</span>
+                <select
+                  value={post.takform ?? ""}
+                  onChange={(e) =>
+                    uppdateraBelaggning(
+                      redigeraPost(belaggning, post.id, {
+                        takform: (e.target.value || undefined) as
+                          | Takform
+                          | undefined,
+                      }),
+                    )
+                  }
+                  className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">Välj takform (valfritt)</option>
+                  {takformAlternativ.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.etikett}
+                    </option>
+                  ))}
+                </select>
               </label>
               {materialvalAsSelect ? (
                 <>
@@ -336,15 +361,30 @@ export function TakbelaggningPanel({
                   )}
                   {post.huvudtyp === "plat-bandlagd" &&
                     (post.bandlagdMaterial ?? "stalplat") === "stalplat" && (
-                      <LackadPlatKulorFalt
-                        post={post}
-                        onChange={(patch) =>
+                      <PlatKulorFalt
+                        kulor={post.bandlagdKulor}
+                        onChange={(kulor) =>
                           uppdateraBelaggning(
-                            redigeraPost(belaggning, post.id, patch),
+                            redigeraPost(belaggning, post.id, {
+                              bandlagdKulor: kulor,
+                            }),
                           )
                         }
                       />
                     )}
+                  {post.huvudtyp === "plat-korrigerad" && (
+                    <PlatKulorFalt
+                      kulor={post.korrigeradKulor}
+                      etikett="Kulör (korrugerad plåt)"
+                      onChange={(kulor) =>
+                        uppdateraBelaggning(
+                          redigeraPost(belaggning, post.id, {
+                            korrigeradKulor: kulor,
+                          }),
+                        )
+                      }
+                    />
+                  )}
                   {post.huvudtyp === "plat-bandlagd" &&
                     post.bandlagdMaterial === "aluminium" && (
                       <label className="mt-3 flex items-center gap-2 text-sm">
@@ -527,6 +567,17 @@ export function TakbelaggningPanel({
                           "Skruvad",
                         )}
                       </div>
+                      <PlatKulorFalt
+                        kulor={post.korrigeradKulor}
+                        etikett="Kulör (korrugerad plåt)"
+                        onChange={(kulor) =>
+                          uppdateraBelaggning(
+                            redigeraPost(belaggning, post.id, {
+                              korrigeradKulor: kulor,
+                            }),
+                          )
+                        }
+                      />
                     </div>
                   )}
 
@@ -553,11 +604,13 @@ export function TakbelaggningPanel({
                         )}
                       </div>
                       {(post.bandlagdMaterial ?? "stalplat") === "stalplat" && (
-                        <LackadPlatKulorFalt
-                          post={post}
-                          onChange={(patch) =>
+                        <PlatKulorFalt
+                          kulor={post.bandlagdKulor}
+                          onChange={(kulor) =>
                             uppdateraBelaggning(
-                              redigeraPost(belaggning, post.id, patch),
+                              redigeraPost(belaggning, post.id, {
+                                bandlagdKulor: kulor,
+                              }),
                             )
                           }
                         />

@@ -1,5 +1,6 @@
 import type { UnderhallTillfallenPlanNyckel } from "@/components/underhallsplan/underhall-atgard-katalog";
 import type { VentilationExtraTypId } from "@/components/underhallsplan/ventilation-extra";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import {
   effektivEnhetspris,
   parsePrisKr,
@@ -45,7 +46,7 @@ export function hamtaRiktprisForUnderkomponent(
   if (komponentNamn === "Ventilation") {
     return RIKT_VENTILATION_UNDERKOMPONENT_KR[underkomponentId] ?? null;
   }
-  if (komponentNamn === "Tak") {
+  if (arTakKomponent(komponentNamn)) {
     if (underkomponentId === "ventilationshuv") {
       return { enhet: "styck", prisKr: 18_000 };
     }

@@ -1,6 +1,7 @@
 /** Åtgärdskataloger för underhållstillfällen (tak, fönster m.fl.). */
 
 import type { RenoveringAtgardTyp } from "@/components/underhallsplan/renovering-klassificering";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 
 export type UnderhallAtgardKatalogPost = {
   id: string;
@@ -151,7 +152,7 @@ export function hamtaUnderhallTillfallenPlanNyckel(
   komponentNamn: string,
   underkomponentId: string,
 ): UnderhallTillfallenPlanNyckel | null {
-  if (komponentNamn === "Tak" && underkomponentId === "takyta") {
+  if (arTakKomponent(komponentNamn) && underkomponentId === "takyta") {
     return "tak-takyta";
   }
   if (underkomponentId === "fonster") {
@@ -189,7 +190,7 @@ export function hamtaVanligaInkluderadeUnderkomponenter(
   komponentNamn: string,
   huvudUnderkomponentId: string,
 ): string[] {
-  if (komponentNamn === "Tak" && huvudUnderkomponentId === "takyta") {
+  if (arTakKomponent(komponentNamn) && huvudUnderkomponentId === "takyta") {
     return ["skorsten", "takterrass", "medlemstakterrass", "ventilationshuv", "takkupa"];
   }
   return [];

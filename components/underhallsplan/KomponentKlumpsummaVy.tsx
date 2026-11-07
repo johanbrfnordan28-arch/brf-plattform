@@ -5,6 +5,7 @@ import {
   harHuvudYtaUnderkomponent,
 } from "@/components/underhallsplan/komponent-vy";
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import { UnderhallBlandadPrisFalt } from "@/components/underhallsplan/UnderhallBlandadPrisFalt";
 import { YtaOchMaterialAiHjalp } from "@/components/underhallsplan/YtaOchMaterialAiHjalp";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
@@ -52,7 +53,7 @@ export function KomponentKlumpsummaVy({
         <>
           <label className="block max-w-xs text-sm">
             <span className="text-xs font-medium text-muted">
-              Total {komponentNamn === "Tak" ? "takyta" : "fasadyta"} (m²)
+              Total {arTakKomponent(komponentNamn) ? "takyta" : "fasadyta"} (m²)
             </span>
             <input
               type="number"
@@ -65,7 +66,7 @@ export function KomponentKlumpsummaVy({
           </label>
 
           <YtaOchMaterialAiHjalp
-            typ={komponentNamn === "Tak" ? "Tak" : "Fasad"}
+            typ={arTakKomponent(komponentNamn) ? "Tak" : "Fasad"}
             grund={grund}
             komponentData={data}
             registerKvm={huvudRad.värde}

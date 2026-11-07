@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { UnderhallBesiktningStatus } from "@/components/underhallsplan/komponentregister";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import { PlaneradeNastaArRedigering } from "@/components/underhallsplan/PlaneradeNastaArRedigering";
 import type { PlaneradAtgardPreview } from "@/components/underhallsplan/renovering-planering";
 import { BalkongRenoveringFalt } from "@/components/underhallsplan/BalkongRenoveringFalt";
@@ -72,7 +73,7 @@ export function RenoveringDelFormular({
   onAvbryt,
 }: RenoveringDelFormularProps) {
   const visaTakKlumpsumma =
-    komponentNamn === "Tak" && !visaStambyteKlumpsumma;
+    arTakKomponent(komponentNamn) && !visaStambyteKlumpsumma;
   const visaInkluderade = visaInkluderadePanel(komponentNamn);
   const planeradeKommande = useMemo(() => {
     if (!utkastRenovering) return planerade;

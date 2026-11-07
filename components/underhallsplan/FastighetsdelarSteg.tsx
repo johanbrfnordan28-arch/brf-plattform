@@ -37,6 +37,14 @@ import {
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
 import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
+import { TakUppsattningPanel } from "@/components/underhallsplan/TakUppsattningPanel";
+import {
+  arTakKomponent,
+  husNamnForTak,
+  TAK_KOMPONENT_NAMN,
+  takKomponenterIPlan,
+  type TakEnhet,
+} from "@/components/underhallsplan/tak-enheter";
 import { PlanDelSektion } from "@/components/underhallsplan/GrunduppgifterDelSektion";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
@@ -48,6 +56,7 @@ type FastighetsdelarStegProps = {
   onLaggTill: (namn: string) => void;
   onDetalj: (namn: string, data: KomponentDetaljData) => void;
   onGrundChange: (grund: Grunduppgifter) => void;
+  onTakUppsattning: (tak: TakEnhet[]) => void;
   onVidare: () => void;
   planStartAr: number;
   planLangdAr: number;
@@ -63,10 +72,14 @@ function forslagFranGrund(
   namn: string,
   radId: string,
   grund: Grunduppgifter,
+  takHusIds?: string[],
 ): string {
   const ytor = normaliseraFastighetsYtor(grund.fastighetsYtor);
-  if (namn === "Tak" && radId === "takyta") {
-    const kvm = summeraTakKvm(ytor);
+  if (arTakKomponent(namn) && radId === "takyta") {
+    const kvm =
+      takHusIds && !ytor.endastTotalTak
+        ? takHusIds.reduce((sum, id) => sum + talFranText(ytor.takPerHus[id]), 0)
+        : summeraTakKvm(ytor);
     return kvm > 0 ? String(kvm) : "";
   }
   if (namn === "Fasad" && radId === "fasadmaterial") {
@@ -92,6 +105,7 @@ export function FastighetsdelarSteg({
   onLaggTill,
   onDetalj,
   onGrundChange,
+  onTakUppsattning,
   onVidare,
   planStartAr,
   planLangdAr,
@@ -138,11 +152,54 @@ export function FastighetsdelarSteg({
   const borttagnaStandard = foreslagnaKomponenter.filter(
     (namn) => !activeComponents.includes(namn),
   );
-  const tillagdaDelar = activeComponents.filter((namn) => !kandaDelar.has(namn));
+  const tillagdaDelar = activeComponents.filter(
+    (namn) => !kandaDelar.has(namn) && !arTakKomponent(namn),
+  );
   const ytor = synkaHusFranGrund(
     normaliseraFastighetsYtor(grund.fastighetsYtor),
     grund,
   );
+  const takNamnLista = takKomponenterIPlan(activeComponents);
+  const takLista: TakEnhet[] = takNamnLista.map((namn) => {
+    const sparade = komponentDetaljer[namn]?.takHusIds;
+    if (sparade) {
+      return {
+        namn,
+        husIds: sparade.filter((id) => ytor.hus.some((h) => h.id === id)),
+      };
+    }
+    if (namn !== TAK_KOMPONENT_NAMN) return { namn, husIds: [] };
+    const iAndraTak = new Set(
+      takNamnLista
+        .filter((n) => n !== namn)
+        .flatMap((n) => komponentDetaljer[n]?.takHusIds ?? []),
+    );
+    return {
+      namn,
+      husIds: ytor.hus.map((h) => h.id).filter((id) => !iAndraTak.has(id)),
+    };
+  });
+
+  function andraTakUppsattning(tak: TakEnhet[]) {
+    const sparadeHusIds = normaliseraFastighetsYtor(grund.fastighetsYtor).hus.map(
+      (h) => h.id,
+    );
+    const husSparade =
+      sparadeHusIds.length === ytor.hus.length &&
+      ytor.hus.every((h) => sparadeHusIds.includes(h.id));
+    if (!husSparade) onGrundChange({ ...grund, fastighetsYtor: ytor });
+    onTakUppsattning(tak);
+  }
+
+  function takHarInnehall(namn: string): boolean {
+    const data = komponentDetaljer[namn];
+    if (!data) return false;
+    const partier = data.takBelaggningRegister?.takyta?.belaggningar ?? [];
+    return (
+      partier.length > 0 ||
+      data.underkomponenter.some((rad) => rad.värde.trim() !== "")
+    );
+  }
 
   function detaljFor(namn: string): KomponentDetaljData {
     const mall = hamtaKomponentMall(namn);
@@ -232,6 +289,10 @@ export function FastighetsdelarSteg({
     const oppenDel = oppen === namn;
     const synliga = data.underkomponenter.filter((rad) => rad.medIPlan !== false);
     const dolda = data.underkomponenter.filter((rad) => rad.medIPlan === false);
+    const takHus =
+      arTakKomponent(namn) && ytor.hus.length > 1
+        ? husNamnForTak(takLista.find((t) => t.namn === namn)?.husIds, ytor.hus)
+        : [];
     return (
       <li key={namn} className="rounded-xl border border-border bg-white">
         <div className="flex items-start justify-between gap-3 px-3 py-3">
@@ -242,6 +303,11 @@ export function FastighetsdelarSteg({
               {synliga.length === 1 ? "underdel" : "underdelar"}
               {egen ? " · egen del" : ""} · med i hela planen
             </p>
+            {takHus.length > 0 ? (
+              <p className="mt-0.5 text-xs text-primary-dark">
+                Omfattar {takHus.join(", ")}
+              </p>
+            ) : null}
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -280,7 +346,14 @@ export function FastighetsdelarSteg({
                   );
                   const detaljPanel = def?.detaljPanel;
                   const doljEnkelMatt = skaDoljaEnkelMattISteg2(detaljPanel);
-                  const forslag = forslagFranGrund(namn, rad.id, grund);
+                  const forslag = forslagFranGrund(
+                    namn,
+                    rad.id,
+                    grund,
+                    ytor.hus.length > 1
+                      ? takLista.find((t) => t.namn === namn)?.husIds
+                      : undefined,
+                  );
                   const hint =
                     def?.måttHint ?? "Ange antal, yta eller löpmeter.";
                   const data = detaljFor(namn);
@@ -500,16 +573,29 @@ export function FastighetsdelarSteg({
         entreprenader fyller du i steg 3.
       </p>
       {fastighetsdelGrupper.map((grupp) => {
-        const delar = grupp.komponenter.filter((namn) =>
-          activeComponents.includes(namn),
-        );
+        const delar = grupp.komponenter
+          .flatMap((namn): string[] =>
+            namn === TAK_KOMPONENT_NAMN ? takNamnLista : [namn],
+          )
+          .filter((namn) => activeComponents.includes(namn));
         if (delar.length === 0) return null;
+        const visaTakUppsattning = delar.some(arTakKomponent);
         return (
           <PlanDelSektion
             key={grupp.id}
             titel={grupp.titel}
             intro={`${delar.length} ${delar.length === 1 ? "komponent" : "komponenter"} — öppna och välj den del ni vill fylla i.`}
           >
+            {visaTakUppsattning ? (
+              <div className="mb-3">
+                <TakUppsattningPanel
+                  hus={ytor.hus}
+                  tak={takLista}
+                  harInnehall={takHarInnehall}
+                  onChange={andraTakUppsattning}
+                />
+              </div>
+            ) : null}
             <ul className="space-y-2">
               {delar.map((namn) => delKort(namn, false))}
             </ul>

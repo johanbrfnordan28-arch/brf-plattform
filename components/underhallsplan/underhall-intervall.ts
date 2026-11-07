@@ -1,5 +1,7 @@
 /** Rekommenderade underhållsintervall per huvudkomponent och underkomponent. */
 
+import { komponentTypNamn } from "@/components/underhallsplan/tak-enheter";
+
 export type UnderhallRekommendation = {
   rekommenderatIntervallAr: number;
   intervallHint: string;
@@ -124,7 +126,7 @@ export function hamtaUnderhallRekommendation(
   komponentNamn: string,
   underkomponentId: string,
 ): UnderhallRekommendation | undefined {
-  return rekommendationer[komponentNamn]?.[underkomponentId];
+  return rekommendationer[komponentTypNamn(komponentNamn)]?.[underkomponentId];
 }
 
 export function standardUnderhallIntervallAr(

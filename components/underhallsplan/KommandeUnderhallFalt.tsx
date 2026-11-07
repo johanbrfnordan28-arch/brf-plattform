@@ -12,6 +12,7 @@ import {
   standardAvskrivningAr,
 } from "@/components/underhallsplan/komponent-avskrivning";
 import type { UnderkomponentRad } from "@/components/underhallsplan/komponentregister";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import { UnderhallKostnadFalt } from "@/components/underhallsplan/UnderhallKostnadFalt";
 import { UnderhallKostnadPerArTabell } from "@/components/underhallsplan/UnderhallKostnadPerArTabell";
@@ -320,7 +321,7 @@ export function KommandeUnderhallFalt({
             underkomponentId === "fasadmaterial" ||
             underkomponentId === "takyta" ||
             komponentNamn === "Ventilation" ||
-            (komponentNamn === "Tak" &&
+            (arTakKomponent(komponentNamn) &&
               ["ventilationshuv", "skorsten", "takkupa"].includes(
                 underkomponentId,
               ))

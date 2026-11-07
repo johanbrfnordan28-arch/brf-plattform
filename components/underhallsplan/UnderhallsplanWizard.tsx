@@ -29,9 +29,14 @@ import {
 import {
   foreslagnaKomponenter,
   kompletteraAktivaFastighetsdelar,
+  skapaTomKomponentDetalj,
   synkaUnderhallsplanState,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
+import {
+  arTakKomponent,
+  type TakEnhet,
+} from "@/components/underhallsplan/tak-enheter";
 import { KomponentRegisterLista } from "@/components/underhallsplan/KomponentRegisterLista";
 import { GrundByggnadAdressPanel } from "@/components/underhallsplan/GrundByggnadAdressPanel";
 import { GrundFasaderPanel } from "@/components/underhallsplan/GrundFasaderPanel";
@@ -1290,6 +1295,42 @@ export function UnderhallsplanWizard() {
     }
   }
 
+  /** Antal tak och vilka hus som ingår — ett tak per komponent i planen. */
+  function sattTakUppsattning(tak: TakEnhet[]) {
+    if (!grundSaved) return;
+    const takNamn = new Set(tak.map((t) => t.namn));
+    const aktiva = activeComponents.filter(
+      (namn) => !arTakKomponent(namn) || takNamn.has(namn),
+    );
+    const sistaTakIndex = aktiva.reduce(
+      (sista, namn, i) => (arTakKomponent(namn) ? i : sista),
+      -1,
+    );
+    const nya = tak.map((t) => t.namn).filter((namn) => !aktiva.includes(namn));
+    aktiva.splice(
+      sistaTakIndex >= 0 ? sistaTakIndex + 1 : aktiva.length,
+      0,
+      ...nya,
+    );
+    const register: Record<string, KomponentDetaljData> = {};
+    for (const [namn, data] of Object.entries(komponentDetaljer)) {
+      if (!arTakKomponent(namn) || takNamn.has(namn)) register[namn] = data;
+    }
+    for (const t of tak) {
+      register[t.namn] = {
+        ...(register[t.namn] ?? skapaTomKomponentDetalj(t.namn)),
+        takHusIds: t.husIds,
+      };
+    }
+    const nastaBorttagna = borttagnaKomponenter.filter(
+      (namn) => !takNamn.has(namn),
+    );
+    setBorttagnaKomponenter(nastaBorttagna);
+    setKomponenterSaved(false);
+    setBesiktningarSaved(false);
+    appliceraKomponentSynk(aktiva, register, nastaBorttagna);
+  }
+
   function toggleKomponentAktiv(name: string) {
     if (!grundSaved) return;
     setRenoveringarSaved(false);
@@ -2038,6 +2079,7 @@ export function UnderhallsplanWizard() {
           onLaggTill={(namn) => sattDelMedIPlan(namn, true)}
           onDetalj={uppdateraKomponentDetalj}
           onGrundChange={(next) => setGrund(next)}
+          onTakUppsattning={sattTakUppsattning}
           onVidare={() => stangOchOppnaSteg("renoveringar")}
         />
       </StegPanel>
@@ -2367,7 +2409,7 @@ export function UnderhallsplanWizard() {
             const data = komponentDetaljer[komponent];
             if (!data) return;
             const next =
-              komponent === "Tak"
+              arTakKomponent(komponent)
                 ? sattTakYtaIKomponent(data, kvm)
                 : sattFasadYtaIKomponent(data, kvm);
             uppdateraKomponentDetalj(komponent, next);

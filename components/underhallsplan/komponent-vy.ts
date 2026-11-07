@@ -1,15 +1,16 @@
 import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 
 /** Komponenter med tydlig huvudyta (klumpsumma-vy). */
 export function harHuvudYtaUnderkomponent(komponentNamn: string): boolean {
-  return komponentNamn === "Fasad" || komponentNamn === "Tak";
+  return komponentNamn === "Fasad" || arTakKomponent(komponentNamn);
 }
 
 export function hamtaHuvudYtaUnderkomponentId(
   komponentNamn: string,
 ): string | null {
   if (komponentNamn === "Fasad") return "fasadmaterial";
-  if (komponentNamn === "Tak") return "takyta";
+  if (arTakKomponent(komponentNamn)) return "takyta";
   return null;
 }
 

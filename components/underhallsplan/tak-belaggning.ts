@@ -30,10 +30,32 @@ export type BandlagdPlatMaterial =
 
 export type KorrigeradInfastning = "spik" | "skruv";
 
+export type Takform =
+  | "sadeltak"
+  | "pulpettak"
+  | "valmat"
+  | "mansardtak"
+  | "platt"
+  | "annan";
+
+export const takformAlternativ: { id: Takform; etikett: string }[] = [
+  { id: "sadeltak", etikett: "Sadeltak" },
+  { id: "pulpettak", etikett: "Pulpettak" },
+  { id: "valmat", etikett: "Valmat tak" },
+  { id: "mansardtak", etikett: "Mansardtak" },
+  { id: "platt", etikett: "Platt tak" },
+  { id: "annan", etikett: "Annan takform" },
+];
+
+function normaliseraTakform(raw: unknown): Takform | undefined {
+  return takformAlternativ.some((t) => t.id === raw) ? (raw as Takform) : undefined;
+}
+
 export type TakBelaggningPost = {
   id: string;
   /** T.ex. Koppar tak väster — valfritt namn på byggnadsdelen. */
   namn?: string;
+  takform?: Takform;
   huvudtyp: TakBelaggningHuvudtyp;
   /** Mängd för denna del — enhet väljs separat. */
   mangd?: string;
@@ -47,6 +69,8 @@ export type TakBelaggningPost = {
   /** Gäller bandlagd aluminium — lackerad yta kan målas om. */
   aluminiumLackerad?: boolean;
   korrigeradInfastning?: KorrigeradInfastning;
+  /** Kulör på korrugerad (målad) plåt. */
+  korrigeradKulor?: string;
 };
 
 export type TakBelaggningData = {
@@ -192,7 +216,11 @@ export function postPatchFranTakMaterialVal(
     const inf: KorrigeradInfastning = valId.endsWith(":skruv")
       ? "skruv"
       : "spik";
-    return { huvudtyp: "plat-korrigerad", korrigeradInfastning: inf };
+    return {
+      huvudtyp: "plat-korrigerad",
+      korrigeradInfastning: inf,
+      korrigeradKulor: befintlig?.korrigeradKulor ?? "",
+    };
   }
   if (valId.startsWith("plat-bandlagd:")) {
     const raw = valId.slice("plat-bandlagd:".length) as BandlagdPlatMaterial;
@@ -249,6 +277,7 @@ function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBel
   const post: TakBelaggningPost = {
     id: raw.id?.trim() || `tak-${index + 1}`,
     namn: raw.namn?.trim() ?? "",
+    takform: normaliseraTakform(raw.takform),
     huvudtyp,
     mangd: raw.mangd?.trim() ?? "",
     mangdEnhet: normaliseraMangdEnhet(
@@ -263,6 +292,7 @@ function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBel
   if (huvudtyp === "plat-korrigerad") {
     post.korrigeradInfastning =
       raw.korrigeradInfastning === "skruv" ? "skruv" : "spik";
+    post.korrigeradKulor = raw.korrigeradKulor?.trim() ?? "";
   }
   if (huvudtyp === "plat-bandlagd") {
     const mat = raw.bandlagdMaterial;
@@ -403,6 +433,8 @@ export function materialEtikettTakBelaggningPost(
   post: TakBelaggningPost,
 ): string {
   const delar = [huvudtypEtikett(post.huvudtyp)];
+  const takform = takformAlternativ.find((t) => t.id === post.takform);
+  if (takform) delar.push(takform.etikett.toLowerCase());
   if (post.huvudtyp === "tegel") {
     const typ =
       tegelTyper.find((t) => t.id === post.tegelTyp)?.etikett ?? "Tegel";
@@ -413,6 +445,8 @@ export function materialEtikettTakBelaggningPost(
     delar.push(
       post.korrigeradInfastning === "skruv" ? "skruv" : "spik",
     );
+    const kulor = etikettForLackadPlatKulor(post.korrigeradKulor);
+    if (kulor) delar.push(`kulör ${kulor}`);
     delar.push("bärläkt/ströläkt");
   }
   if (post.huvudtyp === "plat-bandlagd") {

@@ -4,6 +4,7 @@ import {
 } from "@/components/underhallsplan/komponentregister";
 import { hamtaVanligaInkluderadeUnderkomponenter } from "@/components/underhallsplan/underhall-atgard-katalog";
 import { fordelRenovering } from "@/components/underhallsplan/renovering-fordelning";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import type { PlaneradAtgardPreview } from "@/components/underhallsplan/renovering-planering";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
 
@@ -16,7 +17,7 @@ export function hamtaHuvudUnderkomponentIdForRenovering(
   komponent: string,
   _underkomponentId?: string,
 ): string | null {
-  if (komponent === "Tak") return "takyta";
+  if (arTakKomponent(komponent)) return "takyta";
   return _underkomponentId ?? null;
 }
 
@@ -47,7 +48,7 @@ export function gissaInkluderadeUnderkomponenter(
   renovering: Pick<UtfördRenovering, "komponent" | "titel" | "omfattning">,
   huvudUnderkomponentId: string,
 ): string[] {
-  if (renovering.komponent !== "Tak" || huvudUnderkomponentId !== "takyta") {
+  if (!arTakKomponent(renovering.komponent) || huvudUnderkomponentId !== "takyta") {
     return [];
   }
   const text = normaliseraText(`${renovering.titel} ${renovering.omfattning}`);
