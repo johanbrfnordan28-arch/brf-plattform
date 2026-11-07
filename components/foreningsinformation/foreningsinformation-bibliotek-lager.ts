@@ -102,7 +102,74 @@ export function lasBibliotekState(): BibliotekState | null {
   }
 }
 
+export const BIBLIOTEK_EVENT = "brf-forening-bibliotek-uppdaterad";
+
 export function sparaBibliotekState(state: BibliotekState): boolean {
   if (typeof window === "undefined") return false;
-  return safeSetLocalStorage(bibliotekStorageKey(), JSON.stringify(state)).ok;
+  const ok = safeSetLocalStorage(bibliotekStorageKey(), JSON.stringify(state)).ok;
+  if (ok) window.dispatchEvent(new CustomEvent(BIBLIOTEK_EVENT));
+  return ok;
+}
+
+export function listaDokumentIMapp(
+  huvudId: string,
+  underPath: string,
+): BibliotekUppladdatDokument[] {
+  return lasBibliotekState()?.[huvudId]?.undermappar?.[underPath]?.dokument ?? [];
+}
+
+/** Dokument i mappen med samma filnamn, för att undvika dubbletter. */
+export function hittaDokumentMedSammaNamn(
+  dokument: BibliotekUppladdatDokument[],
+  filnamn: string,
+): BibliotekUppladdatDokument | undefined {
+  const namn = filnamn.trim().toLowerCase();
+  return dokument.find((d) => d.filnamn.trim().toLowerCase() === namn);
+}
+
+/** Frågar innan en fil med samma namn laddas upp igen. Ger false om användaren avbryter. */
+export function bekraftaOmDubblett(
+  dokument: BibliotekUppladdatDokument[],
+  filnamn: string,
+): boolean {
+  const finns = hittaDokumentMedSammaNamn(dokument, filnamn);
+  if (!finns) return true;
+  return window.confirm(
+    `${finns.filnamn} finns redan i mappen (uppladdad ${finns.uppladdad}). Vill du ladda upp den en gång till?`,
+  );
+}
+
+/** Laddar upp en fil direkt till en mapp i Styrning och Dokument. */
+export async function laddaUppTillMapp(
+  huvudId: string,
+  underPath: string,
+  fil: File,
+  onProgress?: (procent: number) => void,
+): Promise<{ ok: true } | { ok: false; fel: string }> {
+  const sparat = await laddaUppBibliotekFil(fil, onProgress);
+  if (!sparat.ok) return sparat;
+  const state = lasBibliotekState() ?? {};
+  const huvud = state[huvudId] ?? { öppen: false, undermappar: {} };
+  const under = huvud.undermappar[underPath] ?? { öppen: false, dokument: [] };
+  state[huvudId] = {
+    ...huvud,
+    undermappar: {
+      ...huvud.undermappar,
+      [underPath]: {
+        ...under,
+        dokument: [
+          ...under.dokument,
+          {
+            id: `forening-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            filnamn: fil.name,
+            uppladdad: new Date().toLocaleDateString("sv-SE"),
+            fil: sparat.fil,
+          },
+        ],
+      },
+    },
+  };
+  return sparaBibliotekState(state)
+    ? { ok: true }
+    : { ok: false, fel: "Kunde inte spara i Styrning och Dokument." };
 }

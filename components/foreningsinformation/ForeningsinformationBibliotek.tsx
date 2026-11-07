@@ -37,6 +37,7 @@ import {
   type ForeningsUndermapp,
 } from "@/components/foreningsinformation/mappar";
 import {
+  bekraftaOmDubblett,
   hamtaBibliotekFilUrl,
   lasBibliotekState,
   laddaUppBibliotekFil,
@@ -261,6 +262,11 @@ export function ForeningsinformationBibliotek() {
     onProgress?: (procent: number) => void,
     platser: DokumentPlats[] = [],
   ): Promise<FilUppladdningsResultat> {
+    const befintliga = huvudmappar[huvudId]?.undermappar[underPath]?.dokument ?? [];
+    if (!bekraftaOmDubblett(befintliga, fil.name)) {
+      setPågåendeUppladdning(null);
+      return { ok: false, fel: `${fil.name} finns redan i mappen och laddades inte upp igen.` };
+    }
     const sparat = await laddaUppBibliotekFil(fil, onProgress);
     if (!sparat.ok) return sparat;
     const delad = sparat.fil;
@@ -670,6 +676,10 @@ function UndermappRad({
               tjanstId={besiktning.id}
               uppladdadeFilnamn={state.dokument.map((dokument) => dokument.filnamn)}
               onLaddaUppProtokollFil={(fil) => onUpload(underPath, fil)}
+              onOppnaProtokoll={(filnamn) => {
+                const dok = state.dokument.find((d) => d.filnamn === filnamn);
+                if (dok) onOppnaFil(dok);
+              }}
             />
           )}
 

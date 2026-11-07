@@ -26,6 +26,10 @@ import {
   sparaProjektLista,
 } from "@/components/dokumentbank/dokument-projekt-koppling";
 import { allaMappIds, hamtaMappTitel } from "@/components/projekt/projekt";
+import {
+  besiktningTjanst,
+  type BesiktningTjanstId,
+} from "@/components/foreningsinformation/besiktning-upphandling";
 import { safeSetLocalStorage } from "@/lib/localStorage";
 
 export type DokumentPlatsTyp = "styrning" | "dokumentbank" | "arshjul" | "projekt";
@@ -113,6 +117,18 @@ export function projektMappVal(): PlatsVal[] {
       };
     }),
   );
+}
+
+// ── Besiktningar: protokollen bor i Styrning och Dokument ───────────────────
+
+/** Mappen i Styrning och Dokument där besiktningens protokoll hör hemma. */
+export function styrningPlatsForBesiktning(tjanstId: BesiktningTjanstId): DokumentPlats | null {
+  const mappId = besiktningTjanst(tjanstId).mappId;
+  for (const huvud of foreningsHuvudmappar) {
+    const nod = undermappNoderForHuvud(huvud).find((n) => n.isLeaf && n.under.id === mappId);
+    if (nod) return { typ: "styrning", huvudId: huvud.id, underPath: nod.path };
+  }
+  return null;
 }
 
 // ── Länka till ett ställe (skriver direkt i modulens lagring) ────────────────

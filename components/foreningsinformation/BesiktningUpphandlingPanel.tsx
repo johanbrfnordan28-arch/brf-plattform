@@ -31,6 +31,7 @@ import type { StyrelseLedamot } from "@/lib/styrelse-ledamot";
 import { harTillrackligaBankIdSignaturer } from "@/lib/bankid-signering";
 import { MOLN_FIL_ACCEPT } from "@/lib/forening-fil-lagring";
 import { SenasteBesiktningFormular } from "@/components/SenasteBesiktningFormular";
+import { EnergiAtgarderPanel } from "@/components/EnergiAtgarderPanel";
 import type { SenasteBesiktningUppgifter } from "@/lib/besiktning-intervall";
 
 const inputKlass =
@@ -42,13 +43,16 @@ type Props = {
   /** Laddar upp protokollfil till mappen (OVK m.m.). */
   onLaddaUppProtokollFil?: (
     fil: File,
-  ) => Promise<{ ok: true } | { ok: false; fel: string }>;
+  ) => Promise<{ ok: true; varning?: string } | { ok: false; fel: string }>;
+  /** Öppnar ett uppladdat protokoll i mappen. */
+  onOppnaProtokoll?: (filnamn: string) => void;
 };
 
 export function BesiktningUpphandlingPanel({
   tjanstId,
   uppladdadeFilnamn,
   onLaddaUppProtokollFil,
+  onOppnaProtokoll,
 }: Props) {
   const tjanst = besiktningTjanst(tjanstId);
   const [hydrated, setHydrated] = useState(false);
@@ -104,7 +108,10 @@ export function BesiktningUpphandlingPanel({
     setLaddarUpp(false);
     setProtokollStatus(
       res.ok
-        ? { fel: false, text: `${fil.name} är sparat bland protokollen.` }
+        ? {
+            fel: false,
+            text: `${fil.name} är sparat i mappen och syns även i årshjulet.${res.varning ? ` ${res.varning}` : ""}`,
+          }
         : { fel: true, text: res.fel },
     );
   }
@@ -151,6 +158,8 @@ export function BesiktningUpphandlingPanel({
         ) : null}
       </div>
 
+      {hydrated && tjanstId === "energideklaration" ? <EnergiAtgarderPanel /> : null}
+
       <div>
         <p className="text-sm font-medium text-foreground">Protokoll och tidigare besiktningar</p>
         {protokoll.length === 0 ? (
@@ -170,6 +179,15 @@ export function BesiktningUpphandlingPanel({
                   {rad.utforsAv ? ` · ${rad.utforsAv}` : ""}
                 </p>
                 <p className="text-muted">{rad.sammanfattning}</p>
+                {rad.filnamn && onOppnaProtokoll && uppladdadeFilnamn.includes(rad.filnamn) ? (
+                  <button
+                    type="button"
+                    onClick={() => onOppnaProtokoll(rad.filnamn!)}
+                    className="mt-1 mr-3 rounded-lg border border-primary/40 px-3 py-1 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                  >
+                    Öppna
+                  </button>
+                ) : null}
                 {rad.kalla === "egen" && (
                   <button
                     type="button"

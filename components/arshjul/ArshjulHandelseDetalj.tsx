@@ -10,6 +10,7 @@ import {
   arshjulArRadon,
   arshjulArSotning,
   arshjulVisaForenkladBesiktning,
+  besiktningTjanstIdFranArshjul,
   entreprenorFaltEtikett,
   entreprenorFaltPlaceholder,
   SOTNING_ENTREPRENOR_INFO,
@@ -18,6 +19,8 @@ import { ArshjulSkapaUpphandlingKnapp } from "@/components/arshjul/ArshjulSkapaU
 import { ArshjulSigneringPanel } from "@/components/arshjul/ArshjulSigneringPanel";
 import { ArshjulBilagor } from "@/components/arshjul/ArshjulBilagor";
 import { ArshjulBesiktningUppgifter } from "@/components/arshjul/ArshjulBesiktningUppgifter";
+import { EnergiAtgarderPanel } from "@/components/EnergiAtgarderPanel";
+import { ArshjulStyrningsDokument } from "@/components/arshjul/ArshjulStyrningsDokument";
 
 type Props = {
   handelse: ArshjulHandelse;
@@ -35,10 +38,11 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     const arOvk = arshjulArOvk(handelse);
     const arEnergi = arshjulArEnergideklaration(handelse);
     const arRadon = arshjulArRadon(handelse);
+    const besiktningTjanstId = besiktningTjanstIdFranArshjul(handelse);
     const intro = arOvk
       ? "OVK: ange vem som utförde besiktningen, besiktningsdatum, resultat och antal anmärkningar. Nästa OVK räknas ut automatiskt."
       : arEnergi
-        ? "Energideklaration: ange vem som gjorde den och när den blev klar. Den gäller i 10 år."
+        ? "Energideklaration: ange vem som gjorde den och när den blev klar. Den gäller i 10 år. Skriv in deklarationens rekommenderade åtgärder och följ upp om de är utförda eller planerade."
         : arRadon
           ? "Radonmätning: ange vem som mätte och när mätningen blev klar. Rekommenderat intervall är 10 år."
           : "Ange vem som utförde besiktningen, besiktningsdatum och resultat.";
@@ -46,16 +50,23 @@ export function ArshjulHandelseDetalj({ handelse, onSpara }: Props) {
     return (
       <div className="mt-3 space-y-4 border-t border-border/70 pt-3">
         <p className="text-xs leading-relaxed text-muted">
-          {intro} Bifoga gärna protokollet längst ned – det kan samtidigt visas
-          i Styrning och Dokument och i dokumentbanken.
+          {intro} Protokollet sparas i Styrning och Dokument och kan öppnas
+          härifrån.
         </p>
         <ArshjulBesiktningUppgifter handelse={handelse} onSpara={onSpara} />
-        <ArshjulBilagor
-          handelse={handelse}
-          onSpara={onSpara}
-          rubrik="Protokoll och dokument"
-          uppladdningsEtikett="Ladda upp protokoll"
-        />
+        {arEnergi ? <EnergiAtgarderPanel /> : null}
+        {besiktningTjanstId ? (
+          <ArshjulStyrningsDokument tjanstId={besiktningTjanstId} />
+        ) : null}
+        {(handelse.bilagor?.length ?? 0) > 0 ? (
+          <ArshjulBilagor
+            handelse={handelse}
+            onSpara={onSpara}
+            rubrik="Tidigare bilagor i årshjulet"
+            uppladdningsEtikett="Ladda upp protokoll"
+            utanUppladdning
+          />
+        ) : null}
         <ArshjulSkapaUpphandlingKnapp handelse={handelse} />
       </div>
     );

@@ -132,9 +132,29 @@ export type SparadHandling = {
   skapad: string;
 };
 
+export type EnergiAtgardUtford = "ja" | "nej";
+export type EnergiAtgardPlan = "planerad" | "ej_beslutad" | "ej_aktuell";
+
+/** Rekommenderad åtgärd ur energideklarationen och hur långt föreningen kommit. */
+export type EnergiAtgard = {
+  id: string;
+  atgard: string;
+  /** Fritext, t.ex. "12 000 kWh/år". */
+  besparing?: string;
+  /** Fritext, t.ex. "ca 80 000 kr". */
+  kostnad?: string;
+  utford?: EnergiAtgardUtford;
+  utfordDatum?: string;
+  plan?: EnergiAtgardPlan;
+  planeradAr?: string;
+  kommentar?: string;
+};
+
 export type BesiktningUpphandlingPost = {
   /** Senaste ordinarie besiktning — en post som uppdateras, inte ett protokoll. */
   senaste?: SenasteBesiktningUppgifter;
+  /** Endast energideklaration. */
+  energiAtgarder?: EnergiAtgard[];
   egnaProtokoll: TidigareProtokoll[];
   upphandlingSkapad?: string;
   underlagText?: string;
@@ -214,12 +234,54 @@ function normaliseraBestallning(
   };
 }
 
+function rensadText(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+export function normaliseraEnergiAtgarder(raw: unknown): EnergiAtgard[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const lista = raw
+    .filter((r): r is Partial<EnergiAtgard> => Boolean(r) && typeof r === "object")
+    .map((r) => {
+      const utford: EnergiAtgardUtford | undefined =
+        r.utford === "ja" || r.utford === "nej" ? r.utford : undefined;
+      const plan: EnergiAtgardPlan | undefined =
+        r.plan === "planerad" || r.plan === "ej_beslutad" || r.plan === "ej_aktuell"
+          ? r.plan
+          : undefined;
+      return {
+        id: rensadText(r.id) ?? `atg-${Math.random().toString(36).slice(2, 10)}`,
+        atgard: rensadText(r.atgard) ?? "",
+        besparing: rensadText(r.besparing),
+        kostnad: rensadText(r.kostnad),
+        utford,
+        utfordDatum: utford === "ja" ? rensadText(r.utfordDatum) : undefined,
+        plan: utford === "nej" ? plan : undefined,
+        planeradAr: utford === "nej" && plan === "planerad" ? rensadText(r.planeradAr) : undefined,
+        kommentar: rensadText(r.kommentar),
+      };
+    })
+    .filter((r) => r.atgard);
+  return lista.length > 0 ? lista : undefined;
+}
+
+export function hamtaEnergiAtgarder(): EnergiAtgard[] {
+  return hamtaBesiktningPost("energideklaration").energiAtgarder ?? [];
+}
+
+export function sparaEnergiAtgarder(atgarder: EnergiAtgard[]): void {
+  const post = hamtaBesiktningPost("energideklaration");
+  post.energiAtgarder = normaliseraEnergiAtgarder(atgarder);
+  skrivPost("energideklaration", post);
+}
+
 function normaliseraPost(raw: unknown): BesiktningUpphandlingPost {
   const tom = tomPost();
   if (!raw || typeof raw !== "object") return tom;
   const rad = raw as Partial<BesiktningUpphandlingPost>;
   return {
     senaste: normaliseraSenasteBesiktning(rad.senaste),
+    energiAtgarder: normaliseraEnergiAtgarder(rad.energiAtgarder),
     egnaProtokoll: Array.isArray(rad.egnaProtokoll)
       ? rad.egnaProtokoll.filter(arProtokoll)
       : [],

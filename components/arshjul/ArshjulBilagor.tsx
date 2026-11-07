@@ -43,9 +43,17 @@ type Props = {
   onSpara: (patch: Partial<ArshjulHandelse>) => void;
   rubrik: string;
   uppladdningsEtikett: string;
+  /** Visa bara befintliga bilagor, utan att kunna lägga till nya. */
+  utanUppladdning?: boolean;
 };
 
-export function ArshjulBilagor({ handelse, onSpara, rubrik, uppladdningsEtikett }: Props) {
+export function ArshjulBilagor({
+  handelse,
+  onSpara,
+  rubrik,
+  uppladdningsEtikett,
+  utanUppladdning = false,
+}: Props) {
   const bilagor = handelse.bilagor ?? [];
   const [visarUppladdning, setVisarUppladdning] = useState(false);
   const [fel, setFel] = useState<string | null>(null);
@@ -121,7 +129,7 @@ export function ArshjulBilagor({ handelse, onSpara, rubrik, uppladdningsEtikett 
         </ul>
       )}
 
-      {fullt ? (
+      {utanUppladdning ? null : fullt ? (
         <p className="mt-2 text-xs text-muted">Högst {MAX_BILAGOR} bilagor per händelse.</p>
       ) : visarUppladdning ? (
         <div className="mt-2">
