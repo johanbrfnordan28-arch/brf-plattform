@@ -57,12 +57,7 @@ import {
   FilUppladdningsRuta,
   type FilUppladdningsResultat,
 } from "@/components/FilUppladdningsRuta";
-import {
-  lankaFilTillPlatser,
-  platsNyckel,
-  slappDeladFil,
-  type DokumentPlats,
-} from "@/lib/forening-dokument-platser";
+import { slappDeladFil } from "@/lib/forening-dokument-platser";
 
 type UppladdatDokument = BibliotekUppladdatDokument;
 
@@ -70,7 +65,6 @@ type UppladdningsHandler = (
   underPath: string,
   fil: File,
   onProgress?: (procent: number) => void,
-  platser?: DokumentPlats[],
 ) => Promise<FilUppladdningsResultat>;
 
 type UndermappState = {
@@ -291,7 +285,6 @@ export function ForeningsinformationBibliotek() {
     underPath: string,
     fil: File,
     onProgress?: (procent: number) => void,
-    platser: DokumentPlats[] = [],
   ): Promise<FilUppladdningsResultat> {
     const befintliga = huvudmappar[huvudId]?.undermappar[underPath]?.dokument ?? [];
     if (!bekraftaOmDubblett(befintliga, fil.name)) {
@@ -302,23 +295,17 @@ export function ForeningsinformationBibliotek() {
     if (!sparat.ok) return sparat;
     const delad = sparat.fil;
     const idag = new Date().toLocaleDateString("sv-SE");
-    const styrningsMal = [
-      { typ: "styrning" as const, huvudId, underPath },
-      ...platser.filter(
-        (p): p is Extract<DokumentPlats, { typ: "styrning" }> => p.typ === "styrning",
-      ),
-    ];
     setHuvudmappar((current) => {
-      const next = { ...current };
-      for (const mal of styrningsMal) {
-        const huvud = next[mal.huvudId];
-        const under = huvud?.undermappar[mal.underPath];
-        if (!huvud || !under) continue;
-        next[mal.huvudId] = {
+      const huvud = current[huvudId];
+      const under = huvud?.undermappar[underPath];
+      if (!huvud || !under) return current;
+      return {
+        ...current,
+        [huvudId]: {
           ...huvud,
           undermappar: {
             ...huvud.undermappar,
-            [mal.underPath]: {
+            [underPath]: {
               ...under,
               dokument: [
                 ...under.dokument,
@@ -326,17 +313,12 @@ export function ForeningsinformationBibliotek() {
               ],
             },
           },
-        };
-      }
-      return next;
+        },
+      };
     });
-    const varning = lankaFilTillPlatser(
-      platser.filter((p) => p.typ !== "styrning"),
-      delad,
-    );
     setPågåendeUppladdning(null);
     window.dispatchEvent(new CustomEvent(BESIKTNING_UPPHANDLING_EVENT));
-    return varning ? { ok: true, varning } : { ok: true };
+    return { ok: true };
   }
 
   function taBortDokument(
@@ -419,8 +401,8 @@ export function ForeningsinformationBibliotek() {
               setPågåendeUppladdning(undermappNyckel(huvud.id, underPath))
             }
             onAvbrytUppladdning={() => setPågåendeUppladdning(null)}
-            onUpload={(underPath, fil, onProgress, platser) =>
-              läggTillDokument(huvud.id, underPath, fil, onProgress, platser)
+            onUpload={(underPath, fil, onProgress) =>
+              läggTillDokument(huvud.id, underPath, fil, onProgress)
             }
             onOppnaFil={(dok) => void oppnaFilIFlik(() => hamtaBibliotekFilUrl(dok))}
             onTaBort={(underPath, dok) =>
@@ -810,14 +792,8 @@ function UndermappRad({
                   </button>
                 ) : (
                   <FilUppladdningsRuta
-                    onSpara={(fil, onProgress, platser) =>
-                      onUpload(underPath, fil, onProgress, platser)
-                    }
+                    onSpara={(fil, onProgress) => onUpload(underPath, fil, onProgress)}
                     onAvbryt={onAvbrytUppladdning}
-                    delaTill={{
-                      typer: ["styrning", "dokumentbank", "arshjul", "projekt"],
-                      aktuellNyckel: platsNyckel({ typ: "styrning", huvudId, underPath }),
-                    }}
                   />
                 )}
               </div>
