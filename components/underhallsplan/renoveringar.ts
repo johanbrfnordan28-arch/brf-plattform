@@ -34,10 +34,68 @@ export function normaliseraRenoveringKomponent(komponent: string): string {
   return komponent === STAMMAR_KOMPONENT_NAMN ? "VVS" : komponent;
 }
 
+/**
+ * Utbyte och nyinstallation startar om komponentens livslängd. Underhållsåtgärd
+ * (t.ex. målning) upprepas med eget intervall utan att flytta utbytet.
+ * Reparation är en engångsåtgärd som inte planeras om.
+ */
+export type RenoveringArbetsTyp =
+  | "utbyte"
+  | "nyinstallation"
+  | "underhall"
+  | "reparation";
+
+export const renoveringArbetsTyper: {
+  id: RenoveringArbetsTyp;
+  etikett: string;
+  beskrivning: string;
+}[] = [
+  {
+    id: "utbyte",
+    etikett: "Utbyte / omläggning",
+    beskrivning:
+      "Komponenten byts — nästa utbyte planeras efter komponentens livslängd.",
+  },
+  {
+    id: "nyinstallation",
+    etikett: "Nyinstallation",
+    beskrivning:
+      "Ny komponent installeras (t.ex. solceller) — livslängden räknas från installationsåret.",
+  },
+  {
+    id: "underhall",
+    etikett: "Underhållsåtgärd",
+    beskrivning:
+      "T.ex. målning eller rengöring — upprepas med eget intervall. Komponentens utbyte ligger kvar i planen.",
+  },
+  {
+    id: "reparation",
+    etikett: "Reparation",
+    beskrivning:
+      "Engångsåtgärd (t.ex. lagning efter skada) — planeras inte om och påverkar inte utbytet.",
+  },
+];
+
+export function arbetsTypForRenovering(
+  renovering: Pick<UtfördRenovering, "arbetsTyp">,
+): RenoveringArbetsTyp {
+  return renovering.arbetsTyp ?? "utbyte";
+}
+
+export function arbetsTypEtikett(typ: RenoveringArbetsTyp): string {
+  return renoveringArbetsTyper.find((t) => t.id === typ)?.etikett ?? typ;
+}
+
 /** Utförd renovering kopplad till en komponent i registret. */
 export type UtfördRenovering = {
   id: string;
   komponent: string;
+  /** Saknas = utbyte. */
+  arbetsTyp?: RenoveringArbetsTyp;
+  /** Vald åtgärd ur underhållskatalogen när arbetsTyp är underhall. */
+  underhallAtgardId?: string;
+  /** Intervall för upprepad underhållsåtgärd (år). */
+  underhallIntervallAr?: number;
   /** Vald underkomponent i registret (t.ex. balkonger, hiss). */
   underkomponentId?: string;
   /** Etikett för underkomponenten — visas i listor och budget. */

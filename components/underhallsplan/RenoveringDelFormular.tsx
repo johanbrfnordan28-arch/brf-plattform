@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import type { UnderhallBesiktningStatus } from "@/components/underhallsplan/komponentregister";
+import type {
+  KomponentDetaljData,
+  UnderhallBesiktningStatus,
+} from "@/components/underhallsplan/komponentregister";
+import { TakAnbudFordelningPanel } from "@/components/underhallsplan/TakAnbudFordelningPanel";
+import { foreslaTakFordelning } from "@/components/underhallsplan/tak-anbud-fordelning";
+import {
+  hamtaUnderhallAtgardKatalog,
+  hamtaUnderhallTillfallenPlanNyckel,
+} from "@/components/underhallsplan/underhall-atgard-katalog";
 import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import { PlaneradeNastaArRedigering } from "@/components/underhallsplan/PlaneradeNastaArRedigering";
 import type { PlaneradAtgardPreview } from "@/components/underhallsplan/renovering-planering";
@@ -9,9 +18,10 @@ import { BalkongRenoveringFalt } from "@/components/underhallsplan/BalkongRenove
 import type { BalkongPost } from "@/components/underhallsplan/balkonger";
 import type { RenoveringDelFormState } from "@/components/underhallsplan/renovering-del-form";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
-import type {
-  KommandeAtgardOverride,
-  UtfördRenovering,
+import {
+  renoveringArbetsTyper,
+  type KommandeAtgardOverride,
+  type UtfördRenovering,
 } from "@/components/underhallsplan/renoveringar";
 import { RenoveringInkluderadeDelar } from "@/components/underhallsplan/RenoveringInkluderadeDelar";
 import {
@@ -44,6 +54,8 @@ type RenoveringDelFormularProps = {
   /** Utkast för filtrering av planerade rader (t.ex. endast takyta). */
   utkastRenovering?: UtfördRenovering | null;
   planKostnader?: PlanKostnaderNormaliserade;
+  /** Takets uppgifter från steg 2 — för fördelning av anbud på hela taket. */
+  takData?: KomponentDetaljData;
   redigerar: boolean;
   onSubmit: (event: React.FormEvent) => void;
   onAvbryt: () => void;
@@ -68,12 +80,20 @@ export function RenoveringDelFormular({
   onInkluderadeChange,
   utkastRenovering,
   planKostnader,
+  takData,
   redigerar,
   onSubmit,
   onAvbryt,
 }: RenoveringDelFormularProps) {
+  const helaTaket = arTakKomponent(komponentNamn) && !underkomponentId;
   const visaTakKlumpsumma =
     arTakKomponent(komponentNamn) && !visaStambyteKlumpsumma;
+  const underhallKatalog = hamtaUnderhallAtgardKatalog(
+    hamtaUnderhallTillfallenPlanNyckel(
+      komponentNamn,
+      underkomponentId || (arTakKomponent(komponentNamn) ? "takyta" : ""),
+    ) ?? "typ-ovrigt",
+  );
   const visaInkluderade = visaInkluderadePanel(komponentNamn);
   const planeradeKommande = useMemo(() => {
     if (!utkastRenovering) return planerade;
@@ -178,6 +198,81 @@ export function RenoveringDelFormular({
           />
         </label>
       </div>
+      <fieldset className="rounded-lg border border-border bg-white p-3 text-sm">
+        <legend className="px-1 text-xs font-medium text-muted">Typ av arbete</legend>
+        <div className="flex flex-wrap gap-2">
+          {renoveringArbetsTyper.map((typ) => (
+            <label
+              key={typ.id}
+              className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs ${
+                form.arbetsTyp === typ.id
+                  ? "border-primary bg-[#e2f0e6] font-medium text-primary-dark"
+                  : "border-border"
+              }`}
+            >
+              <input
+                type="radio"
+                name={`${besiktningRadioName}-arbetstyp`}
+                checked={form.arbetsTyp === typ.id}
+                onChange={() => onFormChange((c) => ({ ...c, arbetsTyp: typ.id }))}
+                className="sr-only"
+              />
+              {typ.etikett}
+            </label>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          {renoveringArbetsTyper.find((t) => t.id === form.arbetsTyp)?.beskrivning}
+        </p>
+        {form.arbetsTyp === "underhall" && (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="text-xs font-medium text-muted">Underhållsåtgärd</span>
+              <select
+                value={form.underhallAtgardId}
+                onChange={(e) => {
+                  const atgard = underhallKatalog.find((a) => a.id === e.target.value);
+                  onFormChange((c) => ({
+                    ...c,
+                    underhallAtgardId: e.target.value,
+                    titel: c.titel.trim() || atgard?.etikett || "",
+                    underhallIntervallAr: atgard?.standardIntervallAr
+                      ? String(atgard.standardIntervallAr)
+                      : c.underhallIntervallAr,
+                  }));
+                }}
+                className="mt-1 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm"
+              >
+                <option value="">Välj åtgärd</option>
+                {underhallKatalog.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.etikett}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm">
+              <span className="text-xs font-medium text-muted">
+                Upprepas vart (år)
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={form.underhallIntervallAr}
+                onChange={(e) =>
+                  onFormChange((c) => ({
+                    ...c,
+                    underhallIntervallAr: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-border px-2.5 py-1.5 text-sm"
+              />
+            </label>
+          </div>
+        )}
+      </fieldset>
+
       <fieldset className="text-sm">
         <legend className="text-xs font-medium text-muted">Besiktning efter åtgärd</legend>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -226,7 +321,49 @@ export function RenoveringDelFormular({
         />
       )}
 
-      {visaTakKlumpsumma && (
+      {visaTakKlumpsumma && helaTaket && (
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-3">
+          <label className="flex cursor-pointer items-start gap-2">
+            <input
+              type="checkbox"
+              checked={form.klumpsumma}
+              onChange={(e) => {
+                const på = e.target.checked;
+                onFormChange((c) => ({
+                  ...c,
+                  klumpsumma: på,
+                  takFordelning:
+                    på && c.takFordelning.length === 0 && takData
+                      ? foreslaTakFordelning(takData)
+                      : c.takFordelning,
+                }));
+              }}
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+            />
+            <span className="text-sm text-foreground">
+              <span className="font-medium">
+                Anbud för hela taket — fördela på delarna
+              </span>
+              <span className="mt-0.5 block text-xs text-muted">
+                Kostnaden delas på takpartier och komponenter så att varje del
+                får sin egen kostnad och sitt eget nästa år i planen.
+              </span>
+            </span>
+          </label>
+          {form.klumpsumma && (
+            <TakAnbudFordelningPanel
+              takData={takData}
+              rader={form.takFordelning}
+              kostnadKr={form.kostnadKr}
+              onChange={(takFordelning) =>
+                onFormChange((c) => ({ ...c, takFordelning }))
+              }
+            />
+          )}
+        </div>
+      )}
+
+      {visaTakKlumpsumma && !helaTaket && (
         <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-3">
           <label className="flex cursor-pointer items-start gap-2">
             <input
@@ -251,7 +388,7 @@ export function RenoveringDelFormular({
         </div>
       )}
 
-      {visaInkluderade && (
+      {visaInkluderade && !(helaTaket && form.klumpsumma) && (
         <RenoveringInkluderadeDelar
           komponent={komponentNamn}
           underkomponentId={underkomponentId}

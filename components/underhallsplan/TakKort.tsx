@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FastighetsdelSammanstallning } from "@/components/underhallsplan/FastighetsdelSammanstallning";
 import { FastighetsdelUnderkomponentDetalj } from "@/components/underhallsplan/FastighetsdelUnderkomponentDetalj";
+import { TakSammanstallning } from "@/components/underhallsplan/TakSammanstallning";
 import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
 import {
   hamtaKomponentMall,
@@ -26,7 +26,10 @@ type TakKortProps = {
   foreningsAdresser: string[];
   planStartAr: number;
   planLangdAr: number;
+  husNamn?: string[];
   onChange: (data: KomponentDetaljData) => void;
+  /** Sparar planen. Returnerar false om det inte gick. */
+  onSpara: () => boolean;
 };
 
 function medIPlan(rad: UnderkomponentRad): boolean {
@@ -59,11 +62,35 @@ export function TakKort({
   foreningsAdresser,
   planStartAr,
   planLangdAr,
+  husNamn,
   onChange,
+  onSpara,
 }: TakKortProps) {
   const mall = hamtaKomponentMall(namn);
   const [valdKomponent, setValdKomponent] = useState("");
   const [egenKomponent, setEgenKomponent] = useState("");
+  const [sparStatus, setSparStatus] = useState<
+    { ok: true; tid: string } | { ok: false } | null
+  >(null);
+
+  function andra(next: KomponentDetaljData) {
+    setSparStatus(null);
+    onChange(next);
+  }
+
+  function spara() {
+    setSparStatus(
+      onSpara()
+        ? {
+            ok: true,
+            tid: new Date().toLocaleTimeString("sv-SE", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          }
+        : { ok: false },
+    );
+  }
 
   const egnaDelIds = TAK_EGNA_DELAR_IDS;
   const defFor = (id: string) => mall.underkomponenter.find((d) => d.id === id);
@@ -78,7 +105,7 @@ export function TakKort({
   );
 
   function uppdateraRad(id: string, patch: Partial<UnderkomponentRad>) {
-    onChange({
+    andra({
       ...data,
       underkomponenter: data.underkomponenter.map((r) =>
         r.id === id ? { ...r, ...patch } : r,
@@ -97,7 +124,7 @@ export function TakKort({
       if (finns) {
         uppdateraRad(finns.id, { medIPlan: true, aktiv: true });
       } else {
-        onChange({
+        andra({
           ...data,
           underkomponenter: [
             ...data.underkomponenter,
@@ -124,7 +151,7 @@ export function TakKort({
 
   function sattMangd(rad: UnderkomponentRad, mangd: string) {
     const [forsta] = hamtaMattPartier(data, rad.id, rad);
-    onChange(
+    andra(
       uppdateraMattPartier(
         data,
         rad.id,
@@ -150,7 +177,7 @@ export function TakKort({
             foreningsAdresser={foreningsAdresser}
             planStartAr={planStartAr}
             planLangdAr={planLangdAr}
-            onChange={onChange}
+            onChange={andra}
             onRadChange={(patch) =>
               uppdateraRad(TAK_YTSKIKT_ID, { ...patch, aktiv: true })
             }
@@ -209,7 +236,7 @@ export function TakKort({
                         måttenhet={rad.måttenhet}
                         partier={partier}
                         onChange={(next) =>
-                          onChange(
+                          andra(
                             uppdateraMattPartier(data, rad.id, next, rad.måttenhet),
                           )
                         }
@@ -282,7 +309,7 @@ export function TakKort({
                   foreningsAdresser={foreningsAdresser}
                   planStartAr={planStartAr}
                   planLangdAr={planLangdAr}
-                  onChange={onChange}
+                  onChange={andra}
                   onRadChange={(patch) =>
                     uppdateraRad(rad.id, { ...patch, aktiv: true })
                   }
@@ -312,11 +339,30 @@ export function TakKort({
         );
       })}
 
-      <FastighetsdelSammanstallning
-        komponentNamn={namn}
+      <TakSammanstallning
+        namn={namn}
         data={data}
         grund={grund}
+        husNamn={husNamn}
       />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={spara}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+        >
+          Spara tak
+        </button>
+        {sparStatus?.ok ? (
+          <p className="text-xs text-primary-dark">Sparat kl. {sparStatus.tid}</p>
+        ) : null}
+        {sparStatus && !sparStatus.ok ? (
+          <p className="text-xs text-red-800">
+            Kunde inte spara — försök igen eller använd Spara nu högst upp.
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

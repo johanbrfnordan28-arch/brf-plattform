@@ -1,8 +1,15 @@
 import type { UnderhallBesiktningStatus } from "@/components/underhallsplan/komponentregister";
 import type {
   KommandeAtgardOverride,
+  RenoveringArbetsTyp,
   UtfördRenovering,
 } from "@/components/underhallsplan/renoveringar";
+import {
+  delposterTillTakFordelning,
+  takFordelningTillDelposter,
+  type TakFordelningRad,
+} from "@/components/underhallsplan/tak-anbud-fordelning";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 
 export type RenoveringDelFormState = {
   ar: string;
@@ -22,6 +29,11 @@ export type RenoveringDelFormState = {
   balkongRadId: string;
   balkongTyp: string;
   balkongAtgard: string;
+  arbetsTyp: RenoveringArbetsTyp;
+  underhallAtgardId: string;
+  underhallIntervallAr: string;
+  /** Anbud för hela taket fördelat på takets delar. */
+  takFordelning: TakFordelningRad[];
 };
 
 export function tomRenoveringDelForm(): RenoveringDelFormState {
@@ -43,6 +55,10 @@ export function tomRenoveringDelForm(): RenoveringDelFormState {
     balkongRadId: "",
     balkongTyp: "",
     balkongAtgard: "renovering",
+    arbetsTyp: "utbyte",
+    underhallAtgardId: "",
+    underhallIntervallAr: "",
+    takFordelning: [],
   };
 }
 
@@ -71,6 +87,14 @@ export function renoveringTillDelForm(post: UtfördRenovering): RenoveringDelFor
     balkongRadId: post.balkongRadId ?? "",
     balkongTyp: post.balkongTyp ?? "",
     balkongAtgard: post.balkongAtgard ?? "renovering",
+    arbetsTyp: post.arbetsTyp ?? "utbyte",
+    underhallAtgardId: post.underhallAtgardId ?? "",
+    underhallIntervallAr:
+      post.underhallIntervallAr != null ? String(post.underhallIntervallAr) : "",
+    takFordelning:
+      arTakKomponent(post.komponent) && !post.underkomponentId?.trim()
+        ? delposterTillTakFordelning(post.delposter)
+        : [],
   };
 }
 
@@ -112,9 +136,28 @@ export function delFormTillRenovering(args: {
     }
   }
 
+  const arbetsTyp = args.form.arbetsTyp;
+  const underhallIntervall = Number.parseInt(args.form.underhallIntervallAr, 10);
+  const takDelposter =
+    arTakKomponent(args.komponent) &&
+    !args.underkomponentId.trim() &&
+    args.form.klumpsumma
+      ? takFordelningTillDelposter(args.komponent, args.form.takFordelning)
+      : [];
+
   return {
     id: args.id,
     komponent: args.komponent,
+    arbetsTyp: arbetsTyp === "utbyte" ? undefined : arbetsTyp,
+    underhallAtgardId:
+      arbetsTyp === "underhall"
+        ? args.form.underhallAtgardId.trim() || undefined
+        : undefined,
+    underhallIntervallAr:
+      arbetsTyp === "underhall" && underhallIntervall > 0
+        ? underhallIntervall
+        : undefined,
+    delposter: takDelposter.length > 0 ? takDelposter : undefined,
     underkomponentId: args.underkomponentId,
     del: args.del,
     ar,

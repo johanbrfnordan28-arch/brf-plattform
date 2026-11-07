@@ -2097,6 +2097,7 @@ export function UnderhallsplanWizard() {
           onDetalj={uppdateraKomponentDetalj}
           onGrundChange={(next) => setGrund(next)}
           onTakUppsattning={sattTakUppsattning}
+          onSpara={sparaUppdateringar}
           onVidare={() => stangOchOppnaSteg("renoveringar")}
         />
       </StegPanel>

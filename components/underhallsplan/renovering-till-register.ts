@@ -5,16 +5,14 @@ import {
 } from "@/components/underhallsplan/komponentregister";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
 import { fordelRenovering } from "@/components/underhallsplan/renovering-fordelning";
-import {
-  hamtaIntervallForTyp,
-  type RenoveringAtgardTyp,
-} from "@/components/underhallsplan/renovering-klassificering";
+import type { RenoveringAtgardTyp } from "@/components/underhallsplan/renovering-klassificering";
 import { synkaTillfallenFranHistorikPaRegister } from "@/components/underhallsplan/underhall-tillfallen-register";
 import { hamtaUnderhallTillfallenPlanNyckel } from "@/components/underhallsplan/underhall-atgard-katalog";
 import { harUnderhallTillfallenPlan } from "@/components/underhallsplan/underhall-tillfallen";
 import { hamtaUnderhallTillfallenData } from "@/components/underhallsplan/underhall-tillfallen-register";
 import {
   beraknaPlaneradKostnad,
+  hamtaIntervallForDel,
   hamtaNastaPlanArForDel,
 } from "@/components/underhallsplan/renovering-planering";
 import {
@@ -162,6 +160,8 @@ export function appliceraRenoveringarPaKomponentregister(
 
     for (const del of utdelning) {
       if (del.basKostnadKr <= 0) continue;
+      // Underhåll och reparation planeras från historiken — komponentens utbyte ligger kvar.
+      if (del.arbetsTyp === "underhall" || del.arbetsTyp === "reparation") continue;
 
       const komponent = del.komponent;
       const data = next[komponent];
@@ -179,7 +179,7 @@ export function appliceraRenoveringarPaKomponentregister(
             );
       if (!underId) continue;
 
-      const intervallAr = hamtaIntervallForTyp(komponent, del.atgardTyp);
+      const intervallAr = hamtaIntervallForDel(del);
       const nastaAr = hamtaNastaPlanArForDel(del, renovering, planStartAr);
       const beraknat = beraknaPlaneradKostnad(
         del.basKostnadKr,

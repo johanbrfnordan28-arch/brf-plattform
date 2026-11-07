@@ -11,11 +11,21 @@ import { RenoveringDelFormular } from "@/components/underhallsplan/RenoveringDel
 import { formateraBalkongRenoveringMeta } from "@/components/underhallsplan/BalkongRenoveringFalt";
 import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkonger";
 import {
+  arbetsTypEtikett,
+  arbetsTypForRenovering,
   createRenoveringId,
   formatKostnad,
   type KommandeAtgardOverride,
   type UtfördRenovering,
 } from "@/components/underhallsplan/renoveringar";
+import {
+  normaliseraFastighetsYtor,
+  synkaHusFranGrund,
+} from "@/components/underhallsplan/fastighets-ytor";
+import { TakSammanstallning } from "@/components/underhallsplan/TakSammanstallning";
+import { arTakKomponent, husNamnForTak } from "@/components/underhallsplan/tak-enheter";
+import { underhallAtgardEtikett, hamtaUnderhallTillfallenPlanNyckel } from "@/components/underhallsplan/underhall-atgard-katalog";
+import type { Grunduppgifter } from "@/components/underhallsplan/types";
 import {
   delFormTillRenovering,
   kommandeAtgardOverridesFranState,
@@ -48,6 +58,7 @@ type RenoveringshistorikKomponentTrädProps = {
   planStartAr: number;
   planKostnader?: PlanKostnaderNormaliserade;
   komponentDetaljer?: Record<string, KomponentDetaljData>;
+  grund?: Grunduppgifter;
   onLaggTill: (post: UtfördRenovering) => void;
   onUppdatera: (post: UtfördRenovering) => void;
   onTaBort: (id: string) => void;
@@ -60,6 +71,21 @@ function posterForHelaKomponenten(
   return renoveringar.filter(
     (r) => r.komponent === komponent && !r.underkomponentId?.trim(),
   );
+}
+
+/** T.ex. "Underhållsåtgärd: Takmålning" — tom för vanligt utbyte. */
+function arbetsTypText(post: UtfördRenovering): string {
+  const typ = arbetsTypForRenovering(post);
+  if (typ === "utbyte") return "";
+  if (typ === "underhall" && post.underhallAtgardId) {
+    const nyckel =
+      hamtaUnderhallTillfallenPlanNyckel(
+        post.komponent,
+        post.underkomponentId || (arTakKomponent(post.komponent) ? "takyta" : ""),
+      ) ?? "typ-ovrigt";
+    return `${arbetsTypEtikett(typ)}: ${underhallAtgardEtikett(nyckel, post.underhallAtgardId)}`;
+  }
+  return arbetsTypEtikett(typ);
 }
 
 function posterForDel(
@@ -87,10 +113,14 @@ export function RenoveringshistorikKomponentTräd({
   planStartAr,
   planKostnader,
   komponentDetaljer,
+  grund,
   onLaggTill,
   onUppdatera,
   onTaBort,
 }: RenoveringshistorikKomponentTrädProps) {
+  const hus = grund
+    ? synkaHusFranGrund(normaliseraFastighetsYtor(grund.fastighetsYtor), grund).hus
+    : [];
   const [öppenKomponent, setÖppenKomponent] = useState<string | null>(null);
   const [aktivDel, setAktivDel] = useState<ValdDel | null>(null);
   const [redigerarId, setRedigerarId] = useState<string | null>(null);
@@ -287,8 +317,11 @@ export function RenoveringshistorikKomponentTräd({
       </p>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         Öppna en komponent. Använd &quot;Hela komponenten&quot; när anbud eller
-        faktura avser hela taket, fasaden eller motsvarande — annars lägg till
-        kostnad per underdel (t.ex. enskild balkong eller hiss).
+        faktura avser hela taket, fasaden eller motsvarande — ett takanbud kan
+        fördelas på takets delar. Annars lägg till kostnad per underdel (t.ex.
+        en reparation av skorstenen eller nyinstallation av solceller). Välj
+        typ av arbete: utbyte startar om livslängden, en underhållsåtgärd som
+        målning upprepas med eget intervall och en reparation planeras inte om.
       </p>
 
       <KomponentAccordionLista className="mt-4">
@@ -324,27 +357,49 @@ export function RenoveringshistorikKomponentTräd({
               })),
           ];
 
+          const ärTak = arTakKomponent(namn);
+          const takData = ärTak ? komponentDetaljer?.[namn] : undefined;
+          const takAdress = takData?.takAdress?.trim();
+          const takHus =
+            takData && hus.length > 1
+              ? husNamnForTak(takData.takHusIds, hus)
+              : [];
+
           return (
             <KomponentAccordionRad
               key={namn}
-              namn={namn}
+              namn={takAdress ? `${namn} · ${takAdress}` : namn}
               undertitel={`${synligaUnderkomponenter.length} underkomponenter${
                 antalKomp > 0 ? ` · ${antalKomp} renoveringar` : ""
               }`}
               isOpen={ärÖppen}
               onToggle={() => öppnaKomponent(namn)}
             >
+              {takData && grund ? (
+                <div className="mb-4">
+                  <TakSammanstallning
+                    namn={namn}
+                    data={takData}
+                    grund={grund}
+                    husNamn={takHus}
+                  />
+                </div>
+              ) : null}
               <div className="mb-4 rounded-lg border border-primary/25 bg-[#eef6f0]/40 px-3 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-medium text-foreground">
-                    Hela {namn.toLowerCase()} — total entreprenadkostnad
+                    {ärTak
+                      ? "Hela taket — anbud eller faktura för hela taket"
+                      : `Hela ${namn.toLowerCase()} — total entreprenadkostnad`}
                   </p>
                   <button
                     type="button"
                     onClick={() => startaLaggTillHelaKomponenten(namn)}
                     className="rounded-lg border border-primary px-2.5 py-1 text-xs font-medium text-primary-dark hover:bg-[#e2f0e6]"
                   >
-                    + Lägg till utfört arbete (hela komponenten)
+                    {ärTak
+                      ? "+ Lägg till utfört arbete (hela taket)"
+                      : "+ Lägg till utfört arbete (hela komponenten)"}
                   </button>
                 </div>
                 {helaKomponentPoster.length > 0 && (
@@ -359,6 +414,16 @@ export function RenoveringshistorikKomponentTräd({
                           {post.kostnadKr != null && (
                             <span className="ml-1 font-medium tabular-nums">
                               {formatKostnad(post.kostnadKr)}
+                            </span>
+                          )}
+                          {arbetsTypText(post) && (
+                            <span className="ml-1 text-xs text-muted">
+                              · {arbetsTypText(post)}
+                            </span>
+                          )}
+                          {(post.delposter?.length ?? 0) > 0 && (
+                            <span className="ml-1 text-xs text-muted">
+                              · fördelat på {post.delposter!.length} delar
                             </span>
                           )}
                         </span>
@@ -415,6 +480,7 @@ export function RenoveringshistorikKomponentTräd({
                         onInkluderadeChange={setInkluderadeUnderkomponenter}
                         utkastRenovering={utkastPost}
                         planKostnader={planKostnader}
+                        takData={takData}
                         redigerar={Boolean(redigerarId)}
                         onSubmit={sparaDelRenovering}
                         onAvbryt={avbrytForm}
@@ -493,6 +559,8 @@ export function RenoveringshistorikKomponentTräd({
                                         {(post.avdragProcent ?? 0) > 0 &&
                                           ` · avdrag ${post.avdragProcent}%`}
                                         {balkongMeta && ` · ${balkongMeta}`}
+                                        {arbetsTypText(post) &&
+                                          ` · ${arbetsTypText(post)}`}
                                       </p>
                                     </button>
                                     <div className="flex shrink-0 gap-2">
@@ -554,6 +622,7 @@ export function RenoveringshistorikKomponentTräd({
                             onInkluderadeChange={setInkluderadeUnderkomponenter}
                             utkastRenovering={utkastPost}
                             planKostnader={planKostnader}
+                            takData={takData}
                             redigerar={Boolean(redigerarId)}
                             onSubmit={sparaDelRenovering}
                             onAvbryt={avbrytForm}

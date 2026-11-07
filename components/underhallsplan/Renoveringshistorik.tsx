@@ -25,6 +25,7 @@ import { RenoveringDelFormular } from "@/components/underhallsplan/RenoveringDel
 import { formateraBalkongRenoveringMeta } from "@/components/underhallsplan/BalkongRenoveringFalt";
 import { BALKONGER_UNDERKOMPONENT_ID } from "@/components/underhallsplan/balkonger";
 import { RenoveringshistorikKomponentTräd } from "@/components/underhallsplan/RenoveringshistorikKomponentTräd";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import { OppnaStangKnapp } from "@/components/OppnaStangKnapp";
 import { RenoveringYtaAiSektion } from "@/components/underhallsplan/RenoveringYtaAiSektion";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
@@ -113,7 +114,14 @@ export function Renoveringshistorik({
   saved,
   onSave,
 }: RenoveringshistorikProps) {
-  const allaKomponenter = foreslagnaKomponenter ?? activeComponents;
+  const allaKomponenter = foreslagnaKomponenter
+    ? [
+        ...foreslagnaKomponenter,
+        ...activeComponents.filter(
+          (namn) => arTakKomponent(namn) && !foreslagnaKomponenter.includes(namn),
+        ),
+      ]
+    : activeComponents;
   const synligaKomponenter = activeComponents.filter((name) =>
     allaKomponenter.includes(name),
   );
@@ -408,6 +416,7 @@ export function Renoveringshistorik({
             planStartAr={planStartAr}
             planKostnader={planKostnader}
             komponentDetaljer={komponentDetaljer}
+            grund={grund}
             onLaggTill={(post) => uppdateraRenoveringar([...renoveringar, post])}
             onUppdatera={uppdateraRenovering}
             onTaBort={taBortRenovering}

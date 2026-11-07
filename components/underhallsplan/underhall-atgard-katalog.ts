@@ -7,6 +7,8 @@ export type UnderhallAtgardKatalogPost = {
   id: string;
   etikett: string;
   beskrivning: string;
+  /** Föreslaget intervall när åtgärden registreras som utfört underhåll. */
+  standardIntervallAr?: number;
 };
 
 export type UnderhallTillfallenPlanNyckel =
@@ -18,30 +20,35 @@ const takTakytaAtgarder: UnderhallAtgardKatalogPost[] = [
   {
     id: "tak-rengoring",
     etikett: "Takrengöring",
+    standardIntervallAr: 5,
     beskrivning:
       "Rengöring av takytan — gäller tegel, plåt, papp och övriga beläggningar.",
   },
   {
     id: "takomlaggning",
     etikett: "Takomläggning / nytt tak",
+    standardIntervallAr: 40,
     beskrivning:
       "Byte av takbeläggning eller större ingrepp — ofta vart 25–40:e år beroende på material.",
   },
   {
     id: "takmalning",
     etikett: "Takmålning / ytaunderhåll",
+    standardIntervallAr: 15,
     beskrivning:
       "Ommålning av målad plåt — gäller inte koppar, zink, rostfritt eller obehandlad aluminium.",
   },
   {
     id: "plat-underhall",
     etikett: "Underhåll plåtdetaljer",
+    standardIntervallAr: 10,
     beskrivning:
       "Kontroll och lagning av plåt, nock, vindskivor och genomföringar.",
   },
   {
     id: "tak-kontroll",
     etikett: "Takinspektion / kontroll",
+    standardIntervallAr: 3,
     beskrivning: "Statuskontroll utan större ingrepp — kan planeras oftare.",
   },
 ];
@@ -50,24 +57,28 @@ const fonsterAtgarder: UnderhallAtgardKatalogPost[] = [
   {
     id: "fonster-malning",
     etikett: "Målning fönster",
+    standardIntervallAr: 12,
     beskrivning:
       "Ommålning av karmar och bågar — enklare åtgärd mellan större renoveringar.",
   },
   {
     id: "fonster-delrenovering",
     etikett: "Delrenovering fönster",
+    standardIntervallAr: 20,
     beskrivning:
       "Byte av glas, beslag eller delar — mer omfattande än målning men mindre än fullt byte.",
   },
   {
     id: "fonster-byte",
     etikett: "Fönsterbyte",
+    standardIntervallAr: 40,
     beskrivning:
       "Helt byte av fönster — ofta vart 30–50:e år beroende på material och skick.",
   },
   {
     id: "fonster-tatning",
     etikett: "Tätning / fogning",
+    standardIntervallAr: 10,
     beskrivning: "Tätning kring karm, lister och glas — löpande underhåll.",
   },
 ];
@@ -86,12 +97,14 @@ function typKatalog(
     {
       id: `${prefix}-lopande`,
       etikett: lopandeEtikett,
+      standardIntervallAr: 10,
       beskrivning:
         "Lättare eller löpande underhåll mellan större projekt — kortare intervall och lägre kostnad.",
     },
     {
       id: `${prefix}-kontroll`,
       etikett: "Kontroll / status",
+      standardIntervallAr: 3,
       beskrivning: "Inspektion utan större ingrepp.",
     },
   ];
@@ -106,11 +119,13 @@ const typFasad = [
   {
     id: "typ-fasad-lopande",
     etikett: "Löpande fasadunderhåll",
+    standardIntervallAr: 10,
     beskrivning: "Tvätt, mindre reparationer eller målning av delar.",
   },
   {
     id: "typ-fasad-kontroll",
     etikett: "Fasadkontroll",
+    standardIntervallAr: 5,
     beskrivning: "Statuskontroll.",
   },
 ];

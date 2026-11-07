@@ -14,7 +14,10 @@ import {
   type RenoveringFordelningKontext,
 } from "@/components/underhallsplan/renovering-fordelning";
 import { arDirektkostnadUnderhall } from "@/components/underhallsplan/komponent-avskrivning";
-import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
+import type {
+  RenoveringArbetsTyp,
+  UtfördRenovering,
+} from "@/components/underhallsplan/renoveringar";
 import { RENOVERING_ATGARD_TILL_UNDERKOMPONENT } from "@/components/underhallsplan/underhall-atgard-katalog";
 import type { UnderhallAtgard } from "@/components/underhallsplan/underhall-budget";
 
@@ -157,13 +160,26 @@ export type PlaneradAtgardPreview = {
   projektledningKr: number;
 };
 
+type PlaneringsDel = {
+  renoveringId: string;
+  utförtAr: number;
+  atgardTyp: RenoveringAtgardTyp;
+  komponent: string;
+  intervallAr?: number;
+  arbetsTyp?: RenoveringArbetsTyp;
+};
+
+export function hamtaIntervallForDel(del: PlaneringsDel): number {
+  return del.intervallAr ?? hamtaIntervallForTyp(del.komponent, del.atgardTyp);
+}
+
+/** Reparationer är engångsåtgärder och genererar inga kommande åtgärder. */
+export function delPlanerasOm(del: Pick<PlaneringsDel, "arbetsTyp">): boolean {
+  return del.arbetsTyp !== "reparation";
+}
+
 export function hamtaNastaPlanArForDel(
-  del: {
-    renoveringId: string;
-    utförtAr: number;
-    atgardTyp: RenoveringAtgardTyp;
-    komponent: string;
-  },
+  del: PlaneringsDel,
   renovering: UtfördRenovering,
   planStartAr: number,
 ): number {
@@ -171,8 +187,7 @@ export function hamtaNastaPlanArForDel(
   if (override != null && Number.isFinite(override) && override > 0) {
     return override;
   }
-  const intervallAr = hamtaIntervallForTyp(del.komponent, del.atgardTyp);
-  return nastaPlanAr(del.utförtAr, intervallAr, planStartAr);
+  return nastaPlanAr(del.utförtAr, hamtaIntervallForDel(del), planStartAr);
 }
 
 export function forhandsvisaNastaAtgard(
@@ -198,7 +213,8 @@ export function forhandsvisaNastaAtgarder(
   const previews: PlaneradAtgardPreview[] = [];
 
   for (const del of utdelning) {
-    const intervallAr = hamtaIntervallForTyp(del.komponent, del.atgardTyp);
+    if (!delPlanerasOm(del)) continue;
+    const intervallAr = hamtaIntervallForDel(del);
     const typ = del.atgardTyp;
     const nastaAr = hamtaNastaPlanArForDel(del, renovering, planStartAr);
     const beraknat = beraknaPlaneradKostnad(
@@ -292,7 +308,8 @@ export function genereraAtgarderFranHistorik(
     if (utdelning.length === 0) continue;
 
     for (const del of utdelning) {
-      const intervallAr = hamtaIntervallForTyp(del.komponent, del.atgardTyp);
+      if (!delPlanerasOm(del)) continue;
+      const intervallAr = hamtaIntervallForDel(del);
       let ar = hamtaNastaPlanArForDel(del, renovering, planStartAr);
 
       while (ar <= planSlutAr) {
@@ -356,6 +373,10 @@ export function historikTackerAtgardTyp(
 ): boolean {
   return renoveringar.some((r) => {
     if ((r.kostnadKr ?? 0) <= 0) return false;
-    return fordelRenovering(r, kontext).some((d) => d.atgardTyp === typ);
+    return fordelRenovering(r, kontext).some(
+      (d) =>
+        d.atgardTyp === typ &&
+        (d.arbetsTyp === "utbyte" || d.arbetsTyp === "nyinstallation"),
+    );
   });
 }

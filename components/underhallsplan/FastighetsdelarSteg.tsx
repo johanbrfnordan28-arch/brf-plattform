@@ -59,6 +59,8 @@ type FastighetsdelarStegProps = {
   onDetalj: (namn: string, data: KomponentDetaljData) => void;
   onGrundChange: (grund: Grunduppgifter) => void;
   onTakUppsattning: (tak: TakEnhet[]) => void;
+  /** Sparar planen direkt. Returnerar false om det inte gick. */
+  onSpara: () => boolean;
   onVidare: () => void;
   planStartAr: number;
   planLangdAr: number;
@@ -108,6 +110,7 @@ export function FastighetsdelarSteg({
   onDetalj,
   onGrundChange,
   onTakUppsattning,
+  onSpara,
   onVidare,
   planStartAr,
   planLangdAr,
@@ -360,7 +363,9 @@ export function FastighetsdelarSteg({
               foreningsAdresser={foreningsAdresser}
               planStartAr={planStartAr}
               planLangdAr={planLangdAr}
+              husNamn={takHus}
               onChange={(next) => sparaDetalj(namn, next)}
+              onSpara={onSpara}
             />
           </div>
         ) : null}

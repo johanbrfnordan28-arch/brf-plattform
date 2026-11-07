@@ -10,9 +10,12 @@ import {
   type RenoveringAtgardTyp,
 } from "@/components/underhallsplan/renovering-klassificering";
 import {
+  arbetsTypForRenovering,
   normaliseraRenoveringKomponent,
+  type RenoveringArbetsTyp,
   type UtfördRenovering,
 } from "@/components/underhallsplan/renoveringar";
+import { hamtaUnderhallRekommendation } from "@/components/underhallsplan/underhall-intervall";
 
 export type RenoveringFordelningKontext = {
   komponentDetaljer?: Record<string, KomponentDetaljData>;
@@ -34,6 +37,9 @@ export type FordeladRenoveringsdel = {
   utförtAr: number;
   andel: number;
   fordelningsNotering: string;
+  arbetsTyp?: RenoveringArbetsTyp;
+  /** Överstyr intervallet från åtgärdstypen. */
+  intervallAr?: number;
 };
 
 const VADERSTRECK = [
@@ -234,8 +240,12 @@ function fordelExplicitaDelposter(
           omfattning: post.omfattning ?? renovering.omfattning,
         });
     const atgardTyp = (post.atgardTyp as RenoveringAtgardTyp | undefined) ?? regel.typ;
+    const rek = post.underkomponentId
+      ? hamtaUnderhallRekommendation(post.komponent, post.underkomponentId)
+      : undefined;
 
     return {
+      intervallAr: rek?.rekommenderatIntervallAr,
       renoveringId: `${renovering.id}-del-${index + 1}`,
       komponent: normaliseraRenoveringKomponent(post.komponent),
       del: post.del,
@@ -431,6 +441,22 @@ function justeraAvrundning(
  * Används av budget och förhandsvisning i historiken.
  */
 export function fordelRenovering(
+  renovering: UtfördRenovering,
+  kontext?: RenoveringFordelningKontext,
+): FordeladRenoveringsdel[] {
+  const arbetsTyp = arbetsTypForRenovering(renovering);
+  const underhallIntervall =
+    arbetsTyp === "underhall" && (renovering.underhallIntervallAr ?? 0) > 0
+      ? renovering.underhallIntervallAr
+      : undefined;
+  return fordelRenoveringKostnad(renovering, kontext).map((del) => ({
+    ...del,
+    arbetsTyp,
+    intervallAr: underhallIntervall ?? del.intervallAr,
+  }));
+}
+
+function fordelRenoveringKostnad(
   renovering: UtfördRenovering,
   kontext?: RenoveringFordelningKontext,
 ): FordeladRenoveringsdel[] {
