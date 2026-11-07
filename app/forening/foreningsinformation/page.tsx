@@ -18,7 +18,7 @@ export default function ForeningForeningsinformationPage() {
     <ModulePage
       title="Styrning och Dokument"
       icon="📁"
-      intro={`${antalForeningsHuvudmappar} huvudmappar: Styrelse Arkiv (protokoll, årsstämma, nyckel kvittenser), hiss (besiktningar), service (undercentral), ventilation (OVK och sotning) samt tioårsbesiktningar (energi och radon).`}
+      intro={`${antalForeningsHuvudmappar} huvudmappar: Styrelse Arkiv (protokoll, årsstämma, nyckel kvittenser), besiktningar (brandskydd), hiss (besiktning, service, reparationer och upphandling), service (undercentral), ventilation (OVK och sotning) samt tioårsbesiktningar (energi och radon).`}
     >
       <ContentSection title="Styrelsens bibliotek" plain>
         <ForeningsinformationBibliotek />
@@ -26,13 +26,13 @@ export default function ForeningForeningsinformationPage() {
 
       <ContentSection title="Koppling till underhållsplan">
         <p>
-          OVK och sotning under ventilation, service och undercentral mellan hiss
-          och OVK, energideklaration och radon under tioårsbesiktningar —
-          kompletterar uppgifterna i underhållsplanens besiktningar och budget.
-          Här sparar styrelsen protokoll och handlingar.           Från OVK,
-          energideklaration och radon skapas upphandlingen. Hisservice,
-          reparation enligt felrapport och ny hiss skapas i hissmappen, med
-          anbudsformulär enligt ABT-06. Underlaget flyttas till
+          Hissen har en egen huvudmapp, service och undercentral ligger mellan hiss
+          och ventilation, OVK och sotning under ventilation samt energideklaration
+          och radon under tioårsbesiktningar. Mapparna kompletterar uppgifterna i
+          underhållsplanens besiktningar och budget. Här sparar styrelsen protokoll
+          och handlingar. Från OVK, energideklaration och radon skapas
+          upphandlingen. Hisservice, reparation enligt felrapport och ny hiss
+          skapas i hissmappen, med anbudsformulär enligt ABT-06. Underlaget flyttas till
           upphandlingsmodulen, och den signerade beställningen ligger kvar i
           samma mapp.
         </p>

@@ -24,7 +24,7 @@ export type ForeningsUndermappNod = {
   isLeaf: boolean;
 };
 
-/** Fem huvudmappar — dokument laddas upp i undermapparna (eller i bladmappar). */
+/** Sex huvudmappar — dokument laddas upp i undermapparna (eller i bladmappar). */
 export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
   {
     id: "styrelse-stadgar",
@@ -87,7 +87,7 @@ export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
   {
     id: "besiktningar",
     titel: "2. Besiktningar",
-    beskrivning: "Hissbesiktning, systematiskt brandskyddsarbete (SBA) och tillhörande protokoll.",
+    beskrivning: "Systematiskt brandskyddsarbete (SBA) med egenkontroller och brandkonsult.",
     undermappar: [
       {
         id: "sba",
@@ -111,38 +111,44 @@ export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
           },
         ],
       },
+    ],
+  },
+  {
+    id: "hiss",
+    titel: "3. Hiss",
+    beskrivning:
+      "Hissbesiktning, service, reparationer och upphandling. Hissar är ofta en av föreningens största kostnader.",
+    undermappar: [
       {
-        id: "hiss",
-        titel: "Hiss",
-        beskrivning: "Hissbesiktning, service och reparationer.",
+        id: "besiktning",
+        titel: "Hissbesiktning",
+        beskrivning: "Besiktningsprotokoll för hissarna.",
+        vägledning: "Protokoll från återkommande besiktning, normalt varje år.",
+      },
+      {
+        id: "service-rapport",
+        titel: "Service",
+        beskrivning: "Serviceavtal och servicerapporter.",
+        vägledning: "Gällande serviceavtal och rapporter från servicebesök och löpande underhåll.",
+      },
+      {
+        id: "reparationer",
+        titel: "Reparationer",
+        beskrivning: "Reparationer, offerter och materialfakturor.",
+        vägledning: "Offerter, arbetsorder, materialfakturor och protokoll efter reparationer.",
+      },
+      {
+        id: "bilder",
+        titel: "Bilder",
+        beskrivning: "Bilder på id-bricka och hissmaskinrum.",
         vägledning:
-          "Om föreningen har hiss — välj rätt undermapp för protokoll, servicerapporter eller reparationsunderlag. Upphandling av service, reparation enligt felrapport och ny hiss skapas här. Bilder på id-bricka och hissmaskinrum, felrapport och materialfakturor sparas i mappen. Anbudsformuläret följer ABT-06.",
-        barn: [
-          {
-            id: "besiktning",
-            titel: "Hiss besikning",
-            beskrivning: "Besiktningsprotokoll för hiss.",
-            vägledning: "Årliga eller periodiska besiktningsprotokoll.",
-          },
-          {
-            id: "service-rapport",
-            titel: "Service rapport",
-            beskrivning: "Servicerapporter från hissunderhåll.",
-            vägledning: "Rapporter från servicebesök och löpande underhåll.",
-          },
-          {
-            id: "reparationer",
-            titel: "Reparationer",
-            beskrivning: "Dokumentation av hissreparationer.",
-            vägledning: "Offerter, arbetsorder och protokoll efter reparationer.",
-          },
-        ],
+          "Bilderna behövs när service eller ny hiss upphandlas. Ladda upp dem under Upphandla hiss så märks de rätt.",
       },
     ],
   },
   {
     id: "service",
-    titel: "3. Service",
+    titel: "4. Service",
     beskrivning: "Service och underhåll av undercentral.",
     undermappar: [
       {
@@ -172,7 +178,7 @@ export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
   },
   {
     id: "ventilation",
-    titel: "4. Ventilation",
+    titel: "5. Ventilation",
     beskrivning:
       "OVK, sotning och övriga ventilations- och skorstensrelaterade handlingar.",
     undermappar: [
@@ -209,7 +215,7 @@ export const foreningsHuvudmappar: ForeningsHuvudmapp[] = [
   },
   {
     id: "tioarskontroller",
-    titel: "5. Tioårsbesiktningar",
+    titel: "6. Tioårsbesiktningar",
     beskrivning:
       "Energideklaration och radonmätning — åtgärder som normalt utförs vart tionde år.",
     undermappar: [

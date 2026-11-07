@@ -25,6 +25,12 @@ import {
   laggTillBankIdSignatur,
   type BankIdSignatur,
 } from "@/lib/bankid-signering";
+import type { DeladFil } from "@/lib/forening-fil-lagring";
+import {
+  beskrivBesiktningResultat,
+  normaliseraSenasteBesiktning,
+  type SenasteBesiktningUppgifter,
+} from "@/lib/besiktning-intervall";
 import {
   formateraStyrelseKontaktBlock,
   hamtaAvtalssignerare,
@@ -90,12 +96,20 @@ export const STANDARD_AKUTRUTIN = [
   "5. Om en komponent är i slutet av sin tekniska livslängd ska felrapporten innehålla ett förslag på åtgärd.",
 ].join("\n");
 
+/** Hissens mappar i Styrning och Dokument. */
+export const HISS_HUVUDMAPP = "hiss";
+export const HISS_MAPP_BILDER = "bilder";
+export const HISS_MAPP_REPARATIONER = "reparationer";
+
 export type HissBild = {
   id: string;
   slag: HissBildSlag;
   hissNamn: string;
   filnamn: string;
+  /** Äldre bilder sparades direkt i webbläsaren. */
   dataUrl: string;
+  /** Bilden ligger i mappen Hiss → Bilder. */
+  fil?: DeladFil;
 };
 
 export type Materialfaktura = {
@@ -104,6 +118,8 @@ export type Materialfaktura = {
   beskrivning: string;
   beloppKr: string;
   filnamn: string;
+  /** Kopian ligger i mappen Hiss → Reparationer. */
+  fil?: DeladFil;
 };
 
 export type FelrapportRad = {
@@ -154,6 +170,7 @@ export type HissUpphandlingLager = {
   felrapportText: string;
   akutrutin: string;
   onskatServiceintervall: string;
+  senasteBesiktning?: SenasteBesiktningUppgifter;
   poster: Record<HissUpphandlingsSlag, HissUpphandlingPost>;
 };
 
@@ -179,6 +196,14 @@ function tomLager(): HissUpphandlingLager {
       "ny-hiss": tomPost(),
     },
   };
+}
+
+function normaliseraDeladFil(value: unknown): DeladFil | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const fil = value as Partial<DeladFil>;
+  return typeof fil.filId === "string" && typeof fil.modul === "string"
+    ? (fil as DeladFil)
+    : undefined;
 }
 
 function arBild(value: unknown): value is HissBild {
@@ -269,6 +294,7 @@ export function lasHissUpphandling(): HissUpphandlingLager {
             ...bild,
             hissNamn: typeof bild.hissNamn === "string" ? bild.hissNamn : "",
             dataUrl: typeof bild.dataUrl === "string" ? bild.dataUrl : "",
+            fil: normaliseraDeladFil(bild.fil),
           }))
         : [],
       materialfakturor: Array.isArray(parsed.materialfakturor)
@@ -284,6 +310,7 @@ export function lasHissUpphandling(): HissUpphandlingLager {
                 beskrivning: typeof faktura.beskrivning === "string" ? faktura.beskrivning : "",
                 beloppKr: typeof faktura.beloppKr === "string" ? faktura.beloppKr : "",
                 filnamn: typeof faktura.filnamn === "string" ? faktura.filnamn : "",
+                fil: normaliseraDeladFil(faktura.fil),
               },
             ];
           })
@@ -298,6 +325,7 @@ export function lasHissUpphandling(): HissUpphandlingLager {
           : STANDARD_AKUTRUTIN,
       onskatServiceintervall:
         typeof parsed.onskatServiceintervall === "string" ? parsed.onskatServiceintervall : "",
+      senasteBesiktning: normaliseraSenasteBesiktning(parsed.senasteBesiktning),
       poster: {
         service: normaliseraPost(parsed.poster?.service),
         reparation: normaliseraPost(parsed.poster?.reparation),
@@ -323,9 +351,12 @@ function sparaLager(
   return { ok: true };
 }
 
+/** Handlingar som inte redan räknas som dokument i hissens mappar. */
 export function antalHissHandlingar(): number {
   const lager = lasHissUpphandling();
-  let antal = lager.bilder.length + lager.materialfakturor.length;
+  let antal =
+    lager.bilder.filter((bild) => !bild.fil).length +
+    lager.materialfakturor.filter((rad) => !rad.fil).length;
   if (lager.felrapportText.trim() || lager.felrapportRader.length > 0) antal += 1;
   for (const post of Object.values(lager.poster)) {
     if (post.underlagText) antal += 1;
@@ -442,11 +473,30 @@ export function taBortHissBild(id: string): void {
   sparaLager(lager);
 }
 
+export function hamtaHissSenasteBesiktning(): SenasteBesiktningUppgifter | undefined {
+  return lasHissUpphandling().senasteBesiktning;
+}
+
+export function sparaHissSenasteBesiktning(
+  uppgifter: SenasteBesiktningUppgifter,
+): { ok: true } | { ok: false; fel: string } {
+  const lager = lasHissUpphandling();
+  lager.senasteBesiktning = normaliseraSenasteBesiktning(uppgifter);
+  return sparaLager(lager);
+}
+
+/** Intervall för hissbesiktning i år: från underhållsplanen, annars varje år. */
+export function hissBesiktningIntervallAr(): number {
+  const plan = lasUnderhallsplanState();
+  return plan?.besiktningar.find((rad) => rad.id === "hiss")?.intervallAr || 1;
+}
+
 export function laggTillMaterialfaktura(input: {
   datum: string;
   beskrivning: string;
   beloppKr: string;
   filnamn: string;
+  fil?: DeladFil;
 }): { ok: true } | { ok: false; fel: string } {
   if (!input.beskrivning.trim() && !input.filnamn.trim()) {
     return { ok: false, fel: "Ange vad fakturan avser, eller ett filnamn." };
@@ -460,6 +510,7 @@ export function laggTillMaterialfaktura(input: {
       beskrivning: input.beskrivning.trim(),
       beloppKr: input.beloppKr.trim(),
       filnamn: input.filnamn.trim(),
+      fil: input.fil,
     },
   ];
   return sparaLager(lager);
@@ -553,7 +604,13 @@ function formateraFastighet(): string {
   if (grund.antalVaningar.trim()) rader.push(`Antal våningar: ${grund.antalVaningar.trim()}`);
   const plan = lasUnderhallsplanState();
   const hissBesiktning = plan?.besiktningar.find((rad) => rad.id === "hiss");
-  if (hissBesiktning?.senastUtförtAr) {
+  const senaste = lasHissUpphandling().senasteBesiktning;
+  if (senaste?.datum) {
+    const resultat = beskrivBesiktningResultat("besiktning", senaste);
+    rader.push(
+      `Senaste hissbesiktning: ${senaste.datum}${senaste.utforsAv ? ` (${senaste.utforsAv})` : ""}${resultat ? ` — ${resultat}` : ""}`,
+    );
+  } else if (hissBesiktning?.senastUtförtAr) {
     rader.push(`Senaste hissbesiktning enligt underhållsplanen: ${hissBesiktning.senastUtförtAr}`);
   }
   return rader.join("\n");

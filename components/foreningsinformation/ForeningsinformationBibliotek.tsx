@@ -18,6 +18,11 @@ import { SotningProtokollMappar } from "@/components/foreningsinformation/Sotnin
 import { BesiktningUpphandlingPanel } from "@/components/foreningsinformation/BesiktningUpphandlingPanel";
 import { HissUpphandlingPanel } from "@/components/foreningsinformation/HissUpphandlingPanel";
 import {
+  HissBesiktningPanel,
+  HissReparationerPanel,
+  HissServicePanel,
+} from "@/components/foreningsinformation/HissMappPaneler";
+import {
   antalHissHandlingar,
   HISS_UPPHANDLING_EVENT,
 } from "@/components/foreningsinformation/hiss-upphandling";
@@ -37,7 +42,9 @@ import {
   type ForeningsUndermapp,
 } from "@/components/foreningsinformation/mappar";
 import {
+  BIBLIOTEK_EVENT,
   bekraftaOmDubblett,
+  bibliotekStorageKey,
   hamtaBibliotekFilUrl,
   lasBibliotekState,
   laddaUppBibliotekFil,
@@ -133,6 +140,7 @@ export function ForeningsinformationBibliotek() {
   const [huvudmappar, setHuvudmappar] = useState(initialState);
   const [hydrated, setHydrated] = useState(false);
   const skipFirstSave = useRef(true);
+  const senastSparat = useRef<string | null>(null);
   const [pågåendeUppladdning, setPågåendeUppladdning] = useState<string | null>(
     null,
   );
@@ -209,8 +217,31 @@ export function ForeningsinformationBibliotek() {
       skipFirstSave.current = false;
       return;
     }
+    senastSparat.current = JSON.stringify(huvudmappar);
     sparaBibliotekState(huvudmappar);
   }, [huvudmappar, hydrated]);
+
+  useEffect(() => {
+    // Hisspanelerna lägger till och tar bort filer direkt i lagringen.
+    function lasOmAndradUtifran() {
+      if (localStorage.getItem(bibliotekStorageKey()) === senastSparat.current) return;
+      setHuvudmappar((current) => {
+        const sparad = slåIhopBibliotekState(lasBibliotekState());
+        for (const [huvudId, huvud] of Object.entries(current)) {
+          if (!sparad[huvudId]) continue;
+          sparad[huvudId].öppen = huvud.öppen;
+          for (const [path, under] of Object.entries(huvud.undermappar)) {
+            if (sparad[huvudId].undermappar[path]) {
+              sparad[huvudId].undermappar[path].öppen = under.öppen;
+            }
+          }
+        }
+        return sparad;
+      });
+    }
+    window.addEventListener(BIBLIOTEK_EVENT, lasOmAndradUtifran);
+    return () => window.removeEventListener(BIBLIOTEK_EVENT, lasOmAndradUtifran);
+  }, []);
 
   const totaltDokument = useMemo(
     () =>
@@ -356,7 +387,7 @@ export function ForeningsinformationBibliotek() {
         besiktningPerMapp.radon
       );
     }
-    if (huvudId === "besiktningar") return medSotning + hissAntal;
+    if (huvudId === "hiss") return medSotning + hissAntal;
     return medSotning;
   }
 
@@ -483,8 +514,16 @@ function HuvudmappRad({
         </span>
       </button>
 
+      {state.öppen && huvud.id === "hiss" ? (
+        <div className="border-t border-border px-3 pt-1 sm:px-5">
+          <HissUpphandlingPanel />
+        </div>
+      ) : null}
+
       {state.öppen && (
-        <ul className="space-y-2 border-t border-border px-3 py-4 sm:px-5">
+        <ul
+          className={`space-y-2 px-3 py-4 sm:px-5 ${huvud.id === "hiss" ? "" : "border-t border-border"}`}
+        >
           {huvud.undermappar.map((under) => (
             <UndermappRad
               key={under.id}
@@ -562,11 +601,9 @@ function UndermappRad({
   const ärDynamisk = Boolean(under.dynamiskaUndermappar);
   const ärNyckelKvittenser = Boolean(under.nyckelKvittenser);
   const besiktning = besiktningTjanstForMapp(under.id);
-  const ärHiss = under.id === "hiss";
   const visarDokumentLista =
     !ärNyckelKvittenser && !ärDynamisk && !ärGrupp;
   const [besiktningHandlingar, setBesiktningHandlingar] = useState(0);
-  const [hissHandlingarAntal, setHissHandlingarAntal] = useState(0);
   const [kundavtal, setKundavtal] = useState<SparatKundavtal | null>(null);
 
   useEffect(() => {
@@ -579,16 +616,6 @@ function UndermappRad({
     window.addEventListener(BESIKTNING_UPPHANDLING_EVENT, las);
     return () => window.removeEventListener(BESIKTNING_UPPHANDLING_EVENT, las);
   }, [besiktning]);
-
-  useEffect(() => {
-    if (!ärHiss) return;
-    function las() {
-      setHissHandlingarAntal(antalHissHandlingar());
-    }
-    las();
-    window.addEventListener(HISS_UPPHANDLING_EVENT, las);
-    return () => window.removeEventListener(HISS_UPPHANDLING_EVENT, las);
-  }, [ärHiss]);
 
   useEffect(() => {
     if (under.id !== "avtal") return;
@@ -613,8 +640,7 @@ function UndermappRad({
           )
         : state.dokument.length +
           (under.id === "avtal" && kundavtal ? 1 : 0) +
-          (besiktning ? besiktningHandlingar : 0) +
-          (ärHiss ? hissHandlingarAntal : 0);
+          (besiktning ? besiktningHandlingar : 0);
 
   const paddingVänster = nested > 0 ? { paddingLeft: `${nested * 0.75 + 0.5}rem` } : undefined;
 
@@ -683,7 +709,10 @@ function UndermappRad({
             />
           )}
 
-          {ärHiss && <HissUpphandlingPanel />}
+
+          {huvudId === "hiss" && under.id === "besiktning" ? <HissBesiktningPanel /> : null}
+          {huvudId === "hiss" && under.id === "service-rapport" ? <HissServicePanel /> : null}
+          {huvudId === "hiss" && under.id === "reparationer" ? <HissReparationerPanel /> : null}
 
           {ärNyckelKvittenser ? (
             <NyckelKvittenserPanel />

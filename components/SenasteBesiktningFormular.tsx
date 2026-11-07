@@ -160,7 +160,10 @@ export function SenasteBesiktningFormular({
               <span className="text-muted">Räknas ut från datumet</span>
             )}
             {intervallAr ? (
-              <span className="text-xs text-muted"> · vart {intervallAr}:e år</span>
+              <span className="text-xs text-muted">
+                {" "}
+                · {intervallAr === 1 ? "varje år" : `vart ${intervallAr}:e år`}
+              </span>
             ) : null}
           </p>
         </div>

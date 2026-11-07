@@ -91,12 +91,45 @@ export function taBortBibliotekFil(dok: BibliotekUppladdatDokument): void {
   safeSetLocalStorage(bibliotekFilerKey(), JSON.stringify(all));
 }
 
+const GAMMAL_HISS_PREFIX = "hiss/";
+
+/** Hissen låg tidigare under Besiktningar → Hiss; nu är den en egen huvudmapp. */
+function flyttaHissTillEgenHuvudmapp(state: BibliotekState): BibliotekState {
+  const besiktningar = state.besiktningar?.undermappar;
+  if (!besiktningar) return state;
+  const gamla = Object.keys(besiktningar).filter(
+    (path) => path === "hiss" || path.startsWith(GAMMAL_HISS_PREFIX),
+  );
+  if (gamla.length === 0) return state;
+
+  const hiss = state.hiss ?? { öppen: false, undermappar: {} };
+  const hissUnder = { ...hiss.undermappar };
+  const kvar = { ...besiktningar };
+  for (const path of gamla) {
+    const fran = kvar[path];
+    delete kvar[path];
+    if (path === "hiss") continue;
+    const nyPath = path.slice(GAMMAL_HISS_PREFIX.length);
+    const till = hissUnder[nyPath] ?? { öppen: false, dokument: [] };
+    const ids = new Set(till.dokument.map((d) => d.id));
+    hissUnder[nyPath] = {
+      öppen: till.öppen || fran.öppen,
+      dokument: [...till.dokument, ...(fran.dokument ?? []).filter((d) => !ids.has(d.id))],
+    };
+  }
+  return {
+    ...state,
+    besiktningar: { ...state.besiktningar, undermappar: kvar },
+    hiss: { ...hiss, undermappar: hissUnder },
+  };
+}
+
 export function lasBibliotekState(): BibliotekState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(bibliotekStorageKey());
     if (!raw) return null;
-    return JSON.parse(raw) as BibliotekState;
+    return flyttaHissTillEgenHuvudmapp(JSON.parse(raw) as BibliotekState);
   } catch {
     return null;
   }
@@ -145,9 +178,15 @@ export async function laddaUppTillMapp(
   underPath: string,
   fil: File,
   onProgress?: (procent: number) => void,
-): Promise<{ ok: true } | { ok: false; fel: string }> {
+): Promise<{ ok: true; dokument: BibliotekUppladdatDokument } | { ok: false; fel: string }> {
   const sparat = await laddaUppBibliotekFil(fil, onProgress);
   if (!sparat.ok) return sparat;
+  const dokument: BibliotekUppladdatDokument = {
+    id: `forening-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    filnamn: fil.name,
+    uppladdad: new Date().toLocaleDateString("sv-SE"),
+    fil: sparat.fil,
+  };
   const state = lasBibliotekState() ?? {};
   const huvud = state[huvudId] ?? { öppen: false, undermappar: {} };
   const under = huvud.undermappar[underPath] ?? { öppen: false, dokument: [] };
@@ -157,19 +196,11 @@ export async function laddaUppTillMapp(
       ...huvud.undermappar,
       [underPath]: {
         ...under,
-        dokument: [
-          ...under.dokument,
-          {
-            id: `forening-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            filnamn: fil.name,
-            uppladdad: new Date().toLocaleDateString("sv-SE"),
-            fil: sparat.fil,
-          },
-        ],
+        dokument: [...under.dokument, dokument],
       },
     },
   };
   return sparaBibliotekState(state)
-    ? { ok: true }
+    ? { ok: true, dokument }
     : { ok: false, fel: "Kunde inte spara i Styrning och Dokument." };
 }

@@ -254,6 +254,27 @@ export function lankaFilTillPlatser(platser: DokumentPlats[], fil: DeladFil): st
 
 // ── Borttagning ──────────────────────────────────────────────────────────────
 
+/** Tar bort filen ur en mapp i Styrning och Dokument; filen raderas om den inte syns någon annanstans. */
+export function taBortFilUrStyrningsMapp(
+  huvudId: string,
+  underPath: string,
+  fil: DeladFil,
+): void {
+  const state = lasBibliotekState();
+  const under = state?.[huvudId]?.undermappar?.[underPath];
+  if (!state || !under) {
+    slappDeladFil(fil, "");
+    return;
+  }
+  const borttagna = under.dokument.filter((d) => d.fil?.filId === fil.filId);
+  state[huvudId].undermappar[underPath] = {
+    ...under,
+    dokument: under.dokument.filter((d) => d.fil?.filId !== fil.filId),
+  };
+  sparaBibliotekState(state);
+  slappDeladFil(fil, borttagna[0]?.id ?? "");
+}
+
 /** Räknar alla ställen där filen syns, utom posten med id `ignoreraPostId`. */
 function antalReferenser(filId: string, ignoreraPostId: string): number {
   let antal = 0;
