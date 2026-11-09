@@ -21,8 +21,10 @@ const RIKT_TAK_ATGARD: Record<string, RiktprisSpec> = {
 
 const RIKT_FONSTER_ATGARD: Record<string, RiktprisSpec> = {
   "fonster-malning": { enhet: "styck", prisKr: 4_500 },
-  "fonster-delrenovering": { enhet: "styck", prisKr: 16_000 },
-  "fonster-byte": { enhet: "styck", prisKr: 28_000 },
+  "fonster-renovering": { enhet: "styck", prisKr: 18_000 },
+  "fonster-delrenovering": { enhet: "styck", prisKr: 9_000 },
+  "fonster-byte": { enhet: "styck", prisKr: 32_000 },
+  "fonster-tatning": { enhet: "styck", prisKr: 1_200 },
   "fonster-kontroll": { enhet: "total", prisKr: 12_000 },
 };
 

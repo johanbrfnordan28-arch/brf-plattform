@@ -76,16 +76,26 @@ function posterForHelaKomponenten(
 /** T.ex. "Underhållsåtgärd: Takmålning" — tom för vanligt utbyte. */
 function arbetsTypText(post: UtfördRenovering): string {
   const typ = arbetsTypForRenovering(post);
-  if (typ === "utbyte") return "";
+  const nyckel =
+    hamtaUnderhallTillfallenPlanNyckel(
+      post.komponent,
+      post.underkomponentId || (arTakKomponent(post.komponent) ? "takyta" : ""),
+    ) ?? "typ-ovrigt";
+  const delar: string[] = [];
   if (typ === "underhall" && post.underhallAtgardId) {
-    const nyckel =
-      hamtaUnderhallTillfallenPlanNyckel(
-        post.komponent,
-        post.underkomponentId || (arTakKomponent(post.komponent) ? "takyta" : ""),
-      ) ?? "typ-ovrigt";
-    return `${arbetsTypEtikett(typ)}: ${underhallAtgardEtikett(nyckel, post.underhallAtgardId)}`;
+    delar.push(
+      `${arbetsTypEtikett(typ)}: ${underhallAtgardEtikett(nyckel, post.underhallAtgardId)}`,
+    );
+  } else if (typ !== "utbyte") {
+    delar.push(arbetsTypEtikett(typ));
   }
-  return arbetsTypEtikett(typ);
+  if (post.inklTatningslister) delar.push("inkl. tätningslister");
+  if (post.rekommenderadNastaAtgardId) {
+    delar.push(
+      `nästa: ${underhallAtgardEtikett(nyckel, post.rekommenderadNastaAtgardId).toLowerCase()}`,
+    );
+  }
+  return delar.join(" · ");
 }
 
 function posterForDel(
@@ -623,6 +633,11 @@ export function RenoveringshistorikKomponentTräd({
                             utkastRenovering={utkastPost}
                             planKostnader={planKostnader}
                             takData={takData}
+                            fonsterPoster={
+                              uk.id === "fonster"
+                                ? komponentDetaljer?.[namn]?.fonsterDorrRegister?.fonster
+                                : undefined
+                            }
                             redigerar={Boolean(redigerarId)}
                             onSubmit={sparaDelRenovering}
                             onAvbryt={avbrytForm}

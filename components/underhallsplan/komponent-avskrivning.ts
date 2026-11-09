@@ -344,6 +344,7 @@ const DIREKTKOSTNAD_ATGARD_ID = new Set([
   "plat-underhall",
   "tak-kontroll",
   "fonster-malning",
+  "fonster-tatning",
   "fonster-kontroll",
 ]);
 

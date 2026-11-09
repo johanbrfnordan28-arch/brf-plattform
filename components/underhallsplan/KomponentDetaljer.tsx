@@ -919,6 +919,7 @@ export function KomponentDetaljer({
                                     : skapaForslagFonsterTillfallen(
                                         utförtArNum,
                                         planStartAr,
+                                        fonsterDorrPoster,
                                       ),
                                   tillfallenPlanNyckel,
                                 ),
@@ -928,7 +929,7 @@ export function KomponentDetaljer({
                       forslagEtikett={
                         tillfallenPlanNyckel === "tak-takyta"
                           ? "Föreslå rengöring, målning (plåt) + omläggning"
-                          : "Föreslå målning + fönsterbyte"
+                          : "Föreslå målning, renovering + fönsterbyte (efter läge)"
                       }
                       atgardFilter={
                         tillfallenPlanNyckel === "tak-takyta"

@@ -38,7 +38,8 @@ export const RIKT_VENTILATION_EXTRA_TYP_KR: Record<
 };
 
 export const RIKT_FONSTER_KR: Record<string, number> = {
-  tra_renovering: 28_000,
+  tra_utbyte: 32_000,
+  tra_renovering: 18_000,
   tra_malning: 4_500,
   "alu-kldd": 16_000,
   pvc: 12_000,

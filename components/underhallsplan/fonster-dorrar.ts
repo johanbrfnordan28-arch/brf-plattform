@@ -7,7 +7,7 @@ import {
 
 export type FonsterMaterialId = "tra" | "alu-kldd" | "pvc" | "aluminium";
 
-export type TraUnderhallId = "malning" | "renovering";
+export type TraUnderhallId = "malning" | "renovering" | "utbyte";
 
 /** Var på fastigheten fönstren sitter — för uppdelning per adress och väderstreck. */
 export type FonsterLageId =
@@ -59,6 +59,10 @@ export type FonsterDorrPost = {
   material?: FonsterMaterialId;
   /** Gäller träfönster — renovering inkluderar målning */
   traUnderhall?: TraUnderhallId;
+  /** Fönster — hur utsatt läget är; tom = föreslås utifrån läge. */
+  exponering?: import("@/components/underhallsplan/fonster-underhall").FonsterExponeringId | "";
+  /** Fönster — byte av tätningslister ingår i åtgärden. */
+  bytTatningslister?: boolean;
   /** Dörrar */
   dorrMaterial?: DorrMaterialId;
   dorrTraUnderhall?: DorrTraUnderhallId;
@@ -80,7 +84,7 @@ export const fonsterMaterial: {
     id: "tra",
     etikett: "Trä (ofta handmålat på äldre hus)",
     beskrivning:
-      "Äldre fönster i trä. Underhåll: målning eller full renovering (byte av skadat trä, kittning, nya tätninglister — målning ingår).",
+      "Äldre fönster i trä. Välj planerad åtgärd: målning, renovering eller utbyte.",
   },
   {
     id: "alu-kldd",
@@ -110,13 +114,20 @@ export const traUnderhallAlternativ: {
   {
     id: "malning",
     etikett: "Fönstermålning",
-    beskrivning: "Enbart ommålning — inget byte av trä eller kitt.",
+    beskrivning:
+      "Tvätt, skrapning av löst färg och ommålning — görs oftare och kostar mindre.",
   },
   {
     id: "renovering",
     etikett: "Fönsterrenovering",
     beskrivning:
-      "Byte av skadat trä, kittning om, nya tätninglister — målning ingår i renoveringen.",
+      "Noggrannare rengöring, ofta ner till rent trä, omkittning av hela fönstret och lagning av skadat trä — målning ingår.",
+  },
+  {
+    id: "utbyte",
+    etikett: "Fönsterbyte",
+    beskrivning:
+      "Nya fönster — längst livslängd och längst tid till nästa större åtgärd.",
   },
 ];
 
@@ -487,6 +498,9 @@ export function formateraFonsterPosterDetalj(poster: FonsterDorrPost[]): string 
       if (mat === "tra" && p.traUnderhall) {
         rad += ` — ${traUnderhallEtikett(p.traUnderhall)}`;
       }
+      if (p.bytTatningslister) rad += " inkl. tätningslister";
+      if (p.exponering === "hart-utsatt") rad += " (hårt utsatt)";
+      if (p.exponering === "skyddat") rad += " (skyddat läge)";
       return rad;
     });
   return rader.join("; ");

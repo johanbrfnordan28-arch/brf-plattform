@@ -36,6 +36,7 @@ export function hamtaRiktFonsterEnhetsprisKr(
   traUnderhall?: TraUnderhallId,
 ): number {
   if (material === "tra") {
+    if (traUnderhall === "utbyte") return RIKT_FONSTER_KR.tra_utbyte;
     return traUnderhall === "renovering"
       ? RIKT_FONSTER_KR.tra_renovering
       : RIKT_FONSTER_KR.tra_malning;

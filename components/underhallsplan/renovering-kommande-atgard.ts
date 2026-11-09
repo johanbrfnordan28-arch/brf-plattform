@@ -27,9 +27,9 @@ const forvaldAvvikande: Partial<
 > = {
   fonster: {
     atgardId: "fonster-malning",
-    intervallAr: 12,
-    kostnadAndel: 0.18,
-    offsetAr: 12,
+    intervallAr: 10,
+    kostnadAndel: 0.15,
+    offsetAr: 10,
   },
   tak: {
     atgardId: "takmalning",

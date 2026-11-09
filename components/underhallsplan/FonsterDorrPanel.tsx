@@ -1,8 +1,16 @@
 "use client";
 
 import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
-import { UppskattadPrisTabell } from "@/components/underhallsplan/UppskattadPrisTabell";
-import { beraknaFonsterDorrListaPris } from "@/components/underhallsplan/fonster-dorr-pris";
+import {
+  effektivExponering,
+  exponeringEtikett,
+  fonsterExponeringAlternativ,
+  fonsterIntervallAr,
+  fonsterNastaRekommendation,
+  fonsterPlaneradAtgard,
+  foreslagenExponeringForLage,
+  type FonsterExponeringId,
+} from "@/components/underhallsplan/fonster-underhall";
 import {
   dorrLasUnderhallAlternativ,
   dorrMaterial,
@@ -77,8 +85,10 @@ function FonsterPlatsFalt({
       ? FONSTER_ADRESS_ANNAN
       : "";
 
+  const foreslagen = foreslagenExponeringForLage(post.lage);
+
   return (
-    <div className="grid gap-3 sm:col-span-2 lg:col-span-3 sm:grid-cols-2">
+    <div className="grid gap-3 sm:col-span-2 lg:col-span-3 sm:grid-cols-3">
       <label className="block text-sm">
         <span className="text-xs font-medium text-muted">Adress</span>
         {adresser.length > 0 ? (
@@ -144,6 +154,63 @@ function FonsterPlatsFalt({
             : "Väderstreck, gård eller gata — samma som fasadytor i grunduppgifter."}
         </span>
       </label>
+
+      <label className="block text-sm">
+        <span className="text-xs font-medium text-muted">Utsatthet</span>
+        <select
+          value={post.exponering ?? ""}
+          onChange={(e) =>
+            onChange({ exponering: e.target.value as FonsterExponeringId | "" })
+          }
+          className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+        >
+          <option value="">
+            Efter läge ({exponeringEtikett(foreslagen).toLowerCase()})
+          </option>
+          {fonsterExponeringAlternativ.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.etikett}
+            </option>
+          ))}
+        </select>
+        <span className="mt-1 block text-xs text-muted">
+          {
+            fonsterExponeringAlternativ.find(
+              (e) => e.id === (post.exponering || foreslagen),
+            )?.beskrivning
+          }
+        </span>
+      </label>
+    </div>
+  );
+}
+
+function FonsterAtgardInfo({ post }: { post: FonsterDorrPost }) {
+  const atgard = fonsterPlaneradAtgard(post);
+  const exponering = effektivExponering(post);
+  const intervall = fonsterIntervallAr(atgard, exponering);
+  const etikett =
+    traUnderhallAlternativ.find((a) => a.id === atgard)?.etikett ?? atgard;
+  return (
+    <div className="mt-3 rounded-lg border border-border bg-[#f7fbf8] px-3 py-2 text-xs leading-relaxed text-foreground">
+      <p>
+        <strong>{etikett}</strong>
+        {post.bytTatningslister && atgard !== "utbyte" ? " inkl. byte av tätningslister" : ""}{" "}
+        — rekommenderat vart <strong>{intervall}:e år</strong> i{" "}
+        {exponeringEtikett(exponering).toLowerCase()}.
+      </p>
+      {post.bytTatningslister && atgard === "utbyte" && (
+        <p className="mt-1">
+          Byte av tätningslister vart{" "}
+          <strong>{fonsterIntervallAr("tatningslister", exponering)}:e år</strong>{" "}
+          mellan fönsterbytena.
+        </p>
+      )}
+      <p className="mt-1 text-muted">{fonsterNastaRekommendation(atgard)}</p>
+      <p className="mt-1 text-muted">
+        Kostnad och år läggs in när åtgärden är bestämd — i steg 3 (utfört
+        arbete) och steg 4 (planerat underhåll).
+      </p>
     </div>
   );
 }
@@ -152,19 +219,16 @@ function ärDorr(typ: ModulmattTyp): boolean {
   return typ === "dorr";
 }
 
-function FonsterDorrPrisOchSummering({
+function FonsterDorrSummering({
   poster,
   modulmattTyp,
   titel,
-  onEnhetsprisChange,
 }: {
   poster: FonsterDorrPost[];
   modulmattTyp: ModulmattTyp;
   titel: string;
-  onEnhetsprisChange: (id: string, varde: string) => void;
 }) {
   const dorr = ärDorr(modulmattTyp);
-  const { rader: prisRader, totaltKr } = beraknaFonsterDorrListaPris(poster, dorr);
   const summering =
     modulmattTyp === "balkongdorr"
       ? summeraBalkongdorrPoster(poster)
@@ -183,37 +247,16 @@ function FonsterDorrPrisOchSummering({
   );
 
   return (
-    <>
-      {prisRader.length > 0 && (
-        <UppskattadPrisTabell
-          titel="Uppskattad kostnad"
-          beskrivning="Riktvärden per material och underhållstyp — justera enhetspris per rad eller lämna tomt."
-          rader={prisRader.map((rad) => ({
-            id: rad.postId,
-            etikett: rad.etikett,
-            mangdText:
-              rad.antal > 0 ? `${rad.antal.toLocaleString("sv-SE")} st` : "—",
-            enhet: "kr/st",
-            enhetspris: String(rad.enhetsprisKr),
-            summaKr: rad.summaKr,
-            anvanderRiktpris: rad.anvanderRiktpris,
-          }))}
-          totaltKr={totaltKr}
-          totaltEtikett={totaltEtikett}
-          onEnhetsprisChange={onEnhetsprisChange}
-        />
-      )}
-      <ListaSummeringPanel
-        titel={`Summering ${titel.toLowerCase()}`}
-        rader={summerRader}
-        totaletikett={totaltEtikett}
-        totaltVarde={
-          totaltSt > 0
-            ? `${formatSummeringTal(totaltSt, 0)} st`
-            : `${poster.length} rader`
-        }
-      />
-    </>
+    <ListaSummeringPanel
+      titel={`Summering ${titel.toLowerCase()}`}
+      rader={summerRader}
+      totaletikett={totaltEtikett}
+      totaltVarde={
+        totaltSt > 0
+          ? `${formatSummeringTal(totaltSt, 0)} st`
+          : `${poster.length} rader`
+      }
+    />
   );
 }
 
@@ -288,11 +331,14 @@ export function FonsterDorrPanel({
         {!dorr && (
           <>
             {" "}
-            Ange <strong className="text-foreground">adress</strong> och{" "}
+            Ange <strong className="text-foreground">adress</strong>,{" "}
             <strong className="text-foreground">läge</strong> (norr, söder, gård m.m.)
-            för att dela upp fönstren.
+            och <strong className="text-foreground">utsatthet</strong> — hårt utsatta
+            fönster behöver tätare intervall, skyddade tål längre.
           </>
-        )}
+        )}{" "}
+        Priser anges inte här — kostnaden läggs in i steg 3 och 4 när åtgärden
+        är bestämd.
       </p>
 
       {poster.length === 0 ? (
@@ -362,22 +408,6 @@ export function FonsterDorrPanel({
                   </label>
                   <label className="block text-sm sm:col-span-1">
                     <span className="text-xs font-medium text-muted">
-                      Enhetspris (kr/st)
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={100}
-                      value={post.enhetsprisKr ?? ""}
-                      onChange={(e) =>
-                        uppdateraPost(post.id, { enhetsprisKr: e.target.value })
-                      }
-                      placeholder="Riktpris"
-                      className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-                    />
-                  </label>
-                  <label className="block text-sm sm:col-span-1">
-                    <span className="text-xs font-medium text-muted">
                       {dorr ? "Dörrtyp" : "Material"}
                     </span>
                     <select
@@ -430,7 +460,7 @@ export function FonsterDorrPanel({
                 {!dorr && post.material === "tra" && (
                   <fieldset className="mt-3 rounded-lg border border-[#e2f0e6] bg-[#eef6f0]/50 p-3">
                     <legend className="px-1 text-xs font-semibold text-primary-dark">
-                      Underhåll trä — välj typ
+                      Planerad åtgärd — välj typ
                     </legend>
                     <div className="mt-2 space-y-2">
                       {traUnderhallAlternativ.map((alt) => (
@@ -462,6 +492,28 @@ export function FonsterDorrPanel({
                     </div>
                   </fieldset>
                 )}
+
+                {!dorr &&
+                !((post.material ?? "tra") === "tra" && post.traUnderhall === "utbyte") ? (
+                  <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={post.bytTatningslister ?? false}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, { bytTatningslister: e.target.checked })
+                      }
+                      className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+                    />
+                    <span>
+                      <span className="font-medium">Inklusive byte av tätningslister</span>
+                      <span className="block text-xs text-muted">
+                        Nya tätningslister i båge och karm görs i samma omgång.
+                      </span>
+                    </span>
+                  </label>
+                ) : null}
+
+                {!dorr && <FonsterAtgardInfo post={post} />}
 
                 {dorr && dorrMat === "malad-tra" && (
                   <fieldset className="mt-3 rounded-lg border border-[#e2f0e6] bg-[#eef6f0]/50 p-3">
@@ -628,13 +680,10 @@ export function FonsterDorrPanel({
       </button>
 
       {poster.length > 0 && (
-        <FonsterDorrPrisOchSummering
+        <FonsterDorrSummering
           poster={poster}
           modulmattTyp={modulmattTyp}
           titel={titel}
-          onEnhetsprisChange={(id, varde) =>
-            uppdateraPost(id, { enhetsprisKr: varde })
-          }
         />
       )}
 

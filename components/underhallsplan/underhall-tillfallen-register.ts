@@ -14,6 +14,12 @@ import {
 import type { FasadAtgardPrisRegister } from "@/components/underhallsplan/fasad-atgard-pris";
 import type { KomponentDetaljData, KomponentMall } from "@/components/underhallsplan/komponentregister";
 import { underhallAtgardEtikett } from "@/components/underhallsplan/underhall-atgard-katalog";
+import type { FonsterDorrPost } from "@/components/underhallsplan/fonster-dorrar";
+import {
+  FONSTER_BAS_INTERVALL_AR,
+  fonsterHarTatningslister,
+  fonsterViktadExponeringFaktor,
+} from "@/components/underhallsplan/fonster-underhall";
 
 export type UnderhallTillfallenRegister = Record<string, UnderhallTillfallenData>;
 
@@ -183,30 +189,58 @@ export function synkaTillfallenFranHistorikPaRegister(
   );
 }
 
+/**
+ * Målning, renovering och byte med intervall efter fönstrens läge
+ * (hårt utsatt = tätare, skyddat = längre) enligt steg 2.
+ */
 export function skapaForslagFonsterTillfallen(
   utförtAr: number,
   planStartAr: number,
+  poster: FonsterDorrPost[] = [],
 ): UnderhallTillfallenData {
-  const byteAr = utförtAr + 40;
-  const malningAr = Math.max(planStartAr, utförtAr + 12);
-  return {
-    tillfallen: [
+  const faktor = fonsterViktadExponeringFaktor(poster);
+  const intervall = (bas: number) => Math.max(1, Math.round(bas * faktor));
+  const malningIntervall = intervall(FONSTER_BAS_INTERVALL_AR.malning);
+  const renoveringIntervall = intervall(FONSTER_BAS_INTERVALL_AR.renovering);
+  const byteIntervall = intervall(FONSTER_BAS_INTERVALL_AR.utbyte);
+  const harTra =
+    poster.length === 0 || poster.some((p) => (p.material ?? "tra") === "tra");
+  const medTatningslister = fonsterHarTatningslister(poster);
+  const lageText =
+    faktor < 0.95 ? " (hårt utsatt läge)" : faktor > 1.05 ? " (skyddat läge)" : "";
+
+  const tillfallen: UnderhallTillfallenData["tillfallen"] = [];
+  if (harTra) {
+    tillfallen.push(
       {
         id: "forslag-fonster-malning",
-        titel: "Målning fönster",
-        nastaAr: String(malningAr),
-        intervallAr: "12",
+        titel: `Fönstermålning${lageText}`,
+        nastaAr: String(Math.max(planStartAr, utförtAr + malningIntervall)),
+        intervallAr: String(malningIntervall),
         atgarder: ["fonster-malning"],
         inkluderadeUnderkomponenter: [],
       },
       {
-        id: "forslag-fonster-byte",
-        titel: "Fönsterbyte",
-        nastaAr: String(byteAr),
-        intervallAr: "40",
-        atgarder: ["fonster-byte"],
+        id: "forslag-fonster-renovering",
+        titel: medTatningslister
+          ? `Fönsterrenovering inkl. tätningslister${lageText}`
+          : `Fönsterrenovering${lageText}`,
+        nastaAr: String(Math.max(planStartAr, utförtAr + renoveringIntervall)),
+        intervallAr: String(renoveringIntervall),
+        atgarder: medTatningslister
+          ? ["fonster-renovering", "fonster-tatning"]
+          : ["fonster-renovering"],
         inkluderadeUnderkomponenter: [],
       },
-    ],
-  };
+    );
+  }
+  tillfallen.push({
+    id: "forslag-fonster-byte",
+    titel: "Fönsterbyte",
+    nastaAr: String(Math.max(planStartAr, utförtAr + byteIntervall)),
+    intervallAr: String(byteIntervall),
+    atgarder: ["fonster-byte"],
+    inkluderadeUnderkomponenter: [],
+  });
+  return { tillfallen };
 }

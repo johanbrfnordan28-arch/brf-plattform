@@ -9,6 +9,8 @@ export type UnderhallAtgardKatalogPost = {
   beskrivning: string;
   /** Föreslaget intervall när åtgärden registreras som utfört underhåll. */
   standardIntervallAr?: number;
+  /** Kostnad relativt andra åtgärder i samma katalog — används när nästa åtgärd byter typ. */
+  relativKostnad?: number;
 };
 
 export type UnderhallTillfallenPlanNyckel =
@@ -56,32 +58,49 @@ const takTakytaAtgarder: UnderhallAtgardKatalogPost[] = [
 const fonsterAtgarder: UnderhallAtgardKatalogPost[] = [
   {
     id: "fonster-malning",
-    etikett: "Målning fönster",
-    standardIntervallAr: 12,
+    etikett: "Fönstermålning",
+    standardIntervallAr: 10,
+    relativKostnad: 1,
     beskrivning:
-      "Ommålning av karmar och bågar — enklare åtgärd mellan större renoveringar.",
+      "Tvätt, skrapning och ommålning av karmar och bågar — oftare och billigare än renovering.",
+  },
+  {
+    id: "fonster-renovering",
+    etikett: "Fönsterrenovering",
+    standardIntervallAr: 25,
+    relativKostnad: 4,
+    beskrivning:
+      "Noggrannare rengöring, ofta ner till rent trä, omkittning av hela fönstret och lagning av trä — målning ingår.",
   },
   {
     id: "fonster-delrenovering",
-    etikett: "Delrenovering fönster",
+    etikett: "Delrenovering (glas, beslag)",
     standardIntervallAr: 20,
+    relativKostnad: 2,
     beskrivning:
-      "Byte av glas, beslag eller delar — mer omfattande än målning men mindre än fullt byte.",
+      "Byte av glas, beslag eller enstaka delar — mindre än full renovering.",
   },
   {
     id: "fonster-byte",
     etikett: "Fönsterbyte",
-    standardIntervallAr: 40,
+    standardIntervallAr: 45,
+    relativKostnad: 7,
     beskrivning:
-      "Helt byte av fönster — ofta vart 30–50:e år beroende på material och skick.",
+      "Nya fönster — längst livslängd, ofta 40–50 år beroende på material och läge.",
   },
   {
     id: "fonster-tatning",
-    etikett: "Tätning / fogning",
+    etikett: "Byte av tätningslister",
     standardIntervallAr: 10,
-    beskrivning: "Tätning kring karm, lister och glas — löpande underhåll.",
+    relativKostnad: 0.3,
+    beskrivning:
+      "Nya tätningslister i båge och karm — separat eller tillsammans med målning eller renovering.",
   },
 ];
+
+/** Hårt utsatta lägen slits fortare — ange intervall efter läge. */
+export const FONSTER_LAGE_INTERVALL_TIPS =
+  "Intervallet gäller normalt läge. Hårt utsatt läge (sol, slagregn) kräver ungefär 30 % tätare intervall, skyddat läge tål ungefär 30 % längre.";
 
 function typKatalog(
   prefix: string,

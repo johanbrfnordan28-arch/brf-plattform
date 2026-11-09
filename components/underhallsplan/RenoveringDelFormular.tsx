@@ -8,9 +8,12 @@ import type {
 import { TakAnbudFordelningPanel } from "@/components/underhallsplan/TakAnbudFordelningPanel";
 import { foreslaTakFordelning } from "@/components/underhallsplan/tak-anbud-fordelning";
 import {
+  FONSTER_LAGE_INTERVALL_TIPS,
   hamtaUnderhallAtgardKatalog,
   hamtaUnderhallTillfallenPlanNyckel,
 } from "@/components/underhallsplan/underhall-atgard-katalog";
+import type { FonsterDorrPost } from "@/components/underhallsplan/fonster-dorrar";
+import { fonsterViktadExponeringFaktor } from "@/components/underhallsplan/fonster-underhall";
 import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import { PlaneradeNastaArRedigering } from "@/components/underhallsplan/PlaneradeNastaArRedigering";
 import type { PlaneradAtgardPreview } from "@/components/underhallsplan/renovering-planering";
@@ -56,6 +59,8 @@ type RenoveringDelFormularProps = {
   planKostnader?: PlanKostnaderNormaliserade;
   /** Takets uppgifter från steg 2 — för fördelning av anbud på hela taket. */
   takData?: KomponentDetaljData;
+  /** Fönsterrader från steg 2 — läget styr föreslaget intervall. */
+  fonsterPoster?: FonsterDorrPost[];
   redigerar: boolean;
   onSubmit: (event: React.FormEvent) => void;
   onAvbryt: () => void;
@@ -81,6 +86,7 @@ export function RenoveringDelFormular({
   utkastRenovering,
   planKostnader,
   takData,
+  fonsterPoster,
   redigerar,
   onSubmit,
   onAvbryt,
@@ -88,12 +94,23 @@ export function RenoveringDelFormular({
   const helaTaket = arTakKomponent(komponentNamn) && !underkomponentId;
   const visaTakKlumpsumma =
     arTakKomponent(komponentNamn) && !visaStambyteKlumpsumma;
-  const underhallKatalog = hamtaUnderhallAtgardKatalog(
+  const underhallPlanNyckel =
     hamtaUnderhallTillfallenPlanNyckel(
       komponentNamn,
       underkomponentId || (arTakKomponent(komponentNamn) ? "takyta" : ""),
-    ) ?? "typ-ovrigt",
-  );
+    ) ?? "typ-ovrigt";
+  const underhallKatalog = hamtaUnderhallAtgardKatalog(underhallPlanNyckel);
+  const arFonster = underhallPlanNyckel === "fonster";
+  const lageFaktor =
+    arFonster && fonsterPoster?.length
+      ? fonsterViktadExponeringFaktor(fonsterPoster)
+      : 1;
+  const lageText =
+    lageFaktor < 0.95
+      ? "hårt utsatt läge"
+      : lageFaktor > 1.05
+        ? "skyddat läge"
+        : "";
   const visaInkluderade = visaInkluderadePanel(komponentNamn);
   const planeradeKommande = useMemo(() => {
     if (!utkastRenovering) return planerade;
@@ -237,7 +254,12 @@ export function RenoveringDelFormular({
                     underhallAtgardId: e.target.value,
                     titel: c.titel.trim() || atgard?.etikett || "",
                     underhallIntervallAr: atgard?.standardIntervallAr
-                      ? String(atgard.standardIntervallAr)
+                      ? String(
+                          Math.max(
+                            1,
+                            Math.round(atgard.standardIntervallAr * lageFaktor),
+                          ),
+                        )
                       : c.underhallIntervallAr,
                   }));
                 }}
@@ -268,8 +290,70 @@ export function RenoveringDelFormular({
                 }
                 className="mt-1 w-full rounded-lg border border-border px-2.5 py-1.5 text-sm"
               />
+              {arFonster && (
+                <span className="mt-1 block text-[11px] text-muted">
+                  {lageText
+                    ? `Anpassat efter fönstrens läge i steg 2 (${lageText}).`
+                    : FONSTER_LAGE_INTERVALL_TIPS}
+                </span>
+              )}
+            </label>
+            {form.underhallAtgardId === "fonster-malning" && (
+              <p className="rounded-md bg-[#f7fbf8] px-2.5 py-1.5 text-xs text-muted sm:col-span-2">
+                Efter 2–3 målningsomgångar rekommenderas normalt en renovering.
+                Ange målarens rekommendation nedan så planeras rätt åtgärd nästa
+                gång.
+              </p>
+            )}
+            <label className="block text-sm sm:col-span-2">
+              <span className="text-xs font-medium text-muted">
+                Rekommenderad nästa åtgärd (valfritt)
+              </span>
+              <select
+                value={form.rekommenderadNastaAtgardId}
+                onChange={(e) =>
+                  onFormChange((c) => ({
+                    ...c,
+                    rekommenderadNastaAtgardId: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-sm"
+              >
+                <option value="">Samma åtgärd igen</option>
+                {underhallKatalog
+                  .filter((a) => a.id !== form.underhallAtgardId)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.etikett}
+                    </option>
+                  ))}
+              </select>
+              <span className="mt-1 block text-[11px] text-muted">
+                T.ex. målaren bedömer att nästa omgång bör vara en renovering —
+                nästa planerade tillfälle blir då en renovering med dess intervall
+                och kostnadsnivå.
+              </span>
             </label>
           </div>
+        )}
+        {arFonster && form.arbetsTyp !== "utbyte" && form.arbetsTyp !== "nyinstallation" && (
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.inklTatningslister}
+              onChange={(e) =>
+                onFormChange((c) => ({ ...c, inklTatningslister: e.target.checked }))
+              }
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+            />
+            <span>
+              <span className="font-medium">Inklusive byte av tätningslister</span>
+              <span className="block text-xs text-muted">
+                T.ex. renovering eller målning där nya tätningslister sattes i samma
+                omgång.
+              </span>
+            </span>
+          </label>
         )}
       </fieldset>
 

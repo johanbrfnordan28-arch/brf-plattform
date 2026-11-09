@@ -96,6 +96,13 @@ export type UtfördRenovering = {
   underhallAtgardId?: string;
   /** Intervall för upprepad underhållsåtgärd (år). */
   underhallIntervallAr?: number;
+  /** Byte av tätningslister ingick (t.ex. renovering inkl. tätningslister). */
+  inklTatningslister?: boolean;
+  /**
+   * Entreprenörens rekommendation för nästa omgång (t.ex. renovering efter målning).
+   * Nästa planerade tillfälle får då den åtgärden, dess intervall och relativa kostnad.
+   */
+  rekommenderadNastaAtgardId?: string;
   /** Vald underkomponent i registret (t.ex. balkonger, hiss). */
   underkomponentId?: string;
   /** Etikett för underkomponenten — visas i listor och budget. */

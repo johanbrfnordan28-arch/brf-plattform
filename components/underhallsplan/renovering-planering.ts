@@ -18,7 +18,12 @@ import type {
   RenoveringArbetsTyp,
   UtfördRenovering,
 } from "@/components/underhallsplan/renoveringar";
-import { RENOVERING_ATGARD_TILL_UNDERKOMPONENT } from "@/components/underhallsplan/underhall-atgard-katalog";
+import {
+  hamtaUnderhallAtgardKatalog,
+  hamtaUnderhallTillfallenPlanNyckel,
+  RENOVERING_ATGARD_TILL_UNDERKOMPONENT,
+} from "@/components/underhallsplan/underhall-atgard-katalog";
+import { arTakKomponent } from "@/components/underhallsplan/tak-enheter";
 import type { UnderhallAtgard } from "@/components/underhallsplan/underhall-budget";
 
 export type { RenoveringAtgardTyp, RenoveringFordelningKontext };
@@ -165,9 +170,53 @@ type PlaneringsDel = {
   utförtAr: number;
   atgardTyp: RenoveringAtgardTyp;
   komponent: string;
+  underkomponentId?: string;
   intervallAr?: number;
   arbetsTyp?: RenoveringArbetsTyp;
 };
+
+type RekommenderadNasta = {
+  etikett: string;
+  intervallAr: number;
+  kostnadsFaktor: number;
+};
+
+/**
+ * Underhåll med rekommenderad nästa åtgärd (t.ex. renovering efter målning):
+ * nästa tillfälle får den åtgärdens etikett, intervall och relativa kostnad.
+ * Intervallet skalas som det utförda (t.ex. hårt utsatt läge).
+ */
+export function hamtaRekommenderadNasta(
+  renovering: Pick<
+    UtfördRenovering,
+    "underhallAtgardId" | "rekommenderadNastaAtgardId" | "underkomponentId"
+  >,
+  del: PlaneringsDel,
+): RekommenderadNasta | null {
+  const rekId = renovering.rekommenderadNastaAtgardId;
+  if (del.arbetsTyp !== "underhall" || !rekId) return null;
+  const underId =
+    del.underkomponentId ||
+    renovering.underkomponentId ||
+    (arTakKomponent(del.komponent) ? "takyta" : "");
+  const planNyckel = hamtaUnderhallTillfallenPlanNyckel(del.komponent, underId);
+  if (!planNyckel) return null;
+  const katalog = hamtaUnderhallAtgardKatalog(planNyckel);
+  const rek = katalog.find((a) => a.id === rekId);
+  if (!rek) return null;
+  const nu = katalog.find((a) => a.id === renovering.underhallAtgardId);
+  const skala =
+    nu?.standardIntervallAr && del.intervallAr
+      ? del.intervallAr / nu.standardIntervallAr
+      : 1;
+  const intervallAr = Math.max(
+    1,
+    Math.round((rek.standardIntervallAr ?? hamtaIntervallForDel(del)) * skala),
+  );
+  const kostnadsFaktor =
+    rek.relativKostnad && nu?.relativKostnad ? rek.relativKostnad / nu.relativKostnad : 1;
+  return { etikett: rek.etikett, intervallAr, kostnadsFaktor };
+}
 
 export function hamtaIntervallForDel(del: PlaneringsDel): number {
   return del.intervallAr ?? hamtaIntervallForTyp(del.komponent, del.atgardTyp);
@@ -214,11 +263,12 @@ export function forhandsvisaNastaAtgarder(
 
   for (const del of utdelning) {
     if (!delPlanerasOm(del)) continue;
-    const intervallAr = hamtaIntervallForDel(del);
+    const rek = hamtaRekommenderadNasta(renovering, del);
+    const intervallAr = rek?.intervallAr ?? hamtaIntervallForDel(del);
     const typ = del.atgardTyp;
     const nastaAr = hamtaNastaPlanArForDel(del, renovering, planStartAr);
     const beraknat = beraknaPlaneradKostnad(
-      del.basKostnadKr,
+      Math.round(del.basKostnadKr * (rek?.kostnadsFaktor ?? 1)),
       del.utförtAr,
       nastaAr,
       typ,
@@ -227,7 +277,9 @@ export function forhandsvisaNastaAtgarder(
 
     previews.push({
       renoveringId: del.renoveringId,
-      titel: `${renovering.titel} — ${del.del}`,
+      titel: rek
+        ? `${rek.etikett} (rekommenderad) — ${del.del}`
+        : `${renovering.titel} — ${del.del}`,
       komponent: del.komponent,
       atgardTyp: typ,
       utförtAr: del.utförtAr,
@@ -309,12 +361,17 @@ export function genereraAtgarderFranHistorik(
 
     for (const del of utdelning) {
       if (!delPlanerasOm(del)) continue;
-      const intervallAr = hamtaIntervallForDel(del);
+      const rek = hamtaRekommenderadNasta(renovering, del);
+      const ordinarieIntervall = hamtaIntervallForDel(del);
       let ar = hamtaNastaPlanArForDel(del, renovering, planStartAr);
+      let forsta = true;
 
       while (ar <= planSlutAr) {
+        // Rekommendationen gäller nästa tillfälle; därefter fortsätter ordinarie åtgärd.
+        const arRek = forsta && rek != null;
+        const intervallAr = arRek ? rek.intervallAr : ordinarieIntervall;
         const beraknat = beraknaPlaneradKostnad(
-          del.basKostnadKr,
+          Math.round(del.basKostnadKr * (arRek ? rek.kostnadsFaktor : 1)),
           del.utförtAr,
           ar,
           del.atgardTyp,
@@ -325,7 +382,7 @@ export function genereraAtgarderFranHistorik(
           RENOVERING_ATGARD_TILL_UNDERKOMPONENT[del.atgardTyp];
         atgarder.push({
           komponent: del.komponent,
-          del: del.del,
+          del: arRek ? `${del.del} — ${rek.etikett.toLowerCase()}` : del.del,
           ar,
           kostnadKr: beraknat.kostnadKr,
           intervallAr,
@@ -356,7 +413,8 @@ export function genereraAtgarderFranHistorik(
           ),
         });
 
-        ar += intervallAr;
+        ar += ordinarieIntervall;
+        forsta = false;
       }
     }
   }

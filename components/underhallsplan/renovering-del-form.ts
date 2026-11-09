@@ -32,6 +32,8 @@ export type RenoveringDelFormState = {
   arbetsTyp: RenoveringArbetsTyp;
   underhallAtgardId: string;
   underhallIntervallAr: string;
+  inklTatningslister: boolean;
+  rekommenderadNastaAtgardId: string;
   /** Anbud för hela taket fördelat på takets delar. */
   takFordelning: TakFordelningRad[];
 };
@@ -58,6 +60,8 @@ export function tomRenoveringDelForm(): RenoveringDelFormState {
     arbetsTyp: "utbyte",
     underhallAtgardId: "",
     underhallIntervallAr: "",
+    inklTatningslister: false,
+    rekommenderadNastaAtgardId: "",
     takFordelning: [],
   };
 }
@@ -91,6 +95,8 @@ export function renoveringTillDelForm(post: UtfördRenovering): RenoveringDelFor
     underhallAtgardId: post.underhallAtgardId ?? "",
     underhallIntervallAr:
       post.underhallIntervallAr != null ? String(post.underhallIntervallAr) : "",
+    inklTatningslister: Boolean(post.inklTatningslister),
+    rekommenderadNastaAtgardId: post.rekommenderadNastaAtgardId ?? "",
     takFordelning:
       arTakKomponent(post.komponent) && !post.underkomponentId?.trim()
         ? delposterTillTakFordelning(post.delposter)
@@ -156,6 +162,11 @@ export function delFormTillRenovering(args: {
     underhallIntervallAr:
       arbetsTyp === "underhall" && underhallIntervall > 0
         ? underhallIntervall
+        : undefined,
+    inklTatningslister: args.form.inklTatningslister || undefined,
+    rekommenderadNastaAtgardId:
+      arbetsTyp === "underhall"
+        ? args.form.rekommenderadNastaAtgardId.trim() || undefined
         : undefined,
     delposter: takDelposter.length > 0 ? takDelposter : undefined,
     underkomponentId: args.underkomponentId,
