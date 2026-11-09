@@ -19,6 +19,10 @@ import {
   takterrassTatskiktUtomhus,
   takterrassVaggMaterial,
 } from "@/components/underhallsplan/takterrass";
+import {
+  breddavloppKopplingKortText,
+  golvbrunnKopplingKortText,
+} from "@/components/underhallsplan/takterrass-avlopp";
 
 export {
   takterrassGolvMaterial,
@@ -68,6 +72,7 @@ export type MedlemstakterrassData = {
   golvbrunnAntal: string;
   golvbrunnKoppling: import("@/components/underhallsplan/takterrass-avlopp").GolvbrunnKopplingId;
   breddavloppAntal: string;
+  breddavloppKoppling: import("@/components/underhallsplan/takterrass-avlopp").BreddavloppKopplingId;
   golvarmeKvm: string;
   priser?: MedlemstakterrassPriser;
 };
@@ -96,6 +101,7 @@ export function skapaTomMedlemstakterrassData(): MedlemstakterrassData {
     golvbrunnAntal: bas.golvbrunnAntal,
     golvbrunnKoppling: bas.golvbrunnKoppling,
     breddavloppAntal: bas.breddavloppAntal,
+    breddavloppKoppling: bas.breddavloppKoppling,
     golvarmeKvm: bas.golvarmeKvm,
     priser: skapaTomMedlemstakterrassPriser(),
   };
@@ -132,6 +138,7 @@ export function normaliseraMedlemstakterrassData(
       raw.breddavloppAntal?.trim() ||
       raw.breddavloppLopmeter?.trim() ||
       "",
+    breddavloppKoppling: viaTakterrass.breddavloppKoppling,
     golvarmeKvm: viaTakterrass.golvarmeKvm,
     priser: {
       ...skapaTomMedlemstakterrassPriser(),
@@ -243,16 +250,14 @@ export function formateraMedlemstakterrass(data: MedlemstakterrassData): string 
   }
 
   if (data.golvbrunnAntal.trim()) {
-    const koppling =
-      data.golvbrunnKoppling === "avloppsstam"
-        ? " → stam"
-        : data.golvbrunnKoppling === "stupror"
-          ? " → stuprör"
-          : "";
-    delar.push(`${data.golvbrunnAntal.trim()} golvbrunnar${koppling}`);
+    delar.push(
+      `${data.golvbrunnAntal.trim()} golvbrunnar${golvbrunnKopplingKortText(data.golvbrunnKoppling)}`,
+    );
   }
   if (data.breddavloppAntal.trim()) {
-    delar.push(`${data.breddavloppAntal.trim()} breddavlopp`);
+    delar.push(
+      `${data.breddavloppAntal.trim()} breddavlopp${breddavloppKopplingKortText(data.breddavloppKoppling)}`,
+    );
   }
   if (data.golvarmeKvm.trim()) {
     delar.push(`golvvärme ${data.golvarmeKvm.trim()} m²`);

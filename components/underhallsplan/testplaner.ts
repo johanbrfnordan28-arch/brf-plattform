@@ -1014,6 +1014,7 @@ export const testplan90: TestplanDefinition = {
             golvbrunnAntal: "2",
             golvbrunnKoppling: "avloppsstam",
             breddavloppAntal: "1",
+            breddavloppKoppling: "stupror",
             belysningAntal: "8",
             elkontaktAntal: "4",
             golvarmeKvm: "24",

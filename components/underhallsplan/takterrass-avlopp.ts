@@ -10,7 +10,7 @@ export const takterrassGolvbrunnBeskrivning =
   "Golvbrunn samlar vatten på terrassgolvet och leder det till avloppsstammen eller till stuprör.";
 
 export const takterrassBreddavloppBeskrivning =
-  "Breddavlopp leder vattnet ut genom väggen och vidare ut via fasaden.";
+  "Breddavlopp leder vattnet ut genom väggen — vidare till stuprör, avloppsstam eller fritt utlopp via fasaden.";
 
 export type GolvbrunnKopplingId = "avloppsstam" | "stupror" | "";
 
@@ -22,6 +22,45 @@ export const golvbrunnKopplingAlternativ: {
   { id: "avloppsstam", etikett: "Till avloppsstam" },
   { id: "stupror", etikett: "Till stuprör" },
 ];
+
+export type BreddavloppKopplingId =
+  | "avloppsstam"
+  | "stupror"
+  | "fritt-utlopp"
+  | "";
+
+export const breddavloppKopplingAlternativ: {
+  id: BreddavloppKopplingId;
+  etikett: string;
+}[] = [
+  { id: "", etikett: "— välj koppling —" },
+  { id: "avloppsstam", etikett: "Till avloppsstam" },
+  { id: "stupror", etikett: "Till stuprör" },
+  { id: "fritt-utlopp", etikett: "Fritt utlopp via fasad (spygatt)" },
+];
+
+export function normaliseraGolvbrunnKoppling(v: unknown): GolvbrunnKopplingId {
+  return v === "avloppsstam" || v === "stupror" ? v : "";
+}
+
+export function normaliseraBreddavloppKoppling(
+  v: unknown,
+): BreddavloppKopplingId {
+  return v === "avloppsstam" || v === "stupror" || v === "fritt-utlopp"
+    ? v
+    : "";
+}
+
+export function golvbrunnKopplingKortText(id: GolvbrunnKopplingId): string {
+  if (id === "avloppsstam") return " → stam";
+  if (id === "stupror") return " → stuprör";
+  return "";
+}
+
+export function breddavloppKopplingKortText(id: BreddavloppKopplingId): string {
+  if (id === "fritt-utlopp") return " → fritt utlopp";
+  return golvbrunnKopplingKortText(id);
+}
 
 export function raknaTakterrassAvlopp(args: {
   golvbrunnAntal: string;

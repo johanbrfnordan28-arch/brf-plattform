@@ -1,6 +1,13 @@
 /** Gemensam takterrass — underkomponent under Tak. */
 
-import type { GolvbrunnKopplingId } from "@/components/underhallsplan/takterrass-avlopp";
+import {
+  breddavloppKopplingKortText,
+  golvbrunnKopplingKortText,
+  normaliseraBreddavloppKoppling,
+  normaliseraGolvbrunnKoppling,
+  type BreddavloppKopplingId,
+  type GolvbrunnKopplingId,
+} from "@/components/underhallsplan/takterrass-avlopp";
 
 export const TAKTERRASS_UNDERKOMPONENT_ID = "takterrass";
 
@@ -63,6 +70,7 @@ export type TakterrassGolvMaterialId =
 export type TakterrassTatskiktId =
   | "mapelastic-mapei"
   | "fb3-hoganas"
+  | "takpapp"
   | "tjarpapp"
   | "tatskiktsmatta"
   | "underlagsduk"
@@ -89,6 +97,8 @@ export type TakterrassData = {
   /** Vart golvbrunnen leder vattnet. */
   golvbrunnKoppling: GolvbrunnKopplingId;
   breddavloppAntal: string;
+  /** Vart breddavloppet leder vattnet. */
+  breddavloppKoppling: BreddavloppKopplingId;
   belysningAntal: string;
   elkontaktAntal: string;
   golvarmeKvm: string;
@@ -132,6 +142,18 @@ export const takterrassGolvMaterial: {
 export const takterrassTatskiktIntro =
   "Tätätskiktet ligger under terrassgolvet och ska tåla utomhusklimat och stående vatten. Det är inte samma produkter som i våtutrymmen inomhus.";
 
+/** Kontrollpunkter när tätskiktet lagts om nyligen. */
+export const takterrassTatskiktKvalitetsdokumentInfo = {
+  rubrik: "Renoverat i närtid? Kontrollera entreprenörens kvalitetsdokument",
+  punkter: [
+    "Att tätskiktet finns med i egenkontroll eller kvalitetsdokument — produkt, system och antal skikt.",
+    "Att produkten är avsedd för utomhusbruk och lagd enligt tillverkarens anvisningar.",
+    "Uppvik och anslutningar mot vägg, dörrtröskel, golvbrunnar och breddavlopp.",
+    "Fall mot avlopp och eventuell täthetsprovning (vattenprov) före beläggning.",
+    "Garantitid och vem som ansvarar — spara dokumentet i föreningens arkiv.",
+  ],
+};
+
 export const takterrassTatskiktFlytande: {
   id: TakterrassTatskiktId;
   etikett: string;
@@ -158,8 +180,14 @@ export const takterrassTatskiktPappTjara: {
   beskrivning?: string;
 }[] = [
   {
+    id: "takpapp",
+    etikett: "Takpapp",
+    beskrivning:
+      "Bitumenbaserad takpapp i ett eller två skikt — svetsas eller klistras. Vanligt under plattor på plintar.",
+  },
+  {
     id: "tjarpapp",
-    etikett: "Tjärpapp / takpapp",
+    etikett: "Tjärpapp",
     beskrivning: "Klassisk bitumenpapp med tjära — rullas ut och lödas vid skarvar.",
   },
   {
@@ -194,6 +222,11 @@ export const takterrassTatskiktUtomhus = [
   ...takterrassTatskiktPappTjara,
   takterrassTatskiktOvrigt,
 ];
+
+/** Rullade tätskikt som kan ligga under keramik/plattor. */
+export const takterrassTatskiktRullatUnderKeramik = takterrassTatskiktPappTjara.filter(
+  (a) => a.id === "takpapp" || a.id === "tatskiktsmatta",
+);
 
 export function standardTakterrassVagg(): TakterrassVaggMaterialId {
   return "bandtackt-plat";
@@ -280,6 +313,7 @@ function inferGolvBekladning(
     return raw.golvBekladning;
   }
   const pappTatskikt = new Set<TakterrassTatskiktId>([
+    "takpapp",
     "tjarpapp",
     "tatskiktsmatta",
     "underlagsduk",
@@ -310,6 +344,7 @@ export function skapaTomTakterrassData(): TakterrassData {
     golvbrunnAntal: "",
     golvbrunnKoppling: "",
     breddavloppAntal: "",
+    breddavloppKoppling: "",
     belysningAntal: "",
     elkontaktAntal: "",
     golvarmeKvm: "",
@@ -334,7 +369,6 @@ export function normaliseraTakterrassData(
     raw.tatskiktAnnanText ?? "",
   );
   const golvBekladning = inferGolvBekladning(raw);
-  const koppling = raw.golvbrunnKoppling;
   return {
     ...tom,
     ...raw,
@@ -343,8 +377,8 @@ export function normaliseraTakterrassData(
     vaggarAnnanText: vagg.annanText,
     tatskiktMaterial: tatskikt.material,
     tatskiktAnnanText: tatskikt.annanText,
-    golvbrunnKoppling:
-      koppling === "avloppsstam" || koppling === "stupror" ? koppling : "",
+    golvbrunnKoppling: normaliseraGolvbrunnKoppling(raw.golvbrunnKoppling),
+    breddavloppKoppling: normaliseraBreddavloppKoppling(raw.breddavloppKoppling),
     priser: {
       ...skapaTomTakterrassPriser(),
       ...raw.priser,
@@ -451,16 +485,14 @@ export function formateraTakterrass(data: TakterrassData): string {
   }
 
   if (data.golvbrunnAntal.trim()) {
-    const koppling =
-      data.golvbrunnKoppling === "avloppsstam"
-        ? " → stam"
-        : data.golvbrunnKoppling === "stupror"
-          ? " → stuprör"
-          : "";
-    delar.push(`${data.golvbrunnAntal.trim()} golvbrunnar${koppling}`);
+    delar.push(
+      `${data.golvbrunnAntal.trim()} golvbrunnar${golvbrunnKopplingKortText(data.golvbrunnKoppling)}`,
+    );
   }
   if (data.breddavloppAntal.trim()) {
-    delar.push(`${data.breddavloppAntal.trim()} breddavlopp`);
+    delar.push(
+      `${data.breddavloppAntal.trim()} breddavlopp${breddavloppKopplingKortText(data.breddavloppKoppling)}`,
+    );
   }
   if (data.belysningAntal.trim()) {
     delar.push(`${data.belysningAntal.trim()} belysningspunkter`);

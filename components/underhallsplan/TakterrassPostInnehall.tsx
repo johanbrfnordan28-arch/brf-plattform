@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  breddavloppKopplingAlternativ,
   golvbrunnKopplingAlternativ,
   takterrassAvloppMinstTvaInfo,
   takterrassAvloppSnöIsInfo,
@@ -14,8 +15,10 @@ import {
   takterrassGolvMaterial,
   takterrassTatskiktFlytande,
   takterrassTatskiktIntro,
+  takterrassTatskiktKvalitetsdokumentInfo,
   takterrassTatskiktOvrigt,
   takterrassTatskiktPappTjara,
+  takterrassTatskiktRullatUnderKeramik,
   takterrassVaggMaterial,
   type TakterrassData,
   type TakterrassGolvBekladningId,
@@ -23,7 +26,10 @@ import {
   type TakterrassTatskiktId,
   type TakterrassVaggMaterialId,
 } from "@/components/underhallsplan/takterrass";
-import type { GolvbrunnKopplingId } from "@/components/underhallsplan/takterrass-avlopp";
+import type {
+  BreddavloppKopplingId,
+  GolvbrunnKopplingId,
+} from "@/components/underhallsplan/takterrass-avlopp";
 import type { MedlemstakterrassData } from "@/components/underhallsplan/medlemstakterrass";
 
 export type TakterrassPostVariant = "gemensam" | "medlem";
@@ -103,6 +109,49 @@ function MaterialVal({
   );
 }
 
+function KvalitetsdokumentInfo() {
+  const info = takterrassTatskiktKvalitetsdokumentInfo;
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3">
+      <p className="text-xs font-semibold text-amber-950">{info.rubrik}</p>
+      <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-xs text-amber-950/90">
+        {info.punkter.map((punkt) => (
+          <li key={punkt}>{punkt}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function KopplingVal<T extends string>({
+  label,
+  value,
+  alternativ,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  alternativ: { id: T; etikett: string }[];
+  onChange: (id: T) => void;
+}) {
+  return (
+    <label className="mt-2 block text-sm">
+      <span className="text-xs font-medium text-muted">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-3 py-2 text-sm"
+      >
+        {alternativ.map((a) => (
+          <option key={a.id || "tom"} value={a.id}>
+            {a.etikett}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function MattFalt({
   label,
   enhet,
@@ -162,7 +211,7 @@ export function TakterrassPostInnehall({ data, onChange, variant }: Props) {
             patch({
               golvBekladning,
               golvMaterial: "annat",
-              tatskiktMaterial: "tjarpapp",
+              tatskiktMaterial: "takpapp",
             });
           } else {
             patch({
@@ -250,6 +299,18 @@ export function TakterrassPostInnehall({ data, onChange, variant }: Props) {
               onAnnanChange={() => {}}
             />
             <MaterialVal
+              legend="Takpapp / rullat tätskikt"
+              name={`${variant}-tatskikt-rullat`}
+              alternativ={takterrassTatskiktRullatUnderKeramik}
+              value={d.tatskiktMaterial}
+              annanText={d.tatskiktAnnanText}
+              egetValId="__none__"
+              onMaterialChange={(id) =>
+                patch({ tatskiktMaterial: id as TakterrassTatskiktId })
+              }
+              onAnnanChange={() => {}}
+            />
+            <MaterialVal
               legend=""
               name={`${variant}-tatskikt-ovr`}
               alternativ={[takterrassTatskiktOvrigt]}
@@ -269,6 +330,7 @@ export function TakterrassPostInnehall({ data, onChange, variant }: Props) {
               value={d.tatskiktKvm}
               onChange={(tatskiktKvm) => patch({ tatskiktKvm })}
             />
+            <KvalitetsdokumentInfo />
           </div>
         </>
       ) : (
@@ -297,6 +359,7 @@ export function TakterrassPostInnehall({ data, onChange, variant }: Props) {
             value={d.golvKvm || d.tatskiktKvm}
             onChange={(kvm) => patch({ golvKvm: kvm, tatskiktKvm: kvm })}
           />
+          <KvalitetsdokumentInfo />
         </div>
       )}
 
@@ -370,26 +433,12 @@ export function TakterrassPostInnehall({ data, onChange, variant }: Props) {
             <p className="mt-1 text-[10px] text-muted">
               {takterrassGolvbrunnBeskrivning}
             </p>
-            <label className="mt-2 block text-sm">
-              <span className="text-xs font-medium text-muted">
-                Golvbrunn leder till
-              </span>
-              <select
-                value={d.golvbrunnKoppling}
-                onChange={(e) =>
-                  patch({
-                    golvbrunnKoppling: e.target.value as GolvbrunnKopplingId,
-                  })
-                }
-                className="mt-1 w-full max-w-xs rounded-lg border border-border bg-white px-3 py-2 text-sm"
-              >
-                {golvbrunnKopplingAlternativ.map((a) => (
-                  <option key={a.id || "tom"} value={a.id}>
-                    {a.etikett}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <KopplingVal<GolvbrunnKopplingId>
+              label="Golvbrunn leder till"
+              value={d.golvbrunnKoppling}
+              alternativ={golvbrunnKopplingAlternativ}
+              onChange={(golvbrunnKoppling) => patch({ golvbrunnKoppling })}
+            />
           </div>
           <div>
             <MattFalt
@@ -403,6 +452,12 @@ export function TakterrassPostInnehall({ data, onChange, variant }: Props) {
             <p className="mt-1 text-[10px] text-muted">
               {takterrassBreddavloppBeskrivning}
             </p>
+            <KopplingVal<BreddavloppKopplingId>
+              label="Breddavlopp leder till"
+              value={d.breddavloppKoppling ?? ""}
+              alternativ={breddavloppKopplingAlternativ}
+              onChange={(breddavloppKoppling) => patch({ breddavloppKoppling })}
+            />
           </div>
         </div>
         {!tillrackligtAvlopp &&
