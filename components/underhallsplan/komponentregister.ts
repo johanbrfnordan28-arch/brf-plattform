@@ -1058,7 +1058,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Värme",
         defaultMåttenhet: "antal",
         måttHint:
-          "Värmestammar — namn och märkning i källaren, var stammen går upp, våningar, rumsstorlek och radiatorer. Stamventiler läggs in under Värmecentral.",
+          "Värmestammar i källaren, radiatorstorlek, antal element, avstånd från stammen och rördimension. Sammanställningen är underlag för kostnad. Stamventiler läggs in under Värmecentral.",
         detaljPanel: "vvs-varme",
       },
       {
