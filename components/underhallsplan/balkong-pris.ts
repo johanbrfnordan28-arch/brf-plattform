@@ -9,6 +9,7 @@ import {
 import {
   BALKONGER_UNDERKOMPONENT_ID,
   balkongDelarMall,
+  balkongAntal,
   balkongHarPlatta,
   normaliseraBalkongPost,
   normaliseraEgnaBalkongTyper,
@@ -68,14 +69,15 @@ export function beraknaBalkongPostPris(
       RIKT_TILLBYGGD_BALKONG_KR,
     );
     if (fast > 0) {
+      const antal = balkongAntal(p);
       rader.push({
         id: "tillbyggd",
         etikett: "Tillbyggd balkongmodul",
-        mangd: 1,
-        mangdText: "1 st",
+        mangd: antal,
+        mangdText: `${antal} st`,
         enhet: "kr/st",
         enhetsprisKr: fast,
-        summaKr: fast,
+        summaKr: fast * antal,
       });
     }
   }

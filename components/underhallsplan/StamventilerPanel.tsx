@@ -8,9 +8,11 @@ import {
   skapaTomStamventilPost,
   stamventilModellKategorier,
   stamventilModellerPerKategori,
+  stamventilPlaceringAlternativ,
   stamventilStorlekar,
   summeraStamventilPoster,
   type StamventilModellId,
+  type StamventilPlaceringId,
   type StamventilPost,
   type StamventilStorlekId,
 } from "@/components/underhallsplan/stamventiler";
@@ -49,8 +51,38 @@ function StamventilModellSelect({
   );
 }
 
+async function lasVentilBild(
+  file: File,
+): Promise<{ dataUrl: string; filnamn: string } | null> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const bild = new Image();
+      bild.onload = () => resolve(bild);
+      bild.onerror = () => reject(new Error("bild"));
+      bild.src = url;
+    });
+    const max = 1280;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+    if (dataUrl.length > 900_000) return null;
+    return { dataUrl, filnamn: file.name };
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export function StamventilerPanel({ poster, onChange }: StamventilerPanelProps) {
   const [nyModell, setNyModell] = useState<StamventilModellId>("ta-stad");
+  const [bildFel, setBildFel] = useState<Record<string, string>>({});
 
   function uppdateraPost(id: string, patch: Partial<StamventilPost>) {
     onChange(
@@ -73,9 +105,10 @@ export function StamventilerPanel({ poster, onChange }: StamventilerPanelProps) 
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-muted">
-        Välj typ av ventil: injusteringsventil reglerar flödet (t.ex. TA-STAD),
-        styrventil reglerar temperatur (t.ex. med ställdon). Ange storlek, antal
-        och plats.
+        Stamventiler läggs bara in här — inte under Värme och inte under
+        Undercentral. En bild per stam och på de horisontella ventilerna räcker
+        som underlag när ni tar in anbud på injustering. Injusteringsventil
+        reglerar flödet (t.ex. TA-STAD), styrventil reglerar temperatur.
       </p>
 
       {poster.length === 0 ? (
@@ -209,7 +242,37 @@ export function StamventilerPanel({ poster, onChange }: StamventilerPanelProps) 
 
                   <label className="block text-sm sm:col-span-2">
                     <span className="text-xs font-medium text-muted">
-                      Plats / kommentar (valfritt)
+                      Placering
+                    </span>
+                    <select
+                      value={post.placering || "stam"}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, {
+                          placering: e.target.value as StamventilPlaceringId,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {stamventilPlaceringAlternativ.map((alt) => (
+                        <option key={alt.id} value={alt.id}>
+                          {alt.etikett}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="mt-1 block text-xs text-muted">
+                      {
+                        stamventilPlaceringAlternativ.find(
+                          (alt) => alt.id === (post.placering || "stam"),
+                        )?.beskrivning
+                      }
+                    </span>
+                  </label>
+
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="text-xs font-medium text-muted">
+                      {post.placering === "stam" || !post.placering
+                        ? "Vilken stam"
+                        : "Vilken sträcka"}
                     </span>
                     <input
                       type="text"
@@ -217,10 +280,92 @@ export function StamventilerPanel({ poster, onChange }: StamventilerPanelProps) 
                       onChange={(e) =>
                         uppdateraPost(post.id, { plats: e.target.value })
                       }
-                      placeholder="T.ex. Stam A, undercentral"
+                      placeholder={
+                        post.placering === "stam" || !post.placering
+                          ? "T.ex. Stam 1, Hannebergsgatan 22"
+                          : "T.ex. källargång mot gård"
+                      }
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     />
                   </label>
+
+                  <div className="sm:col-span-2">
+                    {post.bildDataUrl ? (
+                      <span className="text-xs font-medium text-muted">
+                        Bild för injusteringsanbud
+                      </span>
+                    ) : null}
+                    {post.bildDataUrl ? (
+                      <div className="mt-2 flex flex-wrap items-start gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={post.bildDataUrl}
+                          alt={post.bildFilnamn || "Stamventil"}
+                          className="h-24 w-32 rounded-lg border border-border object-cover"
+                        />
+                        <div className="space-y-2">
+                          {post.bildFilnamn && (
+                            <p className="text-xs text-muted">{post.bildFilnamn}</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBildFel((prev) => {
+                                const next = { ...prev };
+                                delete next[post.id];
+                                return next;
+                              });
+                              uppdateraPost(post.id, {
+                                bildDataUrl: "",
+                                bildFilnamn: "",
+                              });
+                            }}
+                            className="text-xs text-muted hover:text-red-700"
+                          >
+                            Ta bort bild
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="mt-1 block text-sm">
+                        <span className="text-xs font-medium text-muted">
+                          Bild för injusteringsanbud
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            if (!file) return;
+                            void lasVentilBild(file).then((bild) => {
+                              if (!bild) {
+                                setBildFel((prev) => ({
+                                  ...prev,
+                                  [post.id]:
+                                    "Bilden gick inte att läsa, eller blev för stor. Prova en mindre bild.",
+                                }));
+                                return;
+                              }
+                              setBildFel((prev) => {
+                                const next = { ...prev };
+                                delete next[post.id];
+                                return next;
+                              });
+                              uppdateraPost(post.id, {
+                                bildDataUrl: bild.dataUrl,
+                                bildFilnamn: bild.filnamn,
+                              });
+                            });
+                          }}
+                          className="block w-full text-xs text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-medium file:text-white"
+                        />
+                      </label>
+                    )}
+                    {bildFel[post.id] && (
+                      <p className="mt-1 text-xs text-red-700">{bildFel[post.id]}</p>
+                    )}
+                  </div>
                 </div>
               </li>
             );

@@ -66,6 +66,8 @@ export type BalkongPost = {
   atgard: BalkongAtgardId;
   /** Fördefinierad eller egen typ-id (egen-…). */
   balkongTyp: string;
+  /** Antal balkonger av den här typen. */
+  antal: string;
   /** Gäller balkonger med platta — helgjuten, konsol eller tillbyggd modul */
   konstruktion: BalkongKonstruktionId;
   rakeMaterial: BalkongRakeMaterialId;
@@ -457,6 +459,7 @@ export function normaliseraBalkongPost(
       : standardBalkongKonstruktion(post.balkongTyp, atgard, egna),
     golvMaterial,
     golvAnnanText: golvMaterial === "annat" ? post.golvAnnanText : "",
+    antal: post.antal?.trim() ?? "",
     delar: slåIhopBalkongDelar(post.balkongTyp, post.delar, egna),
     priser: post.priser,
     rakeLopmeter:
@@ -477,6 +480,7 @@ export function skapaTomBalkongPost(
     namn,
     atgard,
     balkongTyp,
+    antal: "",
     konstruktion: standardBalkongKonstruktion(balkongTyp, atgard, egna),
     rakeMaterial: "pulverlackad-smidesjarn",
     rakeLopmeter: "",
@@ -553,7 +557,9 @@ export function formateraBalkongPost(
   const rubrik = p.namn.trim() || balkongTypEtikett(p.balkongTyp, egna);
   const delar: string[] = [
     balkongAtgardEtikett(p.atgard),
-    balkongTypEtikett(p.balkongTyp, egna),
+    p.antal.trim()
+      ? `${p.antal.trim()} st ${balkongTypEtikett(p.balkongTyp, egna).toLowerCase()}`
+      : balkongTypEtikett(p.balkongTyp, egna),
   ];
 
   if (balkongVisarKonstruktion(p.balkongTyp, egna)) {
@@ -586,28 +592,39 @@ export function formateraBalkongPost(
   return `${rubrik}: ${delar.join(", ")}`;
 }
 
+/** Antal balkonger på raden — en rad utan angivet antal räknas som en. */
+export function balkongAntal(post: Pick<BalkongPost, "antal">): number {
+  const n = Number.parseInt(post.antal, 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
 export function summeraBalkongPoster(
   poster: BalkongPost[],
   egna: EgnaBalkongTypDef[] = [],
 ): ListaSummeringRad[] {
   if (poster.length === 0) return [];
 
+  const normaliserade = poster.map((p) => normaliseraBalkongPost(p, egna));
   const rader: ListaSummeringRad[] = [
     { etikett: "Antal balkongrader", varde: `${poster.length} st` },
+    {
+      etikett: "Balkonger totalt",
+      varde: `${normaliserade.reduce((s, p) => s + balkongAntal(p), 0)} st`,
+    },
   ];
 
   for (const atgard of balkongAtgardAlternativ) {
-    const antal = poster.filter(
-      (p) => normaliseraBalkongPost(p, egna).atgard === atgard.id,
-    ).length;
+    const antal = normaliserade
+      .filter((p) => p.atgard === atgard.id)
+      .reduce((s, p) => s + balkongAntal(p), 0);
     if (antal > 0) {
       rader.push({ etikett: atgard.etikett, varde: `${antal} st` });
     }
   }
 
-  const investeringar = poster.filter((p) =>
-    balkongArInvestering(normaliseraBalkongPost(p, egna).atgard),
-  ).length;
+  const investeringar = normaliserade
+    .filter((p) => balkongArInvestering(p.atgard))
+    .reduce((s, p) => s + balkongAntal(p), 0);
   if (investeringar > 0) {
     rader.push({
       etikett: "Investeringar (nytt)",
@@ -616,18 +633,22 @@ export function summeraBalkongPoster(
   }
 
   for (const typ of hamtaBalkongTypVal(egna)) {
-    const antal = poster.filter((p) => p.balkongTyp === typ.id).length;
+    const antal = normaliserade
+      .filter((p) => p.balkongTyp === typ.id)
+      .reduce((s, p) => s + balkongAntal(p), 0);
     if (antal > 0) {
       rader.push({ etikett: typ.etikett, varde: `${antal} st` });
     }
   }
 
   for (const konstr of balkongKonstruktioner) {
-    const antal = poster.filter(
-      (p) =>
-        balkongVisarKonstruktion(p.balkongTyp, egna) &&
-        normaliseraBalkongPost(p, egna).konstruktion === konstr.id,
-    ).length;
+    const antal = normaliserade
+      .filter(
+        (p) =>
+          balkongVisarKonstruktion(p.balkongTyp, egna) &&
+          p.konstruktion === konstr.id,
+      )
+      .reduce((s, p) => s + balkongAntal(p), 0);
     if (antal > 0) {
       rader.push({ etikett: konstr.etikett, varde: `${antal} st` });
     }

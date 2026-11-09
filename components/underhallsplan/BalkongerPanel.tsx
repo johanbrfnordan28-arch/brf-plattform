@@ -96,6 +96,7 @@ export function BalkongerPanel({
 }: BalkongerPanelProps) {
   const typVal = hamtaBalkongTypVal(egnaTyper);
   const [nyBalkongTyp, setNyBalkongTyp] = useState<string>("utvandig-balkong");
+  const [nyAntal, setNyAntal] = useState("");
   const [nyAtgard, setNyAtgard] = useState<BalkongAtgardId>("renovering");
   const [nyEgenEtikett, setNyEgenEtikett] = useState("");
   const [nyEgenMall, setNyEgenMall] =
@@ -146,12 +147,15 @@ export function BalkongerPanel({
     const nr = poster.length + 1;
     onChange([
       ...poster,
-      skapaTomBalkongPost(
-        poster.length === 0 ? etikett : `Balkong ${nr} (${etikett})`,
-        typ,
-        atgard,
-        egnaTyper,
-      ),
+      {
+        ...skapaTomBalkongPost(
+          poster.length === 0 ? etikett : `Balkong ${nr} (${etikett})`,
+          typ,
+          atgard,
+          egnaTyper,
+        ),
+        antal: nyAntal.trim(),
+      },
     ]);
   }
 
@@ -228,26 +232,40 @@ export function BalkongerPanel({
             </span>
           )}
         </label>
-        <label className="block text-sm">
-          <span className="text-xs font-medium text-muted">Balkongtyp</span>
-          <select
-            value={nyBalkongTyp}
-            onChange={(e) => setNyBalkongTyp(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-          >
-            {typVal.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.etikett}
-                {t.ärEgen ? " (egen)" : ""}
-              </option>
-            ))}
-          </select>
-          {typVal.find((t) => t.id === nyBalkongTyp)?.beskrivning && (
-            <span className="mt-1 block text-xs text-muted">
-              {typVal.find((t) => t.id === nyBalkongTyp)?.beskrivning}
-            </span>
-          )}
-        </label>
+        <div className="grid grid-cols-[1fr_6.5rem] gap-3">
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">Balkongtyp</span>
+            <select
+              value={nyBalkongTyp}
+              onChange={(e) => setNyBalkongTyp(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            >
+              {typVal.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.etikett}
+                  {t.ärEgen ? " (egen)" : ""}
+                </option>
+              ))}
+            </select>
+            {typVal.find((t) => t.id === nyBalkongTyp)?.beskrivning && (
+              <span className="mt-1 block text-xs text-muted">
+                {typVal.find((t) => t.id === nyBalkongTyp)?.beskrivning}
+              </span>
+            )}
+          </label>
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">Antal</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={nyAntal}
+              onChange={(e) => setNyAntal(e.target.value)}
+              placeholder="t.ex. 24"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
       </div>
       <button
         type="button"
@@ -410,7 +428,9 @@ export function BalkongerPanel({
                       )}
                     </div>
                     <span className="mt-0.5 block text-xs text-muted">
-                      {balkongAtgardEtikett(p.atgard)} · {typEtikett}
+                      {balkongAtgardEtikett(p.atgard)} ·{" "}
+                      {p.antal.trim() ? `${p.antal.trim()} st ` : ""}
+                      {typEtikett}
                       {p.namn.trim() ? ` · ${p.namn.trim()}` : ""}
                     </span>
                   </div>
@@ -460,32 +480,48 @@ export function BalkongerPanel({
                     />
                   </label>
 
-                  <label className="block text-sm sm:col-span-2">
-                    <span className="text-xs font-medium text-muted">
-                      Balkongtyp
-                    </span>
-                    <select
-                      value={p.balkongTyp}
-                      onChange={(e) =>
-                        uppdateraPost(p.id, {
-                          balkongTyp: e.target.value,
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                    >
-                      {typVal.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.etikett}
-                          {t.ärEgen ? " (egen)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {typInfo?.beskrivning && (
-                      <span className="mt-1 block text-xs text-muted">
-                        {typInfo.beskrivning}
+                  <div className="grid grid-cols-[1fr_6.5rem] gap-3 sm:col-span-2">
+                    <label className="block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Balkongtyp
                       </span>
-                    )}
-                  </label>
+                      <select
+                        value={p.balkongTyp}
+                        onChange={(e) =>
+                          uppdateraPost(p.id, {
+                            balkongTyp: e.target.value,
+                          })
+                        }
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      >
+                        {typVal.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.etikett}
+                            {t.ärEgen ? " (egen)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {typInfo?.beskrivning && (
+                        <span className="mt-1 block text-xs text-muted">
+                          {typInfo.beskrivning}
+                        </span>
+                      )}
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-xs font-medium text-muted">Antal</span>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={p.antal}
+                        onChange={(e) =>
+                          uppdateraPost(p.id, { antal: e.target.value })
+                        }
+                        placeholder="t.ex. 24"
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                  </div>
 
                   {balkongVisarKonstruktion(p.balkongTyp, egnaTyper) && (
                     <label className="block text-sm sm:col-span-2">

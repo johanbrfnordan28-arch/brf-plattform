@@ -150,6 +150,11 @@ const rekommendationer: Record<
       arK3Komponent: false,
       hint: "Filmning — kontrollåtgärd, inte komponentavskrivning.",
     },
+    varme: {
+      rekommenderadAvskrivningAr: 80,
+      arK3Komponent: true,
+      hint: "FAR: stamledning värme 80 år. Grundmall per värmestam under VVS.",
+    },
   },
   Värmecentral: {
     undercentral: {

@@ -42,15 +42,48 @@ export type StamventilStorlekId =
   | "g20"
   | "annat";
 
+/** Var ventilen sitter. Registreras bara här — inte under Värme eller Undercentral. */
+export type StamventilPlaceringId =
+  | "stam"
+  | "horisontell-tillopp"
+  | "horisontell-retur";
+
+export const stamventilPlaceringAlternativ: {
+  id: StamventilPlaceringId;
+  etikett: string;
+  beskrivning: string;
+}[] = [
+  {
+    id: "stam",
+    etikett: "På värmestam",
+    beskrivning: "En ventil på stammen som går upp i huset.",
+  },
+  {
+    id: "horisontell-tillopp",
+    etikett: "Horisontell tillopp",
+    beskrivning: "På den horisontella tilloppsledningen i källaren.",
+  },
+  {
+    id: "horisontell-retur",
+    etikett: "Horisontell retur",
+    beskrivning: "På den horisontella returledningen i källaren.",
+  },
+];
+
 export type StamventilPost = {
   id: string;
   modell: StamventilModellId;
   modellAnnanText: string;
   storlek: StamventilStorlekId;
   storlekAnnanText: string;
-  /** T.ex. Stam A, etage 2 */
+  /** På stam, eller på horisontell tillopp/retur i källaren. */
+  placering: StamventilPlaceringId;
+  /** T.ex. Stam 1 eller sträcka mot gård */
   plats: string;
   antal: string;
+  /** Bild för anbud på injustering. Tom om ingen bild. */
+  bildDataUrl: string;
+  bildFilnamn: string;
 };
 
 export type StamventilModellDef = {
@@ -254,8 +287,11 @@ export function skapaTomStamventilPost(
     modellAnnanText: "",
     storlek: "dn20",
     storlekAnnanText: "",
+    placering: "stam",
     plats: "",
     antal: "1",
+    bildDataUrl: "",
+    bildFilnamn: "",
   };
 }
 
@@ -286,17 +322,56 @@ export function stamventilStorlekEtikett(
   return stamventilStorlekar.find((s) => s.id === storlek)?.etikett ?? storlek;
 }
 
-export function normaliseraStamventilPost(post: StamventilPost): StamventilPost {
-  const antal = parseAntal(post.antal);
-  const kandModell = stamventilModeller.some((m) => m.id === post.modell);
+export function stamventilPlaceringEtikett(id: StamventilPlaceringId): string {
+  return stamventilPlaceringAlternativ.find((p) => p.id === id)?.etikett ?? id;
+}
+
+export function normaliseraStamventilPost(
+  post: Partial<StamventilPost> & Pick<StamventilPost, "id" | "modell">,
+): StamventilPost {
+  const antal = parseAntal(post.antal ?? "1");
+  const modell = stamventilModeller.some((m) => m.id === post.modell)
+    ? post.modell
+    : "annat";
+  const storlek: StamventilStorlekId = stamventilStorlekar.some(
+    (s) => s.id === post.storlek,
+  )
+    ? (post.storlek as StamventilStorlekId)
+    : "dn20";
+  const placering: StamventilPlaceringId = stamventilPlaceringAlternativ.some(
+    (p) => p.id === post.placering,
+  )
+    ? (post.placering as StamventilPlaceringId)
+    : "stam";
   return {
-    ...post,
-    modell: kandModell ? post.modell : "annat",
+    id: post.id,
+    modell,
+    modellAnnanText:
+      modell === "annat" ? post.modellAnnanText?.trim() ?? "" : "",
+    storlek,
+    storlekAnnanText:
+      storlek === "annat" ? post.storlekAnnanText?.trim() ?? "" : "",
+    placering,
+    plats: post.plats?.trim() ?? "",
     antal: antal > 0 ? String(antal) : "1",
-    plats: post.plats.trim(),
-    modellAnnanText: post.modell === "annat" ? post.modellAnnanText.trim() : "",
-    storlekAnnanText: post.storlek === "annat" ? post.storlekAnnanText.trim() : "",
+    bildDataUrl: post.bildDataUrl?.startsWith("data:image/")
+      ? post.bildDataUrl
+      : "",
+    bildFilnamn: post.bildFilnamn?.trim() ?? "",
   };
+}
+
+export function normaliseraStamventilPoster(raw: unknown): StamventilPost[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (post): post is Partial<StamventilPost> & { id: string; modell: StamventilModellId } =>
+        Boolean(post) &&
+        typeof post === "object" &&
+        typeof (post as StamventilPost).id === "string" &&
+        typeof (post as StamventilPost).modell === "string",
+    )
+    .map((post) => normaliseraStamventilPost(post));
 }
 
 export function formateraStamventilPost(post: StamventilPost): string {
@@ -306,7 +381,9 @@ export function formateraStamventilPost(post: StamventilPost): string {
   const antal = parseAntal(p.antal);
   const plats = p.plats.trim();
   const antalText = antal > 1 ? `${antal} st` : "1 st";
-  const spec = `${modell}, ${storlek}`;
+  const placering = stamventilPlaceringEtikett(p.placering).toLowerCase();
+  const bild = p.bildDataUrl ? ", med bild" : "";
+  const spec = `${modell}, ${storlek}, ${placering}${bild}`;
   if (plats) return `${spec} (${plats}): ${antalText}`;
   return `${spec}: ${antalText}`;
 }
@@ -326,6 +403,20 @@ export function summeraStamventilPoster(poster: StamventilPost[]): ListaSummerin
   const antalTot = normaliserade.reduce((s, p) => s + parseAntal(p.antal), 0);
   if (antalTot > 0) {
     rader.push({ etikett: "Ventiler totalt", varde: `${antalTot} st` });
+  }
+
+  for (const placering of stamventilPlaceringAlternativ) {
+    const antal = normaliserade
+      .filter((p) => p.placering === placering.id)
+      .reduce((s, p) => s + parseAntal(p.antal), 0);
+    if (antal > 0) {
+      rader.push({ etikett: placering.etikett, varde: `${antal} st` });
+    }
+  }
+
+  const medBild = normaliserade.filter((p) => p.bildDataUrl).length;
+  if (medBild > 0) {
+    rader.push({ etikett: "Med bild", varde: `${medBild} st` });
   }
 
   for (const kategori of stamventilModellKategorier) {

@@ -30,6 +30,12 @@ import {
   hamtaTakfonsterData,
   hamtaTakterrassPoster,
   hamtaMedlemstakterrassPoster,
+  hamtaStamventilPoster,
+  hamtaUndercentralData,
+  hamtaVvsVarmeStammar,
+  uppdateraStamventilPoster,
+  uppdateraUndercentralData,
+  uppdateraVvsVarmeStammar,
   uppdateraTakfonsterData,
   uppdateraTakterrassPoster,
   uppdateraMedlemstakterrassPoster,
@@ -37,6 +43,10 @@ import {
   type UnderkomponentDetaljPanel,
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
+import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
+import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
+import { VvsVarmePanel } from "@/components/underhallsplan/VvsVarmePanel";
+import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
 /** Underkomponenter med eget formulär — enkel m²/st-rad döljs i steg 2. */
@@ -50,6 +60,9 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "takfonster-lista",
   "takterrass-val",
   "medlemstakterrass-val",
+  "undercentral",
+  "stamventiler-lista",
+  "vvs-varme",
 ]);
 
 /** Stora formulär i steg 2 — visas ihopfällda som standard (+ / −). */
@@ -247,6 +260,53 @@ export function FastighetsdelUnderkomponentDetalj({
           fasadSidor={hamtaFasadSidaMaterialPoster(data, rad.id)}
           onFasadSidorChange={(poster) =>
             onChange(uppdateraFasadSidaMaterialPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "undercentral") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <UndercentralPanel
+          data={hamtaUndercentralData(data, rad.id)}
+          antal={rad.värde}
+          onChange={(undercentral) =>
+            onChange(uppdateraUndercentralData(data, rad.id, undercentral))
+          }
+          onAntalChange={(värde) => onRadChange({ värde })}
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "stamventiler-lista") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <StamventilerPanel
+          poster={hamtaStamventilPoster(data, rad.id)}
+          onChange={(poster) =>
+            onChange(uppdateraStamventilPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "vvs-varme") {
+    const adresser = [
+      ...new Set(
+        [...hamtaByggnadAdresser(grund), ...foreningsAdresser].filter(Boolean),
+      ),
+    ];
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <VvsVarmePanel
+          poster={hamtaVvsVarmeStammar(data, rad.id)}
+          adresser={adresser}
+          onChange={(stammar) =>
+            onChange(uppdateraVvsVarmeStammar(data, rad.id, stammar))
           }
         />
       </div>

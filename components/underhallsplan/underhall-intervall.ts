@@ -75,6 +75,11 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       rekommenderatIntervallAr: 6,
       intervallHint: "Filmning/kamerainspektion — ofta vart 5–10 år eller inför större beslut.",
     },
+    varme: {
+      rekommenderatIntervallAr: 40,
+      intervallHint:
+        "Värmestammar — ofta 35–50 år. Stamventil på tillopp och retur i källaren byts oftare.",
+    },
   },
   Värmecentral: {
     radiatorer: {

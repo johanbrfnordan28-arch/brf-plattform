@@ -77,6 +77,7 @@ export function BalkongRenoveringFalt({
             <option value="">— Välj balkongrad —</option>
             {normaliserade.map((p) => (
               <option key={p.id} value={p.id}>
+                {p.antal.trim() ? `${p.antal.trim()} st ` : ""}
                 {p.namn.trim() || balkongTypEtikett(p.balkongTyp)} (
                 {balkongAtgardEtikett(p.atgard)})
               </option>

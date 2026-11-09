@@ -52,8 +52,10 @@ import {
   hamtaPPlatserData,
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
+  hamtaVvsVarmeStammar,
   hamtaVarmestamPoster,
   hamtaStamventilPoster,
+  hamtaUndercentralData,
   måttenhetEtiketter,
   skapaKomponentId,
   formateraForradRad,
@@ -85,8 +87,10 @@ import {
   uppdateraPPlatserData,
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
+  uppdateraVvsVarmeStammar,
   uppdateraVarmestamPoster,
   uppdateraStamventilPoster,
+  uppdateraUndercentralData,
   ytskiktEtikett,
   deltypEtikett,
   type ForradMaterialId,
@@ -109,9 +113,14 @@ import {
   formateraStambytePris,
 } from "@/components/underhallsplan/stambyte-pris";
 import { formateraVvsStambyte } from "@/components/underhallsplan/vvs-stambyte";
+import { VvsVarmePanel } from "@/components/underhallsplan/VvsVarmePanel";
+import { formateraVvsVarmeStammar } from "@/components/underhallsplan/vvs-varme";
+import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import { VvsRadiatorPanel } from "@/components/underhallsplan/VvsRadiatorPanel";
 import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
+import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
+import { formateraUndercentral } from "@/components/underhallsplan/undercentral";
 import { formateraVarmestamPoster } from "@/components/underhallsplan/varmestammar";
 import { formateraStamventilPoster } from "@/components/underhallsplan/stamventiler";
 import { MedlemstakterrassPanel } from "@/components/underhallsplan/MedlemstakterrassPanel";
@@ -643,6 +652,18 @@ export function KomponentDetaljer({
               detaljPanel === "varmestammar-lista" && rad.aktiv
                 ? formateraVarmestamPoster(hamtaVarmestamPoster(data, rad.id))
                 : null;
+            const undercentralKort =
+              detaljPanel === "undercentral" && rad.aktiv
+                ? (() => {
+                    const text = formateraUndercentral(
+                      hamtaUndercentralData(data, rad.id),
+                    );
+                    const antal = rad.värde.trim();
+                    return [antal ? `${antal} st` : "", text]
+                      .filter(Boolean)
+                      .join(", ");
+                  })()
+                : null;
             const stamventilerKort =
               detaljPanel === "stamventiler-lista" && rad.aktiv
                 ? formateraStamventilPoster(hamtaStamventilPoster(data, rad.id))
@@ -650,6 +671,16 @@ export function KomponentDetaljer({
             const pPlatserKort =
               detaljPanel === "p-platser-val" && rad.aktiv
                 ? formateraPPlatser(hamtaPPlatserData(data, rad.id))
+                : null;
+            const varmeAdresser = [
+              ...new Set([
+                ...hamtaByggnadAdresser(grund),
+                ...foreningsAdresser,
+              ].filter(Boolean)),
+            ];
+            const vvsVarmeKort =
+              detaljPanel === "vvs-varme" && rad.aktiv
+                ? formateraVvsVarmeStammar(hamtaVvsVarmeStammar(data, rad.id))
                 : null;
             const stambyteKort =
               detaljPanel === "vvs-stambyte" && rad.aktiv
@@ -727,8 +758,10 @@ export function KomponentDetaljer({
               lokalKort ??
               vvsKort ??
               varmestammarKort ??
+              undercentralKort ??
               stamventilerKort ??
               pPlatserKort ??
+              vvsVarmeKort ??
               stambyteKort ??
               tvattstugaKort ??
               balkongKort ??
@@ -1185,6 +1218,23 @@ export function KomponentDetaljer({
                   </div>
                 )}
 
+                {ärÖppen && rad.aktiv && detaljPanel === "undercentral" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <UndercentralPanel
+                      data={hamtaUndercentralData(data, rad.id)}
+                      antal={rad.värde}
+                      onChange={(undercentral) =>
+                        onChange(
+                          uppdateraUndercentralData(data, rad.id, undercentral),
+                        )
+                      }
+                      onAntalChange={(värde) =>
+                        uppdateraUnderkomponent(rad.id, { värde })
+                      }
+                    />
+                  </div>
+                )}
+
                 {ärÖppen && rad.aktiv && detaljPanel === "stamventiler-lista" && (
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <StamventilerPanel
@@ -1204,6 +1254,18 @@ export function KomponentDetaljer({
                         onChange(
                           uppdateraPPlatserData(data, rad.id, pPlatserData),
                         )
+                      }
+                    />
+                  </div>
+                )}
+
+                {ärÖppen && rad.aktiv && detaljPanel === "vvs-varme" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <VvsVarmePanel
+                      poster={hamtaVvsVarmeStammar(data, rad.id)}
+                      adresser={varmeAdresser}
+                      onChange={(stammar) =>
+                        onChange(uppdateraVvsVarmeStammar(data, rad.id, stammar))
                       }
                     />
                   </div>
