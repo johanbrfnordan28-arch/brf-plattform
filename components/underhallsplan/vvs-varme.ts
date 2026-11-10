@@ -68,6 +68,11 @@ export type VarmeRorDimensionId =
   | "cu12"
   | "cu15"
   | "cu18"
+  | "mm22"
+  | "mm28"
+  | "mm30"
+  | "mm35"
+  | "mm40"
   | "annat";
 
 export const varmeRorDimensioner: {
@@ -82,7 +87,75 @@ export const varmeRorDimensioner: {
   { id: "cu12", etikett: "12 mm" },
   { id: "cu15", etikett: "15 mm" },
   { id: "cu18", etikett: "18 mm" },
+  { id: "mm22", etikett: "22 mm" },
+  { id: "mm28", etikett: "28 mm" },
+  { id: "mm30", etikett: "30 mm" },
+  { id: "mm35", etikett: "35 mm" },
+  { id: "mm40", etikett: "40 mm" },
   { id: "annat", etikett: "Annan dimension" },
+];
+
+/** Takhöjd i rummen stammen går genom. */
+export type VarmeTakhojdId =
+  | "2.4"
+  | "2.5"
+  | "2.6"
+  | "2.7"
+  | "2.8"
+  | "3.0"
+  | "annat";
+
+export const varmeTakhojdAlternativ: {
+  id: VarmeTakhojdId;
+  etikett: string;
+  meter: number | null;
+}[] = [
+  { id: "2.4", etikett: "2,4 m", meter: 2.4 },
+  { id: "2.5", etikett: "2,5 m", meter: 2.5 },
+  { id: "2.6", etikett: "2,6 m", meter: 2.6 },
+  { id: "2.7", etikett: "2,7 m", meter: 2.7 },
+  { id: "2.8", etikett: "2,8 m", meter: 2.8 },
+  { id: "3.0", etikett: "3,0 m", meter: 3.0 },
+  { id: "annat", etikett: "Egen takhöjd", meter: null },
+];
+
+/** Bjälklagets tjocklek mellan våningarna. */
+export type VarmeBjalklagId =
+  | "0.2"
+  | "0.3"
+  | "0.4"
+  | "0.5"
+  | "0.6"
+  | "annat";
+
+export const varmeBjalklagAlternativ: {
+  id: VarmeBjalklagId;
+  etikett: string;
+  meter: number | null;
+}[] = [
+  { id: "0.2", etikett: "0,2 m", meter: 0.2 },
+  { id: "0.3", etikett: "0,3 m", meter: 0.3 },
+  { id: "0.4", etikett: "0,4 m", meter: 0.4 },
+  { id: "0.5", etikett: "0,5 m", meter: 0.5 },
+  { id: "0.6", etikett: "0,6 m", meter: 0.6 },
+  { id: "annat", etikett: "Egen tjocklek", meter: null },
+];
+
+export const varmeVaningarAlternativ: {
+  id: string;
+  etikett: string;
+}[] = [
+  { id: "3", etikett: "3 våningar" },
+  { id: "4", etikett: "4 våningar" },
+  { id: "5", etikett: "5 våningar" },
+  { id: "6", etikett: "6 våningar" },
+  { id: "7", etikett: "7 våningar" },
+  { id: "8", etikett: "8 våningar" },
+  { id: "9", etikett: "9 våningar" },
+  { id: "10", etikett: "10 våningar" },
+  { id: "11", etikett: "11 våningar" },
+  { id: "12", etikett: "12 våningar" },
+  { id: "annat", etikett: "Eget antal" },
 ];
 
 /**
@@ -107,16 +180,22 @@ export type VarmeRadiatorGrupp = {
 
 export type VvsVarmeStam = {
   id: string;
-  /** Namn stammen har i källaren, t.ex. Stam 1. */
+  /** Namn styrelsen ger stammen, t.ex. Stam 1. */
   namn: string;
   /** Hur stammen är märkt i källaren. */
   markningKallare: string;
-  /** Adress där stammen går upp. */
+  /** Adress / trapphus där stammen går upp. */
   adress: string;
   /** Rum eller lägenhetstyp stammen betjänar, t.ex. vardagsrum, 3 rum och kök. */
   betjanar: string;
   /** Antal våningar stammen går genom. */
   vaningar: string;
+  /** Takhöjd per våning. */
+  takhojd: VarmeTakhojdId | "";
+  takhojdAnnan: string;
+  /** Bjälklagets tjocklek mellan våningarna. */
+  bjalklag: VarmeBjalklagId | "";
+  bjalklagAnnan: string;
   /** Storlek på rummen stammen betjänar. */
   rumStorlek: string;
   /** Äldre enkelt antal. Används bara om inga radiatorgrupper finns. */
@@ -158,12 +237,68 @@ export function skapaTomVvsVarmeStam(namn = ""): VvsVarmeStam {
     adress: "",
     betjanar: "",
     vaningar: "",
+    takhojd: "2.6",
+    takhojdAnnan: "",
+    bjalklag: "0.4",
+    bjalklagAnnan: "",
     rumStorlek: "",
     radiatorAntal: "",
-    stamRordimension: "",
+    stamRordimension: "mm30",
     stamRordimensionAnnan: "",
     radiatorGrupper: [],
   };
+}
+
+function arTakhojd(v: unknown): v is VarmeTakhojdId {
+  return varmeTakhojdAlternativ.some((a) => a.id === v);
+}
+
+function arBjalklag(v: unknown): v is VarmeBjalklagId {
+  return varmeBjalklagAlternativ.some((a) => a.id === v);
+}
+
+export function varmeTakhojdMeter(stam: Pick<VvsVarmeStam, "takhojd" | "takhojdAnnan">): number {
+  const preset = varmeTakhojdAlternativ.find((a) => a.id === stam.takhojd);
+  if (preset?.meter) return preset.meter;
+  return parseNummerSumma([stam.takhojdAnnan]);
+}
+
+export function varmeBjalklagMeter(
+  stam: Pick<VvsVarmeStam, "bjalklag" | "bjalklagAnnan">,
+): number {
+  const preset = varmeBjalklagAlternativ.find((a) => a.id === stam.bjalklag);
+  if (preset?.meter) return preset.meter;
+  return parseNummerSumma([stam.bjalklagAnnan]);
+}
+
+export function varmeVaningarAntal(stam: Pick<VvsVarmeStam, "vaningar">): number {
+  const n = Math.floor(parseNummerSumma([stam.vaningar]));
+  return n > 0 ? n : 0;
+}
+
+/**
+ * Total stamhöjd: våningar × takhöjd + (våningar − 1) × bjälklag.
+ * Exempel: 9 × 2,6 m + 8 × 0,4 m = 26,6 m.
+ */
+export function varmeStamVertikalMeter(stam: VvsVarmeStam): number {
+  const vaningar = varmeVaningarAntal(stam);
+  const tak = varmeTakhojdMeter(stam);
+  const bjalk = varmeBjalklagMeter(stam);
+  if (vaningar <= 0 || tak <= 0) return 0;
+  return vaningar * tak + Math.max(0, vaningar - 1) * bjalk;
+}
+
+export function formateraVarmeStamHojd(stam: VvsVarmeStam): string {
+  const vaningar = varmeVaningarAntal(stam);
+  const tak = varmeTakhojdMeter(stam);
+  const bjalk = varmeBjalklagMeter(stam);
+  const total = varmeStamVertikalMeter(stam);
+  if (total <= 0) return "";
+  const bjalkDel =
+    vaningar > 1 && bjalk > 0
+      ? ` + ${vaningar - 1} × ${formatSummeringTal(bjalk)} m bjälklag`
+      : "";
+  return `${formatSummeringTal(total)} m (${vaningar} × ${formatSummeringTal(tak)} m takhöjd${bjalkDel})`;
 }
 
 function arElementAntal(v: unknown): v is VarmeElementAntalId {
@@ -209,6 +344,8 @@ export function normaliseraVvsVarmeStam(
   raw: Partial<VvsVarmeStam> & { id?: string },
   index = 0,
 ): VvsVarmeStam {
+  const takhojd = arTakhojd(raw.takhojd) ? raw.takhojd : "";
+  const bjalklag = arBjalklag(raw.bjalklag) ? raw.bjalklag : "";
   return {
     id: raw.id?.trim() || `vvs-varme-${index + 1}`,
     namn: raw.namn?.trim() ?? "",
@@ -216,6 +353,10 @@ export function normaliseraVvsVarmeStam(
     adress: raw.adress?.trim() ?? "",
     betjanar: raw.betjanar?.trim() ?? "",
     vaningar: raw.vaningar?.trim() ?? "",
+    takhojd,
+    takhojdAnnan: takhojd === "annat" ? raw.takhojdAnnan?.trim() ?? "" : "",
+    bjalklag,
+    bjalklagAnnan: bjalklag === "annat" ? raw.bjalklagAnnan?.trim() ?? "" : "",
     rumStorlek: raw.rumStorlek?.trim() ?? "",
     radiatorAntal: raw.radiatorAntal?.trim() ?? "",
     stamRordimension: arRorDimension(raw.stamRordimension)
@@ -304,6 +445,8 @@ export function formateraVvsVarmeStam(post: VvsVarmeStam): string {
   if (p.adress) delar.push(p.adress);
   if (p.betjanar) delar.push(p.betjanar);
   if (p.vaningar) delar.push(`${p.vaningar} våningar`);
+  const hojd = formateraVarmeStamHojd(p);
+  if (hojd) delar.push(`höjd ${hojd}`);
   if (p.rumStorlek) delar.push(`rum ${p.rumStorlek}`);
   const stamDimension = varmeRorEtikett(
     p.stamRordimension,
@@ -421,19 +564,35 @@ export function summeraVvsVarmeStammar(poster: VvsVarmeStam[]): ListaSummeringRa
     });
   }
 
-  const stamPerDimension = new Map<string, number>();
+  const vertikalTotalt = rader.reduce(
+    (sum, stam) => sum + varmeStamVertikalMeter(stam),
+    0,
+  );
+  if (vertikalTotalt > 0) {
+    summering.push({
+      etikett: "Stamhöjd totalt",
+      varde: `${formatSummeringTal(vertikalTotalt)} m`,
+    });
+  }
+
+  const stamPerDimension = new Map<string, { antal: number; meter: number }>();
   for (const stam of rader) {
     const etikett = varmeRorEtikett(
       stam.stamRordimension,
       stam.stamRordimensionAnnan,
     );
     if (!etikett) continue;
-    stamPerDimension.set(etikett, (stamPerDimension.get(etikett) ?? 0) + 1);
+    const aktuell = stamPerDimension.get(etikett) ?? { antal: 0, meter: 0 };
+    aktuell.antal += 1;
+    aktuell.meter += varmeStamVertikalMeter(stam);
+    stamPerDimension.set(etikett, aktuell);
   }
-  for (const [etikett, antal] of stamPerDimension) {
+  for (const [etikett, tal] of stamPerDimension) {
+    const delar = [`${tal.antal} st`];
+    if (tal.meter > 0) delar.push(`${formatSummeringTal(tal.meter)} m höjd`);
     summering.push({
       etikett: `Stamledning ${etikett}`,
-      varde: `${antal} st`,
+      varde: delar.join(", "),
     });
   }
 

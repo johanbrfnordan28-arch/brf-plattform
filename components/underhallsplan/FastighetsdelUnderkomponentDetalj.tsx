@@ -32,10 +32,12 @@ import {
   hamtaMedlemstakterrassPoster,
   hamtaStamventilPoster,
   hamtaUndercentralData,
+  hamtaVarmestamPoster,
   hamtaVvsStambyteData,
   hamtaVvsVarmeStammar,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
+  uppdateraVarmestamPoster,
   uppdateraVvsStambyteData,
   uppdateraVvsVarmeStammar,
   uppdateraTakfonsterData,
@@ -48,6 +50,7 @@ import {
 import { StambytePanel } from "@/components/underhallsplan/StambytePanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
+import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
 import { VvsVarmePanel } from "@/components/underhallsplan/VvsVarmePanel";
 import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
@@ -65,6 +68,7 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "medlemstakterrass-val",
   "undercentral",
   "stamventiler-lista",
+  "varmestammar-lista",
   "vvs-varme",
   "vvs-stambyte",
 ]);
@@ -294,6 +298,19 @@ export function FastighetsdelUnderkomponentDetalj({
           poster={hamtaStamventilPoster(data, rad.id)}
           onChange={(poster) =>
             onChange(uppdateraStamventilPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "varmestammar-lista") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <VarmestammarPanel
+          poster={hamtaVarmestamPoster(data, rad.id)}
+          onChange={(poster) =>
+            onChange(uppdateraVarmestamPoster(data, rad.id, poster))
           }
         />
       </div>

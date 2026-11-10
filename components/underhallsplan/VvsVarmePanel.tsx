@@ -4,21 +4,27 @@ import { useState } from "react";
 import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
 import { formatSummeringTal } from "@/components/underhallsplan/lista-summering";
 import {
+  formateraVarmeStamHojd,
   normaliseraVvsVarmeStam,
   skapaTomVarmeRadiatorGrupp,
   skapaTomVvsVarmeStam,
   summeraVvsVarmeStammar,
   varmeAvstandAlternativ,
+  varmeBjalklagAlternativ,
   varmeElementAlternativ,
   varmeGruppRorMeter,
   varmeRadiatorStorlekar,
   varmeRorDimensioner,
   varmeStamElement,
+  varmeTakhojdAlternativ,
+  varmeVaningarAlternativ,
   type VarmeAvstandId,
+  type VarmeBjalklagId,
   type VarmeElementAntalId,
   type VarmeRadiatorGrupp,
   type VarmeRadiatorStorlekId,
   type VarmeRorDimensionId,
+  type VarmeTakhojdId,
   type VvsVarmeStam,
 } from "@/components/underhallsplan/vvs-varme";
 
@@ -139,12 +145,12 @@ export function VvsVarmePanel({
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-muted">
-        Grundmall för värmestammar. Varje stam kan döpas och märkas i källaren
-        och beskriver var den går upp i fastigheten. På stammen kan radiatorerna
-        ha olika storlek, sitta olika långt från stammen och vara 1, 2 eller 3
-        element — vanligast är 1. Välj i listan eller ange eget. Sammanställningen
-        längst ned är underlag när ni uppskattar kostnad. Stamventiler läggs
-        inte in här. De registreras bara under Uppvärmning → Stamventiler.
+        Lägg en stam per rad och bygg vidare när det behövs. Styrelsen kan ge
+        varje stam ett eget namn och ange placering — till exempel Stam 1 som
+        betjänar vardagsrum i 3 rum och kök. Med antal våningar, takhöjd och
+        bjälklagets tjocklek räknas total stamhöjd fram automatiskt. Dimension
+        och radiatorer är valbara. Sammanställningen längst ned är underlag för
+        kostnad. Stamventiler registreras under Uppvärmning → Stamventiler.
       </p>
 
       <div className="flex flex-wrap items-end gap-2 rounded-lg border border-primary/30 bg-[#fafcfa] p-3">
@@ -197,38 +203,43 @@ export function VvsVarmePanel({
                 </button>
               </div>
 
-              <p className="text-xs font-semibold text-primary-dark">I källaren</p>
+              <p className="text-xs font-semibold text-primary-dark">
+                Namn och placering
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                Styrelsen kan namnge stammen fritt. Placeringen beskriver var
+                den går upp och vad den betjänar.
+              </p>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <TextFalt
                   label="Namn"
                   value={post.namn}
                   onChange={(namn) => uppdatera(post.id, { namn })}
                   placeholder="t.ex. Stam 1"
-                  hint="Namnet stammen har där den är märkt."
+                  hint="Eget namn som styrelsen väljer."
                 />
                 <TextFalt
-                  label="Märkning"
+                  label="Märkning i källaren"
                   value={post.markningKallare}
                   onChange={(markningKallare) =>
                     uppdatera(post.id, { markningKallare })
                   }
                   placeholder="t.ex. skylt VS-A"
-                  hint="Texten på märkningen i källaren."
+                  hint="Texten på märkningen där stammen står i källaren."
                 />
-              </div>
-
-              <p className="mt-4 text-xs font-semibold text-primary-dark">
-                Var stammen går upp
-              </p>
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm">
-                  <span className="text-xs font-medium text-muted">Adress</span>
+                  <span className="text-xs font-medium text-muted">
+                    Placering / adress
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-muted">
+                    Trapphus eller adress där stammen går upp.
+                  </span>
                   <input
                     type="text"
                     list={adresser.length > 0 ? `vvs-varme-adress-${post.id}` : undefined}
                     value={post.adress}
                     onChange={(e) => uppdatera(post.id, { adress: e.target.value })}
-                    placeholder="t.ex. Hannebergsgatan 22"
+                    placeholder="t.ex. Hannebergsgatan 22, trapphus A"
                     className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                   />
                   {adresser.length > 0 && (
@@ -243,14 +254,109 @@ export function VvsVarmePanel({
                   label="Betjänar"
                   value={post.betjanar}
                   onChange={(betjanar) => uppdatera(post.id, { betjanar })}
-                  placeholder="t.ex. vardagsrum, 3 rum och kök"
+                  placeholder="t.ex. 3 rum och kök, vardagsrum"
+                  hint="Lägenhetstyp eller rum stammen försörjer."
                 />
-                <TextFalt
-                  label="Antal våningar"
-                  value={post.vaningar}
-                  onChange={(vaningar) => uppdatera(post.id, { vaningar })}
-                  placeholder="t.ex. 5"
+              </div>
+
+              <p className="mt-4 text-xs font-semibold text-primary-dark">
+                Höjd och dimension
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                Total stamhöjd räknas som antal våningar × takhöjd + (våningar −
+                1) × bjälklag. Exempel: 9 × 2,6 m + 8 × 0,4 m = 26,6 m.
+              </p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="text-xs font-medium text-muted">
+                    Antal våningar
+                  </span>
+                  <select
+                    value={
+                      varmeVaningarAlternativ.some(
+                        (a) => a.id === post.vaningar && a.id !== "annat",
+                      )
+                        ? post.vaningar
+                        : ""
+                    }
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        uppdatera(post.id, { vaningar: e.target.value });
+                      }
+                    }}
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="">Välj vanligt antal</option>
+                    {varmeVaningarAlternativ
+                      .filter((a) => a.id !== "annat")
+                      .map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.etikett}
+                        </option>
+                      ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={post.vaningar}
+                    onChange={(e) =>
+                      uppdatera(post.id, { vaningar: e.target.value })
+                    }
+                    placeholder="eller skriv eget, t.ex. 14"
+                    className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </label>
+                <ValFalt
+                  label="Takhöjd"
+                  value={post.takhojd}
+                  alternativ={[
+                    { id: "", etikett: "— välj —" },
+                    ...varmeTakhojdAlternativ,
+                  ]}
+                  onChange={(takhojd) =>
+                    uppdatera(post.id, {
+                      takhojd: takhojd as VarmeTakhojdId | "",
+                      takhojdAnnan:
+                        takhojd === "annat" ? post.takhojdAnnan : "",
+                    })
+                  }
                 />
+                {post.takhojd === "annat" && (
+                  <TextFalt
+                    label="Egen takhöjd (meter)"
+                    value={post.takhojdAnnan}
+                    onChange={(takhojdAnnan) =>
+                      uppdatera(post.id, { takhojdAnnan })
+                    }
+                    placeholder="t.ex. 2,65"
+                  />
+                )}
+                <ValFalt
+                  label="Bjälklagets tjocklek"
+                  value={post.bjalklag}
+                  alternativ={[
+                    { id: "", etikett: "— välj —" },
+                    ...varmeBjalklagAlternativ,
+                  ]}
+                  onChange={(bjalklag) =>
+                    uppdatera(post.id, {
+                      bjalklag: bjalklag as VarmeBjalklagId | "",
+                      bjalklagAnnan:
+                        bjalklag === "annat" ? post.bjalklagAnnan : "",
+                    })
+                  }
+                />
+                {post.bjalklag === "annat" && (
+                  <TextFalt
+                    label="Egen bjälklagstjocklek (meter)"
+                    value={post.bjalklagAnnan}
+                    onChange={(bjalklagAnnan) =>
+                      uppdatera(post.id, { bjalklagAnnan })
+                    }
+                    placeholder="t.ex. 0,45"
+                  />
+                )}
                 <ValFalt
                   label="Dimension stamledning"
                   hint="Röret som går upp i huset, tillopp och retur."
@@ -276,7 +382,7 @@ export function VvsVarmePanel({
                     onChange={(stamRordimensionAnnan) =>
                       uppdatera(post.id, { stamRordimensionAnnan })
                     }
-                    placeholder="t.ex. DN40"
+                    placeholder="t.ex. 42 mm"
                   />
                 )}
                 <div className="sm:col-span-2">
@@ -289,6 +395,11 @@ export function VvsVarmePanel({
                   />
                 </div>
               </div>
+              {formateraVarmeStamHojd(post) && (
+                <p className="mt-3 rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-3 py-2 text-sm text-primary-dark">
+                  Total stamhöjd: {formateraVarmeStamHojd(post)}
+                </p>
+              )}
 
               <div className="mt-4">
                 <p className="text-xs font-semibold text-primary-dark">
@@ -467,9 +578,9 @@ export function VvsVarmePanel({
       {rader.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs leading-relaxed text-muted">
-            Sammanställningen samlar storlek, antal element, avstånd och
-            rördimension från alla stammar. Den är underlag när ni uppskattar
-            kostnad för element och rör.
+            Sammanställningen samlar stamhöjd, dimension, radiatorstorlek, antal
+            element och avstånd från alla stammar. Den är underlag när ni
+            uppskattar kostnad för stamledning, element och rör.
           </p>
           <ListaSummeringPanel
             titel="Sammanställning värme"

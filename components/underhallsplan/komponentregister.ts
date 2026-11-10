@@ -56,6 +56,8 @@ import {
 } from "@/components/underhallsplan/vvs-radiatorer";
 import {
   formateraVarmestamPoster,
+  normaliseraVarmestamPost,
+  skapaTomVarmestamPost,
   VARMESTAMMAR_UNDERKOMPONENT_ID,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
@@ -1068,7 +1070,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Värme",
         defaultMåttenhet: "antal",
         måttHint:
-          "Värmestammar i källaren, radiatorstorlek, antal element, avstånd från stammen och rördimension. Sammanställningen är underlag för kostnad. Stamventiler läggs in under Uppvärmning.",
+          "Stamnamn och placering, antal våningar, takhöjd och bjälklag ger total stamhöjd. Dimension, radiatorer och sammanställning är underlag för kostnad. Stamventiler läggs in under Uppvärmning.",
         detaljPanel: "vvs-varme",
       },
       {
@@ -1109,7 +1111,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Värmestammar",
         defaultMåttenhet: "löpmeter",
         måttHint:
-          "Vertikal och horisontell stamledning — ange löpmeter per stam eller avsnitt.",
+          "Stamnamn och placering, antal våningar, takhöjd och bjälklag ger total stamhöjd. Dimension är valbar. Sammanställningen visar antalet.",
         detaljPanel: "varmestammar-lista",
       },
       {
@@ -2949,7 +2951,13 @@ export function hamtaVarmestamPoster(
   data: KomponentDetaljData,
   underId: string,
 ): VarmestamPost[] {
-  return data.varmestammarRegister?.[underId] ?? [];
+  const raw = data.varmestammarRegister?.[underId] ?? [];
+  return raw.map((post) =>
+    normaliseraVarmestamPost({
+      ...skapaTomVarmestamPost(),
+      ...post,
+    }),
+  );
 }
 
 export function uppdateraVarmestamPoster(
@@ -2961,7 +2969,12 @@ export function uppdateraVarmestamPoster(
     ...data,
     varmestammarRegister: {
       ...data.varmestammarRegister,
-      [underId]: poster,
+      [underId]: poster.map((post) =>
+        normaliseraVarmestamPost({
+          ...skapaTomVarmestamPost(),
+          ...post,
+        }),
+      ),
     },
   };
 }
