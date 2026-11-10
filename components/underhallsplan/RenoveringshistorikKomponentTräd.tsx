@@ -40,6 +40,7 @@ import {
 } from "@/components/underhallsplan/renovering-inkludering";
 import { forhandsvisaNastaAtgarder } from "@/components/underhallsplan/renovering-planering";
 import {
+  fastighetsdelVisningsnamn,
   hamtaKomponentMall,
   underkomponenterIRenoveringshistorik,
   type KomponentDetaljData,
@@ -378,7 +379,11 @@ export function RenoveringshistorikKomponentTräd({
           return (
             <KomponentAccordionRad
               key={namn}
-              namn={takAdress ? `${namn} · ${takAdress}` : namn}
+              namn={
+                takAdress
+                  ? `${fastighetsdelVisningsnamn(namn)} · ${takAdress}`
+                  : fastighetsdelVisningsnamn(namn)
+              }
               undertitel={`${synligaUnderkomponenter.length} underkomponenter${
                 antalKomp > 0 ? ` · ${antalKomp} renoveringar` : ""
               }`}
@@ -464,8 +469,8 @@ export function RenoveringshistorikKomponentTräd({
                       <RenoveringDelFormular
                         rubrik={
                           redigerarId
-                            ? `Redigera — hela ${namn}`
-                            : `Utfört arbete — hela ${namn}`
+                            ? `Redigera — hela ${fastighetsdelVisningsnamn(namn)}`
+                            : `Utfört arbete — hela ${fastighetsdelVisningsnamn(namn)}`
                         }
                         komponentNamn={namn}
                         form={delForm}
@@ -603,10 +608,10 @@ export function RenoveringshistorikKomponentTräd({
                           <RenoveringDelFormular
                             rubrik={
                               redigerarId
-                                ? `Redigera — ${namn} / ${uk.etikett}`
+                                ? `Redigera — ${fastighetsdelVisningsnamn(namn)} / ${uk.etikett}`
                                 : ärBalkonger
-                                  ? `Utfört arbete — balkong, ${namn}`
-                                  : `Utfört arbete — ${namn} / ${uk.etikett}`
+                                  ? `Utfört arbete — balkong, ${fastighetsdelVisningsnamn(namn)}`
+                                  : `Utfört arbete — ${fastighetsdelVisningsnamn(namn)} / ${uk.etikett}`
                             }
                             komponentNamn={namn}
                             form={delForm}

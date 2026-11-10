@@ -144,7 +144,7 @@ export function VvsVarmePanel({
         ha olika storlek, sitta olika långt från stammen och vara 1, 2 eller 3
         element — vanligast är 1. Välj i listan eller ange eget. Sammanställningen
         längst ned är underlag när ni uppskattar kostnad. Stamventiler läggs
-        inte in här. De registreras bara under Värmecentral → Stamventiler.
+        inte in här. De registreras bara under Uppvärmning → Stamventiler.
       </p>
 
       <div className="flex flex-wrap items-end gap-2 rounded-lg border border-primary/30 bg-[#fafcfa] p-3">

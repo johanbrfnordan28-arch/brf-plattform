@@ -32,6 +32,7 @@ import {
 } from "@/components/underhallsplan/plan-budget-sammanfattning";
 import type { UtfördRenovering } from "@/components/underhallsplan/renoveringar";
 import {
+  fastighetsdelVisningsnamn,
   formateraKomponentSammanfattning,
   hamtaKomponentMall,
   type KomponentDetaljData,
@@ -1003,7 +1004,7 @@ export function UnderhallsplanSlutsida({
                     className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
                   >
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="font-medium">{name}</span>
+                      <span className="font-medium">{fastighetsdelVisningsnamn(name)}</span>
                       {belopp && belopp.summaKr > 0 && (
                         <span className="text-xs font-semibold tabular-nums text-primary-dark">
                           {formatKr(belopp.summaKr)}

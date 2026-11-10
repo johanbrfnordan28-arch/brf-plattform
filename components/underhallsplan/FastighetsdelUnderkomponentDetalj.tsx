@@ -276,10 +276,12 @@ export function FastighetsdelUnderkomponentDetalj({
         <UndercentralPanel
           data={hamtaUndercentralData(data, rad.id)}
           antal={rad.värde}
+          system={data.valdaDeltyper}
           onChange={(undercentral) =>
             onChange(uppdateraUndercentralData(data, rad.id, undercentral))
           }
           onAntalChange={(värde) => onRadChange({ värde })}
+          onSystemChange={(valdaDeltyper) => onChange({ ...data, valdaDeltyper })}
         />
       </div>
     );

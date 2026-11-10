@@ -7,6 +7,7 @@ import {
   type Steg2SammanstallningBlock,
 } from "@/components/underhallsplan/fastighetsdel-steg2-sammanstallning";
 import {
+  fastighetsdelVisningsnamn,
   hamtaKomponentMall,
   type KomponentDetaljData,
 } from "@/components/underhallsplan/komponentregister";
@@ -125,13 +126,13 @@ export function FastighetsdelSammanstallning({
           onClick={() => setOppen((v) => !v)}
           ariaLabel={
             oppen
-              ? `Stäng sammanställning ${komponentNamn}`
-              : `Öppna sammanställning ${komponentNamn}`
+              ? `Stäng sammanställning ${fastighetsdelVisningsnamn(komponentNamn)}`
+              : `Öppna sammanställning ${fastighetsdelVisningsnamn(komponentNamn)}`
           }
         />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-primary-dark">
-            Sammanställning — {komponentNamn}
+            Sammanställning — {fastighetsdelVisningsnamn(komponentNamn)}
           </p>
           <p className="text-[11px] text-muted">
             {block.length}{" "}

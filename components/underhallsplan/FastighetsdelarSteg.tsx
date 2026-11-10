@@ -24,6 +24,7 @@ import {
 import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import {
   fastighetsdelGrupper,
+  fastighetsdelVisningsnamn,
   foreslagnaKomponenter,
   hamtaKomponentMall,
   måttenhetEtiketter,
@@ -312,7 +313,7 @@ export function FastighetsdelarSteg({
         <div className="flex items-start justify-between gap-3 px-3 py-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">
-              {namn}
+              {fastighetsdelVisningsnamn(namn)}
               {takAdress ? (
                 <span className="font-normal text-muted"> · {takAdress}</span>
               ) : null}
@@ -350,7 +351,11 @@ export function FastighetsdelarSteg({
               oppen={oppenDel}
               storlek="sm"
               onClick={() => setOppen(oppenDel ? null : namn)}
-              ariaLabel={oppenDel ? `Stäng ${namn}` : `Öppna ${namn}`}
+              ariaLabel={
+                oppenDel
+                  ? `Stäng ${fastighetsdelVisningsnamn(namn)}`
+                  : `Öppna ${fastighetsdelVisningsnamn(namn)}`
+              }
             />
           </div>
         </div>
@@ -685,7 +690,7 @@ export function FastighetsdelarSteg({
                 <option value="">Välj del</option>
                 {borttagnaStandard.map((namn) => (
                   <option key={namn} value={namn}>
-                    {namn}
+                    {fastighetsdelVisningsnamn(namn)}
                   </option>
                 ))}
               </select>

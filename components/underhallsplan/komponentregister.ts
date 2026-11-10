@@ -70,6 +70,7 @@ import {
   normaliseraUndercentralData,
   skapaTomUndercentralData,
   UNDERCENTRAL_UNDERKOMPONENT_ID,
+  uppvarmningSystem,
   type UndercentralData,
 } from "@/components/underhallsplan/undercentral";
 import {
@@ -601,6 +602,15 @@ export const måttenhetEtiketter: Record<Måttenhet, { etikett: string; enhet: s
 };
 
 /** Utvändiga och invändiga huvuddelar — steg 2. Övriga steg läser samma lista. */
+/** Visningsnamn. Lagringsnyckeln behålls så sparade planer fortsätter att gälla. */
+const FASTIGHETSDEL_VISNINGSNAMN: Record<string, string> = {
+  Värmecentral: "Uppvärmning",
+};
+
+export function fastighetsdelVisningsnamn(namn: string): string {
+  return FASTIGHETSDEL_VISNINGSNAMN[namn] ?? namn;
+}
+
 export const fastighetsdelGrupper = [
   {
     id: "utvandigt",
@@ -1058,7 +1068,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Värme",
         defaultMåttenhet: "antal",
         måttHint:
-          "Värmestammar i källaren, radiatorstorlek, antal element, avstånd från stammen och rördimension. Sammanställningen är underlag för kostnad. Stamventiler läggs in under Värmecentral.",
+          "Värmestammar i källaren, radiatorstorlek, antal element, avstånd från stammen och rördimension. Sammanställningen är underlag för kostnad. Stamventiler läggs in under Uppvärmning.",
         detaljPanel: "vvs-varme",
       },
       {
@@ -1074,18 +1084,16 @@ const komponentMallar: Record<string, KomponentMall> = {
   Värmecentral: {
     namn: "Värmecentral",
     deltypSektionTitel: "Värmesystem",
-    deltyper: [
-      { id: "fjarrvarme", etikett: "Fjärrvärme" },
-      { id: "bergvarme", etikett: "Bergvärme / värmepump" },
-      { id: "olja", etikett: "Olja / elpanna" },
-    ],
+    deltypHjalp:
+      "Flera system kan väljas om huset har mer än ett, till exempel fjärrvärme och solvärme.",
+    deltyper: uppvarmningSystem.map(({ id, etikett }) => ({ id, etikett })),
     underkomponenter: [
       {
         id: UNDERCENTRAL_UNDERKOMPONENT_ID,
         etikett: "Undercentral",
         defaultMåttenhet: "antal",
         måttHint:
-          "Källaren: antal undercentraler och löpmeter horisontell tillopp och retur. Stamventiler läggs in under Stamventiler.",
+          "Antal undercentraler, värmesystem och bilder. Löpmeter för horisontell tillopp och retur i källaren. Stamventiler läggs in under Stamventiler.",
         detaljPanel: "undercentral",
       },
       {
@@ -3577,7 +3585,7 @@ export function formateraKomponentSammanfattning(
     }
     if (def?.detaljPanel === "undercentral") {
       const uc = data.undercentralRegister?.[rad.id];
-      const text = uc ? formateraUndercentral(uc) : "";
+      const text = uc ? formateraUndercentral(uc, data.valdaDeltyper) : "";
       const antal = rad.värde.trim();
       const ucDelar = [antal ? `${antal} st` : "", text].filter(Boolean);
       if (ucDelar.length > 0) {

@@ -2,7 +2,10 @@
 
 import { useMemo } from "react";
 import { formatKr, type Besiktning } from "@/components/underhallsplan/besiktningar";
-import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
+import {
+  fastighetsdelVisningsnamn,
+  type KomponentDetaljData,
+} from "@/components/underhallsplan/komponentregister";
 import { hamtaPlanSlutAr } from "@/components/underhallsplan/planinstallningar";
 import { sammanstallRegisterKostnader } from "@/components/underhallsplan/register-kostnad";
 import type { PlanKostnaderNormaliserade } from "@/components/underhallsplan/plan-kostnader";
@@ -172,7 +175,7 @@ export function UnderhallsplanBudget({
         // Engång: moms markerad men ingen löpande underhållskostnad i planen
         if (moms > 0 && !harLopande) {
           poster.push({
-            etikett: `${namn} — ${rad.etikett}`,
+            etikett: `${fastighetsdelVisningsnamn(namn)} — ${rad.etikett}`,
             beloppKr: moms,
             inklKr: Number.isFinite(inkl) ? inkl : 0,
           });
@@ -384,18 +387,18 @@ export function UnderhallsplanBudget({
                       rad.direktkostnadPoster.length > 0 ? (
                         <ul className="space-y-0.5">
                           {rad.besiktningPoster.map((p) => (
-                            <li key={`b-${p.komponent}-${p.namn}`}>
+                            <li key={`b-${fastighetsdelVisningsnamn(p.komponent)}-${p.namn}`}>
                               <span className="text-foreground/80">
-                                {p.komponent}
+                                {fastighetsdelVisningsnamn(p.komponent)}
                               </span>
                               {" · "}
                               {p.namn}: {formatKr(p.belopp)}
                             </li>
                           ))}
                           {rad.direktkostnadPoster.map((p, i) => (
-                            <li key={`d-${p.komponent}-${p.namn}-${i}`}>
+                            <li key={`d-${fastighetsdelVisningsnamn(p.komponent)}-${p.namn}-${i}`}>
                               <span className="text-amber-900/90">
-                                {p.komponent}
+                                {fastighetsdelVisningsnamn(p.komponent)}
                               </span>
                               {" · "}
                               {p.namn}: {formatKr(p.belopp)}
@@ -475,8 +478,8 @@ export function UnderhallsplanBudget({
                   </p>
                   <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
                     {grupp.poster.map((p, i) => (
-                      <li key={`${p.komponent}-${p.del}-${i}`}>
-                        {p.komponent} — {p.del}: {formatKr(p.beloppKr)}
+                      <li key={`${fastighetsdelVisningsnamn(p.komponent)}-${p.del}-${i}`}>
+                        {fastighetsdelVisningsnamn(p.komponent)} — {p.del}: {formatKr(p.beloppKr)}
                       </li>
                     ))}
                   </ul>
@@ -519,8 +522,8 @@ export function UnderhallsplanBudget({
                     </p>
                     <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
                       {grupp.poster.map((p, i) => (
-                        <li key={`${p.komponent}-${p.del}-${i}`}>
-                          {p.komponent} — {p.del}: {formatKr(p.beloppKr)}
+                        <li key={`${fastighetsdelVisningsnamn(p.komponent)}-${p.del}-${i}`}>
+                          {fastighetsdelVisningsnamn(p.komponent)} — {p.del}: {formatKr(p.beloppKr)}
                         </li>
                       ))}
                     </ul>
@@ -554,8 +557,8 @@ export function UnderhallsplanBudget({
                   </p>
                   <ul className="mt-1.5 space-y-0.5 text-xs text-muted">
                     {grupp.poster.map((p, i) => (
-                      <li key={`${p.komponent}-${p.del}-${i}`}>
-                        {p.komponent} — {p.del}: {formatKr(p.beloppKr)}
+                      <li key={`${fastighetsdelVisningsnamn(p.komponent)}-${p.del}-${i}`}>
+                        {fastighetsdelVisningsnamn(p.komponent)} — {p.del}: {formatKr(p.beloppKr)}
                       </li>
                     ))}
                   </ul>
@@ -582,7 +585,7 @@ export function UnderhallsplanBudget({
                   className="rounded-lg border border-border/80 bg-white px-3 py-2"
                 >
                   <p className="font-medium text-foreground">
-                    {a.ar}: {a.komponent} — {a.del},{" "}
+                    {a.ar}: {fastighetsdelVisningsnamn(a.komponent)} — {a.del},{" "}
                     {formatKr(a.kostnadKr)}
                   </p>
                   {a.kallaRenoveringTitel && a.kallaRenoveringAr && (
@@ -607,8 +610,8 @@ export function UnderhallsplanBudget({
             </p>
             <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm text-muted">
               {atgarderFranRegister.map((a, i) => (
-                <li key={`${a.komponent}-${a.del}-${a.ar}-${i}`}>
-                  {a.ar}: {a.komponent} — {a.del}, {formatKr(a.kostnadKr)}
+                <li key={`${fastighetsdelVisningsnamn(a.komponent)}-${a.del}-${a.ar}-${i}`}>
+                  {a.ar}: {fastighetsdelVisningsnamn(a.komponent)} — {a.del}, {formatKr(a.kostnadKr)}
                 </li>
               ))}
             </ul>
@@ -627,7 +630,7 @@ export function UnderhallsplanBudget({
             <ul className="mt-2 space-y-1 text-sm text-foreground">
               {registerKostnader.rader.map((rad) => (
                 <li key={rad.id}>
-                  {rad.komponent} — {rad.etikett}: {formatKr(rad.beloppKr)}
+                  {fastighetsdelVisningsnamn(rad.komponent)} — {rad.etikett}: {formatKr(rad.beloppKr)}
                 </li>
               ))}
             </ul>

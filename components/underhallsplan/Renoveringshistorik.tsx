@@ -10,6 +10,7 @@ import {
   type UtfördRenovering,
 } from "@/components/underhallsplan/renoveringar";
 import {
+  fastighetsdelVisningsnamn,
   hamtaKomponentMall,
   underkomponenterIRenoveringshistorik,
   type KomponentDetaljData,
@@ -398,7 +399,7 @@ export function Renoveringshistorik({
                     }`}
                   >
                     {isActive ? "✓ " : ""}
-                    {name}
+                    {fastighetsdelVisningsnamn(name)}
                   </button>
                 );
               })}
@@ -476,7 +477,7 @@ export function Renoveringshistorik({
                 <option value="alla">Alla</option>
                 {allaKomponenter.map((name) => (
                   <option key={name} value={name}>
-                    {name}
+                    {fastighetsdelVisningsnamn(name)}
                   </option>
                 ))}
               </select>
@@ -765,7 +766,7 @@ export function Renoveringshistorik({
                 <option value="">Välj komponent</option>
                 {komponentLista.map((name) => (
                   <option key={name} value={name}>
-                    {name}
+                    {fastighetsdelVisningsnamn(name)}
                   </option>
                 ))}
               </select>

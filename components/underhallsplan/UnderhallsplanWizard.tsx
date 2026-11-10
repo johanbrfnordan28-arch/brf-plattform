@@ -27,6 +27,7 @@ import {
   sattTakYtaIKomponent,
 } from "@/components/underhallsplan/register-ytor";
 import {
+  fastighetsdelVisningsnamn,
   foreslagnaKomponenter,
   kompletteraAktivaFastighetsdelar,
   skapaTomKomponentDetalj,
@@ -2257,7 +2258,7 @@ export function UnderhallsplanWizard() {
                           : "border-border bg-background text-foreground hover:border-primary/50"
                       }`}
                     >
-                      {isActive ? "✓ Aktiv" : "Inaktiv"} · {name}
+                      {isActive ? "✓ Aktiv" : "Inaktiv"} · {fastighetsdelVisningsnamn(name)}
                     </button>
                     {isActive && (
                       <button
@@ -2277,7 +2278,7 @@ export function UnderhallsplanWizard() {
                   className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-white px-3 py-2"
                 >
                   <span className="rounded-full border border-primary bg-[#e2f0e6] px-3 py-1 text-sm font-medium text-primary-dark">
-                    {name}
+                    {fastighetsdelVisningsnamn(name)}
                   </span>
                   <button
                     type="button"

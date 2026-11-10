@@ -22,7 +22,10 @@ import {
 import { KartYtaHjalp } from "@/components/underhallsplan/KartYtaHjalp";
 import { GoogleKartLankar } from "@/components/underhallsplan/GoogleKartLankar";
 import { hamtaPrimarAdress } from "@/components/underhallsplan/kart-lankar";
-import type { KomponentDetaljData } from "@/components/underhallsplan/komponentregister";
+import {
+  fastighetsdelVisningsnamn,
+  type KomponentDetaljData,
+} from "@/components/underhallsplan/komponentregister";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
 type BildstodAnalysProps = {
@@ -294,7 +297,7 @@ export function BildstodAnalys({
           return (
             <BildUppladdningsRuta
               key={komponent}
-              titel={komponent}
+              titel={fastighetsdelVisningsnamn(komponent)}
               post={post}
               analyzing={analyzingKeys.has(komponent)}
               onUpload={(file) => handleUpload(komponent, komponent, file)}
