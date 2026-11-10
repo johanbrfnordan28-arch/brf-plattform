@@ -1066,7 +1066,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Stambyte",
         defaultMåttenhet: "antal",
         måttHint:
-          "Badrum: golv/vägg/tak/stomme i m², sanitetsdelar, tappvatten och avloppsledningar inkl. stamventiler.",
+          "Badrum i grupper med storlek och innehåll (dusch, badkar, bidé, handfat, bastu). WC med toalett och handfat. Kök med antal och bild i diskbänkskåpet. Sammanställningen visar antalet.",
         detaljPanel: "vvs-stambyte",
       },
     ],

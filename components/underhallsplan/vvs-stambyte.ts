@@ -90,7 +90,48 @@ export type VvsStambyteData = {
   avloppMaterialAnnanText: string;
   /** Brandmanschett / brandtätning — oftast en mellan varje lägenhet */
   brandmanschettAntal: string;
+  /** Grupper av likadana badrum, WC och kök. */
+  rum: StambyteRumGrupp[];
   priser?: StambytePriser;
+};
+
+export type StambyteRumTyp = "badrum" | "wc" | "kok";
+
+export type StambyteBadrumStorlekId = "3" | "4" | "5" | "6" | "8" | "annat";
+
+/** En rad för rum som är lika. Skiljer de sig läggs en rad till. */
+export type StambyteRumGrupp = {
+  id: string;
+  typ: StambyteRumTyp;
+  antal: string;
+  storlek: StambyteBadrumStorlekId | "";
+  storlekAnnan: string;
+  dusch: boolean;
+  badkar: boolean;
+  bide: boolean;
+  handfat: boolean;
+  bastu: boolean;
+  toalett: boolean;
+  bildDataUrl: string;
+  bildFilnamn: string;
+};
+
+export const stambyteBadrumStorlekar: {
+  id: StambyteBadrumStorlekId;
+  etikett: string;
+}[] = [
+  { id: "3", etikett: "3 m²" },
+  { id: "4", etikett: "4 m²" },
+  { id: "5", etikett: "5 m²" },
+  { id: "6", etikett: "6 m²" },
+  { id: "8", etikett: "8 m²" },
+  { id: "annat", etikett: "Egen storlek" },
+];
+
+export const stambyteRumTypEtikett: Record<StambyteRumTyp, string> = {
+  badrum: "Badrum",
+  wc: "WC",
+  kok: "Kök",
 };
 
 export const stambyteSanitetDelar: StambyteSanitetDel[] = [
@@ -336,12 +377,248 @@ export function skapaTomStambyteSanitet(): StambyteSanitetRad[] {
   }));
 }
 
+export function skapaTomStambyteRum(typ: StambyteRumTyp): StambyteRumGrupp {
+  return {
+    id: `rum-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+    typ,
+    antal: "1",
+    storlek: typ === "badrum" ? "5" : "",
+    storlekAnnan: "",
+    dusch: typ === "badrum",
+    badkar: false,
+    bide: false,
+    handfat: typ !== "kok",
+    bastu: false,
+    toalett: typ === "wc",
+    bildDataUrl: "",
+    bildFilnamn: "",
+  };
+}
+
+function arStambyteRumTyp(v: unknown): v is StambyteRumTyp {
+  return v === "badrum" || v === "wc" || v === "kok";
+}
+
+function arBadrumStorlek(v: unknown): v is StambyteBadrumStorlekId {
+  return stambyteBadrumStorlekar.some((s) => s.id === v);
+}
+
+export function normaliseraStambyteRum(
+  raw: unknown,
+): StambyteRumGrupp[] {
+  if (!Array.isArray(raw)) return [];
+  const rum: StambyteRumGrupp[] = [];
+  raw.forEach((post, index) => {
+    if (!post || typeof post !== "object") return;
+    const kalla = post as Partial<StambyteRumGrupp>;
+    if (!arStambyteRumTyp(kalla.typ)) return;
+    const typ = kalla.typ;
+    const storlek = arBadrumStorlek(kalla.storlek) ? kalla.storlek : "";
+    const bild =
+      typ === "kok" &&
+      typeof kalla.bildDataUrl === "string" &&
+      kalla.bildDataUrl.startsWith("data:image/")
+        ? kalla.bildDataUrl
+        : "";
+    rum.push({
+      id:
+        typeof kalla.id === "string" && kalla.id.trim()
+          ? kalla.id
+          : `rum-${index + 1}`,
+      typ,
+      antal: typeof kalla.antal === "string" ? kalla.antal : "",
+      storlek: typ === "badrum" ? storlek : "",
+      storlekAnnan:
+        typ === "badrum" && storlek === "annat" && typeof kalla.storlekAnnan === "string"
+          ? kalla.storlekAnnan
+          : "",
+      dusch: typ === "badrum" && kalla.dusch === true,
+      badkar: typ === "badrum" && kalla.badkar === true,
+      bide: typ === "badrum" && kalla.bide === true,
+      handfat: typ !== "kok" && kalla.handfat === true,
+      bastu: typ === "badrum" && kalla.bastu === true,
+      toalett: typ === "wc" && kalla.toalett === true,
+      bildDataUrl: bild,
+      bildFilnamn:
+        bild && typeof kalla.bildFilnamn === "string" ? kalla.bildFilnamn : "",
+    });
+  });
+  return rum;
+}
+
+export function stambyteBadrumStorlekEtikett(
+  grupp: Pick<StambyteRumGrupp, "storlek" | "storlekAnnan">,
+): string {
+  if (grupp.storlek === "annat") return grupp.storlekAnnan.trim();
+  return stambyteBadrumStorlekar.find((s) => s.id === grupp.storlek)?.etikett ?? "";
+}
+
+function badrumInnehall(grupp: StambyteRumGrupp): string {
+  const delar: string[] = [];
+  if (grupp.dusch && grupp.badkar) delar.push("dusch och badkar");
+  else if (grupp.dusch) delar.push("dusch");
+  else if (grupp.badkar) delar.push("badkar");
+  if (grupp.bide) delar.push("bidé");
+  if (grupp.handfat) delar.push("handfat");
+  if (grupp.bastu) delar.push("bastu");
+  return delar.join(", ");
+}
+
+function harAntal(grupp: StambyteRumGrupp): boolean {
+  return parseNummerSumma([grupp.antal]) > 0;
+}
+
+/** Antal rum, storlekar och innehåll — underlag för kostnad. */
+export function summeraStambyteRum(
+  rum: StambyteRumGrupp[],
+): ListaSummeringRad[] {
+  const rader: ListaSummeringRad[] = [];
+  const badrum = rum.filter((r) => r.typ === "badrum");
+  const wc = rum.filter((r) => r.typ === "wc");
+  const kok = rum.filter((r) => r.typ === "kok");
+  const badrumAntal = parseNummerSumma(badrum.map((r) => r.antal));
+  if (badrumAntal > 0) {
+    rader.push({
+      etikett: "Badrum",
+      varde: `${formatSummeringTal(badrumAntal)} st`,
+    });
+  }
+
+  const perStorlek = new Map<string, number>();
+  for (const grupp of badrum) {
+    const antal = parseNummerSumma([grupp.antal]);
+    const storlek = stambyteBadrumStorlekEtikett(grupp);
+    if (antal <= 0 || !storlek) continue;
+    perStorlek.set(storlek, (perStorlek.get(storlek) ?? 0) + antal);
+  }
+  for (const [storlek, antal] of perStorlek) {
+    rader.push({
+      etikett: `Badrum ${storlek}`,
+      varde: `${formatSummeringTal(antal)} st`,
+    });
+  }
+
+  const innehall: { nyckel: "dusch" | "badkar" | "bide" | "handfat" | "bastu"; etikett: string }[] =
+    [
+      { nyckel: "dusch", etikett: "Badrum med dusch" },
+      { nyckel: "badkar", etikett: "Badrum med badkar" },
+      { nyckel: "bide", etikett: "Badrum med bidé" },
+      { nyckel: "handfat", etikett: "Handfat i badrum" },
+      { nyckel: "bastu", etikett: "Badrum med bastu" },
+    ];
+  for (const del of innehall) {
+    const antal = parseNummerSumma(
+      badrum.filter((r) => r[del.nyckel]).map((r) => r.antal),
+    );
+    if (antal > 0) {
+      rader.push({ etikett: del.etikett, varde: `${formatSummeringTal(antal)} st` });
+    }
+  }
+  const bada = parseNummerSumma(
+    badrum.filter((r) => r.dusch && r.badkar).map((r) => r.antal),
+  );
+  if (bada > 0) {
+    rader.push({
+      etikett: "Badrum med både dusch och badkar",
+      varde: `${formatSummeringTal(bada)} st`,
+    });
+  }
+
+  const wcAntal = parseNummerSumma(wc.map((r) => r.antal));
+  if (wcAntal > 0) {
+    rader.push({ etikett: "WC", varde: `${formatSummeringTal(wcAntal)} st` });
+  }
+  const toalett = parseNummerSumma(wc.filter((r) => r.toalett).map((r) => r.antal));
+  const wcHandfat = parseNummerSumma(
+    wc.filter((r) => r.handfat).map((r) => r.antal),
+  );
+  if (toalett > 0) {
+    rader.push({ etikett: "Toalett", varde: `${formatSummeringTal(toalett)} st` });
+  }
+  if (wcHandfat > 0) {
+    rader.push({
+      etikett: "Handfat i WC",
+      varde: `${formatSummeringTal(wcHandfat)} st`,
+    });
+  }
+
+  const kokAntal = parseNummerSumma(kok.map((r) => r.antal));
+  if (kokAntal > 0) {
+    rader.push({ etikett: "Kök", varde: `${formatSummeringTal(kokAntal)} st` });
+  }
+  const medBild = parseNummerSumma(
+    kok.filter((r) => r.bildDataUrl).map((r) => r.antal),
+  );
+  if (medBild > 0) {
+    rader.push({
+      etikett: "Kök med bild i diskbänkskåpet",
+      varde: `${formatSummeringTal(medBild)} st`,
+    });
+  }
+
+  return rader;
+}
+
+export function formateraStambyteRum(rum: StambyteRumGrupp[]): string {
+  const delar: string[] = [];
+  const badrum = rum.filter((r) => r.typ === "badrum" && harAntal(r));
+  if (badrum.length > 0) {
+    const n = parseNummerSumma(badrum.map((r) => r.antal));
+    const grupper = badrum.map((grupp) => {
+      const antal = formatSummeringTal(parseNummerSumma([grupp.antal]));
+      const extra = [stambyteBadrumStorlekEtikett(grupp), badrumInnehall(grupp)]
+        .filter(Boolean)
+        .join(", ");
+      return extra ? `${antal} st (${extra})` : `${antal} st`;
+    });
+    delar.push(`${formatSummeringTal(n)} badrum: ${grupper.join("; ")}`);
+  }
+
+  const wc = rum.filter((r) => r.typ === "wc" && harAntal(r));
+  if (wc.length > 0) {
+    const n = parseNummerSumma(wc.map((r) => r.antal));
+    const extra: string[] = [];
+    const toalett = parseNummerSumma(wc.filter((r) => r.toalett).map((r) => r.antal));
+    const handfat = parseNummerSumma(wc.filter((r) => r.handfat).map((r) => r.antal));
+    if (toalett > 0) extra.push(`toalett ${formatSummeringTal(toalett)}`);
+    if (handfat > 0) extra.push(`handfat ${formatSummeringTal(handfat)}`);
+    delar.push(
+      extra.length > 0
+        ? `${formatSummeringTal(n)} WC (${extra.join(", ")})`
+        : `${formatSummeringTal(n)} WC`,
+    );
+  }
+
+  const kok = rum.filter((r) => r.typ === "kok" && harAntal(r));
+  if (kok.length > 0) {
+    const n = parseNummerSumma(kok.map((r) => r.antal));
+    const medBild = parseNummerSumma(
+      kok.filter((r) => r.bildDataUrl).map((r) => r.antal),
+    );
+    delar.push(
+      medBild > 0
+        ? `${formatSummeringTal(n)} kök (${formatSummeringTal(medBild)} med bild)`
+        : `${formatSummeringTal(n)} kök`,
+    );
+  }
+
+  return delar.join(", ");
+}
+
 /** Uppdaterar lägenhetsberoende mängder när antal lägenheter ändras i grunduppgifter. */
 export function synkaStambyteMedAntalLagenheter(
   data: VvsStambyteData,
   lgh: number,
 ): VvsStambyteData {
   if (lgh <= 0) return data;
+  const rum = normaliseraStambyteRum(data.rum);
+  const badrum = rum.filter((r) => r.typ === "badrum");
+  const nastaRum =
+    badrum.length === 1
+      ? rum.map((r) =>
+          r.id === badrum[0]?.id ? { ...r, antal: String(lgh) } : r,
+        )
+      : rum;
   const vert = String(Math.round(lgh * 7));
   const horis = String(Math.round(lgh * 3.5));
   const sanitet = data.sanitet.map((r) => {
@@ -356,6 +633,7 @@ export function synkaStambyteMedAntalLagenheter(
   return {
     ...data,
     antalBadrum: String(lgh),
+    rum: nastaRum,
     sanitet,
     vattenVertikalKallvattenLpm: vert,
     vattenVertikalVarmvattenLpm: vert,
@@ -402,6 +680,7 @@ export function skapaTomVvsStambyteData(): VvsStambyteData {
     avloppMaterial: standardAvloppMaterial(),
     avloppMaterialAnnanText: "",
     brandmanschettAntal: "",
+    rum: [],
     priser: skapaTomStambytePriser(),
   };
 }
@@ -469,6 +748,7 @@ export function normaliseraVvsStambyteData(
     avloppMaterialAnnanText:
       raw.avloppMaterial === "annat" ? (raw.avloppMaterialAnnanText ?? "") : "",
     brandmanschettAntal: raw.brandmanschettAntal ?? "",
+    rum: normaliseraStambyteRum(raw.rum),
     priser,
   };
 }
@@ -499,8 +779,13 @@ function formateraTappvattenMangder(d: VvsStambyteData): string[] {
 export function summeraStambyteMangder(data: VvsStambyteData): ListaSummeringRad[] {
   const d = normaliseraVvsStambyteData(data);
   const rader: ListaSummeringRad[] = [];
+  const rumRader = summeraStambyteRum(d.rum);
+  rader.push(...rumRader);
+  const harBadrumsgrupper = d.rum.some(
+    (r) => r.typ === "badrum" && parseNummerSumma([r.antal]) > 0,
+  );
 
-  if (d.antalBadrum.trim()) {
+  if (!harBadrumsgrupper && d.antalBadrum.trim()) {
     rader.push({ etikett: "Badrum i omgång", varde: `${d.antalBadrum.trim()} st` });
   }
 
@@ -572,8 +857,13 @@ export function summeraStambyteMangder(data: VvsStambyteData): ListaSummeringRad
 export function formateraVvsStambyte(data: VvsStambyteData): string {
   const d = normaliseraVvsStambyteData(data);
   const delar: string[] = [];
+  const rumText = formateraStambyteRum(d.rum);
+  const harBadrumsgrupper = d.rum.some(
+    (r) => r.typ === "badrum" && parseNummerSumma([r.antal]) > 0,
+  );
 
-  if (d.antalBadrum.trim()) {
+  if (rumText) delar.push(rumText);
+  if (!harBadrumsgrupper && d.antalBadrum.trim()) {
     delar.push(`${d.antalBadrum.trim()} badrum`);
   }
 

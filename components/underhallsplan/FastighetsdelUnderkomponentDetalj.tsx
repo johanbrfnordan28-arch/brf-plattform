@@ -32,9 +32,11 @@ import {
   hamtaMedlemstakterrassPoster,
   hamtaStamventilPoster,
   hamtaUndercentralData,
+  hamtaVvsStambyteData,
   hamtaVvsVarmeStammar,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
+  uppdateraVvsStambyteData,
   uppdateraVvsVarmeStammar,
   uppdateraTakfonsterData,
   uppdateraTakterrassPoster,
@@ -43,6 +45,7 @@ import {
   type UnderkomponentDetaljPanel,
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
+import { StambytePanel } from "@/components/underhallsplan/StambytePanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
 import { VvsVarmePanel } from "@/components/underhallsplan/VvsVarmePanel";
@@ -63,6 +66,7 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "undercentral",
   "stamventiler-lista",
   "vvs-varme",
+  "vvs-stambyte",
 ]);
 
 /** Stora formulär i steg 2 — visas ihopfällda som standard (+ / −). */
@@ -288,6 +292,19 @@ export function FastighetsdelUnderkomponentDetalj({
           poster={hamtaStamventilPoster(data, rad.id)}
           onChange={(poster) =>
             onChange(uppdateraStamventilPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "vvs-stambyte") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <StambytePanel
+          data={hamtaVvsStambyteData(data, rad.id)}
+          onChange={(stambyteData) =>
+            onChange(uppdateraVvsStambyteData(data, rad.id, stambyteData))
           }
         />
       </div>
