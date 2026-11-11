@@ -32,12 +32,12 @@ import {
   hamtaMedlemstakterrassPoster,
   hamtaStamventilPoster,
   hamtaUndercentralData,
-  hamtaVarmestamPoster,
+  hamtaVarmestammarData,
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
-  uppdateraVarmestamPoster,
+  uppdateraVarmestammarData,
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
   uppdateraTakfonsterData,
@@ -306,9 +306,9 @@ export function FastighetsdelUnderkomponentDetalj({
     return (
       <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
         <VarmestammarPanel
-          poster={hamtaVarmestamPoster(data, rad.id)}
-          onChange={(poster) =>
-            onChange(uppdateraVarmestamPoster(data, rad.id, poster))
+          data={hamtaVarmestammarData(data, rad.id)}
+          onChange={(varmestammar) =>
+            onChange(uppdateraVarmestammarData(data, rad.id, varmestammar))
           }
         />
       </div>

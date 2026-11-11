@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
 import {
   normaliseraUndercentralData,
-  summeraUndercentral,
   undercentralArDirektverkandeEl,
   uppvarmningHuvudsystem,
   uppvarmningHuvudsystemEtikett,
@@ -26,37 +25,6 @@ type UndercentralPanelProps = {
   onChange: (data: UndercentralData) => void;
   onAntalChange: (antal: string) => void;
 };
-
-function MeterFalt({
-  label,
-  hint,
-  value,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="text-xs font-medium text-muted">{label}</span>
-      <span className="mt-0.5 block text-[11px] text-muted">{hint}</span>
-      <div className="mt-1 flex items-center gap-2">
-        <input
-          type="number"
-          min={0}
-          step={0.1}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="t.ex. 40"
-          className="w-full max-w-xs rounded-lg border border-border bg-white px-3 py-2 text-sm"
-        />
-        <span className="text-xs text-muted">löpmeter</span>
-      </div>
-    </label>
-  );
-}
 
 async function lasUndercentralBild(
   file: File,
@@ -99,7 +67,6 @@ export function UndercentralPanel({
   onAntalChange,
 }: UndercentralPanelProps) {
   const d = normaliseraUndercentralData(data, legacySystem);
-  const summering = summeraUndercentral(d);
   const [bildFel, setBildFel] = useState("");
   const direktEl = undercentralArDirektverkandeEl(d);
   const huvudBeskrivning = uppvarmningHuvudsystem.find(
@@ -288,20 +255,12 @@ export function UndercentralPanel({
       </fieldset>
 
       {!direktEl && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <MeterFalt
-            label="Horisontell tillopp"
-            hint="Ledningen som går ut från undercentralen i källaren."
-            value={d.tilloppLopmeter}
-            onChange={(tilloppLopmeter) => spara({ tilloppLopmeter })}
-          />
-          <MeterFalt
-            label="Horisontell retur"
-            hint="Returledningen tillbaka till undercentralen i källaren."
-            value={d.returLopmeter}
-            onChange={(returLopmeter) => spara({ returLopmeter })}
-          />
-        </div>
+        <p className="rounded-lg border border-border/70 bg-white px-3 py-2 text-[11px] leading-relaxed text-muted">
+          Horisontell stamledning värme (tillopp och retur i källaren) samt
+          ventiler per stam registreras under{" "}
+          <span className="font-medium text-primary-dark">Värmestammar</span>
+          — det är därifrån stammarna går upp i fastigheten.
+        </p>
       )}
 
       <div className="space-y-2">
@@ -369,10 +328,10 @@ export function UndercentralPanel({
         )}
       </div>
 
-      {(summering.length > 0 || systemRader.length > 0 || bildRad.length > 0) && (
+      {(systemRader.length > 0 || bildRad.length > 0) && (
         <ListaSummeringPanel
           titel="Undercentral"
-          rader={[...systemRader, ...summering, ...bildRad]}
+          rader={[...systemRader, ...bildRad]}
         />
       )}
     </div>

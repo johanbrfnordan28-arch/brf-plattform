@@ -1,8 +1,4 @@
-import {
-  formatSummeringTal,
-  parseNummerSumma,
-  type ListaSummeringRad,
-} from "@/components/underhallsplan/lista-summering";
+import { type ListaSummeringRad } from "@/components/underhallsplan/lista-summering";
 
 /**
  * Undercentralen ligger vanligtvis i källaren — oftast en per hus.
@@ -175,10 +171,16 @@ export type UndercentralBild = {
 };
 
 export type UndercentralData = {
-  /** Horisontell tilloppsledning i källaren, meter. */
-  tilloppLopmeter: string;
-  /** Horisontell returledning i källaren, meter. */
-  returLopmeter: string;
+  /**
+   * Äldre fält — flyttat till Värmestammar som horisontell stamledning värme.
+   * @deprecated
+   */
+  tilloppLopmeter?: string;
+  /**
+   * Äldre fält — flyttat till Värmestammar som horisontell stamledning värme.
+   * @deprecated
+   */
+  returLopmeter?: string;
   /** Ett huvudsystem (rullista). */
   huvudsystem: string;
   /** Fritext när huvudsystem är «Annat». */
@@ -197,8 +199,6 @@ export type UndercentralData = {
 
 export function skapaTomUndercentralData(): UndercentralData {
   return {
-    tilloppLopmeter: "",
-    returLopmeter: "",
     huvudsystem: "",
     huvudsystemAnnat: "",
     kompletterande: [],
@@ -311,6 +311,7 @@ export function normaliseraUndercentralData(
   }
 
   return {
+    // Behåll legacy-värden så de kan migreras till Värmestammar.
     tilloppLopmeter: raw?.tilloppLopmeter?.trim() ?? "",
     returLopmeter: raw?.returLopmeter?.trim() ?? "",
     huvudsystem,
@@ -356,23 +357,9 @@ export function undercentralValdaSystemId(data: UndercentralData): string[] {
   return idn;
 }
 
-export function summeraUndercentral(data: UndercentralData): ListaSummeringRad[] {
-  const rader: ListaSummeringRad[] = [];
-  const tillopp = parseNummerSumma([data.tilloppLopmeter]);
-  const retur = parseNummerSumma([data.returLopmeter]);
-  if (tillopp > 0) {
-    rader.push({
-      etikett: "Horisontell tillopp",
-      varde: `${formatSummeringTal(tillopp)} m`,
-    });
-  }
-  if (retur > 0) {
-    rader.push({
-      etikett: "Horisontell retur",
-      varde: `${formatSummeringTal(retur)} m`,
-    });
-  }
-  return rader;
+export function summeraUndercentral(_data: UndercentralData): ListaSummeringRad[] {
+  // Horisontell stamledning värme registreras under Värmestammar.
+  return [];
 }
 
 export function formateraUndercentral(

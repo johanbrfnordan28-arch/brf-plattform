@@ -53,7 +53,7 @@ import {
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
   hamtaVvsVarmeStammar,
-  hamtaVarmestamPoster,
+  hamtaVarmestammarData,
   hamtaStamventilPoster,
   hamtaUndercentralData,
   måttenhetEtiketter,
@@ -88,7 +88,7 @@ import {
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
   uppdateraVvsVarmeStammar,
-  uppdateraVarmestamPoster,
+  uppdateraVarmestammarData,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
   ytskiktEtikett,
@@ -121,7 +121,7 @@ import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
 import { formateraUndercentral } from "@/components/underhallsplan/undercentral";
-import { formateraVarmestamPoster } from "@/components/underhallsplan/varmestammar";
+import { formateraVarmestammarData } from "@/components/underhallsplan/varmestammar";
 import { formateraStamventilPoster } from "@/components/underhallsplan/stamventiler";
 import { MedlemstakterrassPanel } from "@/components/underhallsplan/MedlemstakterrassPanel";
 import { TakterrassPanel } from "@/components/underhallsplan/TakterrassPanel";
@@ -650,7 +650,7 @@ export function KomponentDetaljer({
                 : null;
             const varmestammarKort =
               detaljPanel === "varmestammar-lista" && rad.aktiv
-                ? formateraVarmestamPoster(hamtaVarmestamPoster(data, rad.id))
+                ? formateraVarmestammarData(hamtaVarmestammarData(data, rad.id))
                 : null;
             const undercentralKort =
               detaljPanel === "undercentral" && rad.aktiv
@@ -1210,9 +1210,11 @@ export function KomponentDetaljer({
                 {ärÖppen && rad.aktiv && detaljPanel === "varmestammar-lista" && (
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <VarmestammarPanel
-                      poster={hamtaVarmestamPoster(data, rad.id)}
-                      onChange={(poster) =>
-                        onChange(uppdateraVarmestamPoster(data, rad.id, poster))
+                      data={hamtaVarmestammarData(data, rad.id)}
+                      onChange={(varmestammar) =>
+                        onChange(
+                          uppdateraVarmestammarData(data, rad.id, varmestammar),
+                        )
                       }
                     />
                   </div>

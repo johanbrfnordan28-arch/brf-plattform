@@ -1,6 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
+import {
+  hamtaStamventilModellDef,
+  stamventilModellKategorier,
+  stamventilModellerPerKategori,
+  type StamventilModellId,
+} from "@/components/underhallsplan/stamventiler";
 import {
   formateraVarmeStamHojd,
   varmeBjalklagAlternativ,
@@ -12,15 +19,17 @@ import {
   type VarmeTakhojdId,
 } from "@/components/underhallsplan/vvs-varme";
 import {
+  normaliseraVarmestammarData,
   normaliseraVarmestamPost,
   skapaTomVarmestamPost,
-  summeraVarmestamPoster,
+  summeraVarmestammarData,
+  type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
 
 type VarmestammarPanelProps = {
-  poster: VarmestamPost[];
-  onChange: (poster: VarmestamPost[]) => void;
+  data: VarmestammarData;
+  onChange: (data: VarmestammarData) => void;
 };
 
 function tillHojdStam(post: VarmestamPost) {
@@ -43,44 +52,212 @@ function tillHojdStam(post: VarmestamPost) {
   };
 }
 
-export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) {
+function VentilSelect({
+  value,
+  onChange,
+}: {
+  value: StamventilModellId | "";
+  onChange: (modell: StamventilModellId) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as StamventilModellId)}
+      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+    >
+      {stamventilModellKategorier.map((kategori) => (
+        <optgroup key={kategori.id} label={kategori.etikett}>
+          {stamventilModellerPerKategori(kategori.id).map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.etikett}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
+async function lasVentilBild(
+  file: File,
+): Promise<{ dataUrl: string; filnamn: string } | null> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const bild = new Image();
+      bild.onload = () => resolve(bild);
+      bild.onerror = () => reject(new Error("bild"));
+      bild.src = url;
+    });
+    const max = 1280;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+    if (dataUrl.length > 900_000) return null;
+    return { dataUrl, filnamn: file.name };
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function StamventilBildFalt({
+  rubrik,
+  dataUrl,
+  filnamn,
+  fel,
+  onBild,
+  onTaBort,
+  onFel,
+}: {
+  rubrik: string;
+  dataUrl: string;
+  filnamn: string;
+  fel?: string;
+  onBild: (bild: { dataUrl: string; filnamn: string }) => void;
+  onTaBort: () => void;
+  onFel: (meddelande: string) => void;
+}) {
+  return (
+    <div className="mt-2">
+      <span className="text-xs font-medium text-muted">{rubrik}</span>
+      {dataUrl ? (
+        <div className="mt-1 flex flex-wrap items-start gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={dataUrl}
+            alt={filnamn || rubrik}
+            className="h-24 w-32 rounded-lg border border-border object-cover"
+          />
+          <div className="space-y-2">
+            {filnamn ? <p className="text-xs text-muted">{filnamn}</p> : null}
+            <button
+              type="button"
+              onClick={onTaBort}
+              className="text-xs text-muted underline hover:text-red-700"
+            >
+              Ta bort bild
+            </button>
+          </div>
+        </div>
+      ) : (
+        <input
+          type="file"
+          accept="image/*"
+          className="mt-1 block w-full text-xs text-muted file:mr-2 file:rounded-md file:border-0 file:bg-primary/10 file:px-2 file:py-1.5 file:text-xs file:font-medium file:text-primary-dark"
+          onChange={(e) => {
+            const fil = e.target.files?.[0];
+            e.target.value = "";
+            if (!fil) return;
+            void lasVentilBild(fil).then((bild) => {
+              if (bild) onBild(bild);
+              else onFel("Bilden kunde inte läsas. Välj en mindre bild.");
+            });
+          }}
+        />
+      )}
+      {fel ? <p className="mt-1 text-xs text-red-700">{fel}</p> : null}
+    </div>
+  );
+}
+
+export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
+  const d = normaliseraVarmestammarData(data);
+  const [bildFel, setBildFel] = useState<Record<string, string>>({});
+
+  function spara(patch: Partial<VarmestammarData>) {
+    onChange(normaliseraVarmestammarData({ ...d, ...patch }));
+  }
+
   function uppdateraPost(id: string, patch: Partial<VarmestamPost>) {
-    onChange(
-      poster.map((p) =>
+    spara({
+      poster: d.poster.map((p) =>
         p.id === id ? normaliseraVarmestamPost({ ...p, ...patch }) : p,
       ),
-    );
+    });
   }
 
   function läggTill() {
-    const nr = poster.length + 1;
-    onChange([
-      ...poster,
-      skapaTomVarmestamPost(poster.length === 0 ? "Stam 1" : `Stam ${nr}`),
-    ]);
+    const nr = d.poster.length + 1;
+    spara({
+      poster: [
+        ...d.poster,
+        skapaTomVarmestamPost(d.poster.length === 0 ? "Stam 1" : `Stam ${nr}`),
+      ],
+    });
   }
 
   function taBort(id: string) {
-    onChange(poster.filter((p) => p.id !== id));
+    spara({ poster: d.poster.filter((p) => p.id !== id) });
   }
 
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-muted">
-        Lägg en stam per rad och bygg vidare när det behövs. Styrelsen kan ge
-        varje stam ett eget namn och ange placering — till exempel Stam 1 som
-        betjänar vardagsrum i 3 rum och kök. Med antal våningar, takhöjd och
-        bjälklagets tjocklek räknas total stamhöjd fram automatiskt. Dimension
-        är valbar. Sammanställningen längst ned samlar antalet.
+        Den horisontella stamledningen värme ligger i källaren och matar alla
+        värmestammar som går upp i huset. Varje stam ska ha ett eget namn — det
+        underlättar service när det finns några få eller uppåt tjugo stammar.
+        Första ventilen sitter där stammen går upp (ofta avstängning), sista
+        där den kommer tillbaka (ofta TA-STAD för injustering och mätning).
       </p>
 
-      {poster.length === 0 ? (
+      <div className="rounded-lg border border-border bg-white p-3 sm:p-4">
+        <p className="text-xs font-semibold text-primary-dark">
+          Horisontell stamledning värme
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted">
+          Gemensam ledning i källaren. Från denna går värmestammarna upp i
+          fastigheten — tillopp ut från undercentralen, retur tillbaka.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">
+              Tillopp (löpmeter)
+            </span>
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              value={d.stamledningTilloppLopmeter}
+              onChange={(e) =>
+                spara({ stamledningTilloppLopmeter: e.target.value })
+              }
+              placeholder="t.ex. 40"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">
+              Retur (löpmeter)
+            </span>
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              value={d.stamledningReturLopmeter}
+              onChange={(e) =>
+                spara({ stamledningReturLopmeter: e.target.value })
+              }
+              placeholder="t.ex. 40"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      </div>
+
+      {d.poster.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border bg-white px-3 py-4 text-center text-xs text-muted">
           Inga värmestammar registrerade — lägg till nedan.
         </p>
       ) : (
         <ul className="space-y-3">
-          {poster.map((post, index) => {
+          {d.poster.map((post, index) => {
             const p = normaliseraVarmestamPost(post);
             const hojdText = formateraVarmeStamHojd(tillHojdStam(p));
             return (
@@ -105,15 +282,12 @@ export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) 
                   Namn och placering
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted">
-                  Styrelsen kan namnge stammen fritt. Placeringen beskriver var
-                  den går upp och vad den betjänar.
+                  Ge varje stam ett tydligt namn (t.ex. Stam 1, Trapphus B,
+                  Gårdsfasad). Det underlättar service och åtgärder.
                 </p>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">Namn</span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      Eget namn som styrelsen väljer.
-                    </span>
                     <input
                       type="text"
                       value={p.namn}
@@ -127,9 +301,6 @@ export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) 
                   <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">
                       Placering
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      Trapphus eller adress där stammen går upp.
                     </span>
                     <input
                       type="text"
@@ -145,9 +316,6 @@ export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) 
                     <span className="text-xs font-medium text-muted">
                       Betjänar
                     </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      Lägenhetstyp eller rum stammen försörjer.
-                    </span>
                     <input
                       type="text"
                       value={p.betjanar}
@@ -158,6 +326,167 @@ export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) 
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     />
                   </label>
+                </div>
+
+                <p className="mt-4 text-xs font-semibold text-primary-dark">
+                  Stamventiler
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  Välj modell på både tillopp och retur. Lägg gärna en bild på
+                  respektive ventil — underlättar service och anbud.
+                </p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-border/80 bg-[#fafcfa] p-3">
+                    <label className="block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Tilloppsventil (går upp)
+                      </span>
+                      <VentilSelect
+                        value={p.tilloppsventil}
+                        onChange={(tilloppsventil) =>
+                          uppdateraPost(post.id, {
+                            tilloppsventil,
+                            tilloppsventilAnnan:
+                              tilloppsventil === "annat"
+                                ? p.tilloppsventilAnnan
+                                : "",
+                          })
+                        }
+                      />
+                      {hamtaStamventilModellDef(
+                        p.tilloppsventil || "avstangningsventil",
+                      )?.beskrivning && (
+                        <span className="mt-1 block text-[11px] text-muted">
+                          {
+                            hamtaStamventilModellDef(
+                              p.tilloppsventil || "avstangningsventil",
+                            )?.beskrivning
+                          }
+                        </span>
+                      )}
+                    </label>
+                    {p.tilloppsventil === "annat" && (
+                      <input
+                        type="text"
+                        value={p.tilloppsventilAnnan}
+                        onChange={(e) =>
+                          uppdateraPost(post.id, {
+                            tilloppsventilAnnan: e.target.value,
+                          })
+                        }
+                        placeholder="Ange fabrikat och modell"
+                        className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    )}
+                    <StamventilBildFalt
+                      rubrik="Bild tilloppsventil"
+                      dataUrl={p.tilloppsventilBildDataUrl}
+                      filnamn={p.tilloppsventilBildFilnamn}
+                      fel={bildFel[`${post.id}-tillopp`]}
+                      onFel={(meddelande) =>
+                        setBildFel((prev) => ({
+                          ...prev,
+                          [`${post.id}-tillopp`]: meddelande,
+                        }))
+                      }
+                      onBild={(bild) => {
+                        setBildFel((prev) => {
+                          const next = { ...prev };
+                          delete next[`${post.id}-tillopp`];
+                          return next;
+                        });
+                        uppdateraPost(post.id, {
+                          tilloppsventilBildDataUrl: bild.dataUrl,
+                          tilloppsventilBildFilnamn: bild.filnamn,
+                        });
+                      }}
+                      onTaBort={() => {
+                        setBildFel((prev) => {
+                          const next = { ...prev };
+                          delete next[`${post.id}-tillopp`];
+                          return next;
+                        });
+                        uppdateraPost(post.id, {
+                          tilloppsventilBildDataUrl: "",
+                          tilloppsventilBildFilnamn: "",
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <div className="rounded-lg border border-border/80 bg-[#fafcfa] p-3">
+                    <label className="block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Returventil (kommer tillbaka)
+                      </span>
+                      <VentilSelect
+                        value={p.returventil}
+                        onChange={(returventil) =>
+                          uppdateraPost(post.id, {
+                            returventil,
+                            returventilAnnan:
+                              returventil === "annat" ? p.returventilAnnan : "",
+                          })
+                        }
+                      />
+                      {hamtaStamventilModellDef(p.returventil || "ta-stad")
+                        ?.beskrivning && (
+                        <span className="mt-1 block text-[11px] text-muted">
+                          {
+                            hamtaStamventilModellDef(p.returventil || "ta-stad")
+                              ?.beskrivning
+                          }
+                        </span>
+                      )}
+                    </label>
+                    {p.returventil === "annat" && (
+                      <input
+                        type="text"
+                        value={p.returventilAnnan}
+                        onChange={(e) =>
+                          uppdateraPost(post.id, {
+                            returventilAnnan: e.target.value,
+                          })
+                        }
+                        placeholder="Ange fabrikat och modell"
+                        className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    )}
+                    <StamventilBildFalt
+                      rubrik="Bild returventil"
+                      dataUrl={p.returventilBildDataUrl}
+                      filnamn={p.returventilBildFilnamn}
+                      fel={bildFel[`${post.id}-retur`]}
+                      onFel={(meddelande) =>
+                        setBildFel((prev) => ({
+                          ...prev,
+                          [`${post.id}-retur`]: meddelande,
+                        }))
+                      }
+                      onBild={(bild) => {
+                        setBildFel((prev) => {
+                          const next = { ...prev };
+                          delete next[`${post.id}-retur`];
+                          return next;
+                        });
+                        uppdateraPost(post.id, {
+                          returventilBildDataUrl: bild.dataUrl,
+                          returventilBildFilnamn: bild.filnamn,
+                        });
+                      }}
+                      onTaBort={() => {
+                        setBildFel((prev) => {
+                          const next = { ...prev };
+                          delete next[`${post.id}-retur`];
+                          return next;
+                        });
+                        uppdateraPost(post.id, {
+                          returventilBildDataUrl: "",
+                          returventilBildFilnamn: "",
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <p className="mt-4 text-xs font-semibold text-primary-dark">
@@ -323,28 +652,6 @@ export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) 
                       />
                     )}
                   </label>
-
-                  <label className="block text-sm">
-                    <span className="text-xs font-medium text-muted">
-                      Horisontell ledning
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      Fördelning per plan / gren, om den anges separat.
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      value={p.horisontellLopmeter}
-                      onChange={(e) =>
-                        uppdateraPost(post.id, {
-                          horisontellLopmeter: e.target.value,
-                        })
-                      }
-                      placeholder="m"
-                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                    />
-                  </label>
                 </div>
 
                 {hojdText && (
@@ -366,10 +673,12 @@ export function VarmestammarPanel({ poster, onChange }: VarmestammarPanelProps) 
         + Lägg till värmestam
       </button>
 
-      {poster.length > 0 && (
+      {(d.poster.length > 0 ||
+        d.stamledningTilloppLopmeter ||
+        d.stamledningReturLopmeter) && (
         <ListaSummeringPanel
           titel="Sammanställning värmestammar"
-          rader={summeraVarmestamPoster(poster)}
+          rader={summeraVarmestammarData(d)}
         />
       )}
     </div>

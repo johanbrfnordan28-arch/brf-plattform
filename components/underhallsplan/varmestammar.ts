@@ -5,6 +5,11 @@ import {
   type ListaSummeringRad,
 } from "@/components/underhallsplan/lista-summering";
 import {
+  stamventilModellEtikett,
+  stamventilModeller,
+  type StamventilModellId,
+} from "@/components/underhallsplan/stamventiler";
+import {
   formateraVarmeStamHojd,
   varmeBjalklagAlternativ,
   varmeRorDimensioner,
@@ -19,9 +24,19 @@ import {
 
 export const VARMESTAMMAR_UNDERKOMPONENT_ID = "varmestammar";
 
+/** Standard: avstängning på tillopp så stammen kan stängas utan att tömma hela systemet. */
+export const VARMESTAM_TILLOPP_VENTIL_DEFAULT: StamventilModellId =
+  "avstangningsventil";
+
+/**
+ * Standard: TA-STAD på retur — injustering, mätning och avstängning
+ * (vanlig placering i flerbostadshus).
+ */
+export const VARMESTAM_RETUR_VENTIL_DEFAULT: StamventilModellId = "ta-stad";
+
 export type VarmestamPost = {
   id: string;
-  /** Namn styrelsen ger stammen, t.ex. Stam 1. */
+  /** Namn styrelsen ger stammen, t.ex. Stam 1 / Trapphus A. */
   namn: string;
   /** Placering / trapphus / adress. */
   placering: string;
@@ -34,9 +49,41 @@ export type VarmestamPost = {
   bjalklagAnnan: string;
   rordimension: VarmeRorDimensionId | "";
   rordimensionAnnan: string;
+  /**
+   * Ventil där stammen går upp från horisontell stamledning (tillopp).
+   * Oftast avstängningsventil.
+   */
+  tilloppsventil: StamventilModellId | "";
+  tilloppsventilAnnan: string;
+  tilloppsventilBildDataUrl: string;
+  tilloppsventilBildFilnamn: string;
+  /**
+   * Ventil där stammen kommer tillbaka (retur).
+   * Oftast TA-STAD / injusteringsventil.
+   */
+  returventil: StamventilModellId | "";
+  returventilAnnan: string;
+  returventilBildDataUrl: string;
+  returventilBildFilnamn: string;
   /** Äldre fält — behålls som fallback om höjd inte kan räknas. */
   vertikalLopmeter: string;
-  horisontellLopmeter: string;
+  /**
+   * Äldre per-stam horisontell gren — ersatt av gemensam stamledning.
+   * @deprecated
+   */
+  horisontellLopmeter?: string;
+};
+
+/**
+ * Värmestammar inkl. den gemensamma horisontella stamledningen
+ * som alla stammar går upp från.
+ */
+export type VarmestammarData = {
+  /** Horisontell stamledning värme — tillopp i källaren, meter. */
+  stamledningTilloppLopmeter: string;
+  /** Horisontell stamledning värme — retur i källaren, meter. */
+  stamledningReturLopmeter: string;
+  poster: VarmestamPost[];
 };
 
 export function skapaVarmestamPostId(): string {
@@ -56,8 +103,23 @@ export function skapaTomVarmestamPost(namn = ""): VarmestamPost {
     bjalklagAnnan: "",
     rordimension: "mm30",
     rordimensionAnnan: "",
+    tilloppsventil: VARMESTAM_TILLOPP_VENTIL_DEFAULT,
+    tilloppsventilAnnan: "",
+    tilloppsventilBildDataUrl: "",
+    tilloppsventilBildFilnamn: "",
+    returventil: VARMESTAM_RETUR_VENTIL_DEFAULT,
+    returventilAnnan: "",
+    returventilBildDataUrl: "",
+    returventilBildFilnamn: "",
     vertikalLopmeter: "",
-    horisontellLopmeter: "",
+  };
+}
+
+export function skapaTomVarmestammarData(): VarmestammarData {
+  return {
+    stamledningTilloppLopmeter: "",
+    stamledningReturLopmeter: "",
+    poster: [],
   };
 }
 
@@ -71,6 +133,10 @@ function arBjalklag(v: unknown): v is VarmeBjalklagId {
 
 function arRorDimension(v: unknown): v is VarmeRorDimensionId {
   return varmeRorDimensioner.some((d) => d.id === v);
+}
+
+function arVentilModell(v: unknown): v is StamventilModellId {
+  return stamventilModeller.some((m) => m.id === v);
 }
 
 function tillVarmeStamForHojd(post: VarmestamPost): VvsVarmeStam {
@@ -103,6 +169,12 @@ export function normaliseraVarmestamPost(post: VarmestamPost): VarmestamPost {
   const takhojd = arTakhojd(post.takhojd) ? post.takhojd : "";
   const bjalklag = arBjalklag(post.bjalklag) ? post.bjalklag : "";
   const rordimension = arRorDimension(post.rordimension) ? post.rordimension : "";
+  const tilloppsventil = arVentilModell(post.tilloppsventil)
+    ? post.tilloppsventil
+    : VARMESTAM_TILLOPP_VENTIL_DEFAULT;
+  const returventil = arVentilModell(post.returventil)
+    ? post.returventil
+    : VARMESTAM_RETUR_VENTIL_DEFAULT;
   return {
     id: post.id,
     namn: post.namn.trim(),
@@ -116,8 +188,79 @@ export function normaliseraVarmestamPost(post: VarmestamPost): VarmestamPost {
     rordimension,
     rordimensionAnnan:
       rordimension === "annat" ? post.rordimensionAnnan?.trim() ?? "" : "",
+    tilloppsventil,
+    tilloppsventilAnnan:
+      tilloppsventil === "annat" ? post.tilloppsventilAnnan?.trim() ?? "" : "",
+    tilloppsventilBildDataUrl: post.tilloppsventilBildDataUrl?.startsWith(
+      "data:image/",
+    )
+      ? post.tilloppsventilBildDataUrl
+      : "",
+    tilloppsventilBildFilnamn: post.tilloppsventilBildFilnamn?.trim() ?? "",
+    returventil,
+    returventilAnnan:
+      returventil === "annat" ? post.returventilAnnan?.trim() ?? "" : "",
+    returventilBildDataUrl: post.returventilBildDataUrl?.startsWith("data:image/")
+      ? post.returventilBildDataUrl
+      : "",
+    returventilBildFilnamn: post.returventilBildFilnamn?.trim() ?? "",
     vertikalLopmeter: post.vertikalLopmeter?.trim() ?? "",
-    horisontellLopmeter: post.horisontellLopmeter?.trim() ?? "",
+  };
+}
+
+/** Accepterar både ny struktur och äldre array av stammar. */
+export function normaliseraVarmestammarData(raw: unknown): VarmestammarData {
+  if (Array.isArray(raw)) {
+    return {
+      stamledningTilloppLopmeter: "",
+      stamledningReturLopmeter: "",
+      poster: raw
+        .filter(
+          (post): post is VarmestamPost =>
+            Boolean(post) &&
+            typeof post === "object" &&
+            typeof (post as VarmestamPost).id === "string",
+        )
+        .map((post) =>
+          normaliseraVarmestamPost({ ...skapaTomVarmestamPost(), ...post }),
+        ),
+    };
+  }
+
+  if (!raw || typeof raw !== "object") {
+    return skapaTomVarmestammarData();
+  }
+
+  const kalla = raw as Partial<VarmestammarData> & {
+    tilloppLopmeter?: string;
+    returLopmeter?: string;
+  };
+  const posterRaw = Array.isArray(kalla.poster) ? kalla.poster : [];
+  return {
+    stamledningTilloppLopmeter:
+      (typeof kalla.stamledningTilloppLopmeter === "string"
+        ? kalla.stamledningTilloppLopmeter
+        : typeof kalla.tilloppLopmeter === "string"
+          ? kalla.tilloppLopmeter
+          : ""
+      ).trim(),
+    stamledningReturLopmeter:
+      (typeof kalla.stamledningReturLopmeter === "string"
+        ? kalla.stamledningReturLopmeter
+        : typeof kalla.returLopmeter === "string"
+          ? kalla.returLopmeter
+          : ""
+      ).trim(),
+    poster: posterRaw
+      .filter(
+        (post): post is VarmestamPost =>
+          Boolean(post) &&
+          typeof post === "object" &&
+          typeof (post as VarmestamPost).id === "string",
+      )
+      .map((post) =>
+        normaliseraVarmestamPost({ ...skapaTomVarmestamPost(), ...post }),
+      ),
   };
 }
 
@@ -131,35 +274,58 @@ export function formateraVarmestamPost(post: VarmestamPost): string {
   const hojd = formateraVarmeStamHojd(tillVarmeStamForHojd(p));
   if (hojd) delar.push(`höjd ${hojd}`);
   else if (p.vertikalLopmeter) delar.push(`vertikal ${p.vertikalLopmeter} m`);
-  if (p.horisontellLopmeter) {
-    delar.push(`horisontell ${p.horisontellLopmeter} m`);
-  }
   const dim = varmeRorEtikett(p.rordimension, p.rordimensionAnnan);
   if (dim) delar.push(dim);
+  const tillopp = stamventilModellEtikett(
+    p.tilloppsventil || VARMESTAM_TILLOPP_VENTIL_DEFAULT,
+    p.tilloppsventilAnnan,
+  );
+  const retur = stamventilModellEtikett(
+    p.returventil || VARMESTAM_RETUR_VENTIL_DEFAULT,
+    p.returventilAnnan,
+  );
+  delar.push(
+    `tillopp ${tillopp}${p.tilloppsventilBildDataUrl ? " (bild)" : ""}`,
+  );
+  delar.push(`retur ${retur}${p.returventilBildDataUrl ? " (bild)" : ""}`);
   return delar.length > 0 ? `${rubrik}: ${delar.join(", ")}` : rubrik;
 }
 
-export function summeraVarmestamPoster(poster: VarmestamPost[]): ListaSummeringRad[] {
-  if (poster.length === 0) return [];
-  const rader = poster.map(normaliseraVarmestamPost);
+export function summeraVarmestammarData(
+  data: VarmestammarData,
+): ListaSummeringRad[] {
+  const d = normaliseraVarmestammarData(data);
+  const rader = d.poster;
 
-  const summering: ListaSummeringRad[] = [
-    { etikett: "Antal värmestammar", varde: `${rader.length} st` },
-  ];
+  const summering: ListaSummeringRad[] = [];
+
+  const tillopp = parseNummerSumma([d.stamledningTilloppLopmeter]);
+  const retur = parseNummerSumma([d.stamledningReturLopmeter]);
+  if (tillopp > 0) {
+    summering.push({
+      etikett: "Horisontell stamledning värme — tillopp",
+      varde: `${formatSummeringTal(tillopp)} m`,
+    });
+  }
+  if (retur > 0) {
+    summering.push({
+      etikett: "Horisontell stamledning värme — retur",
+      varde: `${formatSummeringTal(retur)} m`,
+    });
+  }
+
+  if (rader.length === 0) return summering;
+
+  summering.push({
+    etikett: "Antal värmestammar",
+    varde: `${rader.length} st`,
+  });
 
   const vertikal = rader.reduce((sum, p) => sum + varmestamVertikalMeter(p), 0);
   if (vertikal > 0) {
     summering.push({
       etikett: "Stamhöjd totalt",
       varde: `${formatSummeringTal(vertikal)} m`,
-    });
-  }
-
-  const horisontell = parseNummerSumma(rader.map((p) => p.horisontellLopmeter));
-  if (horisontell > 0) {
-    summering.push({
-      etikett: "Horisontell ledning totalt",
-      varde: `${formatSummeringTal(horisontell)} m`,
     });
   }
 
@@ -181,18 +347,55 @@ export function summeraVarmestamPoster(poster: VarmestamPost[]): ListaSummeringR
     });
   }
 
+  const medTilloppsbild = rader.filter((p) => p.tilloppsventilBildDataUrl).length;
+  const medReturbild = rader.filter((p) => p.returventilBildDataUrl).length;
+  if (medTilloppsbild > 0) {
+    summering.push({
+      etikett: "Bilder tilloppsventil",
+      varde: `${medTilloppsbild} st`,
+    });
+  }
+  if (medReturbild > 0) {
+    summering.push({
+      etikett: "Bilder returventil",
+      varde: `${medReturbild} st`,
+    });
+  }
+
   return summering;
 }
 
-export function formateraVarmestamPoster(poster: VarmestamPost[]): string {
-  const normaliserade = poster.map(normaliseraVarmestamPost);
-  const texter = normaliserade
+/** @deprecated Använd summeraVarmestammarData. */
+export function summeraVarmestamPoster(poster: VarmestamPost[]): ListaSummeringRad[] {
+  return summeraVarmestammarData({
+    stamledningTilloppLopmeter: "",
+    stamledningReturLopmeter: "",
+    poster,
+  });
+}
+
+export function formateraVarmestammarData(data: VarmestammarData): string {
+  const d = normaliseraVarmestammarData(data);
+  const texter = d.poster
     .map(formateraVarmestamPost)
     .filter((t) => t && !t.match(/^Värmestam$/));
-  if (texter.length > 0) return texter.join(" · ");
-
-  const summering = summeraVarmestamPoster(normaliserade);
+  const summering = summeraVarmestammarData(d);
+  const ledning = summering
+    .filter((r) => r.etikett.includes("stamledning"))
+    .map((r) => `${r.etikett} ${r.varde}`);
+  if (texter.length > 0) {
+    return [...ledning, ...texter].join(" · ");
+  }
   return formateraSummeringRader(summering);
+}
+
+/** @deprecated Använd formateraVarmestammarData. */
+export function formateraVarmestamPoster(poster: VarmestamPost[]): string {
+  return formateraVarmestammarData({
+    stamledningTilloppLopmeter: "",
+    stamledningReturLopmeter: "",
+    poster,
+  });
 }
 
 /** Migrerar äldre VVS → Värme-stammar till Värmestammar-modellen. */
@@ -211,6 +414,5 @@ export function varmestamFranVvsVarmeStam(stam: VvsVarmeStam): VarmestamPost {
     rordimension: stam.stamRordimension ?? "",
     rordimensionAnnan: stam.stamRordimensionAnnan ?? "",
     vertikalLopmeter: "",
-    horisontellLopmeter: "",
   });
 }

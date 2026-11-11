@@ -105,10 +105,11 @@ export function StamventilerPanel({ poster, onChange }: StamventilerPanelProps) 
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-muted">
-        Stamventiler läggs bara in här under VVS — inte under Undercentral.
-        En bild per stam och på de horisontella ventilerna räcker som underlag
-        när ni tar in anbud på injustering. Injusteringsventil reglerar flödet
-        (t.ex. TA-STAD), styrventil reglerar temperatur.
+        Extra inventering med bild till injusteringsanbud. Tillopps- och
+        returventil per namngiven stam anges under Värmestammar. Här kan ni
+        komplettera med fler ventiler på stam eller horisontell stamledning.
+        Injusteringsventil (t.ex. TA-STAD) reglerar flödet; styrventil reglerar
+        temperatur.
       </p>
 
       {poster.length === 0 ? (

@@ -60,13 +60,15 @@ export const stamventilPlaceringAlternativ: {
   },
   {
     id: "horisontell-tillopp",
-    etikett: "Horisontell tillopp",
-    beskrivning: "På den horisontella tilloppsledningen i källaren.",
+    etikett: "Horisontell stamledning — tillopp",
+    beskrivning:
+      "På den horisontella stamledningen värme (tillopp) i källaren.",
   },
   {
     id: "horisontell-retur",
-    etikett: "Horisontell retur",
-    beskrivning: "På den horisontella returledningen i källaren.",
+    etikett: "Horisontell stamledning — retur",
+    beskrivning:
+      "På den horisontella stamledningen värme (retur) i källaren.",
   },
 ];
 
@@ -121,14 +123,14 @@ export const stamventilModeller: StamventilModellDef[] = [
   {
     id: "ta-stad",
     kategori: "injustering",
-    etikett: "TA-STAD",
+    etikett: "IMI TA-STAD (injustering)",
     beskrivning:
-      "Danfoss/IMI TA-STAD — vanlig injusteringsventil för flödesbalansering.",
+      "Vanligaste injusteringsventilen på retur: balansering, mätning, avstängning och avtappning.",
   },
   {
     id: "ta-compact",
     kategori: "injustering",
-    etikett: "TA-Compact",
+    etikett: "IMI TA-Compact",
     beskrivning: "Kompakt injusteringsventil — ofta i trånga stamskåp.",
   },
   {
@@ -212,8 +214,9 @@ export const stamventilModeller: StamventilModellDef[] = [
   {
     id: "avstangningsventil",
     kategori: "ovrigt",
-    etikett: "Avstängningsventil",
-    beskrivning: "Avstängning på stam eller gren — kulventil eller kulhane.",
+    etikett: "Avstängningsventil / kulventil",
+    beskrivning:
+      "Kulventil eller kulhane för avstängning. Vanlig på tillopp där stammen går upp — så en stam kan stängas utan att tömma hela systemet.",
   },
   {
     id: "differentialtryck",
@@ -224,8 +227,8 @@ export const stamventilModeller: StamventilModellDef[] = [
   {
     id: "returventil",
     kategori: "ovrigt",
-    etikett: "Returventil / backventil",
-    beskrivning: "Förhindrar tillbaka flöde i retur eller cirkulation.",
+    etikett: "Backventil",
+    beskrivning: "Förhindrar bakåtflöde i ledning eller cirkulation.",
   },
   {
     id: "avtappningsventil",

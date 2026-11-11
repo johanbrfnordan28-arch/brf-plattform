@@ -55,11 +55,14 @@ import {
   type VvsRadiatorData,
 } from "@/components/underhallsplan/vvs-radiatorer";
 import {
-  formateraVarmestamPoster,
+  formateraVarmestammarData,
+  normaliseraVarmestammarData,
   normaliseraVarmestamPost,
+  skapaTomVarmestammarData,
   skapaTomVarmestamPost,
   varmestamFranVvsVarmeStam,
   VARMESTAMMAR_UNDERKOMPONENT_ID,
+  type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
 import {
@@ -491,7 +494,7 @@ import type {
 
 export type { FasadAtgardPrisRegister, FasadAtgardPrisRegisterMap };
 
-export type VarmestammarRegister = Record<string, VarmestamPost[]>;
+export type VarmestammarRegister = Record<string, VarmestammarData>;
 
 export type StamventilerRegister = Record<string, StamventilPost[]>;
 
@@ -546,7 +549,7 @@ export type KomponentDetaljData = {
   vvsStambyteRegister?: VvsStambyteRegister;
   /** Värmestammar (grundmall) per underkomponent-id under VVS */
   vvsVarmeRegister?: Record<string, VvsVarmeStam[]>;
-  /** Horisontella ledningar i källaren per undercentral */
+  /** Undercentral (huvudsystem m.m.) per underkomponent-id */
   undercentralRegister?: Record<string, UndercentralData>;
   /** P-platser per underkomponent-id */
   pPlatserRegister?: PPlatserRegister;
@@ -1056,7 +1059,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         grupp: "Uppvärmning",
         defaultMåttenhet: "antal",
         måttHint:
-          "Oftast en undercentral per hus. Välj huvudsystem i listan och kompletterande återvinning (t.ex. bergvärme, sol, frånluftsåtervinning). Stamventiler läggs under Stamventiler.",
+          "Oftast en undercentral per hus. Välj huvudsystem i listan och kompletterande återvinning (t.ex. bergvärme, sol, frånluftsåtervinning). Horisontell stamledning och stamventiler läggs under Värmestammar.",
         detaljPanel: "undercentral",
       },
       {
@@ -1065,7 +1068,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         grupp: "Uppvärmning",
         defaultMåttenhet: "löpmeter",
         måttHint:
-          "Stamnamn och placering, antal våningar, takhöjd och bjälklag ger total stamhöjd. Dimension är valbar.",
+          "Horisontell stamledning värme i källaren, namngivna stammar med tillopps- och returventil (t.ex. avstängning + TA-STAD), plus stamhöjd och dimension.",
         detaljPanel: "varmestammar-lista",
       },
       {
@@ -1083,7 +1086,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         grupp: "Uppvärmning",
         defaultMåttenhet: "antal",
         måttHint:
-          "Enda stället för stamventiler. Placering på stam eller horisontell tillopp/retur, plus bild till injusteringsanbud.",
+          "Extra inventering av ventiler med bild till injusteringsanbud. Tillopp-/returventil per stam anges under Värmestammar.",
         detaljPanel: "stamventiler-lista",
       },
       {
@@ -1356,7 +1359,7 @@ function skapaTomVarmestammarRegister(mall: KomponentMall): VarmestammarRegister
   const reg: VarmestammarRegister = {};
   for (const def of mall.underkomponenter) {
     if (def.detaljPanel === "varmestammar-lista") {
-      reg[def.id] = [];
+      reg[def.id] = skapaTomVarmestammarData();
     }
   }
   return reg;
@@ -2130,27 +2133,64 @@ export function flyttaVarmecentralTillVvs(
   }
 
   // Värmestammar — prioritera Värmecentral, annars migrera gamla VVS→Värme
-  const stamFranVarme =
-    varmeSynkad?.varmestammarRegister?.[VARMESTAMMAR_UNDERKOMPONENT_ID] ?? [];
-  const stamFranVvs =
-    nextVvs.varmestammarRegister?.[VARMESTAMMAR_UNDERKOMPONENT_ID] ?? [];
-  let varmestammar = stamFranVarme.length > 0 ? stamFranVarme : stamFranVvs;
+  const stamDataFranVarme = normaliseraVarmestammarData(
+    varmeSynkad?.varmestammarRegister?.[VARMESTAMMAR_UNDERKOMPONENT_ID],
+  );
+  const stamDataFranVvs = normaliseraVarmestammarData(
+    nextVvs.varmestammarRegister?.[VARMESTAMMAR_UNDERKOMPONENT_ID],
+  );
+  let varmestammarData =
+    stamDataFranVarme.poster.length > 0 ||
+    stamDataFranVarme.stamledningTilloppLopmeter ||
+    stamDataFranVarme.stamledningReturLopmeter
+      ? stamDataFranVarme
+      : stamDataFranVvs;
   if (
-    varmestammar.length === 0 &&
+    varmestammarData.poster.length === 0 &&
     Array.isArray(gammalVvsVarme) &&
     gammalVvsVarme.length > 0
   ) {
-    varmestammar = normaliseraVvsVarmeStammar(gammalVvsVarme).map(
-      varmestamFranVvsVarmeStam,
-    );
+    varmestammarData = {
+      ...varmestammarData,
+      poster: normaliseraVvsVarmeStammar(gammalVvsVarme).map(
+        varmestamFranVvsVarmeStam,
+      ),
+    };
   }
-  if (varmestammar.length > 0) {
+  // Migrera äldre horisontell tillopp/retur från undercentral
+  const ucForStamledning = normaliseraUndercentralData(
+    nextVvs.undercentralRegister?.[UNDERCENTRAL_UNDERKOMPONENT_ID] ??
+      varmeSynkad?.undercentralRegister?.[VARMECENTRAL_UNDERCENTRAL_ID],
+  );
+  if (
+    !varmestammarData.stamledningTilloppLopmeter &&
+    ucForStamledning.tilloppLopmeter
+  ) {
+    varmestammarData = {
+      ...varmestammarData,
+      stamledningTilloppLopmeter: ucForStamledning.tilloppLopmeter,
+    };
+  }
+  if (
+    !varmestammarData.stamledningReturLopmeter &&
+    ucForStamledning.returLopmeter
+  ) {
+    varmestammarData = {
+      ...varmestammarData,
+      stamledningReturLopmeter: ucForStamledning.returLopmeter,
+    };
+  }
+  if (
+    varmestammarData.poster.length > 0 ||
+    varmestammarData.stamledningTilloppLopmeter ||
+    varmestammarData.stamledningReturLopmeter
+  ) {
     nextVvs = {
       ...nextVvs,
       varmestammarRegister: {
         ...nextVvs.varmestammarRegister,
-        [VARMESTAMMAR_UNDERKOMPONENT_ID]: varmestammar.map((p) =>
-          normaliseraVarmestamPost({ ...skapaTomVarmestamPost(), ...p }),
+        [VARMESTAMMAR_UNDERKOMPONENT_ID]: normaliseraVarmestammarData(
+          varmestammarData,
         ),
       },
     };
@@ -2599,10 +2639,12 @@ export function synkaKomponentDetaljMedMall(
       ...tom.vvsRadiatorRegister,
       ...dataIn.vvsRadiatorRegister,
     },
-    varmestammarRegister: {
-      ...skapaTomVarmestammarRegister(mall),
-      ...dataIn.varmestammarRegister,
-    },
+    varmestammarRegister: Object.fromEntries(
+      Object.entries({
+        ...skapaTomVarmestammarRegister(mall),
+        ...dataIn.varmestammarRegister,
+      }).map(([key, val]) => [key, normaliseraVarmestammarData(val)]),
+    ),
     stamventilerRegister: Object.fromEntries(
       Object.entries({
         ...skapaTomStamventilerRegister(mall),
@@ -3095,46 +3137,96 @@ export function uppdateraVvsVarmeStammar(
   };
 }
 
+export function hamtaVarmestammarData(
+  data: KomponentDetaljData,
+  underId: string,
+): VarmestammarData {
+  const bas = normaliseraVarmestammarData(
+    data.varmestammarRegister?.[underId],
+  );
+  if (
+    bas.stamledningTilloppLopmeter ||
+    bas.stamledningReturLopmeter
+  ) {
+    return bas;
+  }
+  // Migrera äldre meter från undercentral om stamledning saknas
+  const uc = normaliseraUndercentralData(
+    data.undercentralRegister?.[UNDERCENTRAL_UNDERKOMPONENT_ID] ??
+      data.undercentralRegister?.undercentral,
+  );
+  return normaliseraVarmestammarData({
+    ...bas,
+    stamledningTilloppLopmeter:
+      bas.stamledningTilloppLopmeter || uc.tilloppLopmeter || "",
+    stamledningReturLopmeter:
+      bas.stamledningReturLopmeter || uc.returLopmeter || "",
+  });
+}
+
+/** @deprecated Använd hamtaVarmestammarData. */
 export function hamtaVarmestamPoster(
   data: KomponentDetaljData,
   underId: string,
 ): VarmestamPost[] {
-  const raw = data.varmestammarRegister?.[underId] ?? [];
-  return raw.map((post) =>
-    normaliseraVarmestamPost({
-      ...skapaTomVarmestamPost(),
-      ...post,
-    }),
-  );
+  return hamtaVarmestammarData(data, underId).poster;
 }
 
-export function uppdateraVarmestamPoster(
+export function uppdateraVarmestammarData(
   data: KomponentDetaljData,
   underId: string,
-  poster: VarmestamPost[],
+  varmestammar: VarmestammarData,
 ): KomponentDetaljData {
-  const normaliserade = poster.map((post) =>
-    normaliseraVarmestamPost({
-      ...skapaTomVarmestamPost(),
-      ...post,
-    }),
-  );
+  const normaliserad = normaliseraVarmestammarData(varmestammar);
+  // Rensa legacy-fält på undercentral när stamledning sparats under Värmestammar
+  const ucId =
+    data.undercentralRegister?.[UNDERCENTRAL_UNDERKOMPONENT_ID] != null
+      ? UNDERCENTRAL_UNDERKOMPONENT_ID
+      : data.undercentralRegister?.undercentral != null
+        ? "undercentral"
+        : null;
+  let undercentralRegister = data.undercentralRegister;
+  if (ucId && undercentralRegister?.[ucId]) {
+    const uc = normaliseraUndercentralData(undercentralRegister[ucId]);
+    undercentralRegister = {
+      ...undercentralRegister,
+      [ucId]: {
+        ...uc,
+        tilloppLopmeter: "",
+        returLopmeter: "",
+      },
+    };
+  }
   return {
     ...data,
+    undercentralRegister,
     varmestammarRegister: {
       ...data.varmestammarRegister,
-      [underId]: normaliserade,
+      [underId]: normaliserad,
     },
     underkomponenter: data.underkomponenter.map((rad) =>
       rad.id === underId
         ? {
             ...rad,
             aktiv: true,
-            värde: String(normaliserade.length || rad.värde),
+            värde: String(normaliserad.poster.length || rad.värde),
           }
         : rad,
     ),
   };
+}
+
+/** @deprecated Använd uppdateraVarmestammarData. */
+export function uppdateraVarmestamPoster(
+  data: KomponentDetaljData,
+  underId: string,
+  poster: VarmestamPost[],
+): KomponentDetaljData {
+  const befintlig = hamtaVarmestammarData(data, underId);
+  return uppdateraVarmestammarData(data, underId, {
+    ...befintlig,
+    poster,
+  });
 }
 
 export function hamtaStamventilPoster(
@@ -3757,8 +3849,9 @@ export function formateraKomponentSammanfattning(
       continue;
     }
     if (def?.detaljPanel === "varmestammar-lista") {
-      const poster = data.varmestammarRegister?.[rad.id] ?? [];
-      const text = formateraVarmestamPoster(poster);
+      const text = formateraVarmestammarData(
+        hamtaVarmestammarData(data, rad.id),
+      );
       if (text) delar.push(`${rad.etikett}: ${text}`);
       continue;
     }
