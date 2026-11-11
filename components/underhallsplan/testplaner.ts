@@ -198,11 +198,10 @@ export const testplan1900: TestplanDefinition = {
     "Trapphus",
     "Källare",
     "VVS",
-    "Värmecentral",
-    "Ventilation",
+        "Ventilation",
   ],
   komponentDetaljer: synkaKomponentRegister(
-    ["Fasad", "Tak", "Trapphus", "Källare", "VVS", "Värmecentral", "Ventilation"],
+    ["Fasad", "Tak", "Trapphus", "Källare", "VVS", "Ventilation"],
     {
       Fasad: {
         ...skapaTomKomponentDetalj("Fasad"),
@@ -374,8 +373,7 @@ export const testplan50: TestplanDefinition = {
     "Trapphus",
     "Källare",
     "VVS",
-    "Värmecentral",
-    "Ventilation",
+        "Ventilation",
     "Elcentral",
     "Balkonger",
     "Styr och övervakning",
@@ -390,8 +388,7 @@ export const testplan50: TestplanDefinition = {
       "Trapphus",
       "Källare",
       "VVS",
-      "Värmecentral",
-      "Ventilation",
+            "Ventilation",
       "Elcentral",
       "Balkonger",
       "Styr och övervakning",
@@ -406,8 +403,7 @@ export const testplan50: TestplanDefinition = {
       "Trapphus",
       "Källare",
       "VVS",
-      "Värmecentral",
-      "Ventilation",
+            "Ventilation",
       "Elcentral",
       "Balkonger",
       "Styr och övervakning",
@@ -600,11 +596,10 @@ export const testplan70: TestplanDefinition = {
     "Trapphus",
     "Källare",
     "VVS",
-    "Värmecentral",
-    "Ventilation",
+        "Ventilation",
   ],
   komponentDetaljer: synkaKomponentRegister(
-    ["Fasad", "Tak", "Trapphus", "Källare", "VVS", "Värmecentral", "Ventilation"],
+    ["Fasad", "Tak", "Trapphus", "Källare", "VVS", "Ventilation"],
     {
       Tak: {
         ...skapaTomKomponentDetalj("Tak"),
@@ -826,8 +821,7 @@ export const testplan90: TestplanDefinition = {
     "Källare",
     "VVS",
     "Ventilation",
-    "Värmecentral",
-    "Mark och gård",
+        "Mark och gård",
     "Komplement byggnad och P-platser",
   ],
   komponentDetaljer: synkaKomponentRegister(
@@ -838,8 +832,7 @@ export const testplan90: TestplanDefinition = {
       "Källare",
       "VVS",
       "Ventilation",
-      "Värmecentral",
-      "Mark och gård",
+            "Mark och gård",
       "Komplement byggnad och P-platser",
     ],
     {

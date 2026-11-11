@@ -5,21 +5,26 @@ import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringP
 import {
   normaliseraUndercentralData,
   summeraUndercentral,
-  uppvarmningSystem,
-  uppvarmningSystemEtikett,
+  undercentralArDirektverkandeEl,
+  uppvarmningHuvudsystem,
+  uppvarmningHuvudsystemEtikett,
+  uppvarmningKompletterande,
+  uppvarmningKompletterandeEtikett,
   type UndercentralBild,
   type UndercentralData,
 } from "@/components/underhallsplan/undercentral";
 
 type UndercentralPanelProps = {
   data: UndercentralData;
-  /** Antal undercentraler — samma fält som radens mängd. */
+  /** Antal undercentraler — samma fält som radens mängd. Standard är 1. */
   antal: string;
-  /** Valda värmesystem, samma lista som komponentens deltyper. */
-  system?: string[];
+  /**
+   * Äldre valda system från komponentens deltyper.
+   * Används bara för migrering vid inläsning.
+   */
+  legacySystem?: string[];
   onChange: (data: UndercentralData) => void;
   onAntalChange: (antal: string) => void;
-  onSystemChange: (system: string[]) => void;
 };
 
 function MeterFalt({
@@ -89,35 +94,47 @@ async function lasUndercentralBild(
 export function UndercentralPanel({
   data,
   antal,
-  system = [],
+  legacySystem = [],
   onChange,
   onAntalChange,
-  onSystemChange,
 }: UndercentralPanelProps) {
-  const d = normaliseraUndercentralData(data);
+  const d = normaliseraUndercentralData(data, legacySystem);
   const summering = summeraUndercentral(d);
   const [bildFel, setBildFel] = useState("");
-  const valdaSystem = system.filter((id) =>
-    uppvarmningSystem.some((s) => s.id === id),
-  );
+  const direktEl = undercentralArDirektverkandeEl(d);
+  const huvudBeskrivning = uppvarmningHuvudsystem.find(
+    (s) => s.id === d.huvudsystem,
+  )?.beskrivning;
 
-  function toggleSystem(id: string) {
-    onSystemChange(
-      system.includes(id) ? system.filter((s) => s !== id) : [...system, id],
-    );
+  function spara(patch: Partial<UndercentralData>) {
+    onChange(normaliseraUndercentralData({ ...d, ...patch }));
   }
 
-  const systemRader =
-    valdaSystem.length > 0
-      ? [
-          {
-            etikett: "Värmesystem",
-            varde: valdaSystem
-              .map((id) => uppvarmningSystemEtikett(id, d.systemAnnat))
-              .join(", "),
-          },
-        ]
-      : [];
+  function toggleKomplement(id: string) {
+    spara({
+      kompletterande: d.kompletterande.includes(id)
+        ? d.kompletterande.filter((s) => s !== id)
+        : [...d.kompletterande, id],
+    });
+  }
+
+  const systemRader: { etikett: string; varde: string }[] = [];
+  if (d.huvudsystem) {
+    systemRader.push({
+      etikett: "Huvudsystem",
+      varde: uppvarmningHuvudsystemEtikett(d.huvudsystem, d.huvudsystemAnnat),
+    });
+  }
+  if (d.kompletterande.length > 0) {
+    systemRader.push({
+      etikett: "Kompletterande",
+      varde: d.kompletterande
+        .map((id) =>
+          uppvarmningKompletterandeEtikett(id, d.kompletterandeAnnat),
+        )
+        .join(", "),
+    });
+  }
   const bildRad =
     d.bilder.length > 0
       ? [
@@ -131,15 +148,20 @@ export function UndercentralPanel({
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-muted">
-        Undercentralen ligger vanligtvis i källaren. Ange hur många som finns
-        och vilket värmesystem huset har. Flera system kan väljas. Stamventiler
-        läggs inte in här — de registreras bara under Stamventiler.
+        Undercentralen ligger vanligtvis i källaren. I de flesta flerbostadshus
+        finns <strong className="font-medium text-foreground">en</strong>{" "}
+        undercentral per hus. Välj huvudsystem i listan. Återvinning, sol och
+        andra delar som hör till centralen eller källaren läggs till som
+        komplement. Stamventiler registreras under Stamventiler.
       </p>
 
-      <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[12rem_1fr]">
         <label className="block text-sm">
           <span className="text-xs font-medium text-muted">
             Antal undercentraler
+          </span>
+          <span className="mt-0.5 block text-[11px] text-muted">
+            Standard är 1. Ange 0 vid direktverkande el utan gemensam central.
           </span>
           <input
             type="number"
@@ -151,62 +173,136 @@ export function UndercentralPanel({
           />
         </label>
 
-        <fieldset>
-          <legend className="text-xs font-medium text-muted">
-            Värmesystem
-          </legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {uppvarmningSystem.map((alt) => (
-              <label
-                key={alt.id}
-                className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-[#eef6f0]/50"
-              >
-                <input
-                  type="checkbox"
-                  checked={system.includes(alt.id)}
-                  onChange={() => toggleSystem(alt.id)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary"
-                />
-                <span>
-                  <span className="font-medium text-foreground">{alt.etikett}</span>
-                  <span className="mt-0.5 block text-xs text-muted">
-                    {alt.beskrivning}
-                  </span>
-                </span>
-              </label>
-            ))}
-          </div>
-          {system.includes("annat") && (
-            <label className="mt-2 block text-sm">
+        <div className="space-y-3">
+          <label className="block text-sm">
+            <span className="text-xs font-medium text-muted">Huvudsystem</span>
+            <select
+              value={d.huvudsystem}
+              onChange={(e) => {
+                const huvudsystem = e.target.value;
+                const patch: Partial<UndercentralData> = { huvudsystem };
+                if (huvudsystem === "direktverkande-el" && !antal.trim()) {
+                  onAntalChange("0");
+                } else if (
+                  huvudsystem &&
+                  huvudsystem !== "direktverkande-el" &&
+                  (!antal.trim() || antal.trim() === "0")
+                ) {
+                  onAntalChange("1");
+                }
+                if (
+                  huvudsystem === "direktverkande-el" &&
+                  !d.kompletterande.includes("individuella-vvb")
+                ) {
+                  patch.kompletterande = [
+                    ...d.kompletterande,
+                    "individuella-vvb",
+                  ];
+                }
+                spara(patch);
+              }}
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            >
+              <option value="">Välj huvudsystem…</option>
+              {uppvarmningHuvudsystem.map((alt) => (
+                <option key={alt.id} value={alt.id}>
+                  {alt.etikett}
+                </option>
+              ))}
+            </select>
+            {huvudBeskrivning && (
+              <span className="mt-1 block text-[11px] leading-relaxed text-muted">
+                {huvudBeskrivning}
+              </span>
+            )}
+          </label>
+
+          {d.huvudsystem === "annat" && (
+            <label className="block text-sm">
               <span className="text-xs font-medium text-muted">
-                Beskriv systemet
+                Beskriv huvudsystemet
               </span>
               <input
                 type="text"
-                value={d.systemAnnat}
-                onChange={(e) => onChange({ ...d, systemAnnat: e.target.value })}
-                placeholder="t.ex. närvärme"
+                value={d.huvudsystemAnnat}
+                onChange={(e) => spara({ huvudsystemAnnat: e.target.value })}
+                placeholder="t.ex. kombinerad fliseldning"
                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
               />
             </label>
           )}
-        </fieldset>
+
+          {direktEl && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
+              Vid direktverkande el saknas ofta gemensam undercentral.
+              Varmvatten bereds då vanligtvis med egna varmvattenberedare i
+              lägenheterna. Det är förvalt i komplementen — justera vid behov.
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <MeterFalt
-          label="Horisontell tillopp"
-          hint="Ledningen som går ut från undercentralen i källaren."
-          value={d.tilloppLopmeter}
-          onChange={(tilloppLopmeter) => onChange({ ...d, tilloppLopmeter })}
-        />
-        <MeterFalt
-          label="Horisontell retur"
-          hint="Returledningen tillbaka till undercentralen i källaren."
-          value={d.returLopmeter}
-          onChange={(returLopmeter) => onChange({ ...d, returLopmeter })}
-        />
-      </div>
+      <fieldset>
+        <legend className="text-xs font-medium text-muted">
+          Kompletterande återvinning och delar i källaren
+        </legend>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted">
+          Flera kan väljas. Typiska exempel är frånluftsåtervinning, bergvärme
+          som tillägg, solvärme/solceller, ackumulatortank eller elpatron.
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {uppvarmningKompletterande.map((alt) => (
+            <label
+              key={alt.id}
+              className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-[#eef6f0]/50"
+            >
+              <input
+                type="checkbox"
+                checked={d.kompletterande.includes(alt.id)}
+                onChange={() => toggleKomplement(alt.id)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary"
+              />
+              <span>
+                <span className="font-medium text-foreground">{alt.etikett}</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  {alt.beskrivning}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+        {d.kompletterande.includes("annat-komplement") && (
+          <label className="mt-2 block text-sm">
+            <span className="text-xs font-medium text-muted">
+              Beskriv komplementet
+            </span>
+            <input
+              type="text"
+              value={d.kompletterandeAnnat}
+              onChange={(e) => spara({ kompletterandeAnnat: e.target.value })}
+              placeholder="t.ex. spillvärme från närliggande industri"
+              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+            />
+          </label>
+        )}
+      </fieldset>
+
+      {!direktEl && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <MeterFalt
+            label="Horisontell tillopp"
+            hint="Ledningen som går ut från undercentralen i källaren."
+            value={d.tilloppLopmeter}
+            onChange={(tilloppLopmeter) => spara({ tilloppLopmeter })}
+          />
+          <MeterFalt
+            label="Horisontell retur"
+            hint="Returledningen tillbaka till undercentralen i källaren."
+            value={d.returLopmeter}
+            onChange={(returLopmeter) => spara({ returLopmeter })}
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         <label className="block text-sm">
@@ -234,7 +330,7 @@ export function UndercentralPanel({
                     setBildFel("");
                   }
                   if (nya.length === 0) return;
-                  onChange({ ...d, bilder: [...d.bilder, ...nya].slice(0, 8) });
+                  spara({ bilder: [...d.bilder, ...nya].slice(0, 8) });
                 },
               );
             }}
@@ -258,8 +354,7 @@ export function UndercentralPanel({
                 <button
                   type="button"
                   onClick={() =>
-                    onChange({
-                      ...d,
+                    spara({
                       bilder: d.bilder.filter((b) => b.id !== bild.id),
                     })
                   }

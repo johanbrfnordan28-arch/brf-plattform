@@ -1223,17 +1223,17 @@ export function KomponentDetaljer({
                     <UndercentralPanel
                       data={hamtaUndercentralData(data, rad.id)}
                       antal={rad.värde}
-                      system={data.valdaDeltyper}
+                      legacySystem={data.valdaDeltyper}
                       onChange={(undercentral) =>
                         onChange(
                           uppdateraUndercentralData(data, rad.id, undercentral),
                         )
                       }
                       onAntalChange={(värde) =>
-                        uppdateraUnderkomponent(rad.id, { värde })
-                      }
-                      onSystemChange={(valdaDeltyper) =>
-                        onChange({ ...data, valdaDeltyper })
+                        uppdateraUnderkomponent(rad.id, {
+                          värde,
+                          aktiv: true,
+                        })
                       }
                     />
                   </div>

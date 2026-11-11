@@ -150,7 +150,7 @@ export function VvsVarmePanel({
         betjänar vardagsrum i 3 rum och kök. Med antal våningar, takhöjd och
         bjälklagets tjocklek räknas total stamhöjd fram automatiskt. Dimension
         och radiatorer är valbara. Sammanställningen längst ned är underlag för
-        kostnad. Stamventiler registreras under Uppvärmning → Stamventiler.
+        kostnad. Stamventiler registreras under VVS → Stamventiler.
       </p>
 
       <div className="flex flex-wrap items-end gap-2 rounded-lg border border-primary/30 bg-[#fafcfa] p-3">

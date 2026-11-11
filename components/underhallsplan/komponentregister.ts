@@ -58,6 +58,7 @@ import {
   formateraVarmestamPoster,
   normaliseraVarmestamPost,
   skapaTomVarmestamPost,
+  varmestamFranVvsVarmeStam,
   VARMESTAMMAR_UNDERKOMPONENT_ID,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
@@ -71,8 +72,8 @@ import {
   formateraUndercentral,
   normaliseraUndercentralData,
   skapaTomUndercentralData,
+  undercentralValdaSystemId,
   UNDERCENTRAL_UNDERKOMPONENT_ID,
-  uppvarmningSystem,
   type UndercentralData,
 } from "@/components/underhallsplan/undercentral";
 import {
@@ -606,7 +607,8 @@ export const måttenhetEtiketter: Record<Måttenhet, { etikett: string; enhet: s
 /** Utvändiga och invändiga huvuddelar — steg 2. Övriga steg läser samma lista. */
 /** Visningsnamn. Lagringsnyckeln behålls så sparade planer fortsätter att gälla. */
 const FASTIGHETSDEL_VISNINGSNAMN: Record<string, string> = {
-  Värmecentral: "Uppvärmning",
+  /** Äldre separat huvuddel — flyttad in under VVS. */
+  Värmecentral: "Uppvärmning (flyttad till VVS)",
 };
 
 export function fastighetsdelVisningsnamn(namn: string): string {
@@ -627,7 +629,6 @@ export const fastighetsdelGrupper = [
       "Trapphus",
       "Källare",
       "VVS",
-      "Värmecentral",
       "Ventilation",
       "Elcentral",
       "Brandskydd",
@@ -645,7 +646,6 @@ export const foreslagnaKomponenter = [
   "Tak",
   "Trapphus",
   "VVS",
-  "Värmecentral",
   "Ventilation",
   "Elcentral",
   "Balkonger",
@@ -1044,16 +1044,61 @@ const komponentMallar: Record<string, KomponentMall> = {
   },
   VVS: {
     namn: "VVS",
-    deltypSektionTitel: "Värmedistribution",
-    deltyper: [
-      { id: "fjarrvarme", etikett: "Fjärrvärme" },
-      { id: "egen-central", etikett: "Egen värmecentral i huset" },
-      { id: "blandat", etikett: "Blandat / delar av hus" },
-    ],
+    deltypSektionTitel: "Värmesystem",
+    deltypHjalp:
+      "Huvudsystem och komplement väljs under Undercentral — inte här.",
+    tillatEgenDeltyp: false,
+    deltyper: [],
     underkomponenter: [
+      {
+        id: UNDERCENTRAL_UNDERKOMPONENT_ID,
+        etikett: "Undercentral",
+        grupp: "Uppvärmning",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Oftast en undercentral per hus. Välj huvudsystem i listan och kompletterande återvinning (t.ex. bergvärme, sol, frånluftsåtervinning). Stamventiler läggs under Stamventiler.",
+        detaljPanel: "undercentral",
+      },
+      {
+        id: VARMESTAMMAR_UNDERKOMPONENT_ID,
+        etikett: "Värmestammar",
+        grupp: "Uppvärmning",
+        defaultMåttenhet: "löpmeter",
+        måttHint:
+          "Stamnamn och placering, antal våningar, takhöjd och bjälklag ger total stamhöjd. Dimension är valbar.",
+        detaljPanel: "varmestammar-lista",
+      },
+      {
+        id: "radiatorer",
+        etikett: "Radiatorer",
+        grupp: "Uppvärmning",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Termostat, radiatorventil, koppel och packbox — ett-/tvårörssystem. Värmerör i meter.",
+        detaljPanel: "vvs-radiatorer",
+      },
+      {
+        id: STAMVENTILER_UNDERKOMPONENT_ID,
+        etikett: "Stamventiler",
+        grupp: "Uppvärmning",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Enda stället för stamventiler. Placering på stam eller horisontell tillopp/retur, plus bild till injusteringsanbud.",
+        detaljPanel: "stamventiler-lista",
+      },
+      {
+        id: "stambyte",
+        etikett: "Stambyte",
+        grupp: "Avlopp och stammar",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Badrum i grupper med storlek och innehåll (dusch, badkar, bidé, handfat, bastu). WC med toalett och handfat. Kök med antal och bild i diskbänkskåpet.",
+        detaljPanel: "vvs-stambyte",
+      },
       {
         id: "spolning-avlopp",
         etikett: "Spolning avlopp",
+        grupp: "Avlopp och stammar",
         defaultMåttenhet: "antal",
         måttHint:
           "Stamspolning/avloppsspolning. Ange antal stammar eller välj 1 och planera som klumpsumma.",
@@ -1061,65 +1106,48 @@ const komponentMallar: Record<string, KomponentMall> = {
       {
         id: "filmning-avlopp",
         etikett: "Filmning avlopp",
+        grupp: "Avlopp och stammar",
         defaultMåttenhet: "antal",
         måttHint:
           "Kamerainspektion av avloppsstammar. Bra som beslutsunderlag inför spolning eller stambyte.",
       },
-      {
-        id: VVS_VARME_UNDERKOMPONENT_ID,
-        etikett: "Värme",
-        defaultMåttenhet: "antal",
-        måttHint:
-          "Stamnamn och placering, antal våningar, takhöjd och bjälklag ger total stamhöjd. Dimension, radiatorer och sammanställning är underlag för kostnad. Stamventiler läggs in under Uppvärmning.",
-        detaljPanel: "vvs-varme",
-      },
-      {
-        id: "stambyte",
-        etikett: "Stambyte",
-        defaultMåttenhet: "antal",
-        måttHint:
-          "Badrum i grupper med storlek och innehåll (dusch, badkar, bidé, handfat, bastu). WC med toalett och handfat. Kök med antal och bild i diskbänkskåpet. Sammanställningen visar antalet.",
-        detaljPanel: "vvs-stambyte",
-      },
     ],
   },
+  /**
+   * Äldre separat huvuddel — behålls för migrering till VVS.
+   * Nya planer ska inte aktivera den.
+   */
   Värmecentral: {
     namn: "Värmecentral",
-    deltypSektionTitel: "Värmesystem",
-    deltypHjalp:
-      "Flera system kan väljas om huset har mer än ett, till exempel fjärrvärme och solvärme.",
-    deltyper: uppvarmningSystem.map(({ id, etikett }) => ({ id, etikett })),
+    deltypSektionTitel: "Värmesystem (äldre)",
+    deltyper: [],
     underkomponenter: [
       {
         id: UNDERCENTRAL_UNDERKOMPONENT_ID,
         etikett: "Undercentral",
         defaultMåttenhet: "antal",
-        måttHint:
-          "Antal undercentraler, värmesystem och bilder. Löpmeter för horisontell tillopp och retur i källaren. Stamventiler läggs in under Stamventiler.",
+        måttHint: "Äldre läge — flyttas till VVS vid synk.",
         detaljPanel: "undercentral",
       },
       {
         id: "radiatorer",
         etikett: "Radiatorer",
         defaultMåttenhet: "antal",
-        måttHint:
-          "Termostat, radiatorventil, koppel och packbox — ett/två-rör. Värmerör i meter.",
+        måttHint: "Äldre läge — flyttas till VVS vid synk.",
         detaljPanel: "vvs-radiatorer",
       },
       {
         id: VARMESTAMMAR_UNDERKOMPONENT_ID,
         etikett: "Värmestammar",
         defaultMåttenhet: "löpmeter",
-        måttHint:
-          "Stamnamn och placering, antal våningar, takhöjd och bjälklag ger total stamhöjd. Dimension är valbar. Sammanställningen visar antalet.",
+        måttHint: "Äldre läge — flyttas till VVS vid synk.",
         detaljPanel: "varmestammar-lista",
       },
       {
         id: STAMVENTILER_UNDERKOMPONENT_ID,
         etikett: "Stamventiler",
         defaultMåttenhet: "antal",
-        måttHint:
-          "Enda stället för stamventiler. Placering på stam eller horisontell tillopp/retur, plus bild till injusteringsanbud.",
+        måttHint: "Äldre läge — flyttas till VVS vid synk.",
         detaljPanel: "stamventiler-lista",
       },
     ],
@@ -1969,8 +1997,11 @@ function slåIhopVarmecentralUnderkomponent(
   };
 }
 
-/** Flyttar undercentral och radiatorer från VVS till Värmecentral. */
-export function flyttaVvsVarmeTillVarmecentral(
+/**
+ * Flyttar äldre Uppvärmning (Värmecentral) och duplicerad VVS→Värme
+ * in under VVS. Tar bort Värmecentral som egen huvuddel.
+ */
+export function flyttaVarmecentralTillVvs(
   activeComponents: string[],
   register: Record<string, KomponentDetaljData>,
 ): {
@@ -1978,105 +2009,202 @@ export function flyttaVvsVarmeTillVarmecentral(
   register: Record<string, KomponentDetaljData>;
 } {
   const vvs = register.VVS;
-  const varmeBefintlig = register.Värmecentral;
-
-  const undercentralFranVvs = vvs?.underkomponenter.find(
-    (r) => r.id === VARMECENTRAL_UNDERCENTRAL_ID,
-  );
-  const radiatorerFranVvs = vvs?.underkomponenter.find(
-    (r) => r.id === VARMECENTRAL_RADIATORER_ID,
-  );
-  const radiatorRegisterFranVvs =
-    vvs?.vvsRadiatorRegister?.[VARMECENTRAL_RADIATORER_ID];
-  const pannaFranVarme = varmeBefintlig?.underkomponenter.find((r) => r.id === "panna");
-
-  const harVvsVarme =
-    Boolean(
-      undercentralFranVvs &&
-        (undercentralFranVvs.aktiv || undercentralFranVvs.värde?.trim()),
-    ) ||
-    Boolean(
-      radiatorerFranVvs &&
-        (radiatorerFranVvs.aktiv || radiatorRegisterFranVvs),
-    ) ||
-    Boolean(radiatorRegisterFranVvs);
-
-  const harGammalVarmecentral = varmeBefintlig?.underkomponenter.some(
-    (r) => GAMLA_VARMECENTRAL_UNDER_IDS.includes(r.id as (typeof GAMLA_VARMECENTRAL_UNDER_IDS)[number]) && underkomponentHarData(r),
+  const varme = register.Värmecentral;
+  const harGammalVarme =
+    Boolean(varme) || activeComponents.includes("Värmecentral");
+  const gammalVvsVarme = vvs?.vvsVarmeRegister?.[VVS_VARME_UNDERKOMPONENT_ID];
+  const gammalVvsVarmeRad = vvs?.underkomponenter.find(
+    (r) => r.id === VVS_VARME_UNDERKOMPONENT_ID,
   );
 
-  if (!vvs && !varmeBefintlig && !harVvsVarme && !harGammalVarmecentral) {
+  if (!vvs && !harGammalVarme && !gammalVvsVarme?.length) {
     return { activeComponents, register };
   }
 
-  let active = [...activeComponents];
   const nextRegister = { ...register };
-  const varmeMall = hamtaKomponentMall("Värmecentral");
+  const vvsMall = hamtaKomponentMall("VVS");
+  let nextVvs = vvs
+    ? synkaKomponentDetaljMedMall(vvs, vvsMall)
+    : skapaTomKomponentDetalj("VVS");
 
-  let varme = varmeBefintlig
-    ? synkaKomponentDetaljMedMall(varmeBefintlig, varmeMall)
-    : skapaTomKomponentDetalj("Värmecentral");
+  const varmeSynkad = varme
+    ? synkaKomponentDetaljMedMall(varme, hamtaKomponentMall("Värmecentral"))
+    : null;
 
-  const valdaFranVvs = (vvs?.valdaDeltyper ?? []).filter((id) =>
-    varmeMall.deltyper.some((d) => d.id === id),
-  );
-  varme = {
-    ...varme,
-    valdaDeltyper:
-      varme.valdaDeltyper.length > 0 ? varme.valdaDeltyper : valdaFranVvs,
-    underkomponenter: varme.underkomponenter.map((rad) => {
+  // Underkomponentrader från Värmecentral
+  nextVvs = {
+    ...nextVvs,
+    underkomponenter: nextVvs.underkomponenter.map((rad) => {
       if (rad.id === VARMECENTRAL_UNDERCENTRAL_ID) {
-        return slåIhopVarmecentralUnderkomponent(
+        const franVarme = varmeSynkad?.underkomponenter.find(
+          (r) => r.id === VARMECENTRAL_UNDERCENTRAL_ID,
+        );
+        const pannaFranVarme = varmeSynkad?.underkomponenter.find(
+          (r) => r.id === "panna",
+        );
+        const ihop = slåIhopVarmecentralUnderkomponent(
           rad,
-          undercentralFranVvs,
+          franVarme,
           pannaFranVarme,
         );
+        // Standard: en undercentral om inget antal angivits
+        if (!ihop.värde.trim() && underkomponentHarData(ihop)) {
+          return { ...ihop, värde: "1", aktiv: true };
+        }
+        if (!ihop.värde.trim()) {
+          return { ...ihop, värde: "1" };
+        }
+        return ihop;
       }
       if (rad.id === VARMECENTRAL_RADIATORER_ID) {
-        return slåIhopVarmecentralUnderkomponent(rad, radiatorerFranVvs);
+        return slåIhopVarmecentralUnderkomponent(
+          rad,
+          varmeSynkad?.underkomponenter.find(
+            (r) => r.id === VARMECENTRAL_RADIATORER_ID,
+          ),
+        );
+      }
+      if (rad.id === VARMESTAMMAR_UNDERKOMPONENT_ID) {
+        return slåIhopVarmecentralUnderkomponent(
+          rad,
+          varmeSynkad?.underkomponenter.find(
+            (r) => r.id === VARMESTAMMAR_UNDERKOMPONENT_ID,
+          ),
+          gammalVvsVarmeRad,
+        );
+      }
+      if (rad.id === STAMVENTILER_UNDERKOMPONENT_ID) {
+        return slåIhopVarmecentralUnderkomponent(
+          rad,
+          varmeSynkad?.underkomponenter.find(
+            (r) => r.id === STAMVENTILER_UNDERKOMPONENT_ID,
+          ),
+        );
       }
       return rad;
     }),
-    vvsRadiatorRegister: radiatorRegisterFranVvs
-      ? {
-          ...varme.vvsRadiatorRegister,
-          [VARMECENTRAL_RADIATORER_ID]: radiatorRegisterFranVvs,
-        }
-      : varme.vvsRadiatorRegister,
   };
 
-  const skaHaVarmecentral =
-    active.includes("Värmecentral") ||
-    Boolean(varmeBefintlig) ||
-    harVvsVarme ||
-    harGammalVarmecentral ||
-    varme.underkomponenter.some((r) => underkomponentHarData(r));
+  // Register: undercentral
+  const ucFranVarme =
+    varmeSynkad?.undercentralRegister?.[VARMECENTRAL_UNDERCENTRAL_ID];
+  const ucFranVvs =
+    nextVvs.undercentralRegister?.[VARMECENTRAL_UNDERCENTRAL_ID];
+  const legacySystem = [
+    ...(varmeSynkad?.valdaDeltyper ?? []),
+    ...(vvs?.valdaDeltyper ?? []).filter((id) =>
+      ["fjarrvarme", "egen-central", "blandat", "bergvarme", "solvarme"].includes(
+        id,
+      ),
+    ),
+  ];
+  const ucNormaliserad = normaliseraUndercentralData(
+    ucFranVarme ?? ucFranVvs ?? skapaTomUndercentralData(),
+    legacySystem,
+  );
+  nextVvs = {
+    ...nextVvs,
+    undercentralRegister: {
+      ...nextVvs.undercentralRegister,
+      [VARMECENTRAL_UNDERCENTRAL_ID]: ucNormaliserad,
+    },
+    valdaDeltyper: undercentralValdaSystemId(ucNormaliserad),
+  };
 
-  if (skaHaVarmecentral && !active.includes("Värmecentral")) {
-    active = [...active, "Värmecentral"];
-  }
-
-  if (vvs) {
-    const vvsMall = hamtaKomponentMall("VVS");
-    const { [VARMECENTRAL_RADIATORER_ID]: _, ...vvsRadiatorUtanRadiatorer } =
-      vvs.vvsRadiatorRegister ?? {};
-    const vvsUtanVarme: KomponentDetaljData = {
-      ...vvs,
-      vvsRadiatorRegister:
-        Object.keys(vvsRadiatorUtanRadiatorer).length > 0
-          ? vvsRadiatorUtanRadiatorer
-          : undefined,
+  // Radiatorer
+  const radFranVarme =
+    varmeSynkad?.vvsRadiatorRegister?.[VARMECENTRAL_RADIATORER_ID];
+  const radFranVvs =
+    nextVvs.vvsRadiatorRegister?.[VARMECENTRAL_RADIATORER_ID] ??
+    vvs?.vvsRadiatorRegister?.[VARMECENTRAL_RADIATORER_ID];
+  if (radFranVarme || radFranVvs) {
+    nextVvs = {
+      ...nextVvs,
+      vvsRadiatorRegister: {
+        ...nextVvs.vvsRadiatorRegister,
+        [VARMECENTRAL_RADIATORER_ID]: normaliseraVvsRadiatorData(
+          radFranVarme ?? radFranVvs,
+        ),
+      },
     };
-    nextRegister.VVS = synkaKomponentDetaljMedMall(vvsUtanVarme, vvsMall);
   }
 
-  if (skaHaVarmecentral) {
-    nextRegister.Värmecentral = varme;
-  } else if (varmeBefintlig) {
-    nextRegister.Värmecentral = varme;
+  // Värmestammar — prioritera Värmecentral, annars migrera gamla VVS→Värme
+  const stamFranVarme =
+    varmeSynkad?.varmestammarRegister?.[VARMESTAMMAR_UNDERKOMPONENT_ID] ?? [];
+  const stamFranVvs =
+    nextVvs.varmestammarRegister?.[VARMESTAMMAR_UNDERKOMPONENT_ID] ?? [];
+  let varmestammar = stamFranVarme.length > 0 ? stamFranVarme : stamFranVvs;
+  if (
+    varmestammar.length === 0 &&
+    Array.isArray(gammalVvsVarme) &&
+    gammalVvsVarme.length > 0
+  ) {
+    varmestammar = normaliseraVvsVarmeStammar(gammalVvsVarme).map(
+      varmestamFranVvsVarmeStam,
+    );
+  }
+  if (varmestammar.length > 0) {
+    nextVvs = {
+      ...nextVvs,
+      varmestammarRegister: {
+        ...nextVvs.varmestammarRegister,
+        [VARMESTAMMAR_UNDERKOMPONENT_ID]: varmestammar.map((p) =>
+          normaliseraVarmestamPost({ ...skapaTomVarmestamPost(), ...p }),
+        ),
+      },
+    };
   }
 
+  // Stamventiler
+  const ventFranVarme =
+    varmeSynkad?.stamventilerRegister?.[STAMVENTILER_UNDERKOMPONENT_ID];
+  const ventFranVvs =
+    nextVvs.stamventilerRegister?.[STAMVENTILER_UNDERKOMPONENT_ID];
+  if (ventFranVarme?.length || ventFranVvs?.length) {
+    nextVvs = {
+      ...nextVvs,
+      stamventilerRegister: {
+        ...nextVvs.stamventilerRegister,
+        [STAMVENTILER_UNDERKOMPONENT_ID]: normaliseraStamventilPoster(
+          ventFranVarme?.length ? ventFranVarme : ventFranVvs,
+        ),
+      },
+    };
+  }
+
+  // Ta bort duplicerad VVS→Värme-data
+  if (nextVvs.vvsVarmeRegister) {
+    const { [VVS_VARME_UNDERKOMPONENT_ID]: _, ...restVarme } =
+      nextVvs.vvsVarmeRegister;
+    nextVvs = {
+      ...nextVvs,
+      vvsVarmeRegister:
+        Object.keys(restVarme).length > 0 ? restVarme : undefined,
+    };
+  }
+
+  let active = activeComponents.filter((n) => n !== "Värmecentral");
+  if (!active.includes("VVS")) {
+    active = [...active, "VVS"];
+  }
+  nextRegister.VVS = nextVvs;
+  if ("Värmecentral" in nextRegister) {
+    const { Värmecentral: _, ...rest } = nextRegister;
+    return { activeComponents: active, register: rest };
+  }
   return { activeComponents: active, register: nextRegister };
+}
+
+/** @deprecated Använd flyttaVarmecentralTillVvs. */
+export function flyttaVvsVarmeTillVarmecentral(
+  activeComponents: string[],
+  register: Record<string, KomponentDetaljData>,
+): {
+  activeComponents: string[];
+  register: Record<string, KomponentDetaljData>;
+} {
+  return flyttaVarmecentralTillVvs(activeComponents, register);
 }
 
 function flyttaFonsterTillEgenKomponent(
@@ -2253,7 +2381,8 @@ function skapaUnderkomponentRadFranDef(
     etikett: def.etikett,
     aktiv: false,
     måttenhet: def.defaultMåttenhet,
-    värde: "",
+    // Undercentral: oftast en per hus
+    värde: def.detaljPanel === "undercentral" ? "1" : "",
     ärEgen: false,
     underhallIntervallAr,
     avskrivningAr: avskrivningAr || undefined,
@@ -2409,12 +2538,33 @@ export function synkaKomponentDetaljMedMall(
     };
   }
 
+  const undercentralRegister = Object.fromEntries(
+    Object.entries({
+      ...skapaTomUndercentralRegister(mall),
+      ...dataIn.undercentralRegister,
+    }).map(([key, val]) => [
+      key,
+      normaliseraUndercentralData(val, dataIn.valdaDeltyper),
+    ]),
+  );
+
+  const valdaDeltyperFranUndercentral =
+    mall.namn === "VVS" &&
+    undercentralRegister[UNDERCENTRAL_UNDERKOMPONENT_ID]
+      ? undercentralValdaSystemId(
+          undercentralRegister[UNDERCENTRAL_UNDERKOMPONENT_ID],
+        )
+      : null;
+
   const valdaDeltyper =
     mall.namn === "Tak"
       ? valdaDeltyperFranTakBelaggning(
           normaliseraTakBelaggningData(takBelaggningRegister.takyta),
         )
-      : valdaDeltyperLegacyTak;
+      : valdaDeltyperFranUndercentral &&
+          valdaDeltyperFranUndercentral.length > 0
+        ? valdaDeltyperFranUndercentral
+        : valdaDeltyperLegacyTak;
 
   return {
     valdaDeltyper,
@@ -2469,12 +2619,7 @@ export function synkaKomponentDetaljMedMall(
         ...dataIn.vvsVarmeRegister,
       }).map(([key, val]) => [key, normaliseraVvsVarmeStammar(val)]),
     ),
-    undercentralRegister: Object.fromEntries(
-      Object.entries({
-        ...skapaTomUndercentralRegister(mall),
-        ...dataIn.undercentralRegister,
-      }).map(([key, val]) => [key, normaliseraUndercentralData(val)]),
-    ),
+    undercentralRegister,
     pPlatserRegister: {
       ...tom.pPlatserRegister,
       ...dataIn.pPlatserRegister,
@@ -2919,6 +3064,9 @@ export function uppdateraVvsRadiatorData(
       ...data.vvsRadiatorRegister,
       [underId]: normaliseraVvsRadiatorData(radiatorData),
     },
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId ? { ...rad, aktiv: true } : rad,
+    ),
   };
 }
 
@@ -2965,17 +3113,27 @@ export function uppdateraVarmestamPoster(
   underId: string,
   poster: VarmestamPost[],
 ): KomponentDetaljData {
+  const normaliserade = poster.map((post) =>
+    normaliseraVarmestamPost({
+      ...skapaTomVarmestamPost(),
+      ...post,
+    }),
+  );
   return {
     ...data,
     varmestammarRegister: {
       ...data.varmestammarRegister,
-      [underId]: poster.map((post) =>
-        normaliseraVarmestamPost({
-          ...skapaTomVarmestamPost(),
-          ...post,
-        }),
-      ),
+      [underId]: normaliserade,
     },
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId
+        ? {
+            ...rad,
+            aktiv: true,
+            värde: String(normaliserade.length || rad.värde),
+          }
+        : rad,
+    ),
   };
 }
 
@@ -2990,7 +3148,10 @@ export function hamtaUndercentralData(
   data: KomponentDetaljData,
   underId: string,
 ): UndercentralData {
-  return normaliseraUndercentralData(data.undercentralRegister?.[underId]);
+  return normaliseraUndercentralData(
+    data.undercentralRegister?.[underId],
+    data.valdaDeltyper,
+  );
 }
 
 export function uppdateraUndercentralData(
@@ -2998,12 +3159,26 @@ export function uppdateraUndercentralData(
   underId: string,
   undercentral: UndercentralData,
 ): KomponentDetaljData {
+  const normaliserad = normaliseraUndercentralData(
+    undercentral,
+    data.valdaDeltyper,
+  );
   return {
     ...data,
+    valdaDeltyper: undercentralValdaSystemId(normaliserad),
     undercentralRegister: {
       ...data.undercentralRegister,
-      [underId]: normaliseraUndercentralData(undercentral),
+      [underId]: normaliserad,
     },
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId
+        ? {
+            ...rad,
+            aktiv: true,
+            värde: rad.värde.trim() ? rad.värde : "1",
+          }
+        : rad,
+    ),
   };
 }
 
@@ -3018,6 +3193,11 @@ export function uppdateraStamventilPoster(
       ...data.stamventilerRegister,
       [underId]: poster,
     },
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId
+        ? { ...rad, aktiv: true, värde: String(poster.length || rad.värde) }
+        : rad,
+    ),
   };
 }
 
@@ -3423,7 +3603,7 @@ export function synkaUnderhallsplanState(
   const { activeComponents: activeEfterBalkong, register: regEfterBalkong } =
     flyttaBalkongerTillEgenKomponent(activeEfterDorrar, regEfterDorrar);
   const { activeComponents: activeEfterVarme, register: regEfterVarme } =
-    flyttaVvsVarmeTillVarmecentral(activeEfterBalkong, regEfterBalkong);
+    flyttaVarmecentralTillVvs(activeEfterBalkong, regEfterBalkong);
   const { activeComponents: active, register: reg } =
     bytNamnGarageTillKomplementByggnad(activeEfterVarme, regEfterVarme);
 

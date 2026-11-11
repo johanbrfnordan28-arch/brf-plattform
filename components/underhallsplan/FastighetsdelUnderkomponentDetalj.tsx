@@ -33,13 +33,13 @@ import {
   hamtaStamventilPoster,
   hamtaUndercentralData,
   hamtaVarmestamPoster,
+  hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
-  hamtaVvsVarmeStammar,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
   uppdateraVarmestamPoster,
+  uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
-  uppdateraVvsVarmeStammar,
   uppdateraTakfonsterData,
   uppdateraTakterrassPoster,
   uppdateraMedlemstakterrassPoster,
@@ -51,8 +51,7 @@ import { StambytePanel } from "@/components/underhallsplan/StambytePanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
 import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
-import { VvsVarmePanel } from "@/components/underhallsplan/VvsVarmePanel";
-import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
+import { VvsRadiatorPanel } from "@/components/underhallsplan/VvsRadiatorPanel";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
 /** Underkomponenter med eget formulär — enkel m²/st-rad döljs i steg 2. */
@@ -69,7 +68,7 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "undercentral",
   "stamventiler-lista",
   "varmestammar-lista",
-  "vvs-varme",
+  "vvs-radiatorer",
   "vvs-stambyte",
 ]);
 
@@ -280,12 +279,11 @@ export function FastighetsdelUnderkomponentDetalj({
         <UndercentralPanel
           data={hamtaUndercentralData(data, rad.id)}
           antal={rad.värde}
-          system={data.valdaDeltyper}
+          legacySystem={data.valdaDeltyper}
           onChange={(undercentral) =>
             onChange(uppdateraUndercentralData(data, rad.id, undercentral))
           }
-          onAntalChange={(värde) => onRadChange({ värde })}
-          onSystemChange={(valdaDeltyper) => onChange({ ...data, valdaDeltyper })}
+          onAntalChange={(värde) => onRadChange({ värde, aktiv: true })}
         />
       </div>
     );
@@ -317,6 +315,19 @@ export function FastighetsdelUnderkomponentDetalj({
     );
   }
 
+  if (detaljPanel === "vvs-radiatorer") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <VvsRadiatorPanel
+          data={hamtaVvsRadiatorData(data, rad.id)}
+          onChange={(radiatorData) =>
+            onChange(uppdateraVvsRadiatorData(data, rad.id, radiatorData))
+          }
+        />
+      </div>
+    );
+  }
+
   if (detaljPanel === "vvs-stambyte") {
     return (
       <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
@@ -324,25 +335,6 @@ export function FastighetsdelUnderkomponentDetalj({
           data={hamtaVvsStambyteData(data, rad.id)}
           onChange={(stambyteData) =>
             onChange(uppdateraVvsStambyteData(data, rad.id, stambyteData))
-          }
-        />
-      </div>
-    );
-  }
-
-  if (detaljPanel === "vvs-varme") {
-    const adresser = [
-      ...new Set(
-        [...hamtaByggnadAdresser(grund), ...foreningsAdresser].filter(Boolean),
-      ),
-    ];
-    return (
-      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
-        <VvsVarmePanel
-          poster={hamtaVvsVarmeStammar(data, rad.id)}
-          adresser={adresser}
-          onChange={(stammar) =>
-            onChange(uppdateraVvsVarmeStammar(data, rad.id, stammar))
           }
         />
       </div>

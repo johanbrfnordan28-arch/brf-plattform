@@ -75,10 +75,22 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       rekommenderatIntervallAr: 6,
       intervallHint: "Filmning/kamerainspektion — ofta vart 5–10 år eller inför större beslut.",
     },
-    varme: {
-      rekommenderatIntervallAr: 40,
+    undercentral: {
+      rekommenderatIntervallAr: 25,
       intervallHint:
-        "Värmestammar — ofta 35–50 år. Stamventil på tillopp och retur i källaren byts oftare.",
+        "Undercentral / växlare — ofta 20–30 år beroende på system och underhåll.",
+    },
+    radiatorer: {
+      rekommenderatIntervallAr: 30,
+      intervallHint: "Radiatorer och ventiler — ofta 25–35 år.",
+    },
+    varmestammar: {
+      rekommenderatIntervallAr: 40,
+      intervallHint: "Värmestammar och stamledning — ofta 35–50 år.",
+    },
+    stamventiler: {
+      rekommenderatIntervallAr: 25,
+      intervallHint: "Stamventiler och balansventiler — ofta 20–30 år.",
     },
   },
   Värmecentral: {

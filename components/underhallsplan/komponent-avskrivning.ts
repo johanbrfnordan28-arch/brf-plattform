@@ -150,10 +150,25 @@ const rekommendationer: Record<
       arK3Komponent: false,
       hint: "Filmning — kontrollåtgärd, inte komponentavskrivning.",
     },
-    varme: {
+    undercentral: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Undercentral — underhåll; FAR Tabell 1 lyfter stamledning värme.",
+    },
+    radiatorer: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Radiatorer — underhåll; FAR Tabell 1 lyfter stamledning värme.",
+    },
+    varmestammar: {
       rekommenderadAvskrivningAr: 80,
       arK3Komponent: true,
-      hint: "FAR: stamledning värme 80 år. Grundmall per värmestam under VVS.",
+      hint: "FAR: stamledning värme 80 år.",
+    },
+    stamventiler: {
+      rekommenderadAvskrivningAr: 0,
+      arK3Komponent: false,
+      hint: "Stamventiler — underhåll/del av värmesystem.",
     },
   },
   Värmecentral: {

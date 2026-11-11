@@ -194,3 +194,23 @@ export function formateraVarmestamPoster(poster: VarmestamPost[]): string {
   const summering = summeraVarmestamPoster(normaliserade);
   return formateraSummeringRader(summering);
 }
+
+/** Migrerar äldre VVS → Värme-stammar till Värmestammar-modellen. */
+export function varmestamFranVvsVarmeStam(stam: VvsVarmeStam): VarmestamPost {
+  return normaliseraVarmestamPost({
+    ...skapaTomVarmestamPost(stam.namn || ""),
+    id: stam.id,
+    namn: stam.namn,
+    placering: stam.adress?.trim() || stam.markningKallare?.trim() || "",
+    betjanar: stam.betjanar ?? "",
+    vaningar: stam.vaningar ?? "",
+    takhojd: stam.takhojd ?? "",
+    takhojdAnnan: stam.takhojdAnnan ?? "",
+    bjalklag: stam.bjalklag ?? "",
+    bjalklagAnnan: stam.bjalklagAnnan ?? "",
+    rordimension: stam.stamRordimension ?? "",
+    rordimensionAnnan: stam.stamRordimensionAnnan ?? "",
+    vertikalLopmeter: "",
+    horisontellLopmeter: "",
+  });
+}

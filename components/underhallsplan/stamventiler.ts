@@ -42,7 +42,7 @@ export type StamventilStorlekId =
   | "g20"
   | "annat";
 
-/** Var ventilen sitter. Registreras bara här — inte under Värme eller Undercentral. */
+/** Var ventilen sitter. Registreras bara här under VVS — inte under Undercentral. */
 export type StamventilPlaceringId =
   | "stam"
   | "horisontell-tillopp"

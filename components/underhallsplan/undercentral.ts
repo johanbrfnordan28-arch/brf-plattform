@@ -5,14 +5,15 @@ import {
 } from "@/components/underhallsplan/lista-summering";
 
 /**
- * Undercentralen ligger vanligtvis i källaren.
- * Löpmeter avser de horisontella ledningarna där — tillopp och retur var för sig.
+ * Undercentralen ligger vanligtvis i källaren — oftast en per hus.
+ * Huvudsystem väljs i rullista. Kompletterande återvinning och andra
+ * delar i källaren kan läggas till separat.
  */
 
 export const UNDERCENTRAL_UNDERKOMPONENT_ID = "undercentral";
 
-/** Värmesystem som är vanliga i flerbostadshus. Flera kan gälla samtidigt. */
-export const uppvarmningSystem: {
+/** Huvudsystem för uppvärmning — ett val. */
+export const uppvarmningHuvudsystem: {
   id: string;
   etikett: string;
   beskrivning: string;
@@ -20,32 +21,56 @@ export const uppvarmningSystem: {
   {
     id: "fjarrvarme",
     etikett: "Fjärrvärme",
-    beskrivning: "Vanligast. Undercentral med växlare mot fjärrvärmenätet.",
+    beskrivning:
+      "Vanligast i flerbostadshus. Undercentral med växlare mot fjärrvärmenätet för både värme och tappvarmvatten.",
+  },
+  {
+    id: "narvarme",
+    etikett: "Närvärme",
+    beskrivning:
+      "Lokalt fjärrvärmeliknande nät, ofta inom ett kvarter eller område.",
   },
   {
     id: "bergvarme",
     etikett: "Bergvärme",
-    beskrivning: "Värmepump med borrhål.",
+    beskrivning:
+      "Värmepump med energibrunnar. Kräver ofta flera borrhål i flerbostadshus.",
   },
   {
     id: "franluftsvarmepump",
     etikett: "Frånluftsvärmepump",
-    beskrivning: "Återvinner värme ur frånluften.",
+    beskrivning:
+      "Återvinner värme ur frånluften till värme och/eller varmvatten. Kräver mekanisk frånluft.",
   },
   {
     id: "luftvatten",
     etikett: "Luft-vattenvärmepump",
-    beskrivning: "Utedel och värmepump mot värmesystemet.",
+    beskrivning: "Utedel och värmepump mot vattenburet värmesystem.",
+  },
+  {
+    id: "jordvarme",
+    etikett: "Jordvärme / ytjordvärme",
+    beskrivning: "Värmepump med kollektorslang i marken.",
+  },
+  {
+    id: "sjovarme",
+    etikett: "Sjö- / ytvattenvärme",
+    beskrivning: "Värmepump som tar värme ur sjö eller vattendrag.",
   },
   {
     id: "pellet",
     etikett: "Pelletspanna",
-    beskrivning: "Panna med pelletsförråd.",
+    beskrivning: "Panna med pelletsförråd, kopplad till vattenburet system.",
+  },
+  {
+    id: "vedpanna",
+    etikett: "Vedpanna",
+    beskrivning: "Äldre eller mindre anläggningar med vedeldning.",
   },
   {
     id: "elpanna",
     etikett: "Elpanna",
-    beskrivning: "Elpanna, ofta som spets eller eget system.",
+    beskrivning: "Elpanna som huvudsystem eller reserv/spets.",
   },
   {
     id: "gaspanna",
@@ -58,15 +83,89 @@ export const uppvarmningSystem: {
     beskrivning: "Äldre anläggning som fortfarande kan finnas kvar.",
   },
   {
-    id: "solvarme",
-    etikett: "Solvärme",
-    beskrivning: "Ofta ett komplement till ett annat system.",
+    id: "direktverkande-el",
+    etikett: "Direktverkande el",
+    beskrivning:
+      "Elelement eller elgolvvärme utan gemensam undercentral. Ofta egna varmvattenberedare i lägenheterna.",
   },
   {
     id: "annat",
-    etikett: "Annat system",
+    etikett: "Annat huvudsystem",
     beskrivning: "Beskriv systemet i fritext.",
   },
+];
+
+/**
+ * Kompletterande delar som ofta sitter i eller hör till undercentralen /
+ * källaren — kan kombineras med huvudsystemet.
+ */
+export const uppvarmningKompletterande: {
+  id: string;
+  etikett: string;
+  beskrivning: string;
+}[] = [
+  {
+    id: "franlufts-atervinning",
+    etikett: "Frånluftsåtervinning (FX)",
+    beskrivning:
+      "Värmeåtervinning ur frånluft via batteri/växlare, ofta som komplement till fjärrvärme.",
+  },
+  {
+    id: "spillvattenatervinning",
+    etikett: "Spillvattenvärmeåtervinning",
+    beskrivning: "Återvinner värme ur avloppsvatten.",
+  },
+  {
+    id: "solvarme",
+    etikett: "Solvärme (solfångare)",
+    beskrivning: "Solfångare som komplement till varmvatten eller värme.",
+  },
+  {
+    id: "solceller",
+    etikett: "Solceller",
+    beskrivning:
+      "Elproduktion som ofta samverkar med värmepump, elpatron eller fastighetsel.",
+  },
+  {
+    id: "bergvarme-komplement",
+    etikett: "Bergvärme som komplement",
+    beskrivning: "Bergvärme tillsammans med t.ex. fjärrvärme eller sol.",
+  },
+  {
+    id: "ackumulatortank",
+    etikett: "Ackumulatortank",
+    beskrivning: "Lagring av värme i tank, vanligt vid panna eller solvärme.",
+  },
+  {
+    id: "elpatron",
+    etikett: "Elpatron / spetsvärme",
+    beskrivning: "Elspets vid högt effektbehov eller som reserv.",
+  },
+  {
+    id: "individuella-vvb",
+    etikett: "Egna varmvattenberedare",
+    beskrivning:
+      "Varmvattenberedare per lägenhet — vanligt vid direktverkande el.",
+  },
+  {
+    id: "luftluft",
+    etikett: "Luft-luftvärmepump",
+    beskrivning:
+      "Komplement, oftast i mindre hus eller till direktverkande el — sällan huvudsystem i stora flerbostadshus.",
+  },
+  {
+    id: "annat-komplement",
+    etikett: "Annat komplement",
+    beskrivning: "Beskriv tillägget i fritext.",
+  },
+];
+
+/** Bakåtkompatibilitet: äldre checklista med alla system. */
+export const uppvarmningSystem = [
+  ...uppvarmningHuvudsystem,
+  ...uppvarmningKompletterande.filter(
+    (k) => !uppvarmningHuvudsystem.some((h) => h.id === k.id),
+  ),
 ];
 
 export type UndercentralBild = {
@@ -80,18 +179,52 @@ export type UndercentralData = {
   tilloppLopmeter: string;
   /** Horisontell returledning i källaren, meter. */
   returLopmeter: string;
-  /** Fritext när systemet är «Annat system». */
-  systemAnnat: string;
+  /** Ett huvudsystem (rullista). */
+  huvudsystem: string;
+  /** Fritext när huvudsystem är «Annat». */
+  huvudsystemAnnat: string;
+  /** Kompletterande återvinning och källardelar. */
+  kompletterande: string[];
+  /** Fritext när «Annat komplement» är valt. */
+  kompletterandeAnnat: string;
   bilder: UndercentralBild[];
+  /**
+   * Äldre fält — migreras till huvudsystemAnnat.
+   * @deprecated
+   */
+  systemAnnat?: string;
 };
 
 export function skapaTomUndercentralData(): UndercentralData {
   return {
     tilloppLopmeter: "",
     returLopmeter: "",
-    systemAnnat: "",
+    huvudsystem: "",
+    huvudsystemAnnat: "",
+    kompletterande: [],
+    kompletterandeAnnat: "",
     bilder: [],
   };
+}
+
+function arHuvudsystemId(id: string): boolean {
+  return uppvarmningHuvudsystem.some((s) => s.id === id);
+}
+
+function arKompletterandeId(id: string): boolean {
+  return uppvarmningKompletterande.some((s) => s.id === id);
+}
+
+/** Mappar äldre system-id till nytt huvud- eller komplement-id. */
+function mappaLegacySystemId(id: string): {
+  huvud?: string;
+  komplement?: string;
+} {
+  if (id === "solvarme") return { komplement: "solvarme" };
+  if (id === "bergvarme") return { huvud: "bergvarme" };
+  if (arHuvudsystemId(id)) return { huvud: id };
+  if (arKompletterandeId(id)) return { komplement: id };
+  return {};
 }
 
 function normaliseraUndercentralBilder(raw: unknown): UndercentralBild[] {
@@ -117,20 +250,110 @@ function normaliseraUndercentralBilder(raw: unknown): UndercentralBild[] {
   return bilder;
 }
 
+/**
+ * Normaliserar undercentraldata och kan ta in äldre valdaDeltyper
+ * (från när system sparades på komponentnivå).
+ */
 export function normaliseraUndercentralData(
   raw?: Partial<UndercentralData> | null,
+  legacySystem: string[] = [],
 ): UndercentralData {
+  const legacyAnnat =
+    typeof raw?.systemAnnat === "string" ? raw.systemAnnat.trim() : "";
+  let huvudsystem =
+    typeof raw?.huvudsystem === "string" ? raw.huvudsystem.trim() : "";
+  let huvudsystemAnnat =
+    typeof raw?.huvudsystemAnnat === "string"
+      ? raw.huvudsystemAnnat.trim()
+      : legacyAnnat;
+  let kompletterande = Array.isArray(raw?.kompletterande)
+    ? raw.kompletterande.filter((id) => typeof id === "string" && id.trim())
+    : [];
+  const kompletterandeAnnat =
+    typeof raw?.kompletterandeAnnat === "string"
+      ? raw.kompletterandeAnnat.trim()
+      : "";
+
+  if (!huvudsystem && legacySystem.length > 0) {
+    for (const id of legacySystem) {
+      const mappad = mappaLegacySystemId(id);
+      if (mappad.huvud && !huvudsystem) huvudsystem = mappad.huvud;
+      else if (mappad.komplement) kompletterande.push(mappad.komplement);
+      else if (mappad.huvud && huvudsystem) {
+        // Redan har huvud — övriga huvudsystem blir komplement om möjligt
+        if (mappad.huvud === "bergvarme") {
+          kompletterande.push("bergvarme-komplement");
+        }
+      }
+    }
+  }
+
+  if (huvudsystem && !arHuvudsystemId(huvudsystem)) {
+    if (!huvudsystemAnnat) huvudsystemAnnat = huvudsystem;
+    huvudsystem = "annat";
+  }
+
+  kompletterande = [
+    ...new Set(
+      kompletterande
+        .map((id) => {
+          if (arKompletterandeId(id)) return id;
+          const mappad = mappaLegacySystemId(id);
+          return mappad.komplement ?? "";
+        })
+        .filter(Boolean),
+    ),
+  ];
+
+  // Undvik dubbel bergvärme om det redan är huvudsystem
+  if (huvudsystem === "bergvarme") {
+    kompletterande = kompletterande.filter((id) => id !== "bergvarme-komplement");
+  }
+
   return {
     tilloppLopmeter: raw?.tilloppLopmeter?.trim() ?? "",
     returLopmeter: raw?.returLopmeter?.trim() ?? "",
-    systemAnnat: raw?.systemAnnat?.trim() ?? "",
+    huvudsystem,
+    huvudsystemAnnat: huvudsystem === "annat" ? huvudsystemAnnat : "",
+    kompletterande,
+    kompletterandeAnnat: kompletterande.includes("annat-komplement")
+      ? kompletterandeAnnat
+      : "",
     bilder: normaliseraUndercentralBilder(raw?.bilder),
   };
 }
 
+export function uppvarmningHuvudsystemEtikett(
+  id: string,
+  annat = "",
+): string {
+  if (id === "annat") return annat.trim() || "Annat huvudsystem";
+  return uppvarmningHuvudsystem.find((s) => s.id === id)?.etikett ?? id;
+}
+
+export function uppvarmningKompletterandeEtikett(
+  id: string,
+  annat = "",
+): string {
+  if (id === "annat-komplement") return annat.trim() || "Annat komplement";
+  return uppvarmningKompletterande.find((s) => s.id === id)?.etikett ?? id;
+}
+
+/** Bakåtkompatibilitet för äldre anrop. */
 export function uppvarmningSystemEtikett(id: string, systemAnnat = ""): string {
-  if (id === "annat") return systemAnnat.trim() || "Annat system";
-  return uppvarmningSystem.find((s) => s.id === id)?.etikett ?? id;
+  if (arHuvudsystemId(id) || id === "annat") {
+    return uppvarmningHuvudsystemEtikett(id, systemAnnat);
+  }
+  return uppvarmningKompletterandeEtikett(id, systemAnnat);
+}
+
+/** Alla valda system-id (huvud + komplement) — för legacy valdaDeltyper. */
+export function undercentralValdaSystemId(data: UndercentralData): string[] {
+  const d = normaliseraUndercentralData(data);
+  const idn: string[] = [];
+  if (d.huvudsystem) idn.push(d.huvudsystem);
+  idn.push(...d.kompletterande);
+  return idn;
 }
 
 export function summeraUndercentral(data: UndercentralData): ListaSummeringRad[] {
@@ -154,19 +377,32 @@ export function summeraUndercentral(data: UndercentralData): ListaSummeringRad[]
 
 export function formateraUndercentral(
   data: UndercentralData,
-  system: string[] = [],
+  legacySystem: string[] = [],
 ): string {
-  const d = normaliseraUndercentralData(data);
+  const d = normaliseraUndercentralData(data, legacySystem);
+  const delar: string[] = [];
+  if (d.huvudsystem) {
+    delar.push(uppvarmningHuvudsystemEtikett(d.huvudsystem, d.huvudsystemAnnat));
+  }
+  if (d.kompletterande.length > 0) {
+    delar.push(
+      d.kompletterande
+        .map((id) =>
+          uppvarmningKompletterandeEtikett(id, d.kompletterandeAnnat),
+        )
+        .join(", "),
+    );
+  } else if (!d.huvudsystem && d.huvudsystemAnnat) {
+    delar.push(d.huvudsystemAnnat);
+  }
   const rader = summeraUndercentral(d);
-  const delar = rader.map((r) => `${r.etikett} ${r.varde}`);
-  const systemText = system
-    .filter((id) => uppvarmningSystem.some((s) => s.id === id))
-    .map((id) => uppvarmningSystemEtikett(id, d.systemAnnat))
-    .join(", ");
-  if (systemText) delar.unshift(systemText);
-  else if (d.systemAnnat) delar.push(d.systemAnnat);
+  delar.push(...rader.map((r) => `${r.etikett} ${r.varde}`));
   if (d.bilder.length > 0) {
     delar.push(d.bilder.length === 1 ? "med bild" : `${d.bilder.length} bilder`);
   }
   return delar.join(", ");
+}
+
+export function undercentralArDirektverkandeEl(data: UndercentralData): boolean {
+  return normaliseraUndercentralData(data).huvudsystem === "direktverkande-el";
 }
