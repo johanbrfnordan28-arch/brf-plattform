@@ -203,6 +203,7 @@ export type UnderkomponentDetaljPanel =
   | "vvs-radiatorer"
   | "varmestammar-lista"
   | "stamventiler-lista"
+  | "injusteringsunderlag"
   | "vvs-stambyte"
   | "vvs-varme"
   | "undercentral"
@@ -545,6 +546,11 @@ export type KomponentDetaljData = {
   varmestammarRegister?: VarmestammarRegister;
   /** Stamventiler per underkomponent-id */
   stamventilerRegister?: StamventilerRegister;
+  /** Sparat injusteringsunderlag (textsnapshot) per underkomponent-id */
+  injusteringsunderlagRegister?: Record<
+    string,
+    import("@/components/underhallsplan/injusteringsunderlag").InjusteringsunderlagSnapshot
+  >;
   /** Stambyte badrum per underkomponent-id */
   vvsStambyteRegister?: VvsStambyteRegister;
   /** Värmestammar (grundmall) per underkomponent-id under VVS */
@@ -1088,6 +1094,15 @@ const komponentMallar: Record<string, KomponentMall> = {
         måttHint:
           "Extra inventering av ventiler med bild till injusteringsanbud. Tillopp-/returventil per stam anges under Värmestammar.",
         detaljPanel: "stamventiler-lista",
+      },
+      {
+        id: "injusteringsunderlag",
+        etikett: "Injusteringsunderlag",
+        grupp: "Uppvärmning",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Sammanställning för injustering: undercentral, horisontell stamledning, stamhöjd per våning, radiatorstorlek, golvyta och rumvolym. Kan sparas och lämnas till konsult.",
+        detaljPanel: "injusteringsunderlag",
       },
       {
         id: "stambyte",
@@ -2651,6 +2666,9 @@ export function synkaKomponentDetaljMedMall(
         ...dataIn.stamventilerRegister,
       }).map(([key, val]) => [key, normaliseraStamventilPoster(val)]),
     ),
+    injusteringsunderlagRegister: {
+      ...dataIn.injusteringsunderlagRegister,
+    },
     vvsStambyteRegister: {
       ...tom.vvsStambyteRegister,
       ...dataIn.vvsStambyteRegister,
@@ -3234,6 +3252,55 @@ export function hamtaStamventilPoster(
   underId: string,
 ): StamventilPost[] {
   return normaliseraStamventilPoster(data.stamventilerRegister?.[underId]);
+}
+
+export function hamtaInjusteringsunderlagSnapshot(
+  data: KomponentDetaljData,
+  underId: string,
+): import("@/components/underhallsplan/injusteringsunderlag").InjusteringsunderlagSnapshot | null {
+  const raw = data.injusteringsunderlagRegister?.[underId];
+  if (!raw || typeof raw !== "object" || typeof raw.text !== "string") {
+    return null;
+  }
+  return raw;
+}
+
+export function uppdateraInjusteringsunderlagSnapshot(
+  data: KomponentDetaljData,
+  underId: string,
+  snapshot:
+    | import("@/components/underhallsplan/injusteringsunderlag").InjusteringsunderlagSnapshot
+    | null,
+): KomponentDetaljData {
+  const nasta = { ...data.injusteringsunderlagRegister };
+  if (snapshot) nasta[underId] = snapshot;
+  else delete nasta[underId];
+  return {
+    ...data,
+    injusteringsunderlagRegister: nasta,
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId
+        ? {
+            ...rad,
+            aktiv: true,
+            värde: snapshot ? "1" : rad.värde,
+          }
+        : rad,
+    ),
+  };
+}
+
+/** Bygger källa till injusteringsunderlag från VVS-registret. */
+export function hamtaInjusteringsunderlagKalla(
+  data: KomponentDetaljData,
+  foreningNamn = "",
+): import("@/components/underhallsplan/injusteringsunderlag").InjusteringsunderlagKalla {
+  return {
+    undercentral: hamtaUndercentralData(data, UNDERCENTRAL_UNDERKOMPONENT_ID),
+    varmestammar: hamtaVarmestammarData(data, VARMESTAMMAR_UNDERKOMPONENT_ID),
+    radiatorer: hamtaVvsRadiatorData(data, "radiatorer"),
+    foreningNamn,
+  };
 }
 
 export function hamtaUndercentralData(

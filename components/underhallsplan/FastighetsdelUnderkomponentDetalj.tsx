@@ -32,11 +32,14 @@ import {
   hamtaMedlemstakterrassPoster,
   hamtaStamventilPoster,
   hamtaUndercentralData,
+  hamtaInjusteringsunderlagKalla,
+  hamtaInjusteringsunderlagSnapshot,
   hamtaVarmestammarData,
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
+  uppdateraInjusteringsunderlagSnapshot,
   uppdateraVarmestammarData,
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
@@ -48,6 +51,7 @@ import {
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
 import { StambytePanel } from "@/components/underhallsplan/StambytePanel";
+import { InjusteringsunderlagPanel } from "@/components/underhallsplan/InjusteringsunderlagPanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
 import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
@@ -68,6 +72,7 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "undercentral",
   "stamventiler-lista",
   "varmestammar-lista",
+  "injusteringsunderlag",
   "vvs-radiatorer",
   "vvs-stambyte",
 ]);
@@ -309,6 +314,27 @@ export function FastighetsdelUnderkomponentDetalj({
           data={hamtaVarmestammarData(data, rad.id)}
           onChange={(varmestammar) =>
             onChange(uppdateraVarmestammarData(data, rad.id, varmestammar))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "injusteringsunderlag") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <InjusteringsunderlagPanel
+          kalla={hamtaInjusteringsunderlagKalla(data)}
+          sparat={hamtaInjusteringsunderlagSnapshot(data, rad.id)}
+          onSpara={(snapshot) =>
+            onChange(
+              uppdateraInjusteringsunderlagSnapshot(data, rad.id, snapshot),
+            )
+          }
+          onRensaSparat={() =>
+            onChange(
+              uppdateraInjusteringsunderlagSnapshot(data, rad.id, null),
+            )
           }
         />
       </div>

@@ -11,12 +11,19 @@ import {
 } from "@/components/underhallsplan/stamventiler";
 import {
   formateraVarmeStamHojd,
+  normaliseraVarmeRadiatorGrupp,
   varmeBjalklagAlternativ,
+  varmeBjalklagMeter,
   varmeRorDimensioner,
   varmeRorEtikett,
+  varmeStorlekEtikett,
   varmeTakhojdAlternativ,
+  varmeTakhojdMeter,
+  varmeVaningarAntal,
+  varmeGruppElement,
   varmeStamVertikalMeter,
   type VarmeBjalklagId,
+  type VarmeRadiatorGrupp,
   type VarmeRorDimensionId,
   type VarmeTakhojdId,
   type VvsVarmeStam,
@@ -65,6 +72,15 @@ export type VarmestamPost = {
   returventilAnnan: string;
   returventilBildDataUrl: string;
   returventilBildFilnamn: string;
+  /**
+   * Golvyta (m²) som stammen betjänar — underlag för effektbehov.
+   * Rumvolym (m³) räknas som yta × takhöjd.
+   */
+  rumYtaKvm: string;
+  /** Fritext om rummen, t.ex. vardagsrum + två sovrum. */
+  rumBeskrivning: string;
+  /** Radiatorer på stammen — storlek, antal och avstånd. */
+  radiatorGrupper: VarmeRadiatorGrupp[];
   /** Äldre fält — behålls som fallback om höjd inte kan räknas. */
   vertikalLopmeter: string;
   /**
@@ -111,6 +127,9 @@ export function skapaTomVarmestamPost(namn = ""): VarmestamPost {
     returventilAnnan: "",
     returventilBildDataUrl: "",
     returventilBildFilnamn: "",
+    rumYtaKvm: "",
+    rumBeskrivning: "",
+    radiatorGrupper: [],
     vertikalLopmeter: "",
   };
 }
@@ -151,11 +170,11 @@ function tillVarmeStamForHojd(post: VarmestamPost): VvsVarmeStam {
     takhojdAnnan: post.takhojdAnnan,
     bjalklag: post.bjalklag,
     bjalklagAnnan: post.bjalklagAnnan,
-    rumStorlek: "",
+    rumStorlek: post.rumBeskrivning,
     radiatorAntal: "",
     stamRordimension: post.rordimension,
     stamRordimensionAnnan: post.rordimensionAnnan,
-    radiatorGrupper: [],
+    radiatorGrupper: post.radiatorGrupper ?? [],
   };
 }
 
@@ -163,6 +182,57 @@ export function varmestamVertikalMeter(post: VarmestamPost): number {
   const beraknad = varmeStamVertikalMeter(tillVarmeStamForHojd(post));
   if (beraknad > 0) return beraknad;
   return parseNummerSumma([post.vertikalLopmeter]);
+}
+
+export function varmestamRumYtaKvm(post: VarmestamPost): number {
+  return parseNummerSumma([post.rumYtaKvm]);
+}
+
+/** Rumvolym (m³) = golvyta × takhöjd. Används vid förenklad effektuppskattning. */
+export function varmestamRumVolymKbm(post: VarmestamPost): number {
+  const yta = varmestamRumYtaKvm(post);
+  const tak = varmeTakhojdMeter(tillVarmeStamForHojd(post));
+  if (yta <= 0 || tak <= 0) return 0;
+  return yta * tak;
+}
+
+export type VarmestamVaningsLangd = {
+  vaning: number;
+  /** Löpmeter stamledning inom våningen (takhöjd). */
+  inomVaningMeter: number;
+  /** Kumulativ höjd från källare/start upp till våningens tak. */
+  kumulativMeter: number;
+};
+
+/**
+ * Längd per våningsplan: inom våning = takhöjd, mellan våningar läggs bjälklag till.
+ */
+export function varmestamVaningsLangder(
+  post: VarmestamPost,
+): VarmestamVaningsLangd[] {
+  const vaningar = varmeVaningarAntal(tillVarmeStamForHojd(post));
+  const tak = varmeTakhojdMeter(tillVarmeStamForHojd(post));
+  const bjalk = varmeBjalklagMeter(tillVarmeStamForHojd(post));
+  if (vaningar <= 0 || tak <= 0) return [];
+  const rader: VarmestamVaningsLangd[] = [];
+  let kumulativ = 0;
+  for (let i = 1; i <= vaningar; i += 1) {
+    if (i > 1) kumulativ += bjalk;
+    kumulativ += tak;
+    rader.push({
+      vaning: i,
+      inomVaningMeter: tak,
+      kumulativMeter: kumulativ,
+    });
+  }
+  return rader;
+}
+
+export function varmestamRadiatorElement(post: VarmestamPost): number {
+  return (post.radiatorGrupper ?? []).reduce(
+    (sum, grupp) => sum + varmeGruppElement(grupp),
+    0,
+  );
 }
 
 export function normaliseraVarmestamPost(post: VarmestamPost): VarmestamPost {
@@ -204,6 +274,18 @@ export function normaliseraVarmestamPost(post: VarmestamPost): VarmestamPost {
       ? post.returventilBildDataUrl
       : "",
     returventilBildFilnamn: post.returventilBildFilnamn?.trim() ?? "",
+    rumYtaKvm: post.rumYtaKvm?.trim() ?? "",
+    rumBeskrivning: post.rumBeskrivning?.trim() ?? "",
+    radiatorGrupper: Array.isArray(post.radiatorGrupper)
+      ? post.radiatorGrupper
+          .filter((grupp) => Boolean(grupp) && typeof grupp === "object")
+          .map((grupp, index) =>
+            normaliseraVarmeRadiatorGrupp(
+              grupp as Partial<VarmeRadiatorGrupp>,
+              index,
+            ),
+          )
+      : [],
     vertikalLopmeter: post.vertikalLopmeter?.trim() ?? "",
   };
 }
@@ -276,6 +358,19 @@ export function formateraVarmestamPost(post: VarmestamPost): string {
   else if (p.vertikalLopmeter) delar.push(`vertikal ${p.vertikalLopmeter} m`);
   const dim = varmeRorEtikett(p.rordimension, p.rordimensionAnnan);
   if (dim) delar.push(dim);
+  const yta = varmestamRumYtaKvm(p);
+  const volym = varmestamRumVolymKbm(p);
+  if (yta > 0) delar.push(`${formatSummeringTal(yta)} m²`);
+  if (volym > 0) delar.push(`${formatSummeringTal(volym)} m³`);
+  const element = varmestamRadiatorElement(p);
+  if (element > 0) {
+    const storlekar = [
+      ...new Set(p.radiatorGrupper.map((g) => varmeStorlekEtikett(g))),
+    ].filter(Boolean);
+    delar.push(
+      `${element} radiatorer${storlekar.length ? ` (${storlekar.join(", ")})` : ""}`,
+    );
+  }
   const tillopp = stamventilModellEtikett(
     p.tilloppsventil || VARMESTAM_TILLOPP_VENTIL_DEFAULT,
     p.tilloppsventilAnnan,
@@ -362,6 +457,31 @@ export function summeraVarmestammarData(
     });
   }
 
+  const ytaTot = rader.reduce((sum, p) => sum + varmestamRumYtaKvm(p), 0);
+  const volymTot = rader.reduce((sum, p) => sum + varmestamRumVolymKbm(p), 0);
+  if (ytaTot > 0) {
+    summering.push({
+      etikett: "Golvyta totalt",
+      varde: `${formatSummeringTal(ytaTot)} m²`,
+    });
+  }
+  if (volymTot > 0) {
+    summering.push({
+      etikett: "Rumvolym totalt",
+      varde: `${formatSummeringTal(volymTot)} m³`,
+    });
+  }
+  const elementTot = rader.reduce(
+    (sum, p) => sum + varmestamRadiatorElement(p),
+    0,
+  );
+  if (elementTot > 0) {
+    summering.push({
+      etikett: "Radiatorelement",
+      varde: `${elementTot} st`,
+    });
+  }
+
   return summering;
 }
 
@@ -400,6 +520,7 @@ export function formateraVarmestamPoster(poster: VarmestamPost[]): string {
 
 /** Migrerar äldre VVS → Värme-stammar till Värmestammar-modellen. */
 export function varmestamFranVvsVarmeStam(stam: VvsVarmeStam): VarmestamPost {
+  const ytaFranText = parseNummerSumma([stam.rumStorlek ?? ""]);
   return normaliseraVarmestamPost({
     ...skapaTomVarmestamPost(stam.namn || ""),
     id: stam.id,
@@ -413,6 +534,9 @@ export function varmestamFranVvsVarmeStam(stam: VvsVarmeStam): VarmestamPost {
     bjalklagAnnan: stam.bjalklagAnnan ?? "",
     rordimension: stam.stamRordimension ?? "",
     rordimensionAnnan: stam.stamRordimensionAnnan ?? "",
+    rumYtaKvm: ytaFranText > 0 ? String(ytaFranText) : "",
+    rumBeskrivning: stam.rumStorlek ?? "",
+    radiatorGrupper: stam.radiatorGrupper ?? [],
     vertikalLopmeter: "",
   });
 }

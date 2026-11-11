@@ -53,6 +53,8 @@ import {
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
   hamtaVvsVarmeStammar,
+  hamtaInjusteringsunderlagKalla,
+  hamtaInjusteringsunderlagSnapshot,
   hamtaVarmestammarData,
   hamtaStamventilPoster,
   hamtaUndercentralData,
@@ -88,6 +90,7 @@ import {
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
   uppdateraVvsVarmeStammar,
+  uppdateraInjusteringsunderlagSnapshot,
   uppdateraVarmestammarData,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
@@ -117,6 +120,7 @@ import { VvsVarmePanel } from "@/components/underhallsplan/VvsVarmePanel";
 import { formateraVvsVarmeStammar } from "@/components/underhallsplan/vvs-varme";
 import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import { VvsRadiatorPanel } from "@/components/underhallsplan/VvsRadiatorPanel";
+import { InjusteringsunderlagPanel } from "@/components/underhallsplan/InjusteringsunderlagPanel";
 import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
@@ -1247,6 +1251,33 @@ export function KomponentDetaljer({
                       poster={hamtaStamventilPoster(data, rad.id)}
                       onChange={(poster) =>
                         onChange(uppdateraStamventilPoster(data, rad.id, poster))
+                      }
+                    />
+                  </div>
+                )}
+
+                {ärÖppen && rad.aktiv && detaljPanel === "injusteringsunderlag" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <InjusteringsunderlagPanel
+                      kalla={hamtaInjusteringsunderlagKalla(data)}
+                      sparat={hamtaInjusteringsunderlagSnapshot(data, rad.id)}
+                      onSpara={(snapshot) =>
+                        onChange(
+                          uppdateraInjusteringsunderlagSnapshot(
+                            data,
+                            rad.id,
+                            snapshot,
+                          ),
+                        )
+                      }
+                      onRensaSparat={() =>
+                        onChange(
+                          uppdateraInjusteringsunderlagSnapshot(
+                            data,
+                            rad.id,
+                            null,
+                          ),
+                        )
                       }
                     />
                   </div>

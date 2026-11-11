@@ -10,19 +10,33 @@ import {
 } from "@/components/underhallsplan/stamventiler";
 import {
   formateraVarmeStamHojd,
+  skapaTomVarmeRadiatorGrupp,
+  varmeAvstandAlternativ,
   varmeBjalklagAlternativ,
+  varmeElementAlternativ,
+  varmeRadiatorStorlekar,
   varmeRorDimensioner,
   varmeTakhojdAlternativ,
   varmeVaningarAlternativ,
+  type VarmeAvstandId,
   type VarmeBjalklagId,
+  type VarmeElementAntalId,
+  type VarmeRadiatorGrupp,
+  type VarmeRadiatorStorlekId,
   type VarmeRorDimensionId,
   type VarmeTakhojdId,
 } from "@/components/underhallsplan/vvs-varme";
+import {
+  formatSummeringTal,
+} from "@/components/underhallsplan/lista-summering";
 import {
   normaliseraVarmestammarData,
   normaliseraVarmestamPost,
   skapaTomVarmestamPost,
   summeraVarmestammarData,
+  varmestamRumVolymKbm,
+  varmestamRumYtaKvm,
+  varmestamVaningsLangder,
   type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
@@ -195,6 +209,20 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
 
   function taBort(id: string) {
     spara({ poster: d.poster.filter((p) => p.id !== id) });
+  }
+
+  function uppdateraRadiatorGrupp(
+    stamId: string,
+    gruppId: string,
+    patch: Partial<VarmeRadiatorGrupp>,
+  ) {
+    const stam = d.poster.find((p) => p.id === stamId);
+    if (!stam) return;
+    uppdateraPost(stamId, {
+      radiatorGrupper: stam.radiatorGrupper.map((g) =>
+        g.id === gruppId ? { ...g, ...patch } : g,
+      ),
+    });
   }
 
   return (
@@ -659,6 +687,293 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                     Total stamhöjd: {hojdText}
                   </p>
                 )}
+
+                {varmestamVaningsLangder(p).length > 0 && (
+                  <div className="mt-3 rounded-lg border border-border/70 bg-white px-3 py-2">
+                    <p className="text-[11px] font-medium text-primary-dark">
+                      Längd per våningsplan
+                    </p>
+                    <ul className="mt-1 space-y-0.5 text-[11px] text-muted">
+                      {varmestamVaningsLangder(p).map((v) => (
+                        <li key={v.vaning}>
+                          Våning {v.vaning}:{" "}
+                          {formatSummeringTal(v.inomVaningMeter)} m inom våning
+                          (kumulativt {formatSummeringTal(v.kumulativMeter)} m)
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <p className="mt-4 text-xs font-semibold text-primary-dark">
+                  Rum — yta och volym
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  Ange golvyta (m²) som stammen betjänar. Rumvolym (m³) räknas
+                  automatiskt som golvyta × takhöjd — båda används som underlag
+                  vid effektuppskattning inför injustering.
+                </p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Golvyta (m²)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={p.rumYtaKvm}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, { rumYtaKvm: e.target.value })
+                      }
+                      placeholder="t.ex. 85"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <div className="rounded-lg border border-primary/20 bg-[#eef6f0]/60 px-3 py-2 text-sm text-primary-dark">
+                    {varmestamRumVolymKbm(p) > 0 ? (
+                      <>
+                        Rumvolym: {formatSummeringTal(varmestamRumVolymKbm(p))}{" "}
+                        m³
+                        {varmestamRumYtaKvm(p) > 0 ? (
+                          <span className="mt-0.5 block text-[11px] text-muted">
+                            {formatSummeringTal(varmestamRumYtaKvm(p))} m² ×
+                            takhöjd
+                          </span>
+                        ) : null}
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted">
+                        Ange golvyta och takhöjd för rumvolym.
+                      </span>
+                    )}
+                  </div>
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="text-xs font-medium text-muted">
+                      Rum / beskrivning
+                    </span>
+                    <input
+                      type="text"
+                      value={p.rumBeskrivning}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, {
+                          rumBeskrivning: e.target.value,
+                        })
+                      }
+                      placeholder="t.ex. vardagsrum 22 m², två sovrum"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+
+                <p className="mt-4 text-xs font-semibold text-primary-dark">
+                  Radiatorer på stammen
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  Storlek och antal behövs i injusteringsunderlaget. En rad per
+                  kombination som är lika.
+                </p>
+                {p.radiatorGrupper.length > 0 && (
+                  <ul className="mt-3 space-y-3">
+                    {p.radiatorGrupper.map((grupp, gruppIndex) => (
+                      <li
+                        key={grupp.id}
+                        className="rounded-lg border border-border bg-[#fafcfa] p-3"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-foreground">
+                            Placering {gruppIndex + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              uppdateraPost(post.id, {
+                                radiatorGrupper: p.radiatorGrupper.filter(
+                                  (rad) => rad.id !== grupp.id,
+                                ),
+                              })
+                            }
+                            className="text-xs text-muted hover:text-red-700"
+                          >
+                            Ta bort
+                          </button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block text-sm">
+                            <span className="text-xs font-medium text-muted">
+                              Antal placeringar
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={grupp.antalPlaceringar}
+                              onChange={(e) =>
+                                uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                  antalPlaceringar: e.target.value,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="block text-sm">
+                            <span className="text-xs font-medium text-muted">
+                              Element per placering
+                            </span>
+                            <select
+                              value={grupp.elementAntal}
+                              onChange={(e) =>
+                                uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                  elementAntal: e.target
+                                    .value as VarmeElementAntalId,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                            >
+                              {varmeElementAlternativ.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.etikett}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          {grupp.elementAntal === "annat" && (
+                            <label className="block text-sm">
+                              <span className="text-xs font-medium text-muted">
+                                Eget antal element
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={grupp.elementAnnan}
+                                onChange={(e) =>
+                                  uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                    elementAnnan: e.target.value,
+                                  })
+                                }
+                                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                              />
+                            </label>
+                          )}
+                          <label className="block text-sm">
+                            <span className="text-xs font-medium text-muted">
+                              Storlek
+                            </span>
+                            <select
+                              value={grupp.storlek}
+                              onChange={(e) =>
+                                uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                  storlek: e.target
+                                    .value as VarmeRadiatorStorlekId,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                            >
+                              {varmeRadiatorStorlekar.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.etikett}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          {grupp.storlek === "annat" && (
+                            <label className="block text-sm">
+                              <span className="text-xs font-medium text-muted">
+                                Egen storlek
+                              </span>
+                              <input
+                                type="text"
+                                value={grupp.storlekAnnan}
+                                onChange={(e) =>
+                                  uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                    storlekAnnan: e.target.value,
+                                  })
+                                }
+                                placeholder="t.ex. 500×1400 mm"
+                                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                              />
+                            </label>
+                          )}
+                          <label className="block text-sm">
+                            <span className="text-xs font-medium text-muted">
+                              Avstånd från stammen
+                            </span>
+                            <select
+                              value={grupp.avstand}
+                              onChange={(e) =>
+                                uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                  avstand: e.target.value as VarmeAvstandId,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                            >
+                              {varmeAvstandAlternativ.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.etikett}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          {grupp.avstand === "annat" && (
+                            <label className="block text-sm">
+                              <span className="text-xs font-medium text-muted">
+                                Eget avstånd (m)
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.1}
+                                value={grupp.avstandAnnan}
+                                onChange={(e) =>
+                                  uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                    avstandAnnan: e.target.value,
+                                  })
+                                }
+                                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                              />
+                            </label>
+                          )}
+                          <label className="block text-sm">
+                            <span className="text-xs font-medium text-muted">
+                              Dimension anslutningsrör
+                            </span>
+                            <select
+                              value={grupp.rordimension}
+                              onChange={(e) =>
+                                uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                  rordimension: e.target
+                                    .value as VarmeRorDimensionId,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                            >
+                              {varmeRorDimensioner.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.etikett}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    uppdateraPost(post.id, {
+                      radiatorGrupper: [
+                        ...p.radiatorGrupper,
+                        skapaTomVarmeRadiatorGrupp(),
+                      ],
+                    })
+                  }
+                  className="mt-3 rounded-lg border border-primary/40 px-3 py-2 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+                >
+                  + Lägg till radiatorer
+                </button>
               </li>
             );
           })}
