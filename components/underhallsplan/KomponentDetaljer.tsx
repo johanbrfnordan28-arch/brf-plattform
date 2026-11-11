@@ -55,6 +55,7 @@ import {
   hamtaVvsVarmeStammar,
   hamtaInjusteringsunderlagKalla,
   hamtaInjusteringsunderlagSnapshot,
+  hamtaKallareRumPoster,
   hamtaVarmestammarData,
   hamtaStamventilPoster,
   hamtaUndercentralData,
@@ -91,6 +92,7 @@ import {
   uppdateraVvsStambyteData,
   uppdateraVvsVarmeStammar,
   uppdateraInjusteringsunderlagSnapshot,
+  uppdateraKallareRumPoster,
   uppdateraVarmestammarData,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
@@ -121,6 +123,8 @@ import { formateraVvsVarmeStammar } from "@/components/underhallsplan/vvs-varme"
 import { hamtaByggnadAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
 import { VvsRadiatorPanel } from "@/components/underhallsplan/VvsRadiatorPanel";
 import { InjusteringsunderlagPanel } from "@/components/underhallsplan/InjusteringsunderlagPanel";
+import { KallareRumPanel } from "@/components/underhallsplan/KallareRumPanel";
+import { formateraKallareRumPoster } from "@/components/underhallsplan/kallare-rum";
 import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
@@ -656,6 +660,10 @@ export function KomponentDetaljer({
               detaljPanel === "varmestammar-lista" && rad.aktiv
                 ? formateraVarmestammarData(hamtaVarmestammarData(data, rad.id))
                 : null;
+            const kallareRumKort =
+              detaljPanel === "kallare-rum" && rad.aktiv
+                ? formateraKallareRumPoster(hamtaKallareRumPoster(data, rad.id))
+                : null;
             const undercentralKort =
               detaljPanel === "undercentral" && rad.aktiv
                 ? (() => {
@@ -762,6 +770,7 @@ export function KomponentDetaljer({
               lokalKort ??
               vvsKort ??
               varmestammarKort ??
+              kallareRumKort ??
               undercentralKort ??
               stamventilerKort ??
               pPlatserKort ??
@@ -1215,6 +1224,7 @@ export function KomponentDetaljer({
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <VarmestammarPanel
                       data={hamtaVarmestammarData(data, rad.id)}
+                      radiatorTyper={grund.radiatorTyper ?? []}
                       onChange={(varmestammar) =>
                         onChange(
                           uppdateraVarmestammarData(data, rad.id, varmestammar),
@@ -1259,7 +1269,11 @@ export function KomponentDetaljer({
                 {ärÖppen && rad.aktiv && detaljPanel === "injusteringsunderlag" && (
                   <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
                     <InjusteringsunderlagPanel
-                      kalla={hamtaInjusteringsunderlagKalla(data)}
+                      kalla={hamtaInjusteringsunderlagKalla(
+                        data,
+                        "",
+                        grund.radiatorTyper ?? [],
+                      )}
                       sparat={hamtaInjusteringsunderlagSnapshot(data, rad.id)}
                       onSpara={(snapshot) =>
                         onChange(
@@ -1278,6 +1292,17 @@ export function KomponentDetaljer({
                             null,
                           ),
                         )
+                      }
+                    />
+                  </div>
+                )}
+
+                {ärÖppen && rad.aktiv && detaljPanel === "kallare-rum" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <KallareRumPanel
+                      poster={hamtaKallareRumPoster(data, rad.id)}
+                      onChange={(poster) =>
+                        onChange(uppdateraKallareRumPoster(data, rad.id, poster))
                       }
                     />
                   </div>

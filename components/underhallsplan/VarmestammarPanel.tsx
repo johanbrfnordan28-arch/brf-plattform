@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ListaSummeringPanel } from "@/components/underhallsplan/ListaSummeringPanel";
 import {
   hamtaStamventilModellDef,
   stamventilModellKategorier,
@@ -9,12 +8,16 @@ import {
   type StamventilModellId,
 } from "@/components/underhallsplan/stamventiler";
 import {
+  formateraRadiatorTypPost,
+  type RadiatorTypPost,
+} from "@/components/underhallsplan/radiator-typer";
+import {
   formateraVarmeStamHojd,
   skapaTomVarmeRadiatorGrupp,
+  VARME_RADIATOR_TYP_SAKNAS,
   varmeAvstandAlternativ,
   varmeBjalklagAlternativ,
   varmeElementAlternativ,
-  varmeRadiatorStorlekar,
   varmeRorDimensioner,
   varmeTakhojdAlternativ,
   varmeVaningarAlternativ,
@@ -22,7 +25,6 @@ import {
   type VarmeBjalklagId,
   type VarmeElementAntalId,
   type VarmeRadiatorGrupp,
-  type VarmeRadiatorStorlekId,
   type VarmeRorDimensionId,
   type VarmeTakhojdId,
 } from "@/components/underhallsplan/vvs-varme";
@@ -33,17 +35,21 @@ import {
   normaliseraVarmestammarData,
   normaliseraVarmestamPost,
   skapaTomVarmestamPost,
-  summeraVarmestammarData,
   varmestamRumVolymKbm,
   varmestamRumYtaKvm,
   varmestamVaningsLangder,
   type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
+import { VarmeSammanstallningPanel } from "@/components/underhallsplan/VarmeSammanstallningPanel";
+import { VarmeStamOversiktKort } from "@/components/underhallsplan/VarmeStamOversiktKort";
 
 type VarmestammarPanelProps = {
   data: VarmestammarData;
   onChange: (data: VarmestammarData) => void;
+  /** Radiatortyper från grunduppgifter. */
+  radiatorTyper?: RadiatorTypPost[];
+  foreningNamn?: string;
 };
 
 function tillHojdStam(post: VarmestamPost) {
@@ -181,9 +187,15 @@ function StamventilBildFalt({
   );
 }
 
-export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
+export function VarmestammarPanel({
+  data,
+  onChange,
+  radiatorTyper = [],
+  foreningNamn = "",
+}: VarmestammarPanelProps) {
   const d = normaliseraVarmestammarData(data);
   const [bildFel, setBildFel] = useState<Record<string, string>>({});
+  const katalog = radiatorTyper;
 
   function spara(patch: Partial<VarmestammarData>) {
     onChange(normaliseraVarmestammarData({ ...d, ...patch }));
@@ -305,6 +317,11 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                     Ta bort
                   </button>
                 </div>
+
+                <VarmeStamOversiktKort
+                  post={p}
+                  radiatorTyper={katalog}
+                />
 
                 <p className="text-xs font-semibold text-primary-dark">
                   Namn och placering
@@ -770,12 +787,34 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                   Radiatorer på stammen
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted">
-                  Storlek och antal behövs i injusteringsunderlaget. En rad per
-                  kombination som är lika.
+                  Välj radiatortyp från grunduppgifterna. Antal och avstånd
+                  behövs i injusteringsunderlaget — en rad per kombination som
+                  är lika.
                 </p>
+                {katalog.length === 0 ? (
+                  <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                    Inga radiatortyper är registrerade ännu. Gå till{" "}
+                    <strong className="font-semibold">
+                      Grunduppgifter → Uppvärmning, ventilation och
+                      fastighetsbeteckning
+                    </strong>{" "}
+                    och lägg till radiatortyperna (typ, höjd och längd) innan
+                    du kopplar dem till stammarna.
+                  </p>
+                ) : null}
                 {p.radiatorGrupper.length > 0 && (
                   <ul className="mt-3 space-y-3">
-                    {p.radiatorGrupper.map((grupp, gruppIndex) => (
+                    {p.radiatorGrupper.map((grupp, gruppIndex) => {
+                      const valdIKatalog =
+                        grupp.radiatorTypId &&
+                        grupp.radiatorTypId !== VARME_RADIATOR_TYP_SAKNAS &&
+                        katalog.some((t) => t.id === grupp.radiatorTypId);
+                      const saknasTyp =
+                        grupp.radiatorTypId === VARME_RADIATOR_TYP_SAKNAS ||
+                        (Boolean(grupp.radiatorTypId) &&
+                          grupp.radiatorTypId !== VARME_RADIATOR_TYP_SAKNAS &&
+                          !valdIKatalog);
+                      return (
                       <li
                         key={grupp.id}
                         className="rounded-lg border border-border bg-[#fafcfa] p-3"
@@ -799,6 +838,46 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                           </button>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block text-sm sm:col-span-2">
+                            <span className="text-xs font-medium text-muted">
+                              Radiatortyp (från grunduppgifter)
+                            </span>
+                            <select
+                              value={
+                                valdIKatalog
+                                  ? grupp.radiatorTypId
+                                  : saknasTyp
+                                    ? VARME_RADIATOR_TYP_SAKNAS
+                                    : grupp.radiatorTypId || ""
+                              }
+                              onChange={(e) =>
+                                uppdateraRadiatorGrupp(post.id, grupp.id, {
+                                  radiatorTypId: e.target.value,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                            >
+                              <option value="">Välj radiatortyp…</option>
+                              {katalog.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {formateraRadiatorTypPost(t)}
+                                </option>
+                              ))}
+                              <option value={VARME_RADIATOR_TYP_SAKNAS}>
+                                Typ saknas — lägg till i grunduppgifter
+                              </option>
+                            </select>
+                          </label>
+                          {saknasTyp ? (
+                            <p className="sm:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                              Lägg till radiatortypen under{" "}
+                              <strong className="font-semibold">
+                                Grunduppgifter → Uppvärmning
+                              </strong>{" "}
+                              (typ 11/21/22/33, höjd och längd i mm). Därefter
+                              kan du välja den här.
+                            </p>
+                          ) : null}
                           <label className="block text-sm">
                             <span className="text-xs font-medium text-muted">
                               Antal placeringar
@@ -852,45 +931,6 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                                     elementAnnan: e.target.value,
                                   })
                                 }
-                                className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                              />
-                            </label>
-                          )}
-                          <label className="block text-sm">
-                            <span className="text-xs font-medium text-muted">
-                              Storlek
-                            </span>
-                            <select
-                              value={grupp.storlek}
-                              onChange={(e) =>
-                                uppdateraRadiatorGrupp(post.id, grupp.id, {
-                                  storlek: e.target
-                                    .value as VarmeRadiatorStorlekId,
-                                })
-                              }
-                              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                            >
-                              {varmeRadiatorStorlekar.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                  {a.etikett}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          {grupp.storlek === "annat" && (
-                            <label className="block text-sm">
-                              <span className="text-xs font-medium text-muted">
-                                Egen storlek
-                              </span>
-                              <input
-                                type="text"
-                                value={grupp.storlekAnnan}
-                                onChange={(e) =>
-                                  uppdateraRadiatorGrupp(post.id, grupp.id, {
-                                    storlekAnnan: e.target.value,
-                                  })
-                                }
-                                placeholder="t.ex. 500×1400 mm"
                                 className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                               />
                             </label>
@@ -957,7 +997,8 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                           </label>
                         </div>
                       </li>
-                    ))}
+                    );
+                    })}
                   </ul>
                 )}
                 <button
@@ -966,7 +1007,9 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
                     uppdateraPost(post.id, {
                       radiatorGrupper: [
                         ...p.radiatorGrupper,
-                        skapaTomVarmeRadiatorGrupp(),
+                        skapaTomVarmeRadiatorGrupp(
+                          katalog.length === 1 ? katalog[0].id : "",
+                        ),
                       ],
                     })
                   }
@@ -988,14 +1031,27 @@ export function VarmestammarPanel({ data, onChange }: VarmestammarPanelProps) {
         + Lägg till värmestam
       </button>
 
-      {(d.poster.length > 0 ||
-        d.stamledningTilloppLopmeter ||
-        d.stamledningReturLopmeter) && (
-        <ListaSummeringPanel
-          titel="Sammanställning värmestammar"
-          rader={summeraVarmestammarData(d)}
-        />
-      )}
+      <VarmeSammanstallningPanel
+        data={d}
+        radiatorTyper={katalog}
+        foreningNamn={foreningNamn}
+        onSpara={(snapshot) =>
+          onChange(
+            normaliseraVarmestammarData({
+              ...d,
+              sparadSammanstallning: snapshot,
+            }),
+          )
+        }
+        onRensaSparat={() =>
+          onChange(
+            normaliseraVarmestammarData({
+              ...d,
+              sparadSammanstallning: null,
+            }),
+          )
+        }
+      />
     </div>
   );
 }

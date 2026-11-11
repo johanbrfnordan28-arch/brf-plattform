@@ -20,6 +20,11 @@ export type Grunduppgifter = {
   fastighetsbeteckning: string;
   /** Hus och ytor per vädersträck — används i fasad/tak (steg 3) och AI-hjälp. */
   fastighetsYtor?: import("@/components/underhallsplan/fastighets-ytor").FastighetsYtorData;
+  /**
+   * Radiatortyper i fastigheten (typ/höjd/längd enligt tillverkare).
+   * Väljs sedan på värmestammar.
+   */
+  radiatorTyper?: import("@/components/underhallsplan/radiator-typer").RadiatorTypPost[];
 };
 
 export type RenoveringSammanfattning = {

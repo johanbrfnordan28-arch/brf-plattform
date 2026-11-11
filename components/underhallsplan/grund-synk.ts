@@ -6,6 +6,10 @@ import {
   type FastighetsYtorData,
 } from "@/components/underhallsplan/fastighets-ytor";
 import { synkaGrundByggnaderOchAdresser } from "@/components/underhallsplan/grund-byggnad-adress";
+import {
+  normaliseraRadiatorTypPoster,
+  type RadiatorTypPost,
+} from "@/components/underhallsplan/radiator-typer";
 import type {
   Grunduppgifter,
   VerksamhetsLokal,
@@ -17,6 +21,7 @@ const STAMBYTE_UNDERKOMPONENT_ID = "stambyte";
 export type GrunduppgifterNormaliserad = Grunduppgifter & {
   lokaler: VerksamhetsLokal[];
   fastighetsYtor: FastighetsYtorData;
+  radiatorTyper: RadiatorTypPost[];
 };
 
 export function normaliseraGrund(grund: Grunduppgifter): GrunduppgifterNormaliserad {
@@ -25,6 +30,7 @@ export function normaliseraGrund(grund: Grunduppgifter): GrunduppgifterNormalise
     ...synkad,
     lokaler: Array.isArray(synkad.lokaler) ? synkad.lokaler : [],
     fastighetsYtor: normaliseraFastighetsYtor(synkad.fastighetsYtor),
+    radiatorTyper: normaliseraRadiatorTypPoster(synkad.radiatorTyper),
   };
 }
 

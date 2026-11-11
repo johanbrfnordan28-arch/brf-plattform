@@ -9,11 +9,14 @@ import {
   stamventilModeller,
   type StamventilModellId,
 } from "@/components/underhallsplan/stamventiler";
+import type { RadiatorTypPost } from "@/components/underhallsplan/radiator-typer";
 import {
   formateraVarmeStamHojd,
   normaliseraVarmeRadiatorGrupp,
+  varmeAvstandMeter,
   varmeBjalklagAlternativ,
   varmeBjalklagMeter,
+  varmeGruppRorMeter,
   varmeRorDimensioner,
   varmeRorEtikett,
   varmeStorlekEtikett,
@@ -90,6 +93,14 @@ export type VarmestamPost = {
   horisontellLopmeter?: string;
 };
 
+/** Sparad översikt för utskrift / PDF. */
+export type VarmeSammanstallningSnapshot = {
+  id: string;
+  sparadDatum: string;
+  foreningNamn: string;
+  text: string;
+};
+
 /**
  * Värmestammar inkl. den gemensamma horisontella stamledningen
  * som alla stammar går upp från.
@@ -100,6 +111,25 @@ export type VarmestammarData = {
   /** Horisontell stamledning värme — retur i källaren, meter. */
   stamledningReturLopmeter: string;
   poster: VarmestamPost[];
+  /** Senast sparade sammanställningen (för PDF/utskrift). */
+  sparadSammanstallning?: VarmeSammanstallningSnapshot | null;
+};
+
+export type VarmeStamOversiktFakta = {
+  etikett: string;
+  varde: string;
+};
+
+export type VarmeStamOversikt = {
+  id: string;
+  rubrik: string;
+  underrubrik: string;
+  fakta: VarmeStamOversiktFakta[];
+  tilloppsventil: string;
+  returventil: string;
+  tilloppHarBild: boolean;
+  returHarBild: boolean;
+  radiatorer: VarmeStamOversiktFakta[];
 };
 
 export function skapaVarmestamPostId(): string {
@@ -139,6 +169,22 @@ export function skapaTomVarmestammarData(): VarmestammarData {
     stamledningTilloppLopmeter: "",
     stamledningReturLopmeter: "",
     poster: [],
+    sparadSammanstallning: null,
+  };
+}
+
+function normaliseraSparadSammanstallning(
+  raw: unknown,
+): VarmeSammanstallningSnapshot | null {
+  if (!raw || typeof raw !== "object") return null;
+  const s = raw as Partial<VarmeSammanstallningSnapshot>;
+  if (typeof s.id !== "string" || typeof s.text !== "string") return null;
+  return {
+    id: s.id,
+    sparadDatum:
+      typeof s.sparadDatum === "string" ? s.sparadDatum : new Date().toISOString(),
+    foreningNamn: typeof s.foreningNamn === "string" ? s.foreningNamn : "",
+    text: s.text,
   };
 }
 
@@ -306,6 +352,7 @@ export function normaliseraVarmestammarData(raw: unknown): VarmestammarData {
         .map((post) =>
           normaliseraVarmestamPost({ ...skapaTomVarmestamPost(), ...post }),
         ),
+      sparadSammanstallning: null,
     };
   }
 
@@ -343,6 +390,9 @@ export function normaliseraVarmestammarData(raw: unknown): VarmestammarData {
       .map((post) =>
         normaliseraVarmestamPost({ ...skapaTomVarmestamPost(), ...post }),
       ),
+    sparadSammanstallning: normaliseraSparadSammanstallning(
+      kalla.sparadSammanstallning,
+    ),
   };
 }
 
@@ -539,4 +589,184 @@ export function varmestamFranVvsVarmeStam(stam: VvsVarmeStam): VarmestamPost {
     radiatorGrupper: stam.radiatorGrupper ?? [],
     vertikalLopmeter: "",
   });
+}
+
+/** Strukturerad översikt per stam — ventiler, radiatorer och nyckeltal. */
+export function byggVarmeStamOversikt(
+  post: VarmestamPost,
+  radiatorTyper?: RadiatorTypPost[],
+): VarmeStamOversikt {
+  const p = normaliseraVarmestamPost(post);
+  const rubrik = p.namn || "Värmestam";
+  const underrubrik = [p.placering, p.betjanar].filter(Boolean).join(" · ");
+  const fakta: VarmeStamOversiktFakta[] = [];
+
+  const hojd = formateraVarmeStamHojd(tillVarmeStamForHojd(p));
+  const total = varmestamVertikalMeter(p);
+  if (hojd) fakta.push({ etikett: "Stamhöjd", varde: hojd });
+  else if (total > 0) {
+    fakta.push({ etikett: "Stamhöjd", varde: `${formatSummeringTal(total)} m` });
+  }
+
+  const dim = varmeRorEtikett(p.rordimension, p.rordimensionAnnan);
+  if (dim) fakta.push({ etikett: "Dimension", varde: dim });
+
+  const yta = varmestamRumYtaKvm(p);
+  const volym = varmestamRumVolymKbm(p);
+  if (yta > 0) fakta.push({ etikett: "Golvyta", varde: `${formatSummeringTal(yta)} m²` });
+  if (volym > 0) {
+    fakta.push({ etikett: "Rumvolym", varde: `${formatSummeringTal(volym)} m³` });
+  }
+  if (p.rumBeskrivning) {
+    fakta.push({ etikett: "Rum", varde: p.rumBeskrivning });
+  }
+
+  const tilloppsventil = stamventilModellEtikett(
+    p.tilloppsventil || VARMESTAM_TILLOPP_VENTIL_DEFAULT,
+    p.tilloppsventilAnnan,
+  );
+  const returventil = stamventilModellEtikett(
+    p.returventil || VARMESTAM_RETUR_VENTIL_DEFAULT,
+    p.returventilAnnan,
+  );
+
+  const radiatorer: VarmeStamOversiktFakta[] = p.radiatorGrupper.map((grupp) => {
+    const element = varmeGruppElement(grupp);
+    const storlek = varmeStorlekEtikett(grupp, radiatorTyper);
+    const avstand = varmeAvstandMeter(grupp);
+    const ror = varmeGruppRorMeter(grupp);
+    const rordim = varmeRorEtikett(grupp.rordimension, grupp.rordimensionAnnan);
+    const delar = [
+      `${formatSummeringTal(element, 0)} st`,
+      storlek,
+      avstand > 0 ? `${formatSummeringTal(avstand)} m från stam` : "",
+      rordim ? `anslutning ${rordim}` : "",
+      ror > 0 ? `${formatSummeringTal(ror)} m rör` : "",
+    ].filter(Boolean);
+    return {
+      etikett: storlek || "Radiator",
+      varde: delar.join(" · "),
+    };
+  });
+
+  return {
+    id: p.id,
+    rubrik,
+    underrubrik,
+    fakta,
+    tilloppsventil,
+    returventil,
+    tilloppHarBild: Boolean(p.tilloppsventilBildDataUrl),
+    returHarBild: Boolean(p.returventilBildDataUrl),
+    radiatorer,
+  };
+}
+
+export function formateraVarmeStamOversiktRader(
+  oversikt: VarmeStamOversikt,
+): string[] {
+  const rader: string[] = [`### ${oversikt.rubrik}`];
+  if (oversikt.underrubrik) rader.push(oversikt.underrubrik);
+  for (const f of oversikt.fakta) {
+    rader.push(`${f.etikett}: ${f.varde}`);
+  }
+  rader.push(
+    `Tilloppsventil: ${oversikt.tilloppsventil}${oversikt.tilloppHarBild ? " (bild)" : ""}`,
+  );
+  rader.push(
+    `Returventil: ${oversikt.returventil}${oversikt.returHarBild ? " (bild)" : ""}`,
+  );
+  if (oversikt.radiatorer.length > 0) {
+    rader.push("Radiatorer:");
+    for (const r of oversikt.radiatorer) {
+      rader.push(`  · ${r.varde}`);
+    }
+  } else {
+    rader.push("Radiatorer: ej angivna");
+  }
+  return rader;
+}
+
+/** Full text för sparad sammanställning / PDF. */
+export function byggVarmeSammanstallningText(
+  data: VarmestammarData,
+  options?: {
+    radiatorTyper?: RadiatorTypPost[];
+    foreningNamn?: string;
+    datum?: string;
+  },
+): string {
+  const d = normaliseraVarmestammarData(data);
+  const datum =
+    options?.datum?.trim() || new Date().toLocaleDateString("sv-SE");
+  const rader: string[] = [
+    "VÄRMESAMMANSTÄLLNING",
+    `Datum: ${datum}`,
+  ];
+  if (options?.foreningNamn?.trim()) {
+    rader.push(`Förening: ${options.foreningNamn.trim()}`);
+  }
+  rader.push("");
+
+  const tillopp = parseNummerSumma([d.stamledningTilloppLopmeter]);
+  const retur = parseNummerSumma([d.stamledningReturLopmeter]);
+  rader.push("## Horisontell stamledning");
+  rader.push(
+    tillopp > 0
+      ? `Tillopp: ${formatSummeringTal(tillopp)} m`
+      : "Tillopp: ej angiven",
+  );
+  rader.push(
+    retur > 0
+      ? `Retur: ${formatSummeringTal(retur)} m`
+      : "Retur: ej angiven",
+  );
+  rader.push("");
+
+  rader.push("## Värmestammar");
+  if (d.poster.length === 0) {
+    rader.push("Inga värmestammar registrerade.");
+  } else {
+    for (const stam of d.poster) {
+      rader.push(
+        ...formateraVarmeStamOversiktRader(
+          byggVarmeStamOversikt(stam, options?.radiatorTyper),
+        ),
+      );
+      rader.push("");
+    }
+  }
+
+  rader.push("## Summering");
+  for (const rad of summeraVarmestammarData(d)) {
+    rader.push(`${rad.etikett}: ${rad.varde}`);
+  }
+
+  return rader.join("\n");
+}
+
+export function skapaVarmeSammanstallningSnapshot(
+  data: VarmestammarData,
+  options?: {
+    radiatorTyper?: RadiatorTypPost[];
+    foreningNamn?: string;
+  },
+): VarmeSammanstallningSnapshot {
+  const sparadDatum = new Date().toISOString();
+  return {
+    id: `varme-sammanstallning-${Date.now().toString(36)}`,
+    sparadDatum,
+    foreningNamn: options?.foreningNamn?.trim() || "",
+    text: byggVarmeSammanstallningText(data, {
+      radiatorTyper: options?.radiatorTyper,
+      foreningNamn: options?.foreningNamn,
+      datum: new Date(sparadDatum).toLocaleDateString("sv-SE"),
+    }),
+  };
+}
+
+export function formateraVarmeSammanstallningDatum(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("sv-SE");
 }

@@ -72,6 +72,14 @@ import {
   type StamventilPost,
 } from "@/components/underhallsplan/stamventiler";
 import {
+  formateraKallareRumPoster,
+  KALLARE_RUM_UNDERKOMPONENT_ID,
+  normaliseraKallareRumPoster,
+  skapaTomKallareInnehallPost,
+  skapaTomKallareRumPost,
+  type KallareRumPost,
+} from "@/components/underhallsplan/kallare-rum";
+import {
   formateraUndercentral,
   normaliseraUndercentralData,
   skapaTomUndercentralData,
@@ -204,6 +212,7 @@ export type UnderkomponentDetaljPanel =
   | "varmestammar-lista"
   | "stamventiler-lista"
   | "injusteringsunderlag"
+  | "kallare-rum"
   | "vvs-stambyte"
   | "vvs-varme"
   | "undercentral"
@@ -551,6 +560,8 @@ export type KomponentDetaljData = {
     string,
     import("@/components/underhallsplan/injusteringsunderlag").InjusteringsunderlagSnapshot
   >;
+  /** Rum och utrymmen i källaren per underkomponent-id */
+  kallareRumRegister?: Record<string, KallareRumPost[]>;
   /** Stambyte badrum per underkomponent-id */
   vvsStambyteRegister?: VvsStambyteRegister;
   /** Värmestammar (grundmall) per underkomponent-id under VVS */
@@ -1003,18 +1014,20 @@ const komponentMallar: Record<string, KomponentMall> = {
         ytskiktGrupp: "kallare-ytskikt",
       },
       {
+        id: KALLARE_RUM_UNDERKOMPONENT_ID,
+        etikett: "Rum och utrymmen",
+        defaultMåttenhet: "antal",
+        måttHint:
+          "Placering per rum (skyddsrum, barnvagnsförråd m.m.) med innehåll — armaturer, träförråd, gallerförråd. Filtrerbar sammanställning.",
+        detaljPanel: "kallare-rum",
+      },
+      {
         id: "forrad",
         etikett: "Förråd",
         defaultMåttenhet: "antal",
         måttHint:
-          "Väggar, golv och tak — samt galler eller träväggar mellan förråd (samma upplägg som soprum).",
+          "Väggar, golv och tak — samt galler eller träväggar. Kan också registreras per rum under Rum och utrymmen.",
         detaljPanel: "lokal-komplement-val",
-      },
-      {
-        id: "belysning",
-        etikett: "Belysning",
-        defaultMåttenhet: "antal",
-        måttHint: "Antal armaturer i källaren.",
       },
       {
         id: TVATTSTUGA_UNDERKOMPONENT_ID,
@@ -1079,20 +1092,20 @@ const komponentMallar: Record<string, KomponentMall> = {
       },
       {
         id: "radiatorer",
-        etikett: "Radiatorer",
+        etikett: "Radiatorer — ventiler och rör",
         grupp: "Uppvärmning",
         defaultMåttenhet: "antal",
         måttHint:
-          "Termostat, radiatorventil, koppel och packbox — ett-/tvårörssystem. Värmerör i meter.",
+          "Systemnivå: termostat, radiatorventil, koppel, packbox och rörsystem (ett-/tvårör). Radiatorstorlek (typ/höjd/längd) och antal per stam anges under Värmestammar.",
         detaljPanel: "vvs-radiatorer",
       },
       {
         id: STAMVENTILER_UNDERKOMPONENT_ID,
-        etikett: "Stamventiler",
+        etikett: "Stamventiler (extra inventering)",
         grupp: "Uppvärmning",
         defaultMåttenhet: "antal",
         måttHint:
-          "Extra inventering av ventiler med bild till injusteringsanbud. Tillopp-/returventil per stam anges under Värmestammar.",
+          "Valfri extralista. Tillopps- och returventil med bild anges per stam under Värmestammar — använd den i första hand.",
         detaljPanel: "stamventiler-lista",
       },
       {
@@ -1384,6 +1397,18 @@ function skapaTomStamventilerRegister(mall: KomponentMall): StamventilerRegister
   const reg: StamventilerRegister = {};
   for (const def of mall.underkomponenter) {
     if (def.detaljPanel === "stamventiler-lista") {
+      reg[def.id] = [];
+    }
+  }
+  return reg;
+}
+
+function skapaTomKallareRumRegister(
+  mall: KomponentMall,
+): Record<string, KallareRumPost[]> {
+  const reg: Record<string, KallareRumPost[]> = {};
+  for (const def of mall.underkomponenter) {
+    if (def.detaljPanel === "kallare-rum") {
       reg[def.id] = [];
     }
   }
@@ -2439,6 +2464,8 @@ function skapaUnderkomponentRadFranDef(
     // Undercentral: oftast en per hus
     värde: def.detaljPanel === "undercentral" ? "1" : "",
     ärEgen: false,
+    // Stamventiler per stam ligger under Värmestammar — extralistan dold som standard.
+    medIPlan: def.detaljPanel === "stamventiler-lista" ? false : undefined,
     underhallIntervallAr,
     avskrivningAr: avskrivningAr || undefined,
     underhallNastaAr: "",
@@ -2669,6 +2696,12 @@ export function synkaKomponentDetaljMedMall(
     injusteringsunderlagRegister: {
       ...dataIn.injusteringsunderlagRegister,
     },
+    kallareRumRegister: Object.fromEntries(
+      Object.entries({
+        ...skapaTomKallareRumRegister(mall),
+        ...dataIn.kallareRumRegister,
+      }).map(([key, val]) => [key, normaliseraKallareRumPoster(val)]),
+    ),
     vvsStambyteRegister: {
       ...tom.vvsStambyteRegister,
       ...dataIn.vvsStambyteRegister,
@@ -2812,6 +2845,7 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
       Object.keys(stamventilerRegister).length > 0
         ? stamventilerRegister
         : undefined,
+    kallareRumRegister: skapaTomKallareRumRegister(mall),
     vvsStambyteRegister:
       Object.keys(vvsStambyteRegister).length > 0
         ? vvsStambyteRegister
@@ -3254,6 +3288,53 @@ export function hamtaStamventilPoster(
   return normaliseraStamventilPoster(data.stamventilerRegister?.[underId]);
 }
 
+export function hamtaKallareRumPoster(
+  data: KomponentDetaljData,
+  underId: string,
+): KallareRumPost[] {
+  const raw = normaliseraKallareRumPoster(data.kallareRumRegister?.[underId]);
+  if (raw.length > 0) return raw;
+
+  // Migrera äldre belysning (antal armaturer) till ett allmänt rum
+  const belysning = data.underkomponenter.find((r) => r.id === "belysning");
+  const antal = belysning?.värde?.trim() ?? "";
+  if (!antal) return [];
+  const rum = skapaTomKallareRumPost("allmant");
+  rum.namn = "Migrerat från belysning";
+  rum.innehall = [
+    {
+      ...skapaTomKallareInnehallPost("armatur"),
+      mangd: antal,
+      mangdEnhet: "antal",
+    },
+  ];
+  return [rum];
+}
+
+export function uppdateraKallareRumPoster(
+  data: KomponentDetaljData,
+  underId: string,
+  poster: KallareRumPost[],
+): KomponentDetaljData {
+  const normaliserade = normaliseraKallareRumPoster(poster);
+  return {
+    ...data,
+    kallareRumRegister: {
+      ...data.kallareRumRegister,
+      [underId]: normaliserade,
+    },
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId
+        ? {
+            ...rad,
+            aktiv: true,
+            värde: String(normaliserade.length || rad.värde),
+          }
+        : rad,
+    ),
+  };
+}
+
 export function hamtaInjusteringsunderlagSnapshot(
   data: KomponentDetaljData,
   underId: string,
@@ -3294,12 +3375,14 @@ export function uppdateraInjusteringsunderlagSnapshot(
 export function hamtaInjusteringsunderlagKalla(
   data: KomponentDetaljData,
   foreningNamn = "",
+  radiatorTyper: import("@/components/underhallsplan/radiator-typer").RadiatorTypPost[] = [],
 ): import("@/components/underhallsplan/injusteringsunderlag").InjusteringsunderlagKalla {
   return {
     undercentral: hamtaUndercentralData(data, UNDERCENTRAL_UNDERKOMPONENT_ID),
     varmestammar: hamtaVarmestammarData(data, VARMESTAMMAR_UNDERKOMPONENT_ID),
     radiatorer: hamtaVvsRadiatorData(data, "radiatorer"),
     foreningNamn,
+    radiatorTyper,
   };
 }
 
@@ -3919,6 +4002,11 @@ export function formateraKomponentSammanfattning(
       const text = formateraVarmestammarData(
         hamtaVarmestammarData(data, rad.id),
       );
+      if (text) delar.push(`${rad.etikett}: ${text}`);
+      continue;
+    }
+    if (def?.detaljPanel === "kallare-rum") {
+      const text = formateraKallareRumPoster(hamtaKallareRumPoster(data, rad.id));
       if (text) delar.push(`${rad.etikett}: ${text}`);
       continue;
     }

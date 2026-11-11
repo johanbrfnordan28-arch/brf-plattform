@@ -4,6 +4,10 @@ import {
   parseNummerSumma,
   type ListaSummeringRad,
 } from "@/components/underhallsplan/lista-summering";
+import {
+  formateraRadiatorTypPost,
+  type RadiatorTypPost,
+} from "@/components/underhallsplan/radiator-typer";
 
 /** Värme under VVS — en grundmall per värmestam. Stammarna kan skilja sig åt. */
 
@@ -168,6 +172,12 @@ export type VarmeRadiatorGrupp = {
   antalPlaceringar: string;
   elementAntal: VarmeElementAntalId;
   elementAnnan: string;
+  /**
+   * Id från grunduppgifter.radiatorTyper.
+   * Tom = ej vald. "__saknas__" = typ finns inte i grunduppgifter ännu.
+   */
+  radiatorTypId: string;
+  /** Legacy fallback om ingen katalogtyp är vald. */
   storlek: VarmeRadiatorStorlekId;
   storlekAnnan: string;
   avstand: VarmeAvstandId;
@@ -177,6 +187,9 @@ export type VarmeRadiatorGrupp = {
   rordimension: VarmeRorDimensionId;
   rordimensionAnnan: string;
 };
+
+/** Markör när radiatortypen saknas i grunduppgifter. */
+export const VARME_RADIATOR_TYP_SAKNAS = "__saknas__";
 
 export type VvsVarmeStam = {
   id: string;
@@ -214,12 +227,15 @@ export function skapaVarmeRadiatorGruppId(): string {
   return `varme-rad-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function skapaTomVarmeRadiatorGrupp(): VarmeRadiatorGrupp {
+export function skapaTomVarmeRadiatorGrupp(
+  radiatorTypId = "",
+): VarmeRadiatorGrupp {
   return {
     id: skapaVarmeRadiatorGruppId(),
     antalPlaceringar: "1",
     elementAntal: "1",
     elementAnnan: "",
+    radiatorTypId,
     storlek: "typ-22",
     storlekAnnan: "",
     avstand: "2",
@@ -330,6 +346,7 @@ export function normaliseraVarmeRadiatorGrupp(
     antalPlaceringar: raw.antalPlaceringar?.trim() ?? "",
     elementAntal,
     elementAnnan: elementAntal === "annat" ? raw.elementAnnan?.trim() ?? "" : "",
+    radiatorTypId: raw.radiatorTypId?.trim() ?? "",
     storlek,
     storlekAnnan: storlek === "annat" ? raw.storlekAnnan?.trim() ?? "" : "",
     avstand,
@@ -409,7 +426,18 @@ export function varmeGruppRorMeter(grupp: VarmeRadiatorGrupp): number {
   return meter * element * 2;
 }
 
-export function varmeStorlekEtikett(grupp: VarmeRadiatorGrupp): string {
+export function varmeStorlekEtikett(
+  grupp: VarmeRadiatorGrupp,
+  radiatorTyper?: RadiatorTypPost[],
+): string {
+  if (grupp.radiatorTypId && grupp.radiatorTypId !== VARME_RADIATOR_TYP_SAKNAS) {
+    const post = radiatorTyper?.find((t) => t.id === grupp.radiatorTypId);
+    if (post) return formateraRadiatorTypPost(post);
+    return "Radiatortyp (saknas i grunduppgifter)";
+  }
+  if (grupp.radiatorTypId === VARME_RADIATOR_TYP_SAKNAS) {
+    return "Radiatortyp saknas i grunduppgifter";
+  }
   if (grupp.storlek === "annat") return grupp.storlekAnnan.trim() || "Egen storlek";
   return (
     varmeRadiatorStorlekar.find((s) => s.id === grupp.storlek)?.etikett ??
@@ -482,27 +510,16 @@ export function summeraVvsVarmeStammar(poster: VvsVarmeStam[]): ListaSummeringRa
     });
   }
 
-  for (const storlek of varmeRadiatorStorlekar) {
-    const antal = grupper
-      .filter((grupp) => grupp.storlek === storlek.id && storlek.id !== "annat")
-      .reduce((sum, grupp) => sum + varmeGruppElement(grupp), 0);
-    if (antal > 0) {
-      summering.push({
-        etikett: storlek.etikett,
-        varde: `${formatSummeringTal(antal, 0)} st`,
-      });
-    }
-  }
-  const egnaStorlekar = new Map<string, number>();
+  const storlekSummering = new Map<string, number>();
   for (const grupp of grupper) {
-    if (grupp.storlek !== "annat") continue;
     const etikett = varmeStorlekEtikett(grupp);
-    egnaStorlekar.set(
+    if (!etikett) continue;
+    storlekSummering.set(
       etikett,
-      (egnaStorlekar.get(etikett) ?? 0) + varmeGruppElement(grupp),
+      (storlekSummering.get(etikett) ?? 0) + varmeGruppElement(grupp),
     );
   }
-  for (const [etikett, antal] of egnaStorlekar) {
+  for (const [etikett, antal] of storlekSummering) {
     if (antal > 0) {
       summering.push({
         etikett,

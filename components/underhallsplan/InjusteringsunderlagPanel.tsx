@@ -44,14 +44,30 @@ export function InjusteringsunderlagPanel({
   function skrivUt() {
     const w = window.open("", "_blank", "noopener,noreferrer");
     if (!w) return;
+    const html = text
+      .split("\n")
+      .map((rad) => {
+        const e = rad
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        if (rad.startsWith("## ")) return `<h2>${e.slice(3)}</h2>`;
+        if (rad.startsWith("### ")) return `<h3>${e.slice(4)}</h3>`;
+        if (!rad.trim()) return `<div class="gap"></div>`;
+        return `<p>${e}</p>`;
+      })
+      .join("");
     w.document.write(`<!doctype html><html lang="sv"><head><meta charset="utf-8"/><title>Injusteringsunderlag</title>
 <style>
-  body { font-family: ui-sans-serif, system-ui, sans-serif; padding: 24px; color: #111; line-height: 1.45; }
-  pre { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-</style></head><body><pre>${text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")}</pre></body></html>`);
+  @page { margin: 16mm; }
+  body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: #1c1917; background: #f7f5f2; line-height: 1.45; }
+  .sheet { max-width: 820px; margin: 0 auto; padding: 28px 32px; background: #fffefb; border: 1px solid #d6ddd7; }
+  h2 { margin: 24px 0 10px; font-size: 14px; font-family: ui-sans-serif, system-ui, sans-serif; color: #0f4c3a; text-transform: uppercase; letter-spacing: 0.04em; }
+  h3 { margin: 18px 0 6px; font-size: 17px; border-left: 3px solid #0f4c3a; padding-left: 10px; }
+  p { margin: 3px 0; font-size: 13px; }
+  .gap { height: 8px; }
+  @media print { body { background: white; } .sheet { border: none; max-width: none; padding: 0; } }
+</style></head><body><div class="sheet">${html}</div></body></html>`);
     w.document.close();
     w.focus();
     w.print();

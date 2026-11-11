@@ -14,31 +14,17 @@ import {
   type VvsRadiatorData,
 } from "@/components/underhallsplan/vvs-radiatorer";
 import {
-  stamventilModellEtikett,
-} from "@/components/underhallsplan/stamventiler";
-import {
+  byggVarmeStamOversikt,
+  formateraVarmeStamOversiktRader,
   normaliseraVarmestammarData,
-  normaliseraVarmestamPost,
   varmestamRadiatorElement,
   varmestamRumVolymKbm,
   varmestamRumYtaKvm,
   varmestamVaningsLangder,
   varmestamVertikalMeter,
-  VARMESTAM_RETUR_VENTIL_DEFAULT,
-  VARMESTAM_TILLOPP_VENTIL_DEFAULT,
   type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
-import {
-  formateraVarmeStamHojd,
-  varmeAvstandMeter,
-  varmeGruppElement,
-  varmeGruppRorMeter,
-  varmeRorEtikett,
-  varmeStorlekEtikett,
-  varmeTakhojdMeter,
-  type VvsVarmeStam,
-} from "@/components/underhallsplan/vvs-varme";
 
 export const INJUSTERINGSUNDERLAG_ID = "injusteringsunderlag";
 
@@ -48,6 +34,8 @@ export type InjusteringsunderlagKalla = {
   radiatorer?: VvsRadiatorData | null;
   foreningNamn?: string;
   skapad?: string;
+  /** Radiatortyper från grunduppgifter — för korrekta storleksnamn. */
+  radiatorTyper?: import("@/components/underhallsplan/radiator-typer").RadiatorTypPost[];
 };
 
 export type InjusteringsunderlagSnapshot = {
@@ -57,99 +45,29 @@ export type InjusteringsunderlagSnapshot = {
   text: string;
 };
 
-function tillHojdStam(post: VarmestamPost): VvsVarmeStam {
-  return {
-    id: post.id,
-    namn: post.namn,
-    markningKallare: "",
-    adress: post.placering,
-    betjanar: post.betjanar,
-    vaningar: post.vaningar,
-    takhojd: post.takhojd,
-    takhojdAnnan: post.takhojdAnnan,
-    bjalklag: post.bjalklag,
-    bjalklagAnnan: post.bjalklagAnnan,
-    rumStorlek: post.rumBeskrivning,
-    radiatorAntal: "",
-    stamRordimension: post.rordimension,
-    stamRordimensionAnnan: post.rordimensionAnnan,
-    radiatorGrupper: post.radiatorGrupper,
-  };
-}
-
-function formateraStamSektion(post: VarmestamPost): string[] {
-  const p = normaliseraVarmestamPost(post);
-  const rader: string[] = [];
-  const rubrik = p.namn || "Värmestam";
-  rader.push(`### ${rubrik}`);
-  if (p.placering) rader.push(`Placering: ${p.placering}`);
-  if (p.betjanar) rader.push(`Betjänar: ${p.betjanar}`);
-
-  const hojd = formateraVarmeStamHojd(tillHojdStam(p));
-  const total = varmestamVertikalMeter(p);
-  if (hojd) rader.push(`Total stamhöjd: ${hojd}`);
-  else if (total > 0) {
-    rader.push(`Total stamhöjd: ${formatSummeringTal(total)} m`);
-  }
-
-  const dim = varmeRorEtikett(p.rordimension, p.rordimensionAnnan);
-  if (dim) rader.push(`Stamdimension: ${dim}`);
-
-  const tillopp = stamventilModellEtikett(
-    p.tilloppsventil || VARMESTAM_TILLOPP_VENTIL_DEFAULT,
-    p.tilloppsventilAnnan,
+function formateraStamSektion(
+  post: VarmestamPost,
+  radiatorTyper?: import("@/components/underhallsplan/radiator-typer").RadiatorTypPost[],
+): string[] {
+  const rader = formateraVarmeStamOversiktRader(
+    byggVarmeStamOversikt(post, radiatorTyper),
   );
-  const retur = stamventilModellEtikett(
-    p.returventil || VARMESTAM_RETUR_VENTIL_DEFAULT,
-    p.returventilAnnan,
-  );
-  rader.push(`Tilloppsventil (går upp): ${tillopp}`);
-  rader.push(`Returventil (kommer tillbaka): ${retur}`);
+  const vaningar = varmestamVaningsLangder(post);
+  if (vaningar.length === 0) return rader;
 
-  const vaningar = varmestamVaningsLangder(p);
-  if (vaningar.length > 0) {
-    rader.push("Längd per våningsplan:");
-    for (const v of vaningar) {
-      rader.push(
+  const vaningsRader = [
+    "Längd per våningsplan:",
+    ...vaningar.map(
+      (v) =>
         `  · Våning ${v.vaning}: ${formatSummeringTal(v.inomVaningMeter)} m inom våning (kumulativt ${formatSummeringTal(v.kumulativMeter)} m från start)`,
-      );
-    }
-  }
-
-  const yta = varmestamRumYtaKvm(p);
-  const volym = varmestamRumVolymKbm(p);
-  const tak = varmeTakhojdMeter(tillHojdStam(p));
-  if (yta > 0) {
-    rader.push(`Golvyta: ${formatSummeringTal(yta)} m²`);
-  }
-  if (volym > 0) {
-    rader.push(
-      `Rumvolym: ${formatSummeringTal(volym)} m³ (golvyta × takhöjd ${formatSummeringTal(tak)} m)`,
-    );
-  }
-  if (p.rumBeskrivning) rader.push(`Rum: ${p.rumBeskrivning}`);
-
-  if (p.radiatorGrupper.length > 0) {
-    rader.push("Radiatorer:");
-    for (const grupp of p.radiatorGrupper) {
-      const element = varmeGruppElement(grupp);
-      const storlek = varmeStorlekEtikett(grupp);
-      const avstand = varmeAvstandMeter(grupp);
-      const ror = varmeGruppRorMeter(grupp);
-      const rordim = varmeRorEtikett(grupp.rordimension, grupp.rordimensionAnnan);
-      const delar = [
-        `${element} st`,
-        storlek,
-        avstand > 0 ? `${formatSummeringTal(avstand)} m från stam` : "",
-        rordim ? `anslutning ${rordim}` : "",
-        ror > 0 ? `${formatSummeringTal(ror)} m tillopp+retur` : "",
-      ].filter(Boolean);
-      rader.push(`  · ${delar.join(", ")}`);
-    }
+    ),
+  ];
+  const radiatorIndex = rader.findIndex((r) => r.startsWith("Radiatorer"));
+  if (radiatorIndex >= 0) {
+    rader.splice(radiatorIndex, 0, ...vaningsRader);
   } else {
-    rader.push("Radiatorer: ej angivna");
+    rader.push(...vaningsRader);
   }
-
   return rader;
 }
 
@@ -228,7 +146,7 @@ export function byggInjusteringsunderlagText(
     rader.push("Inga värmestammar registrerade.");
   } else {
     for (const stam of stammar.poster) {
-      rader.push(...formateraStamSektion(stam));
+      rader.push(...formateraStamSektion(stam, kalla.radiatorTyper));
       rader.push("");
     }
   }

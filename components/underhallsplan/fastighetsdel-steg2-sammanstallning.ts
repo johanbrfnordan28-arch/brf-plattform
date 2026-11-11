@@ -15,16 +15,26 @@ import {
   hamtaFasadSidaMaterialPoster,
   hamtaFasadSockelPoster,
   hamtaFonsterDorrPoster,
+  hamtaKallareRumPoster,
   hamtaMattPartier,
   hamtaTakBelaggningData,
   hamtaTakfonsterData,
   hamtaTakterrassPoster,
   hamtaMedlemstakterrassPoster,
+  hamtaVarmestammarData,
   måttenhetEtiketter,
   type KomponentDetaljData,
   type KomponentMall,
 } from "@/components/underhallsplan/komponentregister";
+import {
+  formateraKallareInnehallPost,
+  kallareRumRubrik,
+} from "@/components/underhallsplan/kallare-rum";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
+import {
+  byggVarmeStamOversikt,
+  summeraVarmestammarData,
+} from "@/components/underhallsplan/varmestammar";
 
 export type Steg2SammanstallningDetalj = {
   benamning: string;
@@ -147,6 +157,47 @@ export function byggSteg2KomponentSammanstallning(
         benamning: p.benamning.trim() || `Medlemsterrass ${i + 1}`,
         varde: formateraMedlemstakterrass(p) || "—",
       }));
+    } else if (def?.detaljPanel === "kallare-rum") {
+      const poster = hamtaKallareRumPoster(data, rad.id);
+      for (const rum of poster) {
+        const innehall =
+          rum.innehall.length > 0
+            ? rum.innehall.map(formateraKallareInnehallPost).join(", ")
+            : "utan innehåll";
+        detaljer.push({
+          benamning: kallareRumRubrik(rum),
+          varde: innehall,
+        });
+      }
+    } else if (def?.detaljPanel === "varmestammar-lista") {
+      const varmestammar = hamtaVarmestammarData(data, rad.id);
+      const summering = summeraVarmestammarData(varmestammar);
+      for (const radSum of summering) {
+        detaljer.push({
+          benamning: radSum.etikett,
+          varde: radSum.varde,
+        });
+      }
+      for (const stam of varmestammar.poster) {
+        const o = byggVarmeStamOversikt(stam, grund.radiatorTyper);
+        const ventiler = `Tillopp ${o.tilloppsventil} · Retur ${o.returventil}`;
+        const radiatorer =
+          o.radiatorer.length > 0
+            ? o.radiatorer.map((r) => r.varde).join("; ")
+            : "inga radiatorer";
+        detaljer.push({
+          benamning: o.rubrik,
+          varde: [o.underrubrik, ventiler, radiatorer]
+            .filter(Boolean)
+            .join(" · "),
+        });
+      }
+    } else if (def?.detaljPanel === "stamventiler-lista") {
+      detaljer.push({
+        benamning: "Obs",
+        varde:
+          "Tillopp-/returventil anges per stam under Värmestammar. Denna lista är endast extra inventering.",
+      });
     } else {
       const partier = hamtaMattPartier(data, rad.id, rad);
       const enhet = måttenhetEtiketter[rad.måttenhet].enhet;

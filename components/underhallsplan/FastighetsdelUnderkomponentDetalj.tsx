@@ -34,12 +34,14 @@ import {
   hamtaUndercentralData,
   hamtaInjusteringsunderlagKalla,
   hamtaInjusteringsunderlagSnapshot,
+  hamtaKallareRumPoster,
   hamtaVarmestammarData,
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
   uppdateraStamventilPoster,
   uppdateraUndercentralData,
   uppdateraInjusteringsunderlagSnapshot,
+  uppdateraKallareRumPoster,
   uppdateraVarmestammarData,
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
@@ -52,6 +54,7 @@ import {
 } from "@/components/underhallsplan/komponentregister";
 import { StambytePanel } from "@/components/underhallsplan/StambytePanel";
 import { InjusteringsunderlagPanel } from "@/components/underhallsplan/InjusteringsunderlagPanel";
+import { KallareRumPanel } from "@/components/underhallsplan/KallareRumPanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
 import { UndercentralPanel } from "@/components/underhallsplan/UndercentralPanel";
 import { VarmestammarPanel } from "@/components/underhallsplan/VarmestammarPanel";
@@ -73,6 +76,10 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "stamventiler-lista",
   "varmestammar-lista",
   "injusteringsunderlag",
+  "kallare-rum",
+  "lokal-komplement-val",
+  "ytskikt-val",
+  "tvattstuga-lista",
   "vvs-radiatorer",
   "vvs-stambyte",
 ]);
@@ -312,6 +319,7 @@ export function FastighetsdelUnderkomponentDetalj({
       <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
         <VarmestammarPanel
           data={hamtaVarmestammarData(data, rad.id)}
+          radiatorTyper={grund.radiatorTyper ?? []}
           onChange={(varmestammar) =>
             onChange(uppdateraVarmestammarData(data, rad.id, varmestammar))
           }
@@ -324,7 +332,11 @@ export function FastighetsdelUnderkomponentDetalj({
     return (
       <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
         <InjusteringsunderlagPanel
-          kalla={hamtaInjusteringsunderlagKalla(data)}
+          kalla={hamtaInjusteringsunderlagKalla(
+            data,
+            "",
+            grund.radiatorTyper ?? [],
+          )}
           sparat={hamtaInjusteringsunderlagSnapshot(data, rad.id)}
           onSpara={(snapshot) =>
             onChange(
@@ -335,6 +347,19 @@ export function FastighetsdelUnderkomponentDetalj({
             onChange(
               uppdateraInjusteringsunderlagSnapshot(data, rad.id, null),
             )
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "kallare-rum") {
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <KallareRumPanel
+          poster={hamtaKallareRumPoster(data, rad.id)}
+          onChange={(poster) =>
+            onChange(uppdateraKallareRumPoster(data, rad.id, poster))
           }
         />
       </div>

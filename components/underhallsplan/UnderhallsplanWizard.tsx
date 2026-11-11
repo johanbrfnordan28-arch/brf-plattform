@@ -42,6 +42,7 @@ import {
 import { KomponentRegisterLista } from "@/components/underhallsplan/KomponentRegisterLista";
 import { GrundByggnadAdressPanel } from "@/components/underhallsplan/GrundByggnadAdressPanel";
 import { GrundFasaderPanel } from "@/components/underhallsplan/GrundFasaderPanel";
+import { GrundRadiatorTyperPanel } from "@/components/underhallsplan/GrundRadiatorTyperPanel";
 import { GrundFasaderPaminnelse } from "@/components/underhallsplan/GrundFasaderPaminnelse";
 import { GrundFastighetsYtorPanel } from "@/components/underhallsplan/GrundFastighetsYtorPanel";
 import {
@@ -176,6 +177,7 @@ const empty: Grunduppgifter = {
   uppvarmning: "",
   ventilationssystem: "",
   fastighetsbeteckning: "",
+  radiatorTyper: [],
 };
 
 const grundFieldKeys = [
@@ -1965,13 +1967,20 @@ export function UnderhallsplanWizard() {
           <GrunduppgifterDelSektion
             stegLabel="Del 3 av 6"
             titel="Uppvärmning, ventilation och fastighetsbeteckning"
-            intro="Teknik som styr OVK-intervall och offerter — spara gärna här innan byggnader och fasader."
+            intro="Teknik som styr OVK-intervall och offerter — spara gärna här innan byggnader och fasader. Här registreras också radiatortyperna som sedan väljs på värmestammar."
             sparadVid={grundDelSparad.teknik}
             onSparaDel={() => saveGrundDel("teknik")}
           >
             <div className="grid gap-4 sm:grid-cols-2">
               {renderGrundFalt(grundFieldsTeknikOchBeteckning)}
             </div>
+            <GrundRadiatorTyperPanel
+              poster={grund.radiatorTyper ?? []}
+              onChange={(radiatorTyper) => {
+                setGrund((g) => ({ ...g, radiatorTyper }));
+                setGrundSaved(false);
+              }}
+            />
           </GrunduppgifterDelSektion>
 
           <GrunduppgifterDelSektion
