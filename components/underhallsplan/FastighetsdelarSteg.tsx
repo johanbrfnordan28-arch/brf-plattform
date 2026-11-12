@@ -38,6 +38,7 @@ import {
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
 import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
+import { TakForeningSammanstallning } from "@/components/underhallsplan/TakForeningSammanstallning";
 import { TakKort } from "@/components/underhallsplan/TakKort";
 import { TakUppsattningPanel } from "@/components/underhallsplan/TakUppsattningPanel";
 import {
@@ -46,6 +47,7 @@ import {
   TAK_KOMPONENT_NAMN,
   TAK_YTSKIKT_ID,
   takKomponenterIPlan,
+  takVisningsnamn,
   type TakEnhet,
 } from "@/components/underhallsplan/tak-enheter";
 import { PlanDelSektion } from "@/components/underhallsplan/GrunduppgifterDelSektion";
@@ -169,14 +171,18 @@ export function FastighetsdelarSteg({
   const takLista: TakEnhet[] = takNamnLista.map((namn) => {
     const sparade = komponentDetaljer[namn]?.takHusIds;
     const adress = komponentDetaljer[namn]?.takAdress;
+    const benamning = komponentDetaljer[namn]?.takBenamning;
     if (sparade) {
       return {
         namn,
         husIds: sparade.filter((id) => ytor.hus.some((h) => h.id === id)),
         adress,
+        benamning,
       };
     }
-    if (namn !== TAK_KOMPONENT_NAMN) return { namn, husIds: [], adress };
+    if (namn !== TAK_KOMPONENT_NAMN) {
+      return { namn, husIds: [], adress, benamning };
+    }
     const iAndraTak = new Set(
       takNamnLista
         .filter((n) => n !== namn)
@@ -186,6 +192,7 @@ export function FastighetsdelarSteg({
       namn,
       husIds: ytor.hus.map((h) => h.id).filter((id) => !iAndraTak.has(id)),
       adress,
+      benamning,
     };
   });
 
@@ -302,7 +309,14 @@ export function FastighetsdelarSteg({
       arTakKomponent(namn) && ytor.hus.length > 1
         ? husNamnForTak(takLista.find((t) => t.namn === namn)?.husIds, ytor.hus)
         : [];
-    const takAdress = arTakKomponent(namn) ? data.takAdress?.trim() : "";
+    const takVisning = arTakKomponent(namn)
+      ? takVisningsnamn({
+          komponentNamn: namn,
+          adress: data.takAdress,
+          benamning: data.takBenamning,
+          husNamn: takHus,
+        })
+      : fastighetsdelVisningsnamn(namn);
     const takPartier =
       data.takBelaggningRegister?.[TAK_YTSKIKT_ID]?.belaggningar.length ?? 0;
     const takKomponenter = synliga.filter(
@@ -312,12 +326,7 @@ export function FastighetsdelarSteg({
       <li key={namn} className="rounded-xl border border-border bg-white">
         <div className="flex items-start justify-between gap-3 px-3 py-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground">
-              {fastighetsdelVisningsnamn(namn)}
-              {takAdress ? (
-                <span className="font-normal text-muted"> · {takAdress}</span>
-              ) : null}
-            </p>
+            <p className="text-sm font-medium text-foreground">{takVisning}</p>
             <p className="mt-0.5 text-xs text-muted">
               {arTakKomponent(namn) ? (
                 <>
@@ -644,7 +653,16 @@ export function FastighetsdelarSteg({
                   harInnehall={takHarInnehall}
                   onChange={andraTakUppsattning}
                   onAdress={(takNamn, adress) =>
-                    sparaDetalj(takNamn, { ...detaljFor(takNamn), takAdress: adress })
+                    sparaDetalj(takNamn, {
+                      ...detaljFor(takNamn),
+                      takAdress: adress,
+                    })
+                  }
+                  onBenamning={(takNamn, benamning) =>
+                    sparaDetalj(takNamn, {
+                      ...detaljFor(takNamn),
+                      takBenamning: benamning,
+                    })
                   }
                 />
               </div>
@@ -652,6 +670,23 @@ export function FastighetsdelarSteg({
             <ul className="space-y-2">
               {delar.map((namn) => delKort(namn, false))}
             </ul>
+            {visaTakUppsattning ? (
+              <div className="mt-3">
+                <TakForeningSammanstallning
+                  tak={delar.filter(arTakKomponent).map((namn) => ({
+                    namn,
+                    data: detaljFor(namn),
+                    husNamn:
+                      ytor.hus.length > 1
+                        ? husNamnForTak(
+                            takLista.find((t) => t.namn === namn)?.husIds,
+                            ytor.hus,
+                          )
+                        : [],
+                  }))}
+                />
+              </div>
+            ) : null}
           </PlanDelSektion>
         );
       })}

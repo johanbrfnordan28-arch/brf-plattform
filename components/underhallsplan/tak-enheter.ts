@@ -16,8 +16,46 @@ export type TakEnhet = {
   namn: string;
   /** Hus som ingår i taket. Tomt = inget hus valt. */
   husIds: string[];
+  /** Primär adressrad — kan innehålla flera adresser åtskilda med kommatecken. */
   adress?: string;
+  /** Valfri benämning, t.ex. "huvudtak", "gårdsbyggnad". */
+  benamning?: string;
 };
+
+/**
+ * Visningsnamn för taket: "Storgatan 12–14, huvudtak".
+ * Faller tillbaka till komponentnamn om adress/benämning saknas.
+ */
+export function takVisningsnamn(opts: {
+  komponentNamn: string;
+  adress?: string;
+  benamning?: string;
+  husNamn?: string[];
+}): string {
+  const adress =
+    opts.adress?.trim() ||
+    (opts.husNamn && opts.husNamn.length > 0
+      ? opts.husNamn.join("–")
+      : "");
+  const benamning = opts.benamning?.trim();
+  if (adress && benamning) return `${adress}, ${benamning}`;
+  if (adress) return adress;
+  if (benamning) return `${opts.komponentNamn}, ${benamning}`;
+  return opts.komponentNamn;
+}
+
+/** Dela/sammanfoga adresser i ett adressfält. */
+export function parseTakAdresser(adress?: string): string[] {
+  if (!adress?.trim()) return [];
+  return adress
+    .split(/[,;]+/)
+    .map((a) => a.trim())
+    .filter(Boolean);
+}
+
+export function joinTakAdresser(adresser: string[]): string {
+  return [...new Set(adresser.map((a) => a.trim()).filter(Boolean))].join(", ");
+}
 
 export function arTakKomponent(namn: string): boolean {
   return namn === TAK_KOMPONENT_NAMN || namn.startsWith(EXTRA_TAK_PREFIX);
@@ -93,18 +131,31 @@ export function ettTakPerHus(
   return resultat;
 }
 
-/** Ett hus kan bara ligga under ett tak — kryss flyttar huset dit. */
-export function flyttaHusTillTak(
+/**
+ * Koppla hus till tak. Samma hus/adress får finnas på flera tak
+ * (t.ex. huvudtak och annex på samma byggnad).
+ */
+export function sattHusPaTak(
   tak: TakEnhet[],
   takNamn: string,
   husId: string,
   med: boolean,
 ): TakEnhet[] {
   return tak.map((t) => {
+    if (t.namn !== takNamn) return t;
     const utan = t.husIds.filter((id) => id !== husId);
-    if (t.namn !== takNamn) return { ...t, husIds: med ? utan : t.husIds };
     return { ...t, husIds: med ? [...utan, husId] : utan };
   });
+}
+
+/** @deprecated Använd sattHusPaTak — samma hus får ligga på flera tak. */
+export function flyttaHusTillTak(
+  tak: TakEnhet[],
+  takNamn: string,
+  husId: string,
+  med: boolean,
+): TakEnhet[] {
+  return sattHusPaTak(tak, takNamn, husId, med);
 }
 
 export function husNamnForTak(

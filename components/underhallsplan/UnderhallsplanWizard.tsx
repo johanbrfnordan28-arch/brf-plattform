@@ -1340,6 +1340,7 @@ export function UnderhallsplanWizard() {
         ...bas,
         takHusIds: t.husIds,
         takAdress: t.adress ?? bas.takAdress,
+        takBenamning: t.benamning ?? bas.takBenamning,
       };
     }
     const nastaBorttagna = borttagnaKomponenter.filter(

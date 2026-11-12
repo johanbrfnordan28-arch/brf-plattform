@@ -16,6 +16,7 @@ import {
   lackadPlatKulorAlternativ,
   postPatchFranTakMaterialVal,
   takMaterialValIdFranPost,
+  takYtbehandlingAlternativ,
   takformAlternativ,
   type BandlagdPlatMaterial,
   type Takform,
@@ -125,7 +126,7 @@ const huvudtyper: {
 }[] = [
   {
     id: "tegel",
-    etikett: "Tegel",
+    etikett: "Tegelpannor / betongpannor",
     beskrivning: "Betongpannor eller lertegel — välj typ och kulör.",
   },
   {
@@ -142,8 +143,28 @@ const huvudtyper: {
   },
   {
     id: "papp",
-    etikett: "Papp / underlag",
-    beskrivning: "Papptak eller underlag — yta i m².",
+    etikett: "Takpapp / bitumen",
+    beskrivning: "Papptak eller bitumen — yta i m².",
+  },
+  {
+    id: "takduk",
+    etikett: "Takduk",
+    beskrivning: "Takduk / membran — ange yta, kulör och ytbehandling.",
+  },
+  {
+    id: "skiffer",
+    etikett: "Skiffer",
+    beskrivning: "Skiffer — lång livslängd; ange yta och eventuell kulör.",
+  },
+  {
+    id: "sedum",
+    etikett: "Sedum",
+    beskrivning: "Grönt tak / sedum — ange yta.",
+  },
+  {
+    id: "annat",
+    etikett: "Annat material",
+    beskrivning: "Ange material, yta, kulör och ytbehandling.",
   },
 ];
 
@@ -227,14 +248,13 @@ export function TakbelaggningPanel({
     <div className="space-y-4">
       <fieldset>
         <legend className="text-xs font-semibold text-primary-dark">
-          Takpartier — takform, ytskikt, yta och kulör
+          Takyta och beläggning
         </legend>
         <p className="mt-1 text-xs text-muted">
-          Ett tak kan bestå av flera takpartier. Har taket olika ytskikt, t.ex.
-          tegel och bandlagd plåt, läggs de som separata partier. Välj takform,
-          material, yta (m²) och kulör per parti. Total takyta summeras
-          automatiskt. Nock, ränndalar, takfönster och övriga komponenter
-          läggs till under samma tak nedan.
+          Börja med yta i m², välj sedan beläggning, kulör och eventuell
+          ytbehandling. Flera takfall med olika beläggningar registreras som
+          separata partier. Total takyta summeras automatiskt. Kartmått (t.ex.
+          Google Earth) är preliminära — verifiera inför upphandling.
         </p>
         {poster.length === 0 ? (
           <p className="mt-2 text-sm text-muted">
@@ -279,6 +299,55 @@ export function TakbelaggningPanel({
                   className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
                 />
               </label>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="text-xs font-medium text-muted">
+                    Yta / mängd
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={post.mangd ?? ""}
+                    onChange={(e) =>
+                      uppdateraBelaggning(
+                        redigeraPost(belaggning, post.id, {
+                          mangd: e.target.value,
+                        }),
+                      )
+                    }
+                    placeholder={
+                      (post.mangdEnhet ?? "kvm") === "kvm" ? "t.ex. 850" : "0"
+                    }
+                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="text-xs font-medium text-muted">Enhet</span>
+                  <select
+                    value={post.mangdEnhet ?? "kvm"}
+                    onChange={(e) =>
+                      uppdateraBelaggning(
+                        redigeraPost(belaggning, post.id, {
+                          mangdEnhet: e.target
+                            .value as TakBelaggningMangdEnhet,
+                        }),
+                      )
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                  >
+                    {(
+                      Object.keys(
+                        takBelaggningMangdEnhetEtiketter,
+                      ) as TakBelaggningMangdEnhet[]
+                    ).map((key) => (
+                      <option key={key} value={key}>
+                        {takBelaggningMangdEnhetEtiketter[key].etikett} (
+                        {takBelaggningMangdEnhetEtiketter[key].enhet})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <label className="mt-3 block text-sm">
                 <span className="text-xs font-medium text-muted">Takform</span>
                 <select
@@ -306,7 +375,7 @@ export function TakbelaggningPanel({
                 <>
                   <label className="mt-3 block text-sm">
                     <span className="text-xs font-medium text-muted">
-                      Takmaterial
+                      Takbeläggning
                     </span>
                     <select
                       value={takMaterialValIdFranPost(post)}
@@ -339,6 +408,25 @@ export function TakbelaggningPanel({
                       ))}
                     </select>
                   </label>
+                  {post.huvudtyp === "annat" && (
+                    <label className="mt-3 block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Ange material
+                      </span>
+                      <input
+                        type="text"
+                        value={post.annatMaterial ?? ""}
+                        onChange={(e) =>
+                          uppdateraBelaggning(
+                            redigeraPost(belaggning, post.id, {
+                              annatMaterial: e.target.value,
+                            }),
+                          )
+                        }
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                      />
+                    </label>
+                  )}
                   {post.huvudtyp === "tegel" && (
                     <label className="mt-3 block text-sm">
                       <span className="text-xs font-medium text-muted">
@@ -402,6 +490,52 @@ export function TakbelaggningPanel({
                         <span>Lackerad aluminium (kan målas om)</span>
                       </label>
                     )}
+                  {(post.huvudtyp === "takduk" ||
+                    post.huvudtyp === "skiffer" ||
+                    post.huvudtyp === "sedum" ||
+                    post.huvudtyp === "papp" ||
+                    post.huvudtyp === "annat") && (
+                    <label className="mt-3 block text-sm">
+                      <span className="text-xs font-medium text-muted">
+                        Färg / kulör (valfritt)
+                      </span>
+                      <input
+                        type="text"
+                        value={post.kulor ?? ""}
+                        onChange={(e) =>
+                          uppdateraBelaggning(
+                            redigeraPost(belaggning, post.id, {
+                              kulor: e.target.value,
+                            }),
+                          )
+                        }
+                        className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                      />
+                    </label>
+                  )}
+                  <label className="mt-3 block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Ytbehandling (valfritt)
+                    </span>
+                    <select
+                      value={post.ytbehandling ?? ""}
+                      onChange={(e) =>
+                        uppdateraBelaggning(
+                          redigeraPost(belaggning, post.id, {
+                            ytbehandling: e.target.value,
+                          }),
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">—</option>
+                      {takYtbehandlingAlternativ.map((y) => (
+                        <option key={y.id} value={y.id}>
+                          {y.etikett}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <p className="mt-2 text-[11px] leading-relaxed text-muted">
                     {
                       huvudtyper.find((h) => h.id === post.huvudtyp)
@@ -413,53 +547,6 @@ export function TakbelaggningPanel({
                   </p>
                 </>
               ) : null}
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="block text-sm">
-                  <span className="text-xs font-medium text-muted">Mängd</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={post.mangd ?? ""}
-                    onChange={(e) =>
-                      uppdateraBelaggning(
-                        redigeraPost(belaggning, post.id, {
-                          mangd: e.target.value,
-                        }),
-                      )
-                    }
-                    placeholder={
-                      (post.mangdEnhet ?? "kvm") === "kvm" ? "t.ex. 850" : "0"
-                    }
-                    className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block text-sm">
-                  <span className="text-xs font-medium text-muted">Enhet</span>
-                  <select
-                    value={post.mangdEnhet ?? "kvm"}
-                    onChange={(e) =>
-                      uppdateraBelaggning(
-                        redigeraPost(belaggning, post.id, {
-                          mangdEnhet: e.target
-                            .value as TakBelaggningMangdEnhet,
-                        }),
-                      )
-                    }
-                    className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-                  >
-                    {(
-                      Object.keys(
-                        takBelaggningMangdEnhetEtiketter,
-                      ) as TakBelaggningMangdEnhet[]
-                    ).map((key) => (
-                      <option key={key} value={key}>
-                        {takBelaggningMangdEnhetEtiketter[key].etikett} (
-                        {takBelaggningMangdEnhetEtiketter[key].enhet})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
               {!materialvalAsSelect ? (
                 <>
                   <div className="mt-3 flex flex-wrap gap-2">

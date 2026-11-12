@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { FastighetsdelUnderkomponentDetalj } from "@/components/underhallsplan/FastighetsdelUnderkomponentDetalj";
+import { GoogleKartLankar } from "@/components/underhallsplan/GoogleKartLankar";
+import { hamtaPrimarAdress } from "@/components/underhallsplan/kart-lankar";
 import { TakSammanstallning } from "@/components/underhallsplan/TakSammanstallning";
 import { UnderkomponentMattPartierPanel } from "@/components/underhallsplan/UnderkomponentMattPartierPanel";
 import {
@@ -16,6 +18,8 @@ import {
 import {
   TAK_EGNA_DELAR_IDS,
   TAK_YTSKIKT_ID,
+  parseTakAdresser,
+  takVisningsnamn,
 } from "@/components/underhallsplan/tak-enheter";
 import type { Grunduppgifter } from "@/components/underhallsplan/types";
 
@@ -104,12 +108,37 @@ export function TakKort({
     egnaDelIds.includes(r.id),
   );
 
+  const visning = takVisningsnamn({
+    komponentNamn: namn,
+    adress: data.takAdress,
+    benamning: data.takBenamning,
+    husNamn,
+  });
+  const kartAdress =
+    parseTakAdresser(data.takAdress)[0] ||
+    hamtaPrimarAdress(foreningsAdresser) ||
+    hamtaPrimarAdress(grund.adresser ?? []);
+
   function uppdateraRad(id: string, patch: Partial<UnderkomponentRad>) {
     andra({
       ...data,
       underkomponenter: data.underkomponenter.map((r) =>
         r.id === id ? { ...r, ...patch } : r,
       ),
+    });
+  }
+
+  function uppdateraKomponentDetalj(
+    id: string,
+    patch: { material?: string; dimension?: string; kulor?: string },
+  ) {
+    const bef = data.takKomponentDetaljer?.[id] ?? {};
+    andra({
+      ...data,
+      takKomponentDetaljer: {
+        ...data.takKomponentDetaljer,
+        [id]: { ...bef, ...patch },
+      },
     });
   }
 
@@ -163,10 +192,55 @@ export function TakKort({
 
   return (
     <div className="space-y-3">
+      <div className="rounded-lg border border-[#d4e8da] bg-white px-3 py-2.5">
+        <p className="text-sm font-semibold text-foreground">{visning}</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Registrera yta, beläggning och komponenter för just det här taket på
+          samma ställe. Adresser hämtas från grunduppgifterna.
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <label className="block text-xs text-muted">
+            Benämning
+            <input
+              type="text"
+              value={data.takBenamning ?? ""}
+              onChange={(e) =>
+                andra({ ...data, takBenamning: e.target.value })
+              }
+              placeholder="t.ex. huvudtak"
+              className="mt-0.5 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm text-foreground"
+            />
+          </label>
+          <label className="block text-xs text-muted">
+            Adress(er)
+            <input
+              type="text"
+              list={`tak-adress-${namn}`}
+              value={data.takAdress ?? ""}
+              onChange={(e) => andra({ ...data, takAdress: e.target.value })}
+              placeholder="t.ex. Storgatan 12–14"
+              className="mt-0.5 w-full rounded-lg border border-border bg-white px-2 py-1.5 text-sm text-foreground"
+            />
+            <datalist id={`tak-adress-${namn}`}>
+              {foreningsAdresser.map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
+          </label>
+        </div>
+      </div>
+
+      <Sektion
+        titel="Lokalisering och ytuppskattning"
+        intro="Återanvänd Google Earth högre upp i planen. Kartmått är preliminära och räknas inte som verifierade."
+      >
+        <GoogleKartLankar adress={kartAdress} kontext="tak" kompakt />
+      </Sektion>
+
       {ytskiktRad ? (
         <Sektion
-          titel="Ytskikt, kulör och yta"
-          intro="Ett takparti per ytskikt. Har taket t.ex. tegel och bandlagd plåt läggs de som separata partier."
+          titel="Takyta och beläggning"
+          intro="Börja med yta i m². Lägg till flera takfall om beläggningen varierar."
         >
           <FastighetsdelUnderkomponentDetalj
             komponentNamn={namn}
@@ -187,7 +261,7 @@ export function TakKort({
 
       <Sektion
         titel="Komponenter på taket"
-        intro="Lägg till det som finns på just det här taket, t.ex. skorstenar, avluftning och takstegar, och ange antal eller löpmeter."
+        intro="Välj från listan och ange material, dimension, färg och mängd där det är relevant (m², löpmeter eller antal)."
       >
         {valdaKomponenter.length === 0 ? (
           <p className="text-xs text-muted">Inga komponenter tillagda ännu.</p>
@@ -196,6 +270,7 @@ export function TakKort({
             {valdaKomponenter.map((rad) => {
               const enhet = måttenhetEtiketter[rad.måttenhet];
               const partier = hamtaMattPartier(data, rad.id, rad);
+              const detalj = data.takKomponentDetaljer?.[rad.id] ?? {};
               return (
                 <li
                   key={rad.id}
@@ -229,6 +304,50 @@ export function TakKort({
                       Ta bort
                     </button>
                   </div>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <label className="block text-xs text-muted">
+                      Material
+                      <input
+                        type="text"
+                        value={detalj.material ?? ""}
+                        onChange={(e) =>
+                          uppdateraKomponentDetalj(rad.id, {
+                            material: e.target.value,
+                          })
+                        }
+                        placeholder="t.ex. lackad plåt"
+                        className="mt-0.5 w-full rounded-lg border border-border bg-white px-2 py-1 text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs text-muted">
+                      Dimension
+                      <input
+                        type="text"
+                        value={detalj.dimension ?? ""}
+                        onChange={(e) =>
+                          uppdateraKomponentDetalj(rad.id, {
+                            dimension: e.target.value,
+                          })
+                        }
+                        placeholder="t.ex. 125 mm"
+                        className="mt-0.5 w-full rounded-lg border border-border bg-white px-2 py-1 text-sm"
+                      />
+                    </label>
+                    <label className="block text-xs text-muted">
+                      Färg
+                      <input
+                        type="text"
+                        value={detalj.kulor ?? ""}
+                        onChange={(e) =>
+                          uppdateraKomponentDetalj(rad.id, {
+                            kulor: e.target.value,
+                          })
+                        }
+                        placeholder="valfritt"
+                        className="mt-0.5 w-full rounded-lg border border-border bg-white px-2 py-1 text-sm"
+                      />
+                    </label>
+                  </div>
                   {partier.length > 1 ? (
                     <div className="mt-2">
                       <UnderkomponentMattPartierPanel
@@ -237,7 +356,12 @@ export function TakKort({
                         partier={partier}
                         onChange={(next) =>
                           andra(
-                            uppdateraMattPartier(data, rad.id, next, rad.måttenhet),
+                            uppdateraMattPartier(
+                              data,
+                              rad.id,
+                              next,
+                              rad.måttenhet,
+                            ),
                           )
                         }
                       />
@@ -271,7 +395,7 @@ export function TakKort({
             </label>
           ) : null}
           <label className="min-w-0 flex-1 text-xs text-muted">
-            Egen komponent
+            Egen / annan komponent
             <input
               value={egenKomponent}
               onChange={(e) => {

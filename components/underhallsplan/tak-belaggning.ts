@@ -17,7 +17,11 @@ export type TakBelaggningHuvudtyp =
   | "tegel"
   | "plat-korrigerad"
   | "plat-bandlagd"
-  | "papp";
+  | "papp"
+  | "takduk"
+  | "skiffer"
+  | "sedum"
+  | "annat";
 
 export type TegelTyp = "betongpannor" | "lertegel";
 
@@ -71,7 +75,21 @@ export type TakBelaggningPost = {
   korrigeradInfastning?: KorrigeradInfastning;
   /** Kulör på korrugerad (målad) plåt. */
   korrigeradKulor?: string;
+  /** Fri kulör för takduk/skiffer/sedum/annat. */
+  kulor?: string;
+  /** Ytbehandling, t.ex. lackerad, glaserad, obehandlad. */
+  ytbehandling?: string;
+  /** När huvudtyp är "annat". */
+  annatMaterial?: string;
 };
+
+export const takYtbehandlingAlternativ: { id: string; etikett: string }[] = [
+  { id: "obehandlad", etikett: "Obehandlad" },
+  { id: "lackad", etikett: "Lackad / målad" },
+  { id: "glaserad", etikett: "Glaserad" },
+  { id: "patinerad", etikett: "Patinerad" },
+  { id: "annan", etikett: "Annan ytbehandling" },
+];
 
 export type TakBelaggningData = {
   belaggningar: TakBelaggningPost[];
@@ -160,8 +178,8 @@ export type TakBelaggningMaterialVal = {
 export const takBelaggningMaterialAlternativ: TakBelaggningMaterialVal[] = [
   ...tegelTyper.map((t) => ({
     id: `tegel:${t.id}`,
-    etikett: t.etikett,
-    grupp: "Tegel",
+    etikett: t.etikett === "Betongpannor" ? "Tegelpannor / betongpannor" : t.etikett,
+    grupp: "Tegelpannor eller betongpannor",
   })),
   {
     id: "plat-korrigerad:spik",
@@ -176,13 +194,21 @@ export const takBelaggningMaterialAlternativ: TakBelaggningMaterialVal[] = [
   ...bandlagdMaterial.map((m) => ({
     id: `plat-bandlagd:${m.id}`,
     etikett: m.etikett,
-    grupp: "Bandlagd plåt",
+    grupp: m.id === "koppar" || m.id === "zink" ? "Koppar eller zink" : "Plåt",
   })),
-  { id: "papp", etikett: "Papp / underlag", grupp: "Papp" },
+  { id: "papp", etikett: "Takpapp / bitumen", grupp: "Takpapp/bitumen" },
+  { id: "takduk", etikett: "Takduk", grupp: "Takduk" },
+  { id: "skiffer", etikett: "Skiffer", grupp: "Skiffer eller sedum" },
+  { id: "sedum", etikett: "Sedum", grupp: "Skiffer eller sedum" },
+  { id: "annat", etikett: "Annat material", grupp: "Annat" },
 ];
 
 export function takMaterialValIdFranPost(post: TakBelaggningPost): string {
   if (post.huvudtyp === "papp") return "papp";
+  if (post.huvudtyp === "takduk") return "takduk";
+  if (post.huvudtyp === "skiffer") return "skiffer";
+  if (post.huvudtyp === "sedum") return "sedum";
+  if (post.huvudtyp === "annat") return "annat";
   if (post.huvudtyp === "tegel") {
     return `tegel:${post.tegelTyp === "lertegel" ? "lertegel" : "betongpannor"}`;
   }
@@ -201,7 +227,22 @@ export function postPatchFranTakMaterialVal(
   befintlig?: TakBelaggningPost,
 ): Partial<TakBelaggningPost> {
   if (valId === "papp") {
-    return { huvudtyp: "papp" };
+    return { huvudtyp: "papp", kulor: befintlig?.kulor, ytbehandling: befintlig?.ytbehandling };
+  }
+  if (valId === "takduk" || valId === "skiffer" || valId === "sedum") {
+    return {
+      huvudtyp: valId,
+      kulor: befintlig?.kulor ?? "",
+      ytbehandling: befintlig?.ytbehandling ?? "",
+    };
+  }
+  if (valId === "annat") {
+    return {
+      huvudtyp: "annat",
+      annatMaterial: befintlig?.annatMaterial ?? "",
+      kulor: befintlig?.kulor ?? "",
+      ytbehandling: befintlig?.ytbehandling ?? "",
+    };
   }
   if (valId.startsWith("tegel:")) {
     const typ: TegelTyp =
@@ -210,6 +251,7 @@ export function postPatchFranTakMaterialVal(
       huvudtyp: "tegel",
       tegelTyp: typ,
       tegelKulor: befintlig?.tegelKulor ?? "",
+      ytbehandling: befintlig?.ytbehandling ?? "",
     };
   }
   if (valId.startsWith("plat-korrigerad:")) {
@@ -220,6 +262,7 @@ export function postPatchFranTakMaterialVal(
       huvudtyp: "plat-korrigerad",
       korrigeradInfastning: inf,
       korrigeradKulor: befintlig?.korrigeradKulor ?? "",
+      ytbehandling: befintlig?.ytbehandling ?? "",
     };
   }
   if (valId.startsWith("plat-bandlagd:")) {
@@ -238,6 +281,7 @@ export function postPatchFranTakMaterialVal(
         mat === "stalplat" ? (befintlig?.bandlagdKulor ?? "") : undefined,
       aluminiumLackerad:
         mat === "aluminium" ? befintlig?.aluminiumLackerad : undefined,
+      ytbehandling: befintlig?.ytbehandling ?? "",
     };
   }
   return { huvudtyp: "tegel", tegelTyp: "betongpannor", tegelKulor: "" };
@@ -272,8 +316,25 @@ export function skapaTomTakBelaggningData(): TakBelaggningData {
   return { belaggningar: [] };
 }
 
+function normaliseraHuvudtyp(raw: unknown): TakBelaggningHuvudtyp {
+  const v = String(raw ?? "");
+  if (
+    v === "tegel" ||
+    v === "plat-korrigerad" ||
+    v === "plat-bandlagd" ||
+    v === "papp" ||
+    v === "takduk" ||
+    v === "skiffer" ||
+    v === "sedum" ||
+    v === "annat"
+  ) {
+    return v;
+  }
+  return "tegel";
+}
+
 function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBelaggningPost {
-  const huvudtyp = raw.huvudtyp ?? "tegel";
+  const huvudtyp = normaliseraHuvudtyp(raw.huvudtyp);
   const post: TakBelaggningPost = {
     id: raw.id?.trim() || `tak-${index + 1}`,
     namn: raw.namn?.trim() ?? "",
@@ -283,6 +344,7 @@ function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBel
     mangdEnhet: normaliseraMangdEnhet(
       raw.mangdEnhet ?? standardMangdEnhet(huvudtyp),
     ),
+    ytbehandling: raw.ytbehandling?.trim() ?? "",
   };
   if (huvudtyp === "tegel") {
     post.tegelTyp =
@@ -309,6 +371,18 @@ function normaliseraPost(raw: Partial<TakBelaggningPost>, index: number): TakBel
     if (post.bandlagdMaterial === "aluminium") {
       post.aluminiumLackerad = raw.aluminiumLackerad === true;
     }
+  }
+  if (
+    huvudtyp === "takduk" ||
+    huvudtyp === "skiffer" ||
+    huvudtyp === "sedum" ||
+    huvudtyp === "papp"
+  ) {
+    post.kulor = raw.kulor?.trim() ?? "";
+  }
+  if (huvudtyp === "annat") {
+    post.annatMaterial = raw.annatMaterial?.trim() ?? "";
+    post.kulor = raw.kulor?.trim() ?? "";
   }
   return post;
 }
@@ -425,14 +499,25 @@ function huvudtypEtikett(h: TakBelaggningHuvudtyp): string {
     case "plat-bandlagd":
       return "Bandlagd plåt";
     case "papp":
-      return "Papp";
+      return "Takpapp/bitumen";
+    case "takduk":
+      return "Takduk";
+    case "skiffer":
+      return "Skiffer";
+    case "sedum":
+      return "Sedum";
+    case "annat":
+      return "Annat material";
   }
 }
 
 export function materialEtikettTakBelaggningPost(
   post: TakBelaggningPost,
 ): string {
-  const delar = [huvudtypEtikett(post.huvudtyp)];
+  const delar =
+    post.huvudtyp === "annat" && post.annatMaterial?.trim()
+      ? [post.annatMaterial.trim()]
+      : [huvudtypEtikett(post.huvudtyp)];
   const takform = takformAlternativ.find((t) => t.id === post.takform);
   if (takform) delar.push(takform.etikett.toLowerCase());
   if (post.huvudtyp === "tegel") {
@@ -460,8 +545,30 @@ export function materialEtikettTakBelaggningPost(
     }
     delar.push("dold infästning på underlag");
   }
+  if (
+    post.huvudtyp === "takduk" ||
+    post.huvudtyp === "skiffer" ||
+    post.huvudtyp === "sedum" ||
+    post.huvudtyp === "papp" ||
+    post.huvudtyp === "annat"
+  ) {
+    if (post.kulor?.trim()) delar.push(`kulör ${post.kulor.trim()}`);
+  }
+  if (post.ytbehandling?.trim()) {
+    const yt =
+      takYtbehandlingAlternativ.find((y) => y.id === post.ytbehandling)
+        ?.etikett ?? post.ytbehandling.trim();
+    delar.push(yt);
+  }
   if (postKanMalas(post)) delar.push("målning möjlig");
-  else delar.push("rengöring");
+  else if (
+    post.huvudtyp !== "takduk" &&
+    post.huvudtyp !== "skiffer" &&
+    post.huvudtyp !== "sedum" &&
+    post.huvudtyp !== "annat"
+  ) {
+    delar.push("rengöring");
+  }
   return delar.join(" · ");
 }
 

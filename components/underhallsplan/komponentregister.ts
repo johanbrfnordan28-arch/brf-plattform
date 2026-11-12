@@ -619,6 +619,13 @@ export type KomponentDetaljData = {
   /** Tak — vilka hus (grunduppgifter) som ingår i taket. */
   takHusIds?: string[];
   takAdress?: string;
+  /** Valfri benämning, t.ex. huvudtak. */
+  takBenamning?: string;
+  /** Material, dimension och kulör per takkomponent-id. */
+  takKomponentDetaljer?: Record<
+    string,
+    { material?: string; dimension?: string; kulor?: string }
+  >;
 };
 
 export type KomponentMall = {
@@ -855,11 +862,39 @@ const komponentMallar: Record<string, KomponentMall> = {
         måttHint: "Löpmeter nock — främst vid tegeltak.",
       },
       {
+        id: "hangrannor",
+        etikett: "Hängrännor",
+        grupp: "Avvattning",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter hängränna — ange material och dimension vid behov.",
+      },
+      {
+        id: "stupror",
+        etikett: "Stuprör",
+        grupp: "Avvattning",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter eller antal stuprör.",
+      },
+      {
+        id: "takbrunnar",
+        etikett: "Takbrunnar",
+        grupp: "Avvattning",
+        defaultMåttenhet: "antal",
+        måttHint: "Antal takbrunnar.",
+      },
+      {
         id: "ranndal",
         etikett: "Ränndalar",
-        grupp: "Takbeläggning",
+        grupp: "Avvattning",
         defaultMåttenhet: "löpmeter",
         måttHint: "Löpmeter ränndal — främst vid tegeltak.",
+      },
+      {
+        id: "platbeslag",
+        etikett: "Plåtbeslag",
+        grupp: "Beslag",
+        defaultMåttenhet: "löpmeter",
+        måttHint: "Löpmeter plåtbeslag (fotplåt, vindskiva m.m.).",
       },
       {
         id: "takstegar",
@@ -882,8 +917,22 @@ const komponentMallar: Record<string, KomponentMall> = {
         defaultMåttenhet: "löpmeter",
         måttHint: "Löpmeter snörasskydd.",
       },
+      {
+        id: "takluckor",
+        etikett: "Takluckor",
+        grupp: "Taköppningar",
+        defaultMåttenhet: "antal",
+        måttHint: "Antal takluckor.",
+      },
       { id: "skorsten", etikett: "Skorstenar", grupp: "Takinstallationer", defaultMåttenhet: "antal", måttHint: "Antal skorstenar." },
       { id: "ventilationshuv", etikett: "Ventilationshuvar", grupp: "Takinstallationer", defaultMåttenhet: "antal", måttHint: "Antal ventilationshuvar." },
+      {
+        id: "genomforingar",
+        etikett: "Genomföringar",
+        grupp: "Takinstallationer",
+        defaultMåttenhet: "antal",
+        måttHint: "Antal övriga genomföringar i taket.",
+      },
       {
         id: "avluftning-avlopp",
         etikett: "Avluftning avlopp",
@@ -2610,7 +2659,16 @@ export function synkaKomponentDetaljMedMall(
           avskrivningAr: rad.avskrivningAr?.trim() || standardAvskr || rad.avskrivningAr,
         };
       }
-      return skapaUnderkomponentRadFranDef(def, mall.namn);
+      const ny = skapaUnderkomponentRadFranDef(def, mall.namn);
+      // Tak: nya komponenter läggs till via rullista, inte automatiskt i planen.
+      if (
+        mall.namn === "Tak" &&
+        def.id !== "takyta" &&
+        !def.detaljPanel
+      ) {
+        return { ...ny, medIPlan: false, aktiv: false };
+      }
+      return ny;
     }),
     ...dataIn.underkomponenter.filter((r) => r.ärEgen),
   ];
@@ -2827,6 +2885,9 @@ export function synkaKomponentDetaljMedMall(
         : undefined,
     takHusIds: mall.namn === "Tak" ? dataIn.takHusIds : undefined,
     takAdress: mall.namn === "Tak" ? dataIn.takAdress : undefined,
+    takBenamning: mall.namn === "Tak" ? dataIn.takBenamning : undefined,
+    takKomponentDetaljer:
+      mall.namn === "Tak" ? dataIn.takKomponentDetaljer : undefined,
   };
 }
 
