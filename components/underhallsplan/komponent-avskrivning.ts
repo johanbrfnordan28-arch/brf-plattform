@@ -21,7 +21,8 @@ const rekommendationer: Record<
     stomme: {
       rekommenderadAvskrivningAr: 120,
       arK3Komponent: true,
-      hint: "FAR: betongstomme 120 år; trästomme på betonggrund 75 år.",
+      hint:
+        "FAR: betongstomme 120 år; trästomme på betonggrund 75 år. Nyttjandeperiod för redovisning — inte ett förslag om byte av hela stommen.",
     },
   },
   Fasad: {

@@ -35,6 +35,7 @@ import {
   hamtaInjusteringsunderlagKalla,
   hamtaInjusteringsunderlagSnapshot,
   hamtaKallareRumPoster,
+  hamtaStommeData,
   hamtaVarmestammarData,
   hamtaVvsRadiatorData,
   hamtaVvsStambyteData,
@@ -42,6 +43,7 @@ import {
   uppdateraUndercentralData,
   uppdateraInjusteringsunderlagSnapshot,
   uppdateraKallareRumPoster,
+  uppdateraStommeData,
   uppdateraVarmestammarData,
   uppdateraVvsRadiatorData,
   uppdateraVvsStambyteData,
@@ -53,6 +55,7 @@ import {
   type UnderkomponentRad,
 } from "@/components/underhallsplan/komponentregister";
 import { StambytePanel } from "@/components/underhallsplan/StambytePanel";
+import { StommePanel } from "@/components/underhallsplan/StommePanel";
 import { InjusteringsunderlagPanel } from "@/components/underhallsplan/InjusteringsunderlagPanel";
 import { KallareRumPanel } from "@/components/underhallsplan/KallareRumPanel";
 import { StamventilerPanel } from "@/components/underhallsplan/StamventilerPanel";
@@ -82,6 +85,7 @@ const UTFORLIGA_PANELER = new Set<UnderkomponentDetaljPanel>([
   "tvattstuga-lista",
   "vvs-radiatorer",
   "vvs-stambyte",
+  "stomme-val",
 ]);
 
 /** Stora formulär i steg 2 — visas ihopfällda som standard (+ / −). */
@@ -399,6 +403,32 @@ export function FastighetsdelUnderkomponentDetalj({
           poster={hamtaFasadSockelPoster(data, rad.id)}
           onChange={(poster) =>
             onChange(uppdateraFasadSockelPoster(data, rad.id, poster))
+          }
+        />
+      </div>
+    );
+  }
+
+  if (detaljPanel === "stomme-val") {
+    const forslagKvm = (() => {
+      const n = Number.parseFloat(
+        String(grund.boarea ?? "")
+          .replace(/\s/g, "")
+          .replace(",", "."),
+      );
+      return Number.isFinite(n) && n > 0 ? String(n) : "";
+    })();
+    return (
+      <div className="mt-3 rounded-lg border border-[#d4e8da] bg-white p-3">
+        <StommePanel
+          data={hamtaStommeData(data, rad.id)}
+          forslagKvm={forslagKvm}
+          värdeKvm={rad.värde}
+          onChange={(stommeData) =>
+            onChange(uppdateraStommeData(data, rad.id, stommeData))
+          }
+          onVärdeKvmChange={(värde) =>
+            onRadChange({ värde, måttenhet: "kvm", aktiv: true, medIPlan: true })
           }
         />
       </div>

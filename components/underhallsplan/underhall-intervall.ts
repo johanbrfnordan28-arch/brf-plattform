@@ -8,6 +8,13 @@ export type UnderhallRekommendation = {
 };
 
 const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> = {
+  Stomme: {
+    stomme: {
+      rekommenderatIntervallAr: 0,
+      intervallHint:
+        "Stommen byts normalt inte efter ett fast intervall. Planera konkreta reparations- eller förstärkningsåtgärder utifrån skick, sprickor, sättningar och fukt — inte stommens anskaffningsvärde.",
+    },
+  },
   Fasad: {
     fonster: {
       rekommenderatIntervallAr: 40,
@@ -153,5 +160,6 @@ export function standardUnderhallIntervallAr(
   underkomponentId: string,
 ): string {
   const rek = hamtaUnderhallRekommendation(komponentNamn, underkomponentId);
-  return rek ? String(rek.rekommenderatIntervallAr) : "";
+  if (!rek || rek.rekommenderatIntervallAr <= 0) return "";
+  return String(rek.rekommenderatIntervallAr);
 }

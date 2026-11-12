@@ -182,6 +182,16 @@ import {
   type BrandskyddBranddorrarData,
   type BrandskyddSbaData,
 } from "@/components/underhallsplan/brandskydd";
+import {
+  beraknaStommeKomponentvarde,
+  formateraStommeSammanstallning,
+  normaliseraStommeData,
+  stommeHarInnehall,
+  tomStommeData,
+  STOMME_UNDERKOMPONENT_ID,
+  type StommeData,
+  type StommeRegister,
+} from "@/components/underhallsplan/stomme";
 
 export {
   TVATTSTUGA_UNDERKOMPONENT_ID,
@@ -195,6 +205,7 @@ export {
   BRANDDORRAR_UNDERKOMPONENT_ID,
   UTRYMNING_UNDERKOMPONENT_ID,
   ROKGAS_UNDERKOMPONENT_ID,
+  STOMME_UNDERKOMPONENT_ID,
 };
 
 /** Mått för underkomponenter — antal, yta eller längd. */
@@ -228,7 +239,8 @@ export type UnderkomponentDetaljPanel =
   | "fasad-sockel-val"
   | "takbelaggning-val"
   | "brandskydd-sba"
-  | "brandskydd-branddorrar";
+  | "brandskydd-branddorrar"
+  | "stomme-val";
 
 export type {
   LokalTypId,
@@ -596,6 +608,8 @@ export type KomponentDetaljData = {
   brandskyddSbaRegister?: BrandskyddSbaRegister;
   /** Branddörrar per underkomponent-id (Brandskydd) */
   brandskyddBranddorrRegister?: BrandskyddBranddorrRegister;
+  /** Stomme och grund — konstruktionsdelar, anskaffning, FAR och skick */
+  stommeRegister?: StommeRegister;
   /** Enkel vy: klumpsumma yta/kostnad utan underkomponentlista. */
   enkelKlumpsummaLage?: boolean;
   /** Visa full underkomponentlista (motverkar enkel vy). */
@@ -711,7 +725,8 @@ const komponentMallar: Record<string, KomponentMall> = {
         etikett: "Stomme och grund",
         defaultMåttenhet: "kvm",
         måttHint:
-          "FAR: stomme och grund är den största komponenten (ca 60–70 % av anskaffningsvärdet). Ange boarea eller bruttoarea som underlag.",
+          "Samlad komponent för bärande stomme och grund. FAR ca 60–70 % av byggnadens anskaffningsvärde (förslag 65 %). Fasadbeklädnad och icke bärande väggar registreras separat.",
+        detaljPanel: "stomme-val",
       },
     ],
   },
@@ -1607,6 +1622,16 @@ function skapaTomBrandskyddBranddorrRegister(
   for (const def of mall.underkomponenter) {
     if (def.detaljPanel === "brandskydd-branddorrar") {
       reg[def.id] = tomBrandskyddBranddorrarData();
+    }
+  }
+  return reg;
+}
+
+function skapaTomStommeRegister(mall: KomponentMall): StommeRegister {
+  const reg: StommeRegister = {};
+  for (const def of mall.underkomponenter) {
+    if (def.detaljPanel === "stomme-val") {
+      reg[def.id] = tomStommeData();
     }
   }
   return reg;
@@ -2759,6 +2784,12 @@ export function synkaKomponentDetaljMedMall(
       ...skapaTomBrandskyddBranddorrRegister(mall),
       ...dataIn.brandskyddBranddorrRegister,
     },
+    stommeRegister: Object.fromEntries(
+      Object.entries({
+        ...skapaTomStommeRegister(mall),
+        ...dataIn.stommeRegister,
+      }).map(([key, val]) => [key, normaliseraStommeData(val)]),
+    ),
     egnaHissMarken: dataIn.egnaHissMarken ?? [],
     egnaBalkongTyper: normaliseraEgnaBalkongTyper(dataIn.egnaBalkongTyper),
     takterrassRegister: Object.fromEntries(
@@ -2818,6 +2849,7 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
   const ventilationExtraRegister = skapaTomVentilationExtraRegister(mall);
   const brandskyddSbaRegister = skapaTomBrandskyddSbaRegister(mall);
   const brandskyddBranddorrRegister = skapaTomBrandskyddBranddorrRegister(mall);
+  const stommeRegister = skapaTomStommeRegister(mall);
   const takterrassRegister = skapaTomTakterrassRegister(mall);
   const medlemstakterrassRegister = skapaTomMedlemstakterrassRegister(mall);
   const takfonsterRegister = skapaTomTakfonsterRegister(mall);
@@ -2887,6 +2919,8 @@ export function skapaTomKomponentDetalj(namn: string): KomponentDetaljData {
       Object.keys(brandskyddBranddorrRegister).length > 0
         ? brandskyddBranddorrRegister
         : undefined,
+    stommeRegister:
+      Object.keys(stommeRegister).length > 0 ? stommeRegister : undefined,
     takterrassRegister:
       Object.keys(takterrassRegister).length > 0
         ? takterrassRegister
@@ -3717,6 +3751,41 @@ export function uppdateraBrandskyddSbaData(
   };
 }
 
+export function hamtaStommeData(
+  data: KomponentDetaljData,
+  underId: string,
+): StommeData {
+  return normaliseraStommeData(data.stommeRegister?.[underId]);
+}
+
+export function uppdateraStommeData(
+  data: KomponentDetaljData,
+  underId: string,
+  stommeData: StommeData,
+): KomponentDetaljData {
+  const normaliserad = normaliseraStommeData(stommeData);
+  const beraknat = beraknaStommeKomponentvarde(normaliserad);
+  const installationskostnadKr =
+    beraknat.komponentvardeKr > 0 ? String(beraknat.komponentvardeKr) : "";
+  return {
+    ...data,
+    stommeRegister: {
+      ...data.stommeRegister,
+      [underId]: normaliserad,
+    },
+    underkomponenter: data.underkomponenter.map((rad) =>
+      rad.id === underId
+        ? {
+            ...rad,
+            installationskostnadKr,
+            aktiv: rad.aktiv || stommeHarInnehall(normaliserad),
+            medIPlan: rad.medIPlan === false ? false : true,
+          }
+        : rad,
+    ),
+  };
+}
+
 export function hamtaBrandskyddBranddorrarData(
   data: KomponentDetaljData,
   underId: string,
@@ -4089,6 +4158,19 @@ export function formateraKomponentSammanfattning(
       if (sba) {
         const text = formateraBrandskyddSba(sba);
         if (text) delar.push(`${rad.etikett}: ${text}`);
+      }
+      continue;
+    }
+    if (def?.detaljPanel === "stomme-val") {
+      const stomme = data.stommeRegister?.[rad.id];
+      if (stomme && stommeHarInnehall(stomme)) {
+        const rader = formateraStommeSammanstallning(stomme)
+          .filter((r) => r.varde !== "Inga delar valda ännu" && r.varde !== "Ej angivet")
+          .slice(0, 6)
+          .map((r) => `${r.benamning}: ${r.varde}`);
+        if (rader.length > 0) {
+          delar.push(`${rad.etikett}: ${rader.join(" · ")}`);
+        }
       }
       continue;
     }

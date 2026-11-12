@@ -68,7 +68,9 @@ export function KommandeUnderhallFalt({
   const planSlutAr = hamtaPlanSlutAr(planStartAr, planLangdAr);
   const intervallVal =
     rad.underhallIntervallAr?.trim() ||
-    (rek ? String(rek.rekommenderatIntervallAr) : "");
+    (rek && rek.rekommenderatIntervallAr > 0
+      ? String(rek.rekommenderatIntervallAr)
+      : "");
   const avskrivningVal =
     rad.avskrivningAr?.trim() ||
     standardAvskrivningAr(komponentNamn, underkomponentId);
@@ -221,7 +223,10 @@ export function KommandeUnderhallFalt({
 
       {rek && (
         <p className="mt-2 text-xs text-muted">
-          Rekommenderat: vart {rek.rekommenderatIntervallAr}:e år. {rek.intervallHint}
+          {rek.rekommenderatIntervallAr > 0
+            ? `Rekommenderat: vart ${rek.rekommenderatIntervallAr}:e år. `
+            : ""}
+          {rek.intervallHint}
         </p>
       )}
 

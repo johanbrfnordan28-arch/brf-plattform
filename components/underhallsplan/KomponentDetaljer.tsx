@@ -86,6 +86,8 @@ import {
   uppdateraBrandskyddSbaData,
   hamtaBrandskyddBranddorrarData,
   uppdateraBrandskyddBranddorrarData,
+  hamtaStommeData,
+  uppdateraStommeData,
   uppdateraTvattstugaPoster,
   uppdateraPPlatserData,
   uppdateraVvsRadiatorData,
@@ -153,6 +155,7 @@ import { HissListaPanel } from "@/components/underhallsplan/HissListaPanel";
 import { VentilationExtraPanel } from "@/components/underhallsplan/VentilationExtraPanel";
 import { BrandskyddSbaPanel } from "@/components/underhallsplan/BrandskyddSbaPanel";
 import { BranddorrarPanel } from "@/components/underhallsplan/BranddorrarPanel";
+import { StommePanel } from "@/components/underhallsplan/StommePanel";
 import { formateraVentilationExtraPoster } from "@/components/underhallsplan/ventilation-extra";
 import { TakfonsterListaPanel } from "@/components/underhallsplan/TakfonsterListaPanel";
 import { formateraTakfonsterData } from "@/components/underhallsplan/takfonster";
@@ -1412,6 +1415,34 @@ export function KomponentDetaljer({
                       data={hamtaBrandskyddSbaData(data, rad.id)}
                       onChange={(sbaData) =>
                         onChange(uppdateraBrandskyddSbaData(data, rad.id, sbaData))
+                      }
+                    />
+                  </div>
+                )}
+
+                {ärÖppen && rad.aktiv && detaljPanel === "stomme-val" && (
+                  <div className="border-t border-border bg-[#fafcfa] px-3 py-3 sm:px-4">
+                    <StommePanel
+                      data={hamtaStommeData(data, rad.id)}
+                      forslagKvm={(() => {
+                        const n = Number.parseFloat(
+                          String(grund.boarea ?? "")
+                            .replace(/\s/g, "")
+                            .replace(",", "."),
+                        );
+                        return Number.isFinite(n) && n > 0 ? String(n) : "";
+                      })()}
+                      värdeKvm={rad.värde}
+                      onChange={(stommeData) =>
+                        onChange(uppdateraStommeData(data, rad.id, stommeData))
+                      }
+                      onVärdeKvmChange={(värde) =>
+                        uppdateraUnderkomponent(rad.id, {
+                          värde,
+                          måttenhet: "kvm",
+                          aktiv: true,
+                          medIPlan: true,
+                        })
                       }
                     />
                   </div>

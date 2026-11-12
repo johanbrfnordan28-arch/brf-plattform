@@ -17,6 +17,7 @@ import {
   hamtaFonsterDorrPoster,
   hamtaKallareRumPoster,
   hamtaMattPartier,
+  hamtaStommeData,
   hamtaTakBelaggningData,
   hamtaTakfonsterData,
   hamtaTakterrassPoster,
@@ -26,6 +27,7 @@ import {
   type KomponentDetaljData,
   type KomponentMall,
 } from "@/components/underhallsplan/komponentregister";
+import { formateraStommeSammanstallning } from "@/components/underhallsplan/stomme";
 import {
   formateraKallareInnehallPost,
   kallareRumRubrik,
@@ -205,6 +207,18 @@ export function byggSteg2KomponentSammanstallning(
         varde:
           "Tillopp-/returventil anges per stam under Värmestammar. Denna lista är endast extra inventering.",
       });
+    } else if (def?.detaljPanel === "stomme-val") {
+      detaljer = formateraStommeSammanstallning(hamtaStommeData(data, rad.id));
+      const kvm = rad.värde.trim();
+      if (kvm) {
+        detaljer = [
+          {
+            benamning: "Yta underlag",
+            varde: `${kvm} ${måttenhetEtiketter[rad.måttenhet].enhet}`,
+          },
+          ...detaljer,
+        ];
+      }
     } else {
       const partier = hamtaMattPartier(data, rad.id, rad);
       const enhet = måttenhetEtiketter[rad.måttenhet].enhet;
