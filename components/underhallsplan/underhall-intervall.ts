@@ -85,8 +85,9 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       intervallHint: "Radiatorer och ventiler — ofta 25–35 år.",
     },
     varmestammar: {
-      rekommenderatIntervallAr: 40,
-      intervallHint: "Värmestammar och stamledning — ofta 35–50 år.",
+      rekommenderatIntervallAr: 5,
+      intervallHint:
+        "Kontroll och statusbedömning — byt inte enbart p.g.a. ålder. Fungerande slutna värmeledningar kan hålla långt över 100 år; åtgärda vid läckage, korrosion eller dokumenterade brister.",
     },
     stamventiler: {
       rekommenderatIntervallAr: 25,
@@ -99,8 +100,9 @@ const rekommendationer: Record<string, Record<string, UnderhallRekommendation>> 
       intervallHint: "Radiatorer och ventiler — ofta 25–35 år.",
     },
     varmestammar: {
-      rekommenderatIntervallAr: 40,
-      intervallHint: "Värmestammar och stamledning — ofta 35–50 år.",
+      rekommenderatIntervallAr: 5,
+      intervallHint:
+        "Kontroll och statusbedömning — byt inte enbart p.g.a. ålder. Fungerande slutna värmeledningar kan hålla långt över 100 år; åtgärda vid läckage, korrosion eller dokumenterade brister.",
     },
     stamventiler: {
       rekommenderatIntervallAr: 25,

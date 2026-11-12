@@ -19,6 +19,7 @@ import {
   varmeBjalklagAlternativ,
   varmeElementAlternativ,
   varmeRorDimensioner,
+  varmeStamRorDimensioner,
   varmeTakhojdAlternativ,
   varmeVaningarAlternativ,
   type VarmeAvstandId,
@@ -32,18 +33,32 @@ import {
   formatSummeringTal,
 } from "@/components/underhallsplan/lista-summering";
 import {
+  formateraVarmestamMarkning,
+  formateraVarmestamNummer,
+  nastastaStamnummer,
+  normaliseraHorisontellLedning,
   normaliseraVarmestammarData,
   normaliseraVarmestamPost,
+  skapaTomHorisontellLedning,
   skapaTomVarmestamPost,
+  VARME_BADRUMSSCHAKT_INFO,
+  VARME_LIVSLANGD_INFO,
+  VARME_TRYCKFALL_INFO,
   varmestamRumVolymKbm,
   varmestamRumYtaKvm,
   varmestamVaningsLangder,
+  varmeHorisontellLangdAvserAlternativ,
+  varmeRormaterialAlternativ,
+  varmeSystemTypAlternativ,
+  type VarmeHorisontellLangdAvser,
+  type VarmeHorisontellLedning,
+  type VarmeRormaterialId,
+  type VarmeSystemTypId,
   type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
 import { VarmeSammanstallningPanel } from "@/components/underhallsplan/VarmeSammanstallningPanel";
 import { VarmeStamOversiktKort } from "@/components/underhallsplan/VarmeStamOversiktKort";
-
 type VarmestammarPanelProps = {
   data: VarmestammarData;
   onChange: (data: VarmestammarData) => void;
@@ -56,7 +71,7 @@ function tillHojdStam(post: VarmestamPost) {
   return {
     id: post.id,
     namn: post.namn,
-    markningKallare: "",
+    markningKallare: formateraVarmestamMarkning(post.stamnummer, "stam"),
     adress: post.placering,
     betjanar: post.betjanar,
     vaningar: post.vaningar,
@@ -66,8 +81,9 @@ function tillHojdStam(post: VarmestamPost) {
     bjalklagAnnan: post.bjalklagAnnan,
     rumStorlek: "",
     radiatorAntal: "",
-    stamRordimension: post.rordimension,
-    stamRordimensionAnnan: post.rordimensionAnnan,
+    stamRordimension: post.rordimensionTillopp || post.rordimension,
+    stamRordimensionAnnan:
+      post.rordimensionTilloppAnnan || post.rordimensionAnnan,
     radiatorGrupper: [],
   };
 }
@@ -95,6 +111,98 @@ function VentilSelect({
         </optgroup>
       ))}
     </select>
+  );
+}
+
+function InfoSektion({
+  rubrik,
+  text,
+}: {
+  rubrik: string;
+  text: string;
+}) {
+  return (
+    <details className="rounded-lg border border-border/80 bg-[#f7faf8] px-3 py-2">
+      <summary className="cursor-pointer text-xs font-semibold text-primary-dark">
+        {rubrik}
+      </summary>
+      <div className="mt-2 space-y-2 text-[11px] leading-relaxed text-muted whitespace-pre-line">
+        {text}
+      </div>
+    </details>
+  );
+}
+
+function RorDimensionValjare({
+  label,
+  value,
+  annan,
+  ytterdiameterMm,
+  onChange,
+}: {
+  label: string;
+  value: VarmeRorDimensionId | "";
+  annan: string;
+  ytterdiameterMm: string;
+  onChange: (patch: {
+    rordimension?: VarmeRorDimensionId | "";
+    rordimensionAnnan?: string;
+    ytterdiameterMm?: string;
+  }) => void;
+}) {
+  const iStandardlista = varmeStamRorDimensioner.some((a) => a.id === value);
+  const selectValue =
+    !value || iStandardlista || value === "annat"
+      ? value
+      : "annat";
+  return (
+    <label className="block text-sm">
+      <span className="text-xs font-medium text-muted">{label}</span>
+      <select
+        value={selectValue}
+        onChange={(e) => {
+          const next = e.target.value as VarmeRorDimensionId | "";
+          onChange({
+            rordimension: next,
+            rordimensionAnnan:
+              next === "annat"
+                ? annan || (value && !iStandardlista ? value : "")
+                : "",
+          });
+        }}
+        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+      >
+        <option value="">— ej angiven —</option>
+        {varmeStamRorDimensioner.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.etikett}
+          </option>
+        ))}
+      </select>
+      {(selectValue === "annat" || (!iStandardlista && value)) && (
+        <input
+          type="text"
+          value={annan || (!iStandardlista && value !== "annat" ? value : "")}
+          onChange={(e) =>
+            onChange({
+              rordimension: "annat",
+              rordimensionAnnan: e.target.value,
+            })
+          }
+          placeholder="Ange dimension manuellt"
+          className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+        />
+      )}
+      <input
+        type="number"
+        min={0}
+        step={0.1}
+        value={ytterdiameterMm}
+        onChange={(e) => onChange({ ytterdiameterMm: e.target.value })}
+        placeholder="Ytterdiameter (mm), valfritt"
+        className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+      />
+    </label>
   );
 }
 
@@ -198,7 +306,27 @@ export function VarmestammarPanel({
   const katalog = radiatorTyper;
 
   function spara(patch: Partial<VarmestammarData>) {
-    onChange(normaliseraVarmestammarData({ ...d, ...patch }));
+    const next = normaliseraVarmestammarData({ ...d, ...patch });
+    // Håll legacy-fält synkade för äldre vyer (utan att åter-migrera listan)
+    const tillopp = next.horisontellaLedningar
+      .filter((l) => l.langdAvser === "tillopp")
+      .reduce(
+        (sum, l) =>
+          sum + (Number.parseFloat(l.lopmeter.replace(",", ".")) || 0),
+        0,
+      );
+    const retur = next.horisontellaLedningar
+      .filter((l) => l.langdAvser === "retur")
+      .reduce(
+        (sum, l) =>
+          sum + (Number.parseFloat(l.lopmeter.replace(",", ".")) || 0),
+        0,
+      );
+    onChange({
+      ...next,
+      stamledningTilloppLopmeter: tillopp > 0 ? String(tillopp) : "",
+      stamledningReturLopmeter: retur > 0 ? String(retur) : "",
+    });
   }
 
   function uppdateraPost(id: string, patch: Partial<VarmestamPost>) {
@@ -210,11 +338,20 @@ export function VarmestammarPanel({
   }
 
   function läggTill() {
-    const nr = d.poster.length + 1;
+    const nr = nastastaStamnummer(d.poster);
+    const markning =
+      d.systemTyp === "tva-ror"
+        ? `${formateraVarmestamMarkning(nr, "tillopp")} / ${formateraVarmestamMarkning(nr, "retur")}`
+        : formateraVarmestamMarkning(nr, "stam");
+    const ny = skapaTomVarmestamPost(nr, markning);
     spara({
       poster: [
         ...d.poster,
-        skapaTomVarmestamPost(d.poster.length === 0 ? "Stam 1" : `Stam ${nr}`),
+        {
+          ...ny,
+          rordimensionTillopp: "dn25",
+          rordimensionRetur: d.systemTyp === "tva-ror" ? "dn25" : "",
+        },
       ],
     });
   }
@@ -222,6 +359,65 @@ export function VarmestammarPanel({
   function taBort(id: string) {
     spara({ poster: d.poster.filter((p) => p.id !== id) });
   }
+
+  function uppdateraLedning(
+    id: string,
+    patch: Partial<VarmeHorisontellLedning>,
+  ) {
+    spara({
+      horisontellaLedningar: d.horisontellaLedningar.map((l) =>
+        l.id === id
+          ? normaliseraHorisontellLedning({ ...l, ...patch })
+          : l,
+      ),
+    });
+  }
+
+  function läggTillLedning() {
+    const defaultAvser: VarmeHorisontellLangdAvser =
+      d.systemTyp === "en-ror" ? "enkel-ledning" : "tillopp";
+    spara({
+      horisontellaLedningar: [
+        ...d.horisontellaLedningar,
+        skapaTomHorisontellLedning(defaultAvser),
+      ],
+    });
+  }
+
+  function taBortLedning(id: string) {
+    spara({
+      horisontellaLedningar: d.horisontellaLedningar.filter((l) => l.id !== id),
+    });
+  }
+
+  function bytSystemTyp(systemTyp: VarmeSystemTypId) {
+    const ledningar = d.horisontellaLedningar.map((l) => {
+      if (systemTyp === "en-ror" && l.langdAvser !== "enkel-ledning") {
+        return normaliseraHorisontellLedning({
+          ...l,
+          langdAvser: "enkel-ledning",
+        });
+      }
+      if (
+        systemTyp === "tva-ror" &&
+        l.langdAvser === "enkel-ledning"
+      ) {
+        return normaliseraHorisontellLedning({
+          ...l,
+          langdAvser: "tillopp",
+        });
+      }
+      return l;
+    });
+    spara({ systemTyp, horisontellaLedningar: ledningar });
+  }
+
+  const langdAvserAlternativ = varmeHorisontellLangdAvserAlternativ.filter(
+    (a) =>
+      a.system === "bada" ||
+      (d.systemTyp === "tva-ror" && a.system === "tva-ror") ||
+      (d.systemTyp === "en-ror" && a.system === "en-ror"),
+  );
 
   function uppdateraRadiatorGrupp(
     stamId: string,
@@ -240,55 +436,243 @@ export function VarmestammarPanel({
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-muted">
-        Den horisontella stamledningen värme ligger i källaren och matar alla
-        värmestammar som går upp i huset. Varje stam ska ha ett eget namn — det
-        underlättar service när det finns några få eller uppåt tjugo stammar.
-        Första ventilen sitter där stammen går upp (ofta avstängning), sista
-        där den kommer tillbaka (ofta TA-STAD för injustering och mätning).
+        Börja med att välja systemtyp. Registrera därefter horisontella
+        fördelningsledningar (ofta i källaren) och vertikala stampar. Varje
+        stampar får ett unikt nummer — vid tvårörssystem märks tillopp och
+        retur som VS-01-T / VS-01-R men räknas som en stam.
       </p>
 
       <div className="rounded-lg border border-border bg-white p-3 sm:p-4">
         <p className="text-xs font-semibold text-primary-dark">
-          Horisontell stamledning värme
+          1. Val av värmesystem
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {varmeSystemTypAlternativ.map((alt) => {
+            const vald = d.systemTyp === alt.id;
+            return (
+              <button
+                key={alt.id}
+                type="button"
+                onClick={() => bytSystemTyp(alt.id)}
+                className={`rounded-lg border px-3 py-3 text-left transition ${
+                  vald
+                    ? "border-primary bg-[#eef6f0] ring-1 ring-primary/30"
+                    : "border-border bg-white hover:bg-[#f7faf8]"
+                }`}
+              >
+                <span className="block text-sm font-semibold text-primary-dark">
+                  {alt.etikett}
+                  {alt.id === "tva-ror" ? " (förvalt)" : ""}
+                </span>
+                <span className="mt-1 block text-[11px] leading-relaxed text-muted">
+                  {alt.beskrivning}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <InfoSektion
+          rubrik="Livslängd och underhållsprincip"
+          text={VARME_LIVSLANGD_INFO}
+        />
+        <InfoSektion rubrik="Tryckfall och läckage" text={VARME_TRYCKFALL_INFO} />
+        <InfoSektion
+          rubrik="Värmeledningar i badrumsschakt"
+          text={VARME_BADRUMSSCHAKT_INFO}
+        />
+      </div>
+
+      <div className="rounded-lg border border-border bg-white p-3 sm:p-4">
+        <p className="text-xs font-semibold text-primary-dark">
+          2. Horisontella värmeledningar
         </p>
         <p className="mt-1 text-[11px] leading-relaxed text-muted">
-          Gemensam ledning i källaren. Från denna går värmestammarna upp i
-          fastigheten — tillopp ut från undercentralen, retur tillbaka.
+          Fördelningsledningar i källaren eller annan horisontell sträckning.
+          Ange om längden avser en enskild ledning eller en gemensam
+          sträckning där tillopp och retur går tillsammans — så undviks
+          dubbelräkning i summeringen.
         </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="text-xs font-medium text-muted">
-              Tillopp (löpmeter)
-            </span>
-            <input
-              type="number"
-              min={0}
-              step={0.1}
-              value={d.stamledningTilloppLopmeter}
-              onChange={(e) =>
-                spara({ stamledningTilloppLopmeter: e.target.value })
-              }
-              placeholder="t.ex. 40"
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-xs font-medium text-muted">
-              Retur (löpmeter)
-            </span>
-            <input
-              type="number"
-              min={0}
-              step={0.1}
-              value={d.stamledningReturLopmeter}
-              onChange={(e) =>
-                spara({ stamledningReturLopmeter: e.target.value })
-              }
-              placeholder="t.ex. 40"
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            />
-          </label>
-        </div>
+
+        {d.horisontellaLedningar.length === 0 ? (
+          <p className="mt-3 rounded-lg border border-dashed border-border px-3 py-3 text-center text-xs text-muted">
+            Inga horisontella ledningar registrerade ännu.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {d.horisontellaLedningar.map((ledning, index) => (
+              <li
+                key={ledning.id}
+                className="rounded-lg border border-border/80 bg-[#fafcfa] p-3"
+              >
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-foreground">
+                    Ledning {index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => taBortLedning(ledning.id)}
+                    className="text-xs text-muted hover:text-red-700"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Placering
+                    </span>
+                    <input
+                      type="text"
+                      value={ledning.placering}
+                      onChange={(e) =>
+                        uppdateraLedning(ledning.id, {
+                          placering: e.target.value,
+                        })
+                      }
+                      placeholder="t.ex. källare, längs gårdssida"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Uppmätt rörlängd (m)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.1}
+                      value={ledning.lopmeter}
+                      onChange={(e) =>
+                        uppdateraLedning(ledning.id, {
+                          lopmeter: e.target.value,
+                        })
+                      }
+                      placeholder="t.ex. 40"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="text-xs font-medium text-muted">
+                      Längden avser
+                    </span>
+                    <select
+                      value={ledning.langdAvser}
+                      onChange={(e) =>
+                        uppdateraLedning(ledning.id, {
+                          langdAvser: e.target
+                            .value as VarmeHorisontellLangdAvser,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      {langdAvserAlternativ.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.etikett}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="mt-1 block text-[11px] text-muted">
+                      {
+                        langdAvserAlternativ.find(
+                          (a) => a.id === ledning.langdAvser,
+                        )?.beskrivning
+                      }
+                    </span>
+                  </label>
+                  <RorDimensionValjare
+                    label="Rördimension"
+                    value={ledning.rordimension}
+                    annan={ledning.rordimensionAnnan}
+                    ytterdiameterMm={ledning.ytterdiameterMm}
+                    onChange={(patch) =>
+                      uppdateraLedning(ledning.id, {
+                        rordimension: patch.rordimension,
+                        rordimensionAnnan: patch.rordimensionAnnan,
+                        ytterdiameterMm: patch.ytterdiameterMm,
+                      })
+                    }
+                  />
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Rörmaterial
+                    </span>
+                    <select
+                      value={ledning.rormaterial}
+                      onChange={(e) =>
+                        uppdateraLedning(ledning.id, {
+                          rormaterial: e.target.value as VarmeRormaterialId | "",
+                          rormaterialAnnan:
+                            e.target.value === "annat"
+                              ? ledning.rormaterialAnnan
+                              : "",
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">— ej angivet —</option>
+                      {varmeRormaterialAlternativ.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.etikett}
+                        </option>
+                      ))}
+                    </select>
+                    {ledning.rormaterial === "annat" && (
+                      <input
+                        type="text"
+                        value={ledning.rormaterialAnnan}
+                        onChange={(e) =>
+                          uppdateraLedning(ledning.id, {
+                            rormaterialAnnan: e.target.value,
+                          })
+                        }
+                        placeholder="Ange material"
+                        className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    )}
+                  </label>
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="text-xs font-medium text-muted">
+                      Kommentar
+                    </span>
+                    <input
+                      type="text"
+                      value={ledning.kommentar}
+                      onChange={(e) =>
+                        uppdateraLedning(ledning.id, {
+                          kommentar: e.target.value,
+                        })
+                      }
+                      placeholder="Valfri kommentar"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          onClick={läggTillLedning}
+          className="mt-3 w-full rounded-lg border border-primary/40 px-3 py-2 text-xs font-medium text-primary-dark hover:bg-[#eef6f0]"
+        >
+          + Lägg till horisontell ledning
+        </button>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold text-primary-dark">
+          3. Vertikala värmestammar
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-muted">
+          {d.systemTyp === "tva-ror"
+            ? "Varje stampar får nummer som ger märkning VS-01-T (tillopp) och VS-01-R (retur). Samma nummer = samma stampar."
+            : "Enrörssystem: varje slinga/stam får märkning VS-01, VS-02 osv. Beskriv slingor och radiatoranslutningar per stam."}
+        </p>
       </div>
 
       {d.poster.length === 0 ? (
@@ -297,9 +681,13 @@ export function VarmestammarPanel({
         </p>
       ) : (
         <ul className="space-y-3">
-          {d.poster.map((post, index) => {
+          {d.poster.map((post) => {
             const p = normaliseraVarmestamPost(post);
             const hojdText = formateraVarmeStamHojd(tillHojdStam(p));
+            const markning =
+              d.systemTyp === "tva-ror"
+                ? `${formateraVarmestamMarkning(p.stamnummer, "tillopp")} / ${formateraVarmestamMarkning(p.stamnummer, "retur")}`
+                : formateraVarmestamMarkning(p.stamnummer, "stam");
             return (
               <li
                 key={post.id}
@@ -307,7 +695,8 @@ export function VarmestammarPanel({
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-primary-dark">
-                    {p.namn.trim() || `Värmestam ${index + 1}`}
+                    {markning}
+                    {p.namn && !p.namn.includes("VS-") ? ` · ${p.namn}` : ""}
                   </span>
                   <button
                     type="button"
@@ -321,31 +710,59 @@ export function VarmestammarPanel({
                 <VarmeStamOversiktKort
                   post={p}
                   radiatorTyper={katalog}
+                  systemTyp={d.systemTyp}
                 />
 
                 <p className="text-xs font-semibold text-primary-dark">
-                  Namn och placering
+                  Stamnummer och placering
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted">
-                  Ge varje stam ett tydligt namn (t.ex. Stam 1, Trapphus B,
-                  Gårdsfasad). Det underlättar service och åtgärder.
+                  Stamnumret styr märkningen i registrering, sammanställning och
+                  stamförteckning.
                 </p>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   <label className="block text-sm">
-                    <span className="text-xs font-medium text-muted">Namn</span>
+                    <span className="text-xs font-medium text-muted">
+                      Stamnummer
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={p.stamnummer || ""}
+                      onChange={(e) => {
+                        const n = Number.parseInt(e.target.value, 10);
+                        uppdateraPost(post.id, {
+                          stamnummer:
+                            Number.isFinite(n) && n > 0 ? n : p.stamnummer,
+                        });
+                      }}
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                    <span className="mt-1 block text-[11px] text-muted">
+                      {formateraVarmestamNummer(p.stamnummer)}
+                      {d.systemTyp === "tva-ror"
+                        ? ` → ${formateraVarmestamMarkning(p.stamnummer, "tillopp")} / ${formateraVarmestamMarkning(p.stamnummer, "retur")}`
+                        : ""}
+                    </span>
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Eget namn (valfritt)
+                    </span>
                     <input
                       type="text"
                       value={p.namn}
                       onChange={(e) =>
                         uppdateraPost(post.id, { namn: e.target.value })
                       }
-                      placeholder="t.ex. Stam 1"
+                      placeholder="t.ex. Trapphus A"
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     />
                   </label>
                   <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">
-                      Placering
+                      Placering i byggnaden
                     </span>
                     <input
                       type="text"
@@ -353,13 +770,41 @@ export function VarmestammarPanel({
                       onChange={(e) =>
                         uppdateraPost(post.id, { placering: e.target.value })
                       }
-                      placeholder="t.ex. trapphus A"
+                      placeholder="t.ex. gårdsfasad, gavel"
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     />
                   </label>
-                  <label className="block text-sm sm:col-span-2">
+                  <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">
-                      Betjänar
+                      Trapphus
+                    </span>
+                    <input
+                      type="text"
+                      value={p.trapphus}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, { trapphus: e.target.value })
+                      }
+                      placeholder="t.ex. A"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Schaktbeteckning
+                    </span>
+                    <input
+                      type="text"
+                      value={p.schakt}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, { schakt: e.target.value })
+                      }
+                      placeholder="t.ex. S3"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Betjänade våningsplan / lägenheter
                     </span>
                     <input
                       type="text"
@@ -367,7 +812,71 @@ export function VarmestammarPanel({
                       onChange={(e) =>
                         uppdateraPost(post.id, { betjanar: e.target.value })
                       }
-                      placeholder="t.ex. 3 rum och kök, vardagsrum"
+                      placeholder="t.ex. lght 1101–1501, våning 1–5"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  {d.systemTyp === "en-ror" ? (
+                    <label className="block text-sm sm:col-span-2">
+                      <span className="text-xs font-medium text-muted">
+                        Slinga / radiatoranslutning
+                      </span>
+                      <input
+                        type="text"
+                        value={p.slingaBeskrivning}
+                        onChange={(e) =>
+                          uppdateraPost(post.id, {
+                            slingaBeskrivning: e.target.value,
+                          })
+                        }
+                        placeholder="Beskriv slinga och hur radiatorerna ansluts"
+                        className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                      />
+                    </label>
+                  ) : null}
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Ritningsreferens
+                    </span>
+                    <input
+                      type="text"
+                      value={p.ritningsreferens}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, {
+                          ritningsreferens: e.target.value,
+                        })
+                      }
+                      placeholder="t.ex. V-101"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-xs font-medium text-muted">
+                      Kommentar om skick
+                    </span>
+                    <input
+                      type="text"
+                      value={p.skickKommentar}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, {
+                          skickKommentar: e.target.value,
+                        })
+                      }
+                      placeholder="t.ex. synliga beläggningar, inga läckage"
+                      className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="text-xs font-medium text-muted">
+                      Kommentar
+                    </span>
+                    <input
+                      type="text"
+                      value={p.kommentar}
+                      onChange={(e) =>
+                        uppdateraPost(post.id, { kommentar: e.target.value })
+                      }
+                      placeholder="Övrigt"
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     />
                   </label>
@@ -377,14 +886,19 @@ export function VarmestammarPanel({
                   Stamventiler
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted">
-                  Välj modell på både tillopp och retur. Lägg gärna en bild på
-                  respektive ventil — underlättar service och anbud.
+                  {d.systemTyp === "tva-ror"
+                    ? "Välj modell på både tillopp och retur. Lägg gärna en bild på respektive ventil — underlättar service och anbud."
+                    : "Vid enrörssystem anges ofta en stamventil för slingans avstängning/injustering."}
                 </p>
-                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <div
+                  className={`mt-2 grid gap-3 ${d.systemTyp === "tva-ror" ? "sm:grid-cols-2" : ""}`}
+                >
                   <div className="rounded-lg border border-border/80 bg-[#fafcfa] p-3">
                     <label className="block text-sm">
                       <span className="text-xs font-medium text-muted">
-                        Tilloppsventil (går upp)
+                        {d.systemTyp === "tva-ror"
+                          ? "Tilloppsventil (går upp)"
+                          : "Stamventil"}
                       </span>
                       <VentilSelect
                         value={p.tilloppsventil}
@@ -459,87 +973,95 @@ export function VarmestammarPanel({
                     />
                   </div>
 
-                  <div className="rounded-lg border border-border/80 bg-[#fafcfa] p-3">
-                    <label className="block text-sm">
-                      <span className="text-xs font-medium text-muted">
-                        Returventil (kommer tillbaka)
-                      </span>
-                      <VentilSelect
-                        value={p.returventil}
-                        onChange={(returventil) =>
-                          uppdateraPost(post.id, {
-                            returventil,
-                            returventilAnnan:
-                              returventil === "annat" ? p.returventilAnnan : "",
-                          })
-                        }
-                      />
-                      {hamtaStamventilModellDef(p.returventil || "ta-stad")
-                        ?.beskrivning && (
-                        <span className="mt-1 block text-[11px] text-muted">
-                          {
-                            hamtaStamventilModellDef(p.returventil || "ta-stad")
-                              ?.beskrivning
-                          }
+                  {d.systemTyp === "tva-ror" ? (
+                    <div className="rounded-lg border border-border/80 bg-[#fafcfa] p-3">
+                      <label className="block text-sm">
+                        <span className="text-xs font-medium text-muted">
+                          Returventil (kommer tillbaka)
                         </span>
+                        <VentilSelect
+                          value={p.returventil}
+                          onChange={(returventil) =>
+                            uppdateraPost(post.id, {
+                              returventil,
+                              returventilAnnan:
+                                returventil === "annat"
+                                  ? p.returventilAnnan
+                                  : "",
+                            })
+                          }
+                        />
+                        {hamtaStamventilModellDef(p.returventil || "ta-stad")
+                          ?.beskrivning && (
+                          <span className="mt-1 block text-[11px] text-muted">
+                            {
+                              hamtaStamventilModellDef(
+                                p.returventil || "ta-stad",
+                              )?.beskrivning
+                            }
+                          </span>
+                        )}
+                      </label>
+                      {p.returventil === "annat" && (
+                        <input
+                          type="text"
+                          value={p.returventilAnnan}
+                          onChange={(e) =>
+                            uppdateraPost(post.id, {
+                              returventilAnnan: e.target.value,
+                            })
+                          }
+                          placeholder="Ange fabrikat och modell"
+                          className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        />
                       )}
-                    </label>
-                    {p.returventil === "annat" && (
-                      <input
-                        type="text"
-                        value={p.returventilAnnan}
-                        onChange={(e) =>
-                          uppdateraPost(post.id, {
-                            returventilAnnan: e.target.value,
-                          })
+                      <StamventilBildFalt
+                        rubrik="Bild returventil"
+                        dataUrl={p.returventilBildDataUrl}
+                        filnamn={p.returventilBildFilnamn}
+                        fel={bildFel[`${post.id}-retur`]}
+                        onFel={(meddelande) =>
+                          setBildFel((prev) => ({
+                            ...prev,
+                            [`${post.id}-retur`]: meddelande,
+                          }))
                         }
-                        placeholder="Ange fabrikat och modell"
-                        className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
+                        onBild={(bild) => {
+                          setBildFel((prev) => {
+                            const next = { ...prev };
+                            delete next[`${post.id}-retur`];
+                            return next;
+                          });
+                          uppdateraPost(post.id, {
+                            returventilBildDataUrl: bild.dataUrl,
+                            returventilBildFilnamn: bild.filnamn,
+                          });
+                        }}
+                        onTaBort={() => {
+                          setBildFel((prev) => {
+                            const next = { ...prev };
+                            delete next[`${post.id}-retur`];
+                            return next;
+                          });
+                          uppdateraPost(post.id, {
+                            returventilBildDataUrl: "",
+                            returventilBildFilnamn: "",
+                          });
+                        }}
                       />
-                    )}
-                    <StamventilBildFalt
-                      rubrik="Bild returventil"
-                      dataUrl={p.returventilBildDataUrl}
-                      filnamn={p.returventilBildFilnamn}
-                      fel={bildFel[`${post.id}-retur`]}
-                      onFel={(meddelande) =>
-                        setBildFel((prev) => ({
-                          ...prev,
-                          [`${post.id}-retur`]: meddelande,
-                        }))
-                      }
-                      onBild={(bild) => {
-                        setBildFel((prev) => {
-                          const next = { ...prev };
-                          delete next[`${post.id}-retur`];
-                          return next;
-                        });
-                        uppdateraPost(post.id, {
-                          returventilBildDataUrl: bild.dataUrl,
-                          returventilBildFilnamn: bild.filnamn,
-                        });
-                      }}
-                      onTaBort={() => {
-                        setBildFel((prev) => {
-                          const next = { ...prev };
-                          delete next[`${post.id}-retur`];
-                          return next;
-                        });
-                        uppdateraPost(post.id, {
-                          returventilBildDataUrl: "",
-                          returventilBildFilnamn: "",
-                        });
-                      }}
-                    />
-                  </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <p className="mt-4 text-xs font-semibold text-primary-dark">
-                  Höjd och dimension
+                  Höjd och rördimension
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted">
                   Total stamhöjd räknas som antal våningar × takhöjd + (våningar
                   − 1) × bjälklag. Exempel: 9 × 2,6 m + 8 × 0,4 m = 26,6 m.
+                  {d.systemTyp === "tva-ror"
+                    ? " Rördimension anges separat för tillopp och retur."
+                    : " Ange rördimension för slingans stamledning."}
                 </p>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   <label className="block text-sm">
@@ -659,40 +1181,91 @@ export function VarmestammarPanel({
                     )}
                   </label>
 
+                  {d.systemTyp === "tva-ror" ? (
+                    <>
+                      <RorDimensionValjare
+                        label="Rördimension tillopp"
+                        value={p.rordimensionTillopp}
+                        annan={p.rordimensionTilloppAnnan}
+                        ytterdiameterMm={p.ytterdiameterTilloppMm}
+                        onChange={(patch) =>
+                          uppdateraPost(post.id, {
+                            rordimensionTillopp: patch.rordimension,
+                            rordimensionTilloppAnnan: patch.rordimensionAnnan,
+                            ytterdiameterTilloppMm: patch.ytterdiameterMm,
+                            rordimension: patch.rordimension,
+                            rordimensionAnnan: patch.rordimensionAnnan,
+                          })
+                        }
+                      />
+                      <RorDimensionValjare
+                        label="Rördimension retur"
+                        value={p.rordimensionRetur}
+                        annan={p.rordimensionReturAnnan}
+                        ytterdiameterMm={p.ytterdiameterReturMm}
+                        onChange={(patch) =>
+                          uppdateraPost(post.id, {
+                            rordimensionRetur: patch.rordimension,
+                            rordimensionReturAnnan: patch.rordimensionAnnan,
+                            ytterdiameterReturMm: patch.ytterdiameterMm,
+                          })
+                        }
+                      />
+                    </>
+                  ) : (
+                    <RorDimensionValjare
+                      label="Rördimension"
+                      value={p.rordimensionTillopp || p.rordimension}
+                      annan={
+                        p.rordimensionTilloppAnnan || p.rordimensionAnnan
+                      }
+                      ytterdiameterMm={p.ytterdiameterTilloppMm}
+                      onChange={(patch) =>
+                        uppdateraPost(post.id, {
+                          rordimensionTillopp: patch.rordimension,
+                          rordimensionTilloppAnnan: patch.rordimensionAnnan,
+                          ytterdiameterTilloppMm: patch.ytterdiameterMm,
+                          rordimension: patch.rordimension,
+                          rordimensionAnnan: patch.rordimensionAnnan,
+                        })
+                      }
+                    />
+                  )}
                   <label className="block text-sm">
                     <span className="text-xs font-medium text-muted">
-                      Rördimension
+                      Rörmaterial
                     </span>
                     <select
-                      value={p.rordimension}
+                      value={p.rormaterial}
                       onChange={(e) =>
                         uppdateraPost(post.id, {
-                          rordimension: e.target.value as VarmeRorDimensionId | "",
-                          rordimensionAnnan:
+                          rormaterial: e.target
+                            .value as VarmeRormaterialId | "",
+                          rormaterialAnnan:
                             e.target.value === "annat"
-                              ? p.rordimensionAnnan
+                              ? p.rormaterialAnnan
                               : "",
                         })
                       }
                       className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                     >
-                      <option value="">— ej angiven —</option>
-                      {varmeRorDimensioner.map((a) => (
+                      <option value="">— ej angivet —</option>
+                      {varmeRormaterialAlternativ.map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.etikett}
                         </option>
                       ))}
                     </select>
-                    {p.rordimension === "annat" && (
+                    {p.rormaterial === "annat" && (
                       <input
                         type="text"
-                        value={p.rordimensionAnnan}
+                        value={p.rormaterialAnnan}
                         onChange={(e) =>
                           uppdateraPost(post.id, {
-                            rordimensionAnnan: e.target.value,
+                            rormaterialAnnan: e.target.value,
                           })
                         }
-                        placeholder="t.ex. 42 mm"
+                        placeholder="Ange material"
                         className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                       />
                     )}
@@ -988,11 +1561,13 @@ export function VarmestammarPanel({
                               }
                               className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm"
                             >
-                              {varmeRorDimensioner.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                  {a.etikett}
-                                </option>
-                              ))}
+                              {varmeRorDimensioner
+                                .filter((a) => a.id !== "dn10")
+                                .map((a) => (
+                                  <option key={a.id} value={a.id}>
+                                    {a.etikett}
+                                  </option>
+                                ))}
                             </select>
                           </label>
                         </div>

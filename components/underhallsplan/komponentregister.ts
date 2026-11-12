@@ -1087,7 +1087,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         grupp: "Uppvärmning",
         defaultMåttenhet: "löpmeter",
         måttHint:
-          "Horisontell stamledning värme i källaren, namngivna stammar med tillopps- och returventil (t.ex. avstängning + TA-STAD), plus stamhöjd och dimension.",
+          "Välj tvårörs- eller enrörssystem. Registrera horisontella fördelningsledningar och stampar (VS-01-T/R). Rördimension, material och status — inte automatiskt byte efter ålder.",
         detaljPanel: "varmestammar-lista",
       },
       {
@@ -1096,7 +1096,7 @@ const komponentMallar: Record<string, KomponentMall> = {
         grupp: "Uppvärmning",
         defaultMåttenhet: "antal",
         måttHint:
-          "Systemnivå: termostat, radiatorventil, koppel, packbox och rörsystem (ett-/tvårör). Radiatorstorlek (typ/höjd/längd) och antal per stam anges under Värmestammar.",
+          "Systemnivå: termostat, radiatorventil, koppel och packbox. Rörsystem (en-/tvårör) anges under Värmestammar. Radiatorstorlek och antal per stam anges där.",
         detaljPanel: "vvs-radiatorer",
       },
       {
@@ -2192,8 +2192,8 @@ export function flyttaVarmecentralTillVvs(
   ) {
     varmestammarData = {
       ...varmestammarData,
-      poster: normaliseraVvsVarmeStammar(gammalVvsVarme).map(
-        varmestamFranVvsVarmeStam,
+      poster: normaliseraVvsVarmeStammar(gammalVvsVarme).map((stam, index) =>
+        varmestamFranVvsVarmeStam(stam, index),
       ),
     };
   }
@@ -2220,10 +2220,19 @@ export function flyttaVarmecentralTillVvs(
       stamledningReturLopmeter: ucForStamledning.returLopmeter,
     };
   }
+  // Om legacy-fält fyllts: låt normalisering skapa horisontellaLedningar
+  if (
+    (varmestammarData.stamledningTilloppLopmeter ||
+      varmestammarData.stamledningReturLopmeter) &&
+    (varmestammarData.horisontellaLedningar?.length ?? 0) === 0
+  ) {
+    varmestammarData = normaliseraVarmestammarData(varmestammarData);
+  }
   if (
     varmestammarData.poster.length > 0 ||
     varmestammarData.stamledningTilloppLopmeter ||
-    varmestammarData.stamledningReturLopmeter
+    varmestammarData.stamledningReturLopmeter ||
+    (varmestammarData.horisontellaLedningar?.length ?? 0) > 0
   ) {
     nextVvs = {
       ...nextVvs,

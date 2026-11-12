@@ -163,7 +163,8 @@ const rekommendationer: Record<
     varmestammar: {
       rekommenderadAvskrivningAr: 80,
       arK3Komponent: true,
-      hint: "FAR: stamledning värme 80 år.",
+      hint:
+        "FAR Tabell 1: stamledning värme 80 år (K3-avskrivning). Tekniskt byte styrs av status, inte enbart ålder.",
     },
     stamventiler: {
       rekommenderadAvskrivningAr: 0,
@@ -185,7 +186,8 @@ const rekommendationer: Record<
     varmestammar: {
       rekommenderadAvskrivningAr: 80,
       arK3Komponent: true,
-      hint: "FAR: stamledning värme 80 år.",
+      hint:
+        "FAR Tabell 1: stamledning värme 80 år (K3-avskrivning). Tekniskt byte styrs av status, inte enbart ålder.",
     },
     stamventiler: {
       rekommenderadAvskrivningAr: 0,

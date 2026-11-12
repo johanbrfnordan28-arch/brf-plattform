@@ -15,13 +15,18 @@ import {
 } from "@/components/underhallsplan/vvs-radiatorer";
 import {
   byggVarmeStamOversikt,
+  formateraRorDimensionMedYtter,
   formateraVarmeStamOversiktRader,
   normaliseraVarmestammarData,
+  summeraHorisontellaLedningarMeter,
   varmestamRadiatorElement,
   varmestamRumVolymKbm,
   varmestamRumYtaKvm,
   varmestamVaningsLangder,
   varmestamVertikalMeter,
+  varmeHorisontellLangdAvserAlternativ,
+  varmeRormaterialEtikett,
+  varmeSystemTypAlternativ,
   type VarmestammarData,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
@@ -48,9 +53,11 @@ export type InjusteringsunderlagSnapshot = {
 function formateraStamSektion(
   post: VarmestamPost,
   radiatorTyper?: import("@/components/underhallsplan/radiator-typer").RadiatorTypPost[],
+  systemTyp: import("@/components/underhallsplan/varmestammar").VarmeSystemTypId = "tva-ror",
 ): string[] {
   const rader = formateraVarmeStamOversiktRader(
-    byggVarmeStamOversikt(post, radiatorTyper),
+    byggVarmeStamOversikt(post, radiatorTyper, systemTyp),
+    systemTyp,
   );
   const vaningar = varmestamVaningsLangder(post);
   if (vaningar.length === 0) return rader;
@@ -106,36 +113,71 @@ export function byggInjusteringsunderlagText(
   }
   rader.push("");
 
-  rader.push("## 2. Horisontell stamledning värme (källare)");
-  const tillopp = parseNummerSumma([stammar.stamledningTilloppLopmeter]);
-  const retur = parseNummerSumma([stammar.stamledningReturLopmeter]);
-  if (tillopp > 0) {
-    rader.push(`Tillopp: ${formatSummeringTal(tillopp)} m`);
-  } else {
-    rader.push("Tillopp: ej angiven");
-  }
-  if (retur > 0) {
-    rader.push(`Retur: ${formatSummeringTal(retur)} m`);
-  } else {
-    rader.push("Retur: ej angiven");
-  }
-  rader.push(
-    "Från den horisontella ledningen går värmestammarna upp i fastigheten.",
-  );
-  rader.push("");
-
+  const systemEtikett =
+    varmeSystemTypAlternativ.find((a) => a.id === stammar.systemTyp)?.etikett ??
+    stammar.systemTyp;
+  rader.push("## 2. Rörsystem / systemtyp");
+  rader.push(systemEtikett);
   if (radiatorer?.rorsystem) {
     const etikett =
       radiatorRorsystemAlternativ.find((a) => a.id === radiatorer.rorsystem)
         ?.etikett ?? radiatorer.rorsystem;
-    rader.push("## 3. Rörsystem");
-    rader.push(etikett);
-    rader.push("");
+    rader.push(`(Äldre uppgift under Radiatorer: ${etikett})`);
   }
+  rader.push("");
+
+  rader.push("## 3. Horisontella värmeledningar (källare)");
+  if (stammar.horisontellaLedningar.length === 0) {
+    const tillopp = parseNummerSumma([stammar.stamledningTilloppLopmeter]);
+    const retur = parseNummerSumma([stammar.stamledningReturLopmeter]);
+    if (tillopp > 0) rader.push(`Tillopp: ${formatSummeringTal(tillopp)} m`);
+    if (retur > 0) rader.push(`Retur: ${formatSummeringTal(retur)} m`);
+    if (tillopp <= 0 && retur <= 0) {
+      rader.push("Inga horisontella ledningar registrerade.");
+    }
+  } else {
+    for (const ledning of stammar.horisontellaLedningar) {
+      const avser =
+        varmeHorisontellLangdAvserAlternativ.find(
+          (a) => a.id === ledning.langdAvser,
+        )?.etikett ?? ledning.langdAvser;
+      const dim = formateraRorDimensionMedYtter(
+        ledning.rordimension,
+        ledning.rordimensionAnnan,
+        ledning.ytterdiameterMm,
+      );
+      const material = varmeRormaterialEtikett(
+        ledning.rormaterial,
+        ledning.rormaterialAnnan,
+      );
+      const meter = parseNummerSumma([ledning.lopmeter]);
+      rader.push(
+        [
+          ledning.placering || "Placering ej angiven",
+          avser,
+          meter > 0 ? `${formatSummeringTal(meter)} m` : null,
+          dim,
+          material,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      );
+    }
+    const sum = summeraHorisontellaLedningarMeter(stammar.horisontellaLedningar);
+    if (sum.totalt > 0) {
+      rader.push(
+        `Registrerad längd totalt (utan dubbelräkning): ${formatSummeringTal(sum.totalt)} m`,
+      );
+    }
+  }
+  rader.push(
+    "Från de horisontella ledningarna går värmestammarna upp i fastigheten.",
+  );
+  rader.push("");
 
   rader.push("## 4. Värmestammar");
   rader.push(
-    "Per stam: höjd upp genom huset, längd per våning, ventiler, golvyta/rumvolym och radiatorstorlek.",
+    "Per stam: stamnummer, höjd, rördimension, ventiler, golvyta/rumvolym och radiatorstorlek.",
   );
   rader.push(
     "Obs: Effektbehov beräknas oftast från golvyta (W/m²) eller rumvolym (W/m³). Volym = golvyta × takhöjd.",
@@ -146,7 +188,9 @@ export function byggInjusteringsunderlagText(
     rader.push("Inga värmestammar registrerade.");
   } else {
     for (const stam of stammar.poster) {
-      rader.push(...formateraStamSektion(stam, kalla.radiatorTyper));
+      rader.push(
+        ...formateraStamSektion(stam, kalla.radiatorTyper, stammar.systemTyp),
+      );
       rader.push("");
     }
   }
@@ -160,9 +204,12 @@ export function byggInjusteringsunderlagText(
   if (stamhojd > 0) {
     rader.push(`Stamhöjd totalt: ${formatSummeringTal(stamhojd)} m`);
   }
-  if (tillopp > 0 || retur > 0) {
+  const horisontellSum = summeraHorisontellaLedningarMeter(
+    stammar.horisontellaLedningar,
+  );
+  if (horisontellSum.totalt > 0) {
     rader.push(
-      `Horisontell stamledning: tillopp ${formatSummeringTal(tillopp)} m, retur ${formatSummeringTal(retur)} m`,
+      `Horisontella ledningar registrerad längd: ${formatSummeringTal(horisontellSum.totalt)} m`,
     );
   }
   const ytaTot = stammar.poster.reduce(

@@ -69,6 +69,8 @@ export type VarmeRorDimensionId =
   | "dn20"
   | "dn25"
   | "dn32"
+  | "dn40"
+  | "dn50"
   | "cu12"
   | "cu15"
   | "cu18"
@@ -79,15 +81,21 @@ export type VarmeRorDimensionId =
   | "mm40"
   | "annat";
 
+/**
+ * Full lista inkl. legacy (t.ex. DN 10, mm-mått). Används vid normalisering
+ * och för radiatoranslutningar.
+ */
 export const varmeRorDimensioner: {
   id: VarmeRorDimensionId;
   etikett: string;
 }[] = [
-  { id: "dn10", etikett: "DN10" },
-  { id: "dn15", etikett: "DN15" },
-  { id: "dn20", etikett: "DN20" },
-  { id: "dn25", etikett: "DN25" },
-  { id: "dn32", etikett: "DN32" },
+  { id: "dn10", etikett: "DN 10" },
+  { id: "dn15", etikett: "DN 15" },
+  { id: "dn20", etikett: "DN 20" },
+  { id: "dn25", etikett: "DN 25" },
+  { id: "dn32", etikett: "DN 32" },
+  { id: "dn40", etikett: "DN 40" },
+  { id: "dn50", etikett: "DN 50" },
   { id: "cu12", etikett: "12 mm" },
   { id: "cu15", etikett: "15 mm" },
   { id: "cu18", etikett: "18 mm" },
@@ -96,6 +104,23 @@ export const varmeRorDimensioner: {
   { id: "mm30", etikett: "30 mm" },
   { id: "mm35", etikett: "35 mm" },
   { id: "mm40", etikett: "40 mm" },
+  { id: "annat", etikett: "Annan dimension" },
+];
+
+/**
+ * Standardval för stam- och fördelningsledningar.
+ * DN 10 ingår inte — för sällsynt på stamnivå; använd Annan dimension vid behov.
+ */
+export const varmeStamRorDimensioner: {
+  id: VarmeRorDimensionId;
+  etikett: string;
+}[] = [
+  { id: "dn15", etikett: "DN 15" },
+  { id: "dn20", etikett: "DN 20" },
+  { id: "dn25", etikett: "DN 25" },
+  { id: "dn32", etikett: "DN 32" },
+  { id: "dn40", etikett: "DN 40" },
+  { id: "dn50", etikett: "DN 50" },
   { id: "annat", etikett: "Annan dimension" },
 ];
 

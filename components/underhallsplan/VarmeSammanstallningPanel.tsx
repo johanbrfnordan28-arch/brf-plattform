@@ -52,7 +52,10 @@ function byggPrintHtml(
   }
 
   const summering = summeraVarmestammarData(data);
-  const stammar = data.poster.map((p) => byggVarmeStamOversikt(p, radiatorTyper));
+  const systemTyp = data.systemTyp ?? "tva-ror";
+  const stammar = data.poster.map((p) =>
+    byggVarmeStamOversikt(p, radiatorTyper, systemTyp),
+  );
   const forening = foreningNamn.trim()
     ? `<p class="meta">Förening: ${escapaHtml(foreningNamn.trim())}</p>`
     : "";
@@ -71,16 +74,22 @@ function byggPrintHtml(
               .map((r) => `<li>${escapaHtml(r.varde)}</li>`)
               .join("")}</ul>`
           : `<p class="tom">Radiatorer ej angivna</p>`;
+      const ventiler =
+        systemTyp === "tva-ror"
+          ? `<div class="ventiler">
+    <div><span>Tillopp</span><strong>${escapaHtml(s.tilloppsventil)}${s.tilloppHarBild ? " · bild" : ""}</strong></div>
+    <div><span>Retur</span><strong>${escapaHtml(s.returventil)}${s.returHarBild ? " · bild" : ""}</strong></div>
+  </div>`
+          : `<div class="ventiler">
+    <div><span>Stamventil</span><strong>${escapaHtml(s.tilloppsventil)}${s.tilloppHarBild ? " · bild" : ""}</strong></div>
+  </div>`;
       return `<article class="stam">
   <header>
     <h3>${escapaHtml(s.rubrik)}</h3>
     ${s.underrubrik ? `<p class="under">${escapaHtml(s.underrubrik)}</p>` : ""}
   </header>
   <div class="grid">${fakta}</div>
-  <div class="ventiler">
-    <div><span>Tillopp</span><strong>${escapaHtml(s.tilloppsventil)}${s.tilloppHarBild ? " · bild" : ""}</strong></div>
-    <div><span>Retur</span><strong>${escapaHtml(s.returventil)}${s.returHarBild ? " · bild" : ""}</strong></div>
-  </div>
+  ${ventiler}
   <h4>Radiatorer</h4>
   ${radiatorer}
 </article>`;
@@ -94,26 +103,30 @@ function byggPrintHtml(
     )
     .join("");
 
+  const horisontella = summering
+    .filter((r) => r.etikett.includes("Horisontella"))
+    .map(
+      (r) =>
+        `<div class="kv"><span>${escapaHtml(r.etikett.replace("Horisontella ledningar — ", ""))}</span><strong>${escapaHtml(r.varde)}</strong></div>`,
+    )
+    .join("");
+
   return `
 <header class="doc-head">
   <p class="eyebrow">Underhållsplan · Värmesystem</p>
   <h1>Värmesammanställning</h1>
   <p class="meta">Datum: ${escapaHtml(new Date().toLocaleDateString("sv-SE"))}</p>
   ${forening}
+  <p class="meta">Systemtyp: ${escapaHtml(
+    summering.find((r) => r.etikett === "Systemtyp")?.varde ?? systemTyp,
+  )}</p>
 </header>
 <section>
-  <h2>Horisontell stamledning</h2>
-  <div class="grid">
-    <div class="kv"><span>Tillopp</span><strong>${escapaHtml(
-      summering.find((r) => r.etikett.includes("tillopp"))?.varde ?? "ej angiven",
-    )}</strong></div>
-    <div class="kv"><span>Retur</span><strong>${escapaHtml(
-      summering.find((r) => r.etikett.includes("retur"))?.varde ?? "ej angiven",
-    )}</strong></div>
-  </div>
+  <h2>Horisontella värmeledningar</h2>
+  <div class="grid">${horisontella || '<p class="tom">Ej angivna</p>'}</div>
 </section>
 <section>
-  <h2>Värmestammar</h2>
+  <h2>Stamförteckning</h2>
   ${stamHtml || "<p class='tom'>Inga stammar registrerade.</p>"}
 </section>
 <section>
@@ -121,7 +134,6 @@ function byggPrintHtml(
   <table><tbody>${sumHtml}</tbody></table>
 </section>`;
 }
-
 const PRINT_CSS = `
   @page { margin: 16mm; }
   * { box-sizing: border-box; }
@@ -194,10 +206,14 @@ export function VarmeSammanstallningPanel({
   );
 
   const oversikter = useMemo(
-    () => data.poster.map((p) => byggVarmeStamOversikt(p, radiatorTyper)),
-    [data.poster, radiatorTyper],
+    () =>
+      data.poster.map((p) =>
+        byggVarmeStamOversikt(p, radiatorTyper, data.systemTyp ?? "tva-ror"),
+      ),
+    [data.poster, data.systemTyp, radiatorTyper],
   );
   const summering = useMemo(() => summeraVarmestammarData(data), [data]);
+  const systemTyp = data.systemTyp ?? "tva-ror";
 
   const text = visaSparat && sparat ? sparat.text : liveText;
 
@@ -231,6 +247,7 @@ export function VarmeSammanstallningPanel({
 
   if (
     data.poster.length === 0 &&
+    !(data.horisontellaLedningar?.length > 0) &&
     !data.stamledningTilloppLopmeter &&
     !data.stamledningReturLopmeter
   ) {
@@ -372,21 +389,27 @@ export function VarmeSammanstallningPanel({
                   </dl>
                 ) : null}
 
-                <div className="mt-3 grid gap-2 border-t border-stone-100 pt-2 sm:grid-cols-2">
+                <div
+                  className={`mt-3 grid gap-2 border-t border-stone-100 pt-2 ${systemTyp === "tva-ror" ? "sm:grid-cols-2" : ""}`}
+                >
                   <p className="text-xs text-stone-700">
                     <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
-                      Tilloppsventil
+                      {systemTyp === "tva-ror"
+                        ? "Tilloppsventil"
+                        : "Stamventil"}
                     </span>
                     {s.tilloppsventil}
                     {s.tilloppHarBild ? " · bild" : ""}
                   </p>
-                  <p className="text-xs text-stone-700">
-                    <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
-                      Returventil
-                    </span>
-                    {s.returventil}
-                    {s.returHarBild ? " · bild" : ""}
-                  </p>
+                  {systemTyp === "tva-ror" ? (
+                    <p className="text-xs text-stone-700">
+                      <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
+                        Returventil
+                      </span>
+                      {s.returventil}
+                      {s.returHarBild ? " · bild" : ""}
+                    </p>
+                  ) : null}
                 </div>
 
                 {s.radiatorer.length > 0 ? (

@@ -179,8 +179,15 @@ export function byggSteg2KomponentSammanstallning(
         });
       }
       for (const stam of varmestammar.poster) {
-        const o = byggVarmeStamOversikt(stam, grund.radiatorTyper);
-        const ventiler = `Tillopp ${o.tilloppsventil} · Retur ${o.returventil}`;
+        const o = byggVarmeStamOversikt(
+          stam,
+          grund.radiatorTyper,
+          varmestammar.systemTyp ?? "tva-ror",
+        );
+        const ventiler =
+          (varmestammar.systemTyp ?? "tva-ror") === "en-ror"
+            ? `Ventil ${o.tilloppsventil}`
+            : `Tillopp ${o.tilloppsventil} · Retur ${o.returventil}`;
         const radiatorer =
           o.radiatorer.length > 0
             ? o.radiatorer.map((r) => r.varde).join("; ")

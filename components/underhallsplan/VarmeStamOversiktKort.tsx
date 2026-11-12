@@ -3,17 +3,23 @@
 import type { RadiatorTypPost } from "@/components/underhallsplan/radiator-typer";
 import {
   byggVarmeStamOversikt,
+  type VarmeSystemTypId,
   type VarmestamPost,
 } from "@/components/underhallsplan/varmestammar";
 
 type Props = {
   post: VarmestamPost;
   radiatorTyper?: RadiatorTypPost[];
+  systemTyp?: VarmeSystemTypId;
 };
 
 /** Kompakt översikt inbyggd i respektive värmestam. */
-export function VarmeStamOversiktKort({ post, radiatorTyper = [] }: Props) {
-  const s = byggVarmeStamOversikt(post, radiatorTyper);
+export function VarmeStamOversiktKort({
+  post,
+  radiatorTyper = [],
+  systemTyp = "tva-ror",
+}: Props) {
+  const s = byggVarmeStamOversikt(post, radiatorTyper, systemTyp);
   const harInnehall =
     s.fakta.length > 0 ||
     s.radiatorer.length > 0 ||
@@ -27,21 +33,25 @@ export function VarmeStamOversiktKort({ post, radiatorTyper = [] }: Props) {
       <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-primary-dark">
         Översikt för denna stam
       </p>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+      <div
+        className={`mt-2 grid gap-2 ${systemTyp === "tva-ror" ? "sm:grid-cols-2" : ""}`}
+      >
         <p className="text-xs text-stone-700">
           <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
-            Tilloppsventil
+            {systemTyp === "tva-ror" ? "Tilloppsventil" : "Stamventil"}
           </span>
           {s.tilloppsventil}
           {s.tilloppHarBild ? " · bild" : ""}
         </p>
-        <p className="text-xs text-stone-700">
-          <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
-            Returventil
-          </span>
-          {s.returventil}
-          {s.returHarBild ? " · bild" : ""}
-        </p>
+        {systemTyp === "tva-ror" ? (
+          <p className="text-xs text-stone-700">
+            <span className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
+              Returventil
+            </span>
+            {s.returventil}
+            {s.returHarBild ? " · bild" : ""}
+          </p>
+        ) : null}
       </div>
       {s.fakta.length > 0 ? (
         <dl className="mt-2 grid gap-x-4 gap-y-1 border-t border-[#e2ebe5] pt-2 sm:grid-cols-2">
